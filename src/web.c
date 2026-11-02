@@ -40,29 +40,13 @@ static esp_err_t status_get(httpd_req_t *req)
     return send_json(req, buf);
 }
 
-// GET /faces -> {"groups":[...],"faces":[{"label","o","g","hint","desc","opts"}...]} (index = face id)
+static void emit_chunk(const char *piece, void *ctx) { httpd_resp_send_chunk((httpd_req_t *)ctx, piece, HTTPD_RESP_USE_STRLEN); }
+
+// GET /faces -> the face catalogue (control.c, app_faces_json), streamed in pieces
 static esp_err_t faces_get(httpd_req_t *req)
 {
-    char buf[800], a[96], b[400];
     httpd_resp_set_type(req, "application/json; charset=utf-8");
-    httpd_resp_send_chunk(req, "{\"groups\":[", HTTPD_RESP_USE_STRLEN);
-    for (int g = 0; g < FX_G_COUNT; g++) {
-        json_escape(a, sizeof(a), fx_group_names[g]);
-        snprintf(buf, sizeof(buf), "%s\"%s\"", g ? "," : "", a);
-        httpd_resp_send_chunk(req, buf, HTTPD_RESP_USE_STRLEN);
-    }
-    httpd_resp_send_chunk(req, "],\"faces\":[", HTTPD_RESP_USE_STRLEN);
-    for (int i = 0; i < FX_COUNT; i++) {
-        const fx_t *f = &fx_list[i];
-        char hint[96];
-        json_escape(a, sizeof(a), f->label);
-        json_escape(b, sizeof(b), f->desc);
-        json_escape(hint, sizeof(hint), f->hint ? f->hint : "");
-        snprintf(buf, sizeof(buf), "%s{\"label\":\"%s\",\"o\":\"%s\",\"g\":%d,\"hint\":\"%s\",\"desc\":\"%s\",\"opts\":\"%s\"}",
-                 i ? "," : "", a, f->landscape ? "h" : "v", f->group, hint, b, f->opts ? f->opts : "");
-        httpd_resp_send_chunk(req, buf, HTTPD_RESP_USE_STRLEN);
-    }
-    httpd_resp_send_chunk(req, "]}", HTTPD_RESP_USE_STRLEN);
+    app_faces_json(emit_chunk, req);
     return httpd_resp_send_chunk(req, NULL, 0);
 }
 

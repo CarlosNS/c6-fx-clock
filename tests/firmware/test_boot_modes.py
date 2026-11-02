@@ -82,8 +82,7 @@ def test_update_mode_cannot_trap_the_clock(console):
     at = console.mark()
     console.send("mode update")
     console.read_until(r"Boot mode: update", 30, at)
-    console.close()
-    console._open()  # reopening resets the board mid-update
+    console.reset()  # reopening the port resets the board mid-update
     m = console.read_until(r"Boot mode: (\w+)", 30, console.mark())
     assert m.group(1) == "ble"
 

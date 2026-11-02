@@ -19,6 +19,10 @@ void app_command(const char *cmd);
 // Full status as a JSON object; returns its length
 size_t app_status_json(char *buf, size_t size);
 
+// Face catalogue as JSON, {"groups":[...],"faces":[{label,o,g,hint,desc,opts}...]} (index =
+// face id), handed to `emit` in pieces so callers can stream it (HTTP) or collect it (Bluetooth)
+void app_faces_json(void (*emit)(const char *piece, void *ctx), void *ctx);
+
 // Returns and clears the drag delta accumulated since the last call
 void app_take_drag(int *dx, int *dy);
 

@@ -125,3 +125,25 @@ size_t app_status_json(char *buf, size_t size)
     if (n > 0) len += n;
     return len < size ? len : size - 1;
 }
+
+void app_faces_json(void (*emit)(const char *piece, void *ctx), void *ctx)
+{
+    char buf[800], a[96], b[400], hint[96];
+    emit("{\"groups\":[", ctx);
+    for (int g = 0; g < FX_G_COUNT; g++) {
+        json_escape(a, sizeof(a), fx_group_names[g]);
+        snprintf(buf, sizeof(buf), "%s\"%s\"", g ? "," : "", a);
+        emit(buf, ctx);
+    }
+    emit("],\"faces\":[", ctx);
+    for (int i = 0; i < FX_COUNT; i++) {
+        const fx_t *f = &fx_list[i];
+        json_escape(a, sizeof(a), f->label);
+        json_escape(b, sizeof(b), f->desc);
+        json_escape(hint, sizeof(hint), f->hint ? f->hint : "");
+        snprintf(buf, sizeof(buf), "%s{\"label\":\"%s\",\"o\":\"%s\",\"g\":%d,\"hint\":\"%s\",\"desc\":\"%s\",\"opts\":\"%s\"}",
+                 i ? "," : "", a, f->landscape ? "h" : "v", f->group, hint, b, f->opts ? f->opts : "");
+        emit(buf, ctx);
+    }
+    emit("]}", ctx);
+}

@@ -1,7 +1,8 @@
 """Synchronous Bluetooth link to the clock for tests and PC tools.
 
-bleak is asyncio-based and needs a running loop to deliver notifications, so the link owns an event
-loop in a background thread and exposes plain blocking methods.
+bleak is asyncio-based and needs a running loop to deliver notifications. All links share ONE event
+loop in a background thread: on Windows every client of the same address shares a single system
+connection, and a client left behind on another loop can close it under the live one.
 """
 import asyncio
 import json
@@ -13,13 +14,24 @@ from bleak import BleakClient, BleakScanner
 from . import protocol as P
 
 
+_LOOP = None
+_LOOP_LOCK = threading.Lock()
+
+
+def _shared_loop():
+    global _LOOP
+    with _LOOP_LOCK:
+        if _LOOP is None:
+            _LOOP = asyncio.new_event_loop()
+            threading.Thread(target=_LOOP.run_forever, daemon=True, name="bleak-loop").start()
+        return _LOOP
+
+
 class ClockLink:
     def __init__(self, name_prefix="C6 Clock", timeout=15.0):
         self.name_prefix = name_prefix
         self.timeout = timeout
-        self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
-        self._thread.start()
+        self._loop = _shared_loop()
         self._client = None
         self._rx = P.Reassembler()
         self.messages = queue.Queue()  # every decoded JSON message, in order
@@ -39,7 +51,7 @@ class ClockLink:
             return None
         return self._run(scan(), (timeout or self.timeout) + 10)
 
-    def connect(self, address=None, pair=True):
+    def connect(self, address=None, pair=False):
         if address is None:
             hit = self.find()
             if not hit:
@@ -53,7 +65,11 @@ class ClockLink:
             if pair:
                 await self._client.pair()
             await self._client.start_notify(P.EVT_UUID, self._on_evt)
-        self._run(go())
+        try:
+            self._run(go())
+        except BaseException:
+            self.close()  # never leave a half-open client behind
+            raise
         return self
 
     def _on_evt(self, _char, data: bytearray):
@@ -74,13 +90,17 @@ class ClockLink:
 
     def disconnect(self):
         if self._client:
-            self._run(self._client.disconnect())
+            try:
+                self._run(self._client.disconnect())
+            finally:
+                self._client = None
 
     def close(self):
+        """Disconnects; the shared loop keeps running for the next link."""
         try:
             self.disconnect()
-        finally:
-            self._loop.call_soon_threadsafe(self._loop.stop)
+        except Exception:
+            pass
 
     # ---- traffic ----
     def send(self, cmd: str, response=True):

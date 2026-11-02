@@ -126,8 +126,13 @@ pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   
 - **Ajustes:** añadir uno es una línea en `settings.c`; se guarda, se controla por comando y aparece en el estado sin tocar nada más.
 - **Esferas:** cada una se describe una sola vez en `fx_list` (`fx_common.c`): nombre, grupo, descripción, si es interactiva y sus ajustes propios. La web construye su menú a partir de `/faces`.
 
-### Bluetooth (pendiente)
+### Bluetooth
 
-El diseño ya lo prevé: un `ble.c` con un servicio GATT de dos características (una de escritura para comandos y otra de lectura/notificación con el JSON de estado) reutilizaría `control.c` y `ota.c` tal cual, incluida la actualización por Bluetooth.
+En marcha según `docs/PLAN-bluetooth.md` (fases 0–2 hechas). El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
 
-El límite es la **RAM**: la pila Bluetooth (NimBLE) necesita del orden de 50–70 KB y en marcha quedan ~33 KB libres, porque los dos framebuffers ocupan 220 KB. Para añadirlo habrá que liberar memoria, por ejemplo con un solo framebuffer (+110 KB, a cambio de algo de fluidez) o usando Bluetooth en lugar de WiFi en vez de a la vez.
+```
+python tools/ble_console.py          # comandos a mano
+python tools/fake_phone.py           # una sincronización como la hará la app
+```
+
+En el C6 el WiFi y el Bluetooth no caben a la vez en la RAM, así que cada uno tiene su modo de arranque. La app Android llegará en la fase 5.

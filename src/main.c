@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "ble.h"
 #include "board.h"
 #include "bootmode.h"
 #include "clock.h"
 #include "console.h"
 #include "driver/gpio.h"
+#include "esp_bt.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -113,7 +115,8 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
     } else {
         text_centered(fb, 116, "MODO BLUETOOTH", accent, 1);
         text_centered(fb, 152, "Abre la app del reloj", white, 1);
-        text_centered(fb, 170, "en tu movil", dim, 1);
+        text_centered(fb, 170, "en tu movil y busca:", dim, 1);
+        text_centered(fb, 192, ble_name()[0] ? ble_name() : "...", white, 2);
     }
     // Hold BOOT to switch mode; a bar fills while it is held
     const char *hint = wifi ? "Manten BOOT: modo Bluetooth" : "Manten BOOT: modo WiFi";
@@ -216,6 +219,13 @@ void app_main(void)
     }
     settings_load();
     boot_mode_t mode = boot_mode_init();
+    // Bluetooth is compiled in but only used in BLE mode: elsewhere give its static RAM (~15 KB)
+    // back to the heap. Irreversible until the next reboot, and changing mode always reboots.
+    if (mode != BOOT_BLE) {
+        unsigned before = (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+        esp_bt_mem_release(ESP_BT_MODE_BTDM);
+        ESP_LOGI(TAG, "Bluetooth memory released: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT) - before);
+    }
 
     // The screen first, so the framebuffers get the big contiguous blocks of RAM. Update mode keeps
     // one buffer to leave room for HTTPS.
@@ -243,7 +253,7 @@ void app_main(void)
         clock_start_sntp();
         weather_init();
     }
-    // BOOT_BLE: the Bluetooth transport arrives in phase 2; until then the clock runs offline
+    if (mode == BOOT_BLE) ble_start();
     tunnel_enter();  // builds its lookup tables once
     ESP_LOGI(TAG, "Free heap after start: %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 

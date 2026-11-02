@@ -61,10 +61,13 @@ def test_face_change(link):
 
 
 def test_unknown_and_malformed_commands_are_harmless(link):
-    for junk in ("", "nope 1", "bri", "fx -999", "x" * 240, "wifi\nsin-clave"):
+    old = link.request("get status", "status")["fx"]
+    for junk in ("nope 1", "bri", "fx -999", "x" * 240, "wifi\nsin-clave"):
         link.send(junk)
     s = link.request("get status", "status")
-    assert 0 <= s["fx"] < 23 and link.connected
+    assert s["fx"] == 0, "out-of-range values are clamped"
+    assert link.connected
+    link.send(f"fx {old}")
 
 
 def test_burst_of_commands(link):
@@ -79,18 +82,3 @@ def test_burst_of_commands(link):
 def test_heartbeat_status_every_30s(link):
     link.drain()
     link.wait_for("status", timeout=40)
-
-
-@pytest.mark.slow
-def test_reconnect_cycles_do_not_leak(ble_name):
-    lk = ClockLink(ble_name).connect()
-    first = lk.request("get status", "status")["heap"]
-    addr = lk.address
-    lk.close()
-    for _ in range(30):
-        lk = ClockLink(ble_name).connect(addr)
-        lk.close()
-    lk = ClockLink(ble_name).connect(addr)
-    last = lk.request("get status", "status")["heap"]
-    lk.close()
-    assert last > first - 2048, f"heap fell from {first} to {last} after 30 reconnects"

@@ -154,6 +154,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
       <div class="item"><div class="t">Info de depuración en pantalla<small>Nombre de la esfera, fps e IP</small></div><input type="checkbox" class="sw" id="ovl"></div>
       <div class="item"><div class="t">Rendimiento</div><span class="status"><b id="fps">--</b> fps · <b id="heap">--</b> KB libres</span></div>
       <div class="item"><div class="t">Firmware<small id="otainfo">--</small></div><span class="status">versión <b id="ver">--</b></span></div>
+      <div class="item"><div class="t">Modo Bluetooth<small>El reloj se reinicia y se controla desde la app del móvil, sin WiFi. Para volver aquí: mantén BOOT 2 s en la pantalla de bienvenida.</small></div><button class="btn" id="toble">Cambiar</button></div>
       <div class="stack" style="padding-top:9px;border-top:1px solid var(--line)">
         <div class="t">Actualizar por WiFi (OTA)<small style="display:block;color:var(--dim);font-size:12px">Elige <b>c6-fx-clock-ota.bin</b> de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
         <input type="file" id="otafile" accept=".bin" style="font-size:13px;color:var(--dim)">
@@ -254,6 +255,8 @@ $('otago').onclick=async()=>{const file=$('otafile').files[0];if(!file||otaBusy)
  x.send(file)};
 async function waitBack(){const t0=Date.now();await new Promise(r=>setTimeout(r,4000));
  for(;;){try{const s=await(await fetch('/status',{cache:'no-store'})).json();$('otast').textContent=`Listo: versión ${s.ver} funcionando`;otaBusy=false;break}catch(e){if(Date.now()-t0>120000){$('otast').textContent='El reloj tarda en volver; recarga la página en un momento';otaBusy=false;break}await new Promise(r=>setTimeout(r,2000))}}}
+
+$('toble').onclick=()=>{if(confirm('El reloj se reiniciará en modo Bluetooth y esta página dejará de responder.\n\nPara volver al modo WiFi: mantén pulsado BOOT 2 s mientras se ve la pantalla de bienvenida.\n\n¿Cambiar?'))send('mode ble')};
 
 loadFaces();conn();poll();setInterval(poll,1000);
 </script>

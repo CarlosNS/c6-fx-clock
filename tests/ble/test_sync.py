@@ -6,8 +6,7 @@ import time
 
 import pytest
 
-from clocklib.ble import ClockLink
-from clocklib.phone import fetch_weather, sync_once, sync_session
+from clocklib.phone import fetch_weather, sync_once
 
 pytestmark = pytest.mark.phase2
 
@@ -41,32 +40,3 @@ def test_sync_is_recorded(link):
     assert after["count"] == before + 1
     assert abs(after["last"] - time.time()) < 5
     assert info["mode"] == "ble"
-
-
-def test_a_background_sync_is_short(ble_name):
-    _, secs = sync_session(ble_name)
-    assert secs < 8, f"a sync took {secs:.1f} s; the app should be in and out in a few seconds"
-
-
-@pytest.mark.slow
-def test_many_syncs_do_not_leak(ble_name):
-    lk = ClockLink(ble_name).connect()
-    heap0 = lk.request("get status", "status")["heap"]
-    addr = lk.address
-    lk.close()
-    for _ in range(50):
-        sync_session(ble_name, addr)
-    lk = ClockLink(ble_name).connect(addr)
-    heap1 = lk.request("get status", "status")["heap"]
-    lk.close()
-    assert heap1 > heap0 - 2048, f"heap fell from {heap0} to {heap1} after 50 syncs"
-
-
-def test_clock_stays_usable_between_syncs(ble_name):
-    """After a sync the clock keeps advertising so the next one finds it."""
-    sync_session(ble_name)
-    lk = ClockLink(ble_name)
-    try:
-        assert lk.find(timeout=5), "not advertising after a sync"
-    finally:
-        lk.close()

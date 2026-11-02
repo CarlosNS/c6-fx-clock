@@ -216,6 +216,19 @@ Tests: `tests/firmware/test_boot_modes.py` · `tests/wifi/` sigue en verde en mo
 
 Tests: `tests/ble/test_transport.py` (anuncio, conexión, MTU, info, faces = 23, ajustes y notificaciones, comandos inválidos, ráfagas, fugas de memoria) · `tests/ble/test_sync.py` (hora y tiempo enviados por "el móvil", `sync done`, 50 sincronizaciones seguidas sin fugas).
 
+**Resultado (2026-11-02): terminada.** 17 tests de Bluetooth en verde (`pytest -m phase2`), con las pruebas largas incluidas.
+
+- `ble.c`: NimBLE periférico, servicio del reloj (CMD, EVT troceado) + Device Information con la versión, `get info/status/faces`, `sync done`, envío del estado al cambiar un ajuste y cada 30 s. Un hilo propio procesa los comandos, así las respuestas grandes (esferas, ~6 KB) no bloquean la radio.
+- Anuncio rápido (100 ms) durante 30 s tras arrancar o desconectar y lento (1 s) después; el UUID del servicio va en el anuncio y el nombre en la respuesta al escaneo.
+- **Memoria:** en el C6 el controlador Bluetooth deja ~29 KB de *código* en RAM en todos los modos (el código y los datos comparten la SRAM), y el modo WiFi se quedaba con 5,6 KB. Solución: `BT_CTRL_RUN_IN_FLASH_ONLY` (el controlador corre desde flash; suficiente para comandos cortos), `esp_bt_mem_release` en los modos sin Bluetooth y 6 búferes fijos de recepción WiFi en vez de 10. Resultado: **35,8 KB libres en modo WiFi** (igual que antes) y **64 KB en modo BLE**.
+- Medidas: 50 sincronizaciones seguidas y 30 ciclos de reconexión sin perder memoria; una sincronización con la dirección ya conocida (como hará la app) tarda unos pocos segundos.
+- Herramientas: `tools/ble_console.py` (comandos a mano) y `tools/fake_phone.py` (sincronizaciones como la app, una o en bucle).
+- Web en modo WiFi: botón *Avanzado → Modo Bluetooth*.
+- El modo por defecto sigue siendo WIFI hasta que exista la app (fase 5): sin ella, el modo BLE solo se puede controlar desde el PC.
+- Lecciones de los tests: en Windows todas las conexiones a una misma dirección comparten una sesión del sistema, así que la librería de tests usa un único bucle de eventos y nunca deja clientes a medias; y los tests que abren sus propias conexiones van en un módulo aparte, porque el reloj acepta una sola conexión.
+- **Bajo carga** (ráfaga de 100 comandos), el log serie mostró dos fallos reales del firmware: la cola de comandos se llenaba y la pila Bluetooth esperaba 20 ms por cada comando que no cabía (más de un segundo bloqueada, suficiente para que Windows diera el enlace por perdido), y se enviaba el estado completo tras cada cambio hasta agotar los búferes. Ahora la pila nunca espera (cola de 16; lo que no cabe se descarta y se registra) y los cambios se anuncian como mucho cada 300 ms con los últimos valores, que es lo que necesita un deslizador de la app.
+- Los tests de Bluetooth guardan el log serie del reloj en `tests/.ble_serial.log` para leer cada fallo junto a lo que hacía el reloj.
+
 ### Fase 3 — Seguridad (1 día)
 
 - Clave de 6 dígitos en pantalla, enlace cifrado obligatorio, bonding, `unpair`, BOOT 10 s.

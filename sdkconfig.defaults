@@ -12,8 +12,30 @@ CONFIG_ESP_WIFI_RX_IRAM_OPT=n
 CONFIG_ESP_WIFI_SLP_IRAM_OPT=n
 CONFIG_LWIP_IRAM_OPTIMIZATION=n
 CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
+# Fewer fixed Wi-Fi receive buffers (10 -> 6, 1.6 KB each): commands and OTA uploads don't need
+# more, and it gives back the heap the Bluetooth controller takes in every mode
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+CONFIG_ESP_WIFI_RX_BA_WIN=6
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 # OTA: a freshly updated firmware must confirm itself (ota_confirm_app) or the bootloader rolls back
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Bluetooth (ble.c): NimBLE peripheral only, one connection. Only started in the BLE boot mode;
+# the other modes release its memory (esp_bt_mem_release).
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_MAX_BONDS=3
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
+# On the C6 code and data share the same SRAM: the BLE controller keeps ~29 KB of code in RAM in
+# every mode, which leaves the Wi-Fi mode without heap. Run it from flash instead (slower radio
+# timing, fine for short commands and status messages).
+CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY=y
+# NimBLE logs two lines per notification at INFO: keep the serial console readable
+CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y

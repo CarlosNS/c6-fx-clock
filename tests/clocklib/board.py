@@ -45,6 +45,7 @@ class SerialSession:
         self.port = port
         self.text = ""
         self._s = None
+        self._closed = False
         self._open()
 
     def _open(self):
@@ -61,6 +62,8 @@ class SerialSession:
                 time.sleep(0.5)
 
     def _read(self):
+        if self._closed:
+            return
         try:
             data = self._s.read(4096)
         except self._serial.SerialException:
@@ -69,7 +72,8 @@ class SerialSession:
             except Exception:
                 pass
             time.sleep(1)
-            self._open()
+            if not self._closed:  # never reopen a session that was closed meanwhile
+                self._open()
             return
         self.text += data.decode("utf-8", "replace")
 
@@ -93,7 +97,14 @@ class SerialSession:
         self._s.write((line + "\n").encode("utf-8"))
         self._s.flush()
 
+    def reset(self):
+        """Closes and reopens the port, which resets the board (like a power cut)."""
+        if self._s:
+            self._s.close()
+        self._open()
+
     def close(self):
+        self._closed = True
         if self._s:
             self._s.close()
 
