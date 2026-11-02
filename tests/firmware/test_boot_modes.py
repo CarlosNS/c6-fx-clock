@@ -53,7 +53,8 @@ def test_ble_mode_starts_no_wifi(console):
     assert log.startswith("Boot mode: ble")
     assert "double buffering" in log
     assert "wifi:mode" not in log and "httpd" not in log and "AP '" not in log
-    assert free_heap(log) >= 60000, "without Wi-Fi there should be plenty of RAM for Bluetooth"
+    # With Bluetooth running (59.5 KB measured in phase 4); the plan's minimum is 30 KB
+    assert free_heap(log) >= 45000, "too little RAM left in BLE mode"
     assert not PANIC.search(log)
 
 

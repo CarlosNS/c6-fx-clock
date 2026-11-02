@@ -15,6 +15,8 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
+#include "lcd.h"
+#include "mbedtls/base64.h"
 #include "host/ble_store.h"
 #include "host/util/util.h"
 #include "nimble/nimble_port.h"
@@ -159,6 +161,38 @@ static void send_ack(const char *cmd)
     send_str(buf);
 }
 
+// Screenshot (debugging without Wi-Fi): {"t":"shot",w,h,fmt} then one {"t":"shotdata","y","d"}
+// per row (RGB565 little-endian, base64) and {"t":"shotend"}. Rendering is paused meanwhile so the
+// rows all come from the same frame.
+static void send_shot(void)
+{
+    static uint16_t row[LAND_W];
+    static char b64[LAND_W * 2 * 4 / 3 + 8], msg[LAND_W * 2 * 4 / 3 + 64];
+    app_wake();                       // a sleeping screen renders nothing
+    vTaskDelay(pdMS_TO_TICKS(400));   // let a few frames through
+    g_app.freeze_req = true;
+    for (int i = 0; i < 100 && !g_app.frozen; i++) vTaskDelay(pdMS_TO_TICKS(5));
+    int w = g_lcd_w, h = g_lcd_h;
+    const uint16_t *fb = lcd_last_frame();
+    snprintf(msg, sizeof(msg), "{\"t\":\"shot\",\"w\":%d,\"h\":%d,\"fmt\":\"rgb565le\"}", w, h);
+    send_str(msg);
+    int64_t t0 = esp_timer_get_time();
+    for (int y = 0; y < h && ble_connected(); y++) {
+        for (int x = 0; x < w; x++) {
+            uint16_t p = fb[y * w + x];
+            row[x] = (uint16_t)((p >> 8) | (p << 8));  // the framebuffer is in the panel's byte order
+        }
+        size_t n = 0;
+        mbedtls_base64_encode((unsigned char *)b64, sizeof(b64), &n, (const unsigned char *)row, w * 2);
+        b64[n] = 0;
+        snprintf(msg, sizeof(msg), "{\"t\":\"shotdata\",\"y\":%d,\"d\":\"%s\"}", y, b64);
+        send_str(msg);
+    }
+    send_str("{\"t\":\"shotend\"}");
+    g_app.freeze_req = false;
+    ESP_LOGI(TAG, "Screenshot %dx%d sent in %lld ms", w, h, (esp_timer_get_time() - t0) / 1000);
+}
+
 // ---------------------------------------------------------------- worker
 
 // Settings fingerprint, to notice changes made from anywhere (button, Bluetooth, console)
@@ -193,6 +227,8 @@ static void worker(void *arg)
                 s_sync_last = tv.tv_sec;
                 s_sync_count++;
                 send_ack("sync");
+            } else if (strcmp(c, "shot") == 0) {
+                send_shot();
             } else if (strcmp(c, "unpair") == 0) {
                 send_ack("unpair");
                 vTaskDelay(pdMS_TO_TICKS(200));  // let the ack out: forgetting drops the link

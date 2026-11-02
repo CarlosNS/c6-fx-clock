@@ -250,6 +250,11 @@ Tests: `tests/ble/test_security.py` · prueba manual con el móvil (`tests/MANUA
 
 Tests: `tests/ble/test_screenshot.py`.
 
+**Resultado (2026-11-03): terminada.** Una captura tarda **5–6 s** (unos 110 KB en ~600 notificaciones), en vertical y en horizontal.
+
+- `shot`: congela el render (como `/screenshot` en WiFi), envía cabecera, una fila por mensaje (RGB565 en base64) y fin. Si el enlace cae a mitad, se corta y el reloj sigue animando.
+- `tools/ble_shot.py`: captura una o varias esferas a PNG (`--fx 22 7 20 --scale 2`); si Windows no está emparejado, empareja con la clave del log serie (`--serial COM5`) o pidiéndola por teclado.
+
 ### Fase 5 — App Android (5–7 días, en tres partes)
 
 Requisitos previos (con tu permiso): SDK de Android en línea de comandos, JDK 21 (el JDK 25 instalado es demasiado nuevo para las herramientas de Android) y GitHub CLI. Para probar en el móvil: activar la depuración USB y conectarlo al PC.

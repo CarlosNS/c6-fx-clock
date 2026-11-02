@@ -128,11 +128,12 @@ pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   
 
 ### Bluetooth
 
-En marcha según `docs/PLAN-bluetooth.md` (fases 0–2 hechas). El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
+En marcha según `docs/PLAN-bluetooth.md` (fases 0–4 hechas). Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj. El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
 
 ```
 python tools/ble_console.py          # comandos a mano
 python tools/fake_phone.py           # una sincronización como la hará la app
+python tools/ble_shot.py --fx 22     # captura de pantalla por Bluetooth (PNG)
 ```
 
 En el C6 el WiFi y el Bluetooth no caben a la vez en la RAM, así que cada uno tiene su modo de arranque. La app Android llegará en la fase 5.
