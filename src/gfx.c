@@ -276,20 +276,41 @@ void gfx_glow(uint16_t *fb, int cx, int cy, int r, uint16_t color, int max_alpha
 static void glyph_layer(uint16_t *fb, const font_t *f, const font_glyph_t *g, int gx, int gy, bool fill_layer,
                         const uint16_t *row_col, uint16_t col, int alpha_scale)
 {
-    for (int row = 0; row < g->h; row++) {
-        int py = gy + row;
-        if ((unsigned)py >= (unsigned)H) continue;
+    // Clip once per glyph instead of per pixel
+    int c0 = gx < 0 ? -gx : 0, c1 = gx + g->w > W ? W - gx : g->w;
+    int r0 = gy < 0 ? -gy : 0, r1 = gy + g->h > H ? H - gy : g->h;
+    for (int row = r0; row < r1; row++) {
         const uint8_t *src = g->px + row * g->w;
-        uint16_t *dst = fb + py * W;
+        uint16_t *dst = fb + (gy + row) * W + gx;
         uint16_t c = row_col ? row_col[row] : col;
-        for (int cx = 0; cx < g->w; cx++) {
+        for (int cx = c0; cx < c1; cx++) {
             uint8_t b = src[cx];
             int a = fill_layer ? b >> 4 : b & 15;
             if (!a) continue;
-            int px = gx + cx;
-            if ((unsigned)px >= (unsigned)W) continue;
             a = a * alpha_scale >> 4;
-            dst[px] = a >= 15 ? c : gfx_blend(dst[px], c, a);
+            dst[cx] = a >= 15 ? c : gfx_blend(dst[cx], c, a);
+        }
+    }
+}
+
+// Outline and gradient fill of one glyph in a single pass (each byte holds both coverages)
+static void glyph_outline_fill(uint16_t *fb, const font_glyph_t *g, int gx, int gy, const uint16_t *row_col,
+                               uint16_t outline)
+{
+    int c0 = gx < 0 ? -gx : 0, c1 = gx + g->w > W ? W - gx : g->w;
+    int r0 = gy < 0 ? -gy : 0, r1 = gy + g->h > H ? H - gy : g->h;
+    for (int row = r0; row < r1; row++) {
+        const uint8_t *src = g->px + row * g->w;
+        uint16_t *dst = fb + (gy + row) * W + gx;
+        uint16_t c = row_col[row];
+        for (int cx = c0; cx < c1; cx++) {
+            uint8_t b = src[cx];
+            if (!b) continue;
+            int ao = b & 15, af = b >> 4;
+            uint16_t d = dst[cx];
+            if (ao) d = ao >= 15 ? outline : gfx_blend(d, outline, ao);
+            if (af) d = af >= 15 ? c : gfx_blend(d, c, af);
+            dst[cx] = d;
         }
     }
 }
@@ -303,7 +324,8 @@ void font_draw_grad(uint16_t *fb, const font_t *f, int x, int y, const char *s, 
         int k = (r - f->pad) * 16 / f->h;
         rows[r] = gfx_blend(top, bottom, k < 0 ? 0 : k > 16 ? 16 : k);
     }
-    for (int layer = 0; layer < 3; layer++) {
+    // Two passes: the shadow under every glyph first, then outline + fill glyph by glyph
+    for (int layer = 0; layer < 2; layer++) {
         if (layer == 0 && shadow_off <= 0) continue;
         int cx = x;
         for (const char *p = s; *p; p++) {
@@ -315,8 +337,7 @@ void font_draw_grad(uint16_t *fb, const font_t *f, int x, int y, const char *s, 
             const font_glyph_t *g = &f->glyphs[gi];
             int gx = cx - f->pad, gy = y - f->pad;
             if (layer == 0) glyph_layer(fb, f, g, gx + shadow_off, gy + shadow_off, false, NULL, rgb565(0, 0, 0), 9);
-            else if (layer == 1) glyph_layer(fb, f, g, gx, gy, false, NULL, outline, 16);
-            else glyph_layer(fb, f, g, gx, gy, true, rows, 0, 16);
+            else glyph_outline_fill(fb, g, gx, gy, rows, outline);
             cx += g->adv + spacing;
         }
     }

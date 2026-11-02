@@ -1,4 +1,5 @@
 #include "lcd.h"
+#include "board.h"
 #include <assert.h>
 #include <string.h>
 #include "driver/gpio.h"
@@ -12,16 +13,16 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#define PIN_MOSI   6
-#define PIN_SCLK   7
-#define PIN_CS     14
-#define PIN_DC     15
-#define PIN_RST    21
-#define PIN_BL     22
-#define PIN_SD_CS  4   // SD card shares the bus: keep it deselected
+#define PIN_MOSI   BOARD_LCD_MOSI
+#define PIN_SCLK   BOARD_LCD_SCLK
+#define PIN_CS     BOARD_LCD_CS
+#define PIN_DC     BOARD_LCD_DC
+#define PIN_RST    BOARD_LCD_RST
+#define PIN_BL     BOARD_LCD_BL
+#define PIN_SD_CS  BOARD_SD_CS
 #define LCD_HOST   SPI2_HOST
 #define LCD_PCLK   (40 * 1000 * 1000)
-#define LCD_X_GAP  34  // the 172 px panel sits in the middle of the 240 px controller RAM
+#define LCD_X_GAP  BOARD_LCD_X_GAP
 #define FB_BYTES   (LCD_W * LCD_H * sizeof(uint16_t))
 
 static const char *TAG = "lcd";
@@ -67,7 +68,7 @@ void lcd_set_brightness(int percent)
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }
 
-void lcd_init(void)
+void lcd_init(int buffers)
 {
     gpio_config_t sd = {.pin_bit_mask = 1ULL << PIN_SD_CS, .mode = GPIO_MODE_OUTPUT};
     gpio_config(&sd);
@@ -113,8 +114,9 @@ void lcd_init(void)
     esp_lcd_panel_set_gap(s_panel, LCD_X_GAP, 0);
     esp_lcd_panel_disp_on_off(s_panel, true);
 
-    // Two framebuffers let the CPU draw the next frame while DMA sends the current one
-    for (int i = 0; i < 2; i++) {
+    // Two framebuffers let the CPU draw the next frame while DMA sends the current one; with one,
+    // drawing waits for the previous transfer (slower, but frees 110 KB)
+    for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) {
         s_buf[i] = heap_caps_malloc(FB_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
         if (s_buf[i]) memset(s_buf[i], 0, FB_BYTES);
     }

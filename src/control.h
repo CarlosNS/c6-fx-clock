@@ -13,6 +13,7 @@
 //   wifi\n<ssid>\n<password> join a home network
 //   drag <x> <y> <dx> <dy> / up                          touch pad
 //   dbgtime <h> <m>          preview another time of day (-1 = real time)
+//   mode ble|wifi|update     reboot into that mode (bootmode.h)
 void app_command(const char *cmd);
 
 // Full status as a JSON object; returns its length

@@ -1,7 +1,8 @@
 #include "led.h"
+#include "board.h"
 #include "driver/rmt_tx.h"
 
-#define PIN_LED    8
+#define PIN_LED    BOARD_PIN_LED
 #define RMT_RES_HZ (10 * 1000 * 1000)  // 0.1 us per tick
 
 static rmt_channel_handle_t s_chan;

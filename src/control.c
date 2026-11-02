@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "bootmode.h"
 #include "clock.h"
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
@@ -74,7 +75,12 @@ void app_command(const char *cmd)
         settings_set("nbr", d);
         return;
     }
-    char key[16];
+    char key[16], word[16];
+    if (sscanf(cmd, "mode %15s", word) == 1) {  // reboots into another mode
+        int m = boot_mode_from_name(word);
+        if (m >= 0) boot_mode_switch((boot_mode_t)m);
+        return;
+    }
     if (sscanf(cmd, "%15s %d", key, &a) == 2) settings_set(key, a);
 }
 
@@ -111,11 +117,11 @@ size_t app_status_json(char *buf, size_t size)
                      ",\"fps\":%d,\"rus\":%d,\"rmax\":%d,\"heap\":%u,\"ver\":\"%s\","
                      "\"ssid\":\"%s\",\"sip\":\"%s\",\"tv\":%d,\"time\":\"%02d:%02d:%02d\","
                      "\"wloc\":\"%s\",\"wlat\":%.4f,\"wlon\":%.4f,\"wv\":%d,\"wt\":%d,\"wc\":%d,\"wage\":%d,\"wweb\":%d,"
-                     "\"ota\":%d,\"otamax\":%u,\"part\":\"%s\"}",
+                     "\"ota\":%d,\"otamax\":%u,\"part\":\"%s\",\"mode\":\"%s\"}",
                      g_app.fps, g_app.render_us, g_app.render_max_us, (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
                      esp_app_get_description()->version, ssid, g_app.sta_ip, g_now.valid, g_now.h, g_now.m, g_now.s, loc,
                      g_wx_loc.lat, g_wx_loc.lon, g_wx.valid, g_wx.temp10, g_wx.code, weather_age_s(), g_wx.from_web,
-                     ota_progress(), (unsigned)ota_max_size(), ota_running_label());
+                     ota_progress(), (unsigned)ota_max_size(), ota_running_label(), boot_mode_name(boot_mode()));
     if (n > 0) len += n;
     return len < size ? len : size - 1;
 }

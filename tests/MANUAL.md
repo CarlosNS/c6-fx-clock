@@ -2,6 +2,12 @@
 
 Lo que no se puede automatizar desde el PC. Marca cada punto al hacerlo.
 
+## Fase 1 — Botón de cambio de modo
+
+- [ ] Encender el reloj y, mientras se ve la pantalla de bienvenida, mantener BOOT: se llena una barra y a los 2 s se reinicia en el otro modo (WiFi ↔ Bluetooth).
+- [ ] Soltar BOOT antes de 2 s: no cambia nada.
+- [ ] La pantalla de bienvenida indica el modo actual ("MODO WIFI" o "MODO BLUETOOTH").
+
 ## Fase 3 — Emparejamiento real
 
 - [ ] Abrir la app y pulsar *Conectar*: el reloj enciende la pantalla y muestra una clave de 6 dígitos.

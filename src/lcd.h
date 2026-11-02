@@ -19,7 +19,8 @@ static inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b)
     return (uint16_t)((c >> 8) | (c << 8));
 }
 
-void lcd_init(void);
+// buffers: 2 = double buffering (normal), 1 = single (frees 110 KB of RAM)
+void lcd_init(int buffers);
 // Framebuffer to draw the next frame into (changes after every lcd_flush when double buffered)
 uint16_t *lcd_fb(void);
 // Sends the current framebuffer to the panel and switches to the other buffer

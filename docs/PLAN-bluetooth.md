@@ -14,7 +14,7 @@ Hardware de desarrollo: Waveshare ESP32-C6-LCD-1.47. Hardware final: Waveshare E
 |---|---|---|---|
 | D1 | Móvil | **Android** | App Android |
 | D2 | Publicación de actualizaciones | **GitHub** | Repositorio + GitHub Pages para el manifiesto y el firmware; las APK de la app, en GitHub Releases |
-| D3 | Modo WiFi (la web actual) | **Se mantiene** como respaldo | Modo WIFI accesible con BOOT al encender o desde la app |
+| D3 | Modo WiFi (la web actual) | **Se mantiene** como respaldo | Modo WIFI accesible manteniendo BOOT en la pantalla de bienvenida o desde la app |
 | D4 | Tiempo con la app cerrada | **Sincronización periódica** con la app | Una web no puede ejecutarse en segundo plano: hace falta una **app Android nativa** (apartado 3.5) |
 
 Datos para las fases siguientes:
@@ -45,7 +45,7 @@ El paso de un modo a otro es un **reinicio controlado** (marca en NVS + `esp_res
 
 En el reloj final (8 MB de PSRAM) caben los dos a la vez. Por eso los modos dependen de la placa (`board.h`) y no se reparten por el código.
 
-**Recuperación:** mantener pulsado BOOT al encender → modo WIFI (por si se pierde el móvil o falla el Bluetooth).
+**Recuperación:** mantener pulsado BOOT 2 s mientras se ve la pantalla de bienvenida → cambia entre modo WIFI y BLE (por si se pierde el móvil o falla el Bluetooth). No vale "BOOT al encender": en el C6 ese botón es también el pin que, pulsado al arrancar, pone el chip en modo de grabación.
 
 ---
 
@@ -194,9 +194,19 @@ Hallazgos para las fases siguientes:
 - `board.h`: lo que depende de la placa (radios exclusivas o no, número de framebuffers, pines). Es lo que cambiará con el reloj final.
 - `lcd_init(n_buffers)` para poder usar un solo framebuffer.
 - Servicios condicionados: servidor web, SNTP y descarga del tiempo solo en modo WIFI.
-- BOOT pulsado al encender → modo WIFI.
+- BOOT mantenido 2 s en la pantalla de bienvenida → cambia entre WIFI y BLE.
 
 Tests: `tests/firmware/test_boot_modes.py` · `tests/wifi/` sigue en verde en modo WIFI.
+
+**Resultado (2026-11-02): terminada.** 29 tests en verde (`pytest -m "phase1 or now"`).
+
+- `bootmode.c`: modos `ble` / `wifi` / `update` en NVS y comando `mode <nombre>`. El modo UPDATE es de un solo uso: antes de hacer nada deja guardado el modo de vuelta, así que un cuelgue a mitad de una actualización nunca deja el reloj atrapado en él (hay un test que lo provoca).
+- `board.h`: pines y capacidades de la placa (radios exclusivas, número de framebuffers). `lcd_init(n)` admite 1 o 2 búferes.
+- `console.c`: **consola por el puerto serie** con los mismos comandos que la web. Los tests y yo controlamos el reloj en cualquier modo, incluso sin radios. Primero se hizo con el driver USB, pero costaba 8 KB y dejaba la web con 23 KB y fallando; ahora el bucle principal lee el puerto sin driver y no cuesta memoria.
+- Memoria libre al arrancar: **35 KB en modo WIFI** (igual que la 2.0.0) y **~100 KB en modo BLE** (todavía sin Bluetooth).
+- Modo BLE por defecto: sigue siendo WIFI hasta que exista el transporte Bluetooth (fase 2), para no dejar el reloj sin control.
+- **RPG arreglado:** los tests honestos mostraron que bajaba a 24 fps (40 ms) durante el hechizo de cada minuto y rondaba los 31 ms el resto. Medido por partes con la consola: la hora caligráfica costaba 5,6 ms y el panel del grupo 2,1 ms. La fuente con degradado ahora se dibuja en 2 pasadas en vez de 3 (también acelera Cuento) y el panel, que está fuera de la escena 3D, se pinta opaco (mismo aspecto). Ahora: 22 ms de base, 31 ms en el hechizo, 30 fps todo el minuto.
+- El test de 30 fps ahora exige 30 fps sostenidos (media < 33 ms); los fotogramas sueltos lentos solo se avisan si pasan de 45 ms.
 
 ### Fase 2 — Transporte Bluetooth (2 días)
 

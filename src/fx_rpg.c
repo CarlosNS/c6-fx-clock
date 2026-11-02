@@ -270,13 +270,18 @@ static const uint8_t shard_t[8][3] = {{0, 3, 2}, {0, 4, 3}, {0, 5, 4}, {0, 2, 5}
 static void window(uint16_t *fb, int x, int y, int w, int h)
 {
     uint16_t tint = rgb565(16, 34, 96);
+    // Below the 3D scene nothing is redrawn, so blending there would only converge to the tint
+    // over a few frames: paint it solid instead (same look, no per-pixel blend)
+    bool opaque = y >= SCENE_H;
     for (int yy = 0; yy < h; yy++) {
         int py = y + yy;
         int inset = (yy == 0 || yy == h - 1) ? 2 : (yy == 1 || yy == h - 2) ? 1 : 0;
         int a = 10 + yy * 3 / h;
-        for (int xx = inset; xx < w - inset; xx++) {
-            uint16_t *p = fb + py * W + x + xx;
-            *p = gfx_blend(*p, tint, a);
+        uint16_t *p = fb + py * W + x;
+        if (opaque) {
+            for (int xx = inset; xx < w - inset; xx++) p[xx] = tint;
+        } else {
+            for (int xx = inset; xx < w - inset; xx++) p[xx] = gfx_blend(p[xx], tint, a);
         }
     }
     uint16_t hi = rgb565(210, 225, 255), lo = rgb565(90, 110, 170);

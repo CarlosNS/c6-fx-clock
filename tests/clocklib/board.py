@@ -34,6 +34,70 @@ def post(host, path, data: bytes, timeout=120):
         return e.code, e.read().decode("utf-8", "replace")
 
 
+class SerialSession:
+    """Serial console of the clock: reads the log and sends commands (console.c). Opening the port
+    resets the board; when the firmware itself restarts (mode switch) the USB port drops for a
+    moment and the session reopens it, which keeps the log going."""
+
+    def __init__(self, port):
+        import serial
+        self._serial = serial
+        self.port = port
+        self.text = ""
+        self._s = None
+        self._open()
+
+    def _open(self):
+        end = time.monotonic() + 15
+        while True:
+            try:
+                self._s = self._serial.Serial(self.port, 115200, timeout=0.2)
+                self._s.dtr = False
+                self._s.rts = False
+                return
+            except self._serial.SerialException:
+                if time.monotonic() > end:
+                    raise
+                time.sleep(0.5)
+
+    def _read(self):
+        try:
+            data = self._s.read(4096)
+        except self._serial.SerialException:
+            try:
+                self._s.close()
+            except Exception:
+                pass
+            time.sleep(1)
+            self._open()
+            return
+        self.text += data.decode("utf-8", "replace")
+
+    def read_until(self, pattern, timeout=30, since=0):
+        """Waits for a regex in the log after position `since`; returns the match."""
+        import re
+        rx = re.compile(pattern)
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            m = rx.search(self.text, since)
+            if m:
+                return m
+            self._read()
+        raise AssertionError(f"'{pattern}' not seen in the serial log within {timeout} s")
+
+    def mark(self):
+        """Position in the log, to search only what comes after it."""
+        return len(self.text)
+
+    def send(self, line):
+        self._s.write((line + "\n").encode("utf-8"))
+        self._s.flush()
+
+    def close(self):
+        if self._s:
+            self._s.close()
+
+
 def boot_log(port, secs=25):
     """Resets the board (by opening the port) and returns the boot log as text."""
     import serial

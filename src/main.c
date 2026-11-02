@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "board.h"
+#include "bootmode.h"
 #include "clock.h"
+#include "console.h"
 #include "driver/gpio.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -16,6 +19,7 @@
 #include "nvs_flash.h"
 #include "ota.h"
 #include "settings.h"
+#include "update.h"
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
@@ -23,7 +27,7 @@
 #define AUTO_CYCLE_MS 30000
 #define SPLASH_MS 5000
 #define FRAME_US 33333        // 30 fps cap: keeps the chip cool and the power draw low
-#define PIN_BUTTON 9          // BOOT button, active low
+#define MODE_HOLD_MS 2000     // holding BOOT this long on the splash switches Wi-Fi <-> Bluetooth mode
 #define LONG_PRESS_MS 800
 #define TOAST_MS 1500
 #define SAVE_DELAY_MS 3000
@@ -81,7 +85,8 @@ static void text_centered(uint16_t *fb, int y, const char *s, uint16_t color, in
     gfx_text(fb, (g_lcd_w - gfx_text_width(s, scale)) / 2, y, s, color, scale);
 }
 
-static void draw_splash(uint16_t *fb, uint32_t t)
+// hold: 0..1000 progress of a BOOT press that switches the mode
+static void draw_splash(uint16_t *fb, uint32_t t, int hold)
 {
     for (int y = 0; y < LCD_H; y++) {
         uint16_t c = hsv565((uint8_t)(170 + y / 6 + t / 30), 200, 40 + y / 8);
@@ -91,18 +96,32 @@ static void draw_splash(uint16_t *fb, uint32_t t)
     uint16_t accent = hsv565((uint8_t)(t / 8), 160, 255);
     text_centered(fb, 40, "ESP32-C6", accent, 3);
     text_centered(fb, 72, "FX CLOCK", white, 3);
-    text_centered(fb, 130, "Conecta tu movil a:", dim, 1);
-    text_centered(fb, 146, AP_SSID, white, 2);
-    text_centered(fb, 168, "clave: " AP_PASS, dim, 1);
-    text_centered(fb, 190, "y abre", dim, 1);
-    text_centered(fb, 204, g_app.ap_ip, white, 2);
-    if (g_app.sta_ip[0]) {
-        text_centered(fb, 245, "o en tu red WiFi:", dim, 1);
-        text_centered(fb, 261, g_app.sta_ip, white, 2);
-    } else if (g_app.sta_ssid[0]) {
-        text_centered(fb, 245, "conectando a tu WiFi...", dim, 1);
+    bool wifi = boot_mode() == BOOT_WIFI;
+    if (wifi) {
+        text_centered(fb, 116, "MODO WIFI", accent, 1);
+        text_centered(fb, 136, "Conecta tu movil a:", dim, 1);
+        text_centered(fb, 152, AP_SSID, white, 2);
+        text_centered(fb, 174, "clave: " AP_PASS, dim, 1);
+        text_centered(fb, 194, "y abre", dim, 1);
+        text_centered(fb, 208, g_app.ap_ip, white, 2);
+        if (g_app.sta_ip[0]) {
+            text_centered(fb, 238, "o en tu red WiFi:", dim, 1);
+            text_centered(fb, 254, g_app.sta_ip, white, 2);
+        } else if (g_app.sta_ssid[0]) {
+            text_centered(fb, 238, "conectando a tu WiFi...", dim, 1);
+        }
+    } else {
+        text_centered(fb, 116, "MODO BLUETOOTH", accent, 1);
+        text_centered(fb, 152, "Abre la app del reloj", white, 1);
+        text_centered(fb, 170, "en tu movil", dim, 1);
     }
-    text_centered(fb, 296, g_now.valid ? "hora sincronizada" : "esperando la hora...", dim, 1);
+    // Hold BOOT to switch mode; a bar fills while it is held
+    const char *hint = wifi ? "Manten BOOT: modo Bluetooth" : "Manten BOOT: modo WiFi";
+    text_centered(fb, 288, hint, dim, 1);
+    if (hold > 0) {
+        gfx_fill_rect(fb, 20, 302, LCD_W - 40, 4, rgb565(40, 46, 70));
+        gfx_fill_rect(fb, 20, 302, (LCD_W - 40) * hold / 1000, 4, accent);
+    }
 }
 
 static void draw_overlay(uint16_t *fb, int fx)
@@ -166,7 +185,7 @@ static void poll_button(uint32_t now)
     static bool down;
     static bool long_fired;
     static uint32_t since;
-    bool pressed = gpio_get_level(PIN_BUTTON) == 0;
+    bool pressed = gpio_get_level(BOARD_PIN_BUTTON) == 0;
     if (pressed && !down) {
         down = true;
         long_fired = !screen_awake(now);  // a waking press does nothing else
@@ -196,30 +215,50 @@ void app_main(void)
         nvs_flash_init();
     }
     settings_load();
+    boot_mode_t mode = boot_mode_init();
 
-    lcd_init();  // first, so the framebuffers get the big contiguous blocks of RAM
+    // The screen first, so the framebuffers get the big contiguous blocks of RAM. Update mode keeps
+    // one buffer to leave room for HTTPS.
+    lcd_init(mode == BOOT_UPDATE ? 1 : BOARD_FB_COUNT);
     fx_common_init();
     clock_init();
     led_init();
-    gpio_config_t btn = {.pin_bit_mask = 1ULL << PIN_BUTTON, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
+    gpio_config_t btn = {.pin_bit_mask = 1ULL << BOARD_PIN_BUTTON, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
+    console_start();
+
+    if (mode == BOOT_UPDATE) {
+        lcd_set_brightness(g_app.brightness);
+        update_run();  // does not return
+    }
 
     strcpy(g_app.ap_ip, "192.168.4.1");
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot
-    draw_splash(lcd_fb(), 0);
+    draw_splash(lcd_fb(), 0, 0);
     lcd_flush();
     lcd_set_brightness(g_app.brightness);
 
-    web_start();
-    clock_start_sntp();
-    weather_init();
+    if (mode == BOOT_WIFI) {
+        web_start();
+        clock_start_sntp();
+        weather_init();
+    }
+    // BOOT_BLE: the Bluetooth transport arrives in phase 2; until then the clock runs offline
     tunnel_enter();  // builds its lookup tables once
-    ESP_LOGI(TAG, "Free heap after Wi-Fi: %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+    ESP_LOGI(TAG, "Free heap after start: %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
-    uint32_t start = now_ms();
-    while (now_ms() - start < SPLASH_MS) {
+    // Splash; holding BOOT through it switches between the Wi-Fi and Bluetooth modes
+    uint32_t start = now_ms(), held_since = 0;
+    while (now_ms() - start < SPLASH_MS || held_since) {
+        uint32_t now = now_ms();
+        bool pressed = gpio_get_level(BOARD_PIN_BUTTON) == 0;
+        if (pressed && !held_since) held_since = now ? now : 1;
+        if (!pressed) held_since = 0;
+        int hold = held_since ? (int)(now - held_since) * 1000 / MODE_HOLD_MS : 0;
+        if (hold >= 1000) boot_mode_switch(mode == BOOT_WIFI ? BOOT_BLE : BOOT_WIFI);
+        console_poll();
         clock_update();
-        draw_splash(lcd_fb(), now_ms() - start);
+        draw_splash(lcd_fb(), now - start, hold);
         lcd_flush();
         vTaskDelay(pdMS_TO_TICKS(33));
     }
@@ -236,6 +275,7 @@ void app_main(void)
         last = now;
         clock_update();
         poll_button(now);
+        console_poll();
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
             ota_confirm_app();
             confirmed = true;
