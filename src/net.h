@@ -1,0 +1,18 @@
+#pragma once
+#include <stdint.h>
+
+// Wi-Fi: the board's own access point plus, optionally, the home network (station)
+void net_start(void);
+// Joins a new home network; the Wi-Fi driver stores it in NVS so it survives reboots
+void net_set_sta(const char *ssid, const char *pass);
+
+// Background scan of the networks around (used by the "WiFi" face)
+typedef struct {
+    char ssid[33];
+    int8_t rssi;
+    uint8_t ch;
+    uint8_t mine;  // the network the board is connected to
+} wifi_net_t;
+void net_wifi_scan_request(void);  // starts a non-blocking scan if none is running
+// Copies the latest results; returns how many. `stamp` increases with every completed scan.
+int net_wifi_scan_get(wifi_net_t *out, int max, uint32_t *stamp);

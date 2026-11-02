@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FX Clock Flasher</title>
+<script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+<style>
+:root{--bg:#0b0d14;--card:#151926;--line:#262c3f;--txt:#e8ebf5;--dim:#8a91a8;--acc:#7c5cff;--acc2:#22d3ee;--warn:#f5a524}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f5f6fb;--card:#fff;--line:#dde1ee;--txt:#161a28;--dim:#5b627a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 system-ui,sans-serif;padding:16px}
+main{max-width:680px;margin:0 auto}
+h1{font-size:26px;margin:20px 0 4px}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;color:transparent}
+.sub{color:var(--dim);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.install{text-align:center;padding:28px 20px}
+esp-web-install-button button[slot=activate]{background:linear-gradient(135deg,var(--acc),#4f46e5);color:#fff;border:0;border-radius:12px;padding:14px 28px;font:600 17px system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 22px #7c5cff55}
+ol{margin:0;padding-left:22px}
+li{margin:6px 0}
+.note{border-left:3px solid var(--warn);padding-left:12px;color:var(--dim)}
+code{background:var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
+.unsupported{color:var(--warn);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <h1><span>ESP32-C6</span> FX Clock</h1>
+  <p class="sub">Instalador web para la Waveshare ESP32-C6-LCD-1.47</p>
+
+  <div class="card install">
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">Instalar el reloj</button>
+      <span slot="unsupported" class="unsupported">Este navegador no puede acceder al puerto USB. Usa Chrome o Edge en un ordenador.</span>
+      <span slot="not-allowed" class="unsupported">El navegador solo permite el acceso USB desde https:// o desde localhost. Abre esta página con <code>Abrir flasher.bat</code>.</span>
+    </esp-web-install-button>
+  </div>
+
+  <div class="card">
+    <strong>Pasos</strong>
+    <ol>
+      <li>Conecta la placa al ordenador por USB.</li>
+      <li>Pulsa <b>Instalar el reloj</b> y elige el puerto de la placa (suele llamarse <i>USB JTAG/serial debug unit</i>).</li>
+      <li>Confirma la instalación y espera ~30 s hasta que termine.</li>
+      <li>La placa se reinicia sola y muestra en pantalla cómo conectarse.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <strong>¿Borrar el dispositivo?</strong>
+    <p class="note">Si eliges <b>borrar</b>, se pierde todo lo guardado: la red WiFi y los ajustes del reloj. Es lo recomendable si la placa tenía otro proyecto.
+      Después, conecta el móvil a la WiFi <code>C6-FX-Demo</code> (clave <code>esp32c6fx</code>), abre <code>http://192.168.4.1</code> y en
+      <b>Red WiFi</b> escribe tu red para que el reloj se conecte y ponga la hora solo.</p>
+  </div>
+
+  <div class="card">
+    <strong>Actualizar sin cable</strong>
+    <p class="note">Una vez instalado, las siguientes versiones se pueden poner por WiFi: en la web del reloj, <b>Avanzado → Actualizar por WiFi</b>,
+      y elige el archivo <code>c6-fx-clock-ota.bin</code> de esta carpeta. Si algo fallase, el reloj vuelve solo a la versión anterior.</p>
+  </div>
+
+  <div class="card">
+    <strong>Si no conecta</strong>
+    <ol>
+      <li>Desenchufa la placa, mantén pulsado <b>BOOT</b>, enchúfala y suelta: entra en modo de descarga.</li>
+      <li>Cierra otros programas que usen el puerto (monitor serie, Arduino, PlatformIO).</li>
+      <li>Prueba otro cable USB: algunos solo cargan y no transmiten datos.</li>
+    </ol>
+  </div>
+</main>
+</body>
+</html>

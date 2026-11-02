@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Framing Tests</title>
+<style>
+:root{--bg:#0b0d14;--txt:#e8ebf5;--ok:#30d158;--bad:#ff453a;--dim:#8a91a8}
+body{margin:0;padding:16px;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,sans-serif}
+li.ok{color:var(--ok)}li.bad{color:var(--bad)}#sum{font-weight:600}
+</style>
+</head>
+<body>
+<h1>Troceado de mensajes (app)</h1>
+<p style="color:var(--dim)">Fase 5. Comprueba que el troceado de la app es igual al de <code>tests/clocklib/protocol.py</code>. Ábrelo en el navegador; hasta que exista <code>transport.js</code> usa la implementación de referencia de abajo.</p>
+<p id="sum"></p>
+<ul id="out"></ul>
+<script type="module">
+// Phase 5: replace with  import {frame, Reassembler} from '../../app/transport.js'
+const LAST = 0x80, FIRST = 0x40, ID = 0x3f;
+function frame(id, payload, chunk) {
+  const body = chunk - 1, parts = [];
+  for (let i = 0; i < payload.length; i += body) parts.push(payload.slice(i, i + body));
+  if (!parts.length) parts.push(new Uint8Array(0));
+  return parts.map((p, i) => {
+    const f = new Uint8Array(p.length + 1);
+    f[0] = (id & ID) | (i === 0 ? FIRST : 0) | (i === parts.length - 1 ? LAST : 0);
+    f.set(p, 1);
+    return f;
+  });
+}
+class Reassembler {
+  constructor() { this.id = null; this.buf = []; this.dropped = 0; }
+  feed(d) {
+    const h = d[0], id = h & ID, body = d.slice(1);
+    if (h & FIRST) { if (this.id !== null) this.dropped++; this.id = id; this.buf = [...body]; }
+    else if (this.id === id) this.buf.push(...body);
+    else { this.dropped++; this.id = null; this.buf = []; return null; }
+    if (h & LAST && this.id === id) { const out = new Uint8Array(this.buf); this.id = null; this.buf = []; return out; }
+    return null;
+  }
+}
+
+const results = [];
+function test(name, fn) { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } }
+function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(msg || `${JSON.stringify(a)} != ${JSON.stringify(b)}`); }
+const enc = new TextEncoder(), dec = new TextDecoder();
+
+for (const size of [0, 1, 243, 244, 245, 6000]) for (const chunk of [20, 244]) test(`ida y vuelta ${size} B en trozos de ${chunk}`, () => {
+  const p = new Uint8Array(size).map((_, i) => (i * 31 + size) & 255);
+  const r = new Reassembler(), fs = frame(5, p, chunk);
+  if (fs.some(f => f.length > chunk)) throw new Error('trozo demasiado grande');
+  let out = null; fs.forEach(f => { out = r.feed(f); });
+  eq([...out], [...p]);
+});
+test('cabeceras', () => {
+  const fs = frame(63, new Uint8Array(50), 20);
+  eq(!!(fs[0][0] & FIRST), true); eq(!!(fs.at(-1)[0] & LAST), true);
+  eq(frame(1, enc.encode('{}'), 244)[0][0], FIRST | LAST | 1);
+});
+test('un mensaje nuevo descarta el incompleto', () => {
+  const r = new Reassembler(), a = frame(1, new Uint8Array(100), 20), b = frame(2, enc.encode('bbbbbbbbbb'), 20);
+  r.feed(a[0]); eq(dec.decode(r.feed(b[0])), 'bbbbbbbbbb'); eq(r.dropped, 1);
+});
+test('JSON con acentos', () => {
+  const obj = {t: 'faces', faces: Array.from({length: 23}, (_, i) => ({label: `Esfera ${i}`, desc: 'á'.repeat(200)}))};
+  const r = new Reassembler(); let out = null;
+  frame(9, enc.encode(JSON.stringify(obj)), 244).forEach(f => { out = r.feed(f); });
+  eq(JSON.parse(dec.decode(out)), obj);
+});
+
+const ok = results.filter(r => r[1]).length;
+document.getElementById('sum').textContent = `${ok} / ${results.length} correctas`;
+document.getElementById('out').innerHTML = results.map(([n, pass, e]) => `<li class="${pass ? 'ok' : 'bad'}">${pass ? '✓' : '✗'} ${n}${e ? ' — ' + e : ''}</li>`).join('');
+document.title = `Framing Tests: ${ok}/${results.length}`;
+</script>
+</body>
+</html>

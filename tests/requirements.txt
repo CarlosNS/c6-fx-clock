@@ -1,0 +1,5 @@
+pytest>=8
+bleak>=0.22
+websockets>=12
+pyserial>=3.5
+pillow>=10
