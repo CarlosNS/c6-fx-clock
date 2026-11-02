@@ -1,0 +1,192 @@
+I (119) esp_image: segment 1: paddr=0008f4c4 vaddr=40800000 sizeESP-ROM:esp32c6-20220919
+Build:Sep 19 2022
+rst:0x15 (USB_UART_HPSYS),boot:0x6c (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4200008c
+SPIWP:0xee
+mode:DIO, clock div:2
+load:0x40875730,len:0x1748
+load:0x4086b910,len:0xddc
+load:0x4086e610,len:0x3264
+entry 0x4086b910
+I (23) boot: ESP-IDF 5.5.0 2nd stage bootloader
+I (23) boot: compile time Nov  2 2026 20:02:13
+I (24) boot: chip revision: v0.2
+I (24) boot: efuse block revision: v0.3
+I (24) boot.esp32c6: SPI Speed      : 80MHz
+I (25) boot.esp32c6: SPI Mode       : DIO
+I (25) boot.esp32c6: SPI Flash Size : 8MB
+I (26) boot: Enabling RNG early entropy source...
+I (26) boot: Partition Table:
+I (27) boot: ## Label            Usage          Type ST Offset   Length
+I (28) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (28) boot:  1 otadata          OTA data         01 00 0000f000 00002000
+I (29) boot:  2 phy_init         RF data          01 01 00011000 00001000
+I (30) boot:  3 ota_0            OTA app          00 10 00020000 00380000
+I (31) boot:  4 ota_1            OTA app          00 11 003a0000 00380000
+I (32) boot:  5 storage          Unknown data     01 82 00720000 000e0000
+I (33) boot: End of partition table
+I (34) esp_image: segment 0: paddr=00020020 vaddr=420c0020 size=6f49ch (455836) map
+I (119) esp_image: segment 1: paddr=0008f4c4 vaddr=40800000 size=00b54h (  2900) load
+I (120) esp_image: segment 2: paddr=00090020 vaddr=42000020 size=bcbfch (773116) map
+I (264) esp_image: segment 3: paddr=0014cc24 vaddr=40800b54 size=175fch ( 95740) load
+I (284) esp_image: segment 4: paddr=00164228 vaddr=50000000 size=00020h (    32) load
+I (290) boot: Loaded app from partition at offset 0x20000
+I (290) boot: Disabling RNG early entropy source...
+I (292) cpu_start: Unicore app
+I (300) cpu_start: Pro cpu start user code
+I (301) cpu_start: cpu freq: 160000000 Hz
+I (301) app_init: Application information:
+I (301) app_init: Project name:     c6-fx-demo
+I (302) app_init: App version:      2.0.0
+I (302) app_init: Compile time:     Nov  2 2026 20:01:10
+I (303) app_init: ELF file SHA256:  a201b30fc...
+I (303) app_init: ESP-IDF:          5.5.0
+I (304) efuse_init: Min chip rev:     v0.0
+I (304) efuse_init: Max chip rev:     v0.99 
+I (305) efuse_init: Chip rev:         v0.2
+I (305) heap_init: Initializing. RAM available for dynamic allocation:
+I (306) heap_init: At 40830360 len 0004C2B0 (304 KiB): RAM
+I (307) heap_init: At 4087C610 len 00002F54 (11 KiB): RAM
+I (307) heap_init: At 50000020 len 00003FC8 (15 KiB): RTCRAM
+I (308) spi_flash: detected chip: generic
+I (309) spi_flash: flash io: dio
+I (309) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (310) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (311) coexist: coex firmware version: 831ec70
+I (312) coexist: coexist rom version 5b8dcfa
+I (312) main_task: Started on CPU0
+I (312) main_task: Calling app_main()
+I (452) lcd: ST7789 172x320 ready, double buffering, free heap 92740
+I (473) main: SPIKE: heap before Bluetooth 91912
+I (473) BLE_INIT: Using main XTAL as clock source, chip ver: 2
+I (474) BLE_INIT: ble controller commit:[35fe65f]
+I (479) BLE_INIT: Bluetooth MAC: xx:xx:xx:xx:xx:xx
+I (479) phy_init: phy_version 331,5b89037,Mar  3 2025,16:01:12
+I (547) phy: libbtbb version: ec2ecba, Mar  3 2025, 16:01:27
+I (548) ble_spike: NimBLE controller+host init took 21820 bytes (heap 70092)
+I (552) NimBLE: GAP procedure initiated: stop advertising.
+
+I (553) NimBLE: Failed to restore IRKs from store; status=8
+
+I (554) NimBLE: GAP procedure initiated: advertise; 
+I (554) NimBLE: disc_mode=2
+I (554) NimBLE:  adv_channel_map=0 own_addr_type=0 adv_filter_policy=0 adv_itvl_min=800 adv_itvl_max=1600
+I (555) NimBLE: 
+
+I (557) ble_spike: Advertising as C6 Clock XXXX (rc=0), heap 63968 min 63968
+I (557) ble_spike: Bluetooth total 27944 bytes (heap 63968)
+I (633) main: Free heap after Wi-Fi: 63968
+I (5639) main: Face: PLASMA
+I (6689) main: PERF fx=0 fps=30 rus=17557 rmax=17906 heap=63792 min=63792
+I (7689) main: PERF fx=0 fps=30 rus=17564 rmax=17789 heap=63792 min=63792
+I (8689) main: PERF fx=0 fps=30 rus=17585 rmax=18304 heap=63792 min=63792
+I (8705) main: Face: CUBO 3D
+I (9710) main: PERF fx=1 fps=30 rus=5113 rmax=5870 heap=63792 min=63792
+I (10710) main: PERF fx=1 fps=30 rus=4926 rmax=5241 heap=63792 min=63792
+I (11710) main: PERF fx=1 fps=30 rus=5027 rmax=5313 heap=63792 min=63792
+I (11738) main: Face: TUNEL
+I (12751) main: PERF fx=2 fps=30 rus=13260 rmax=13526 heap=63792 min=63792
+I (13751) main: PERF fx=2 fps=30 rus=13285 rmax=13660 heap=63792 min=63792
+I (14751) main: PERF fx=2 fps=30 rus=13301 rmax=13951 heap=63792 min=63792
+I (14772) main: Face: LAVA
+I (15755) main: PERF fx=3 fps=30 rus=16920 rmax=17615 heap=63792 min=63792
+I (16755) main: PERF fx=3 fps=30 rus=16911 rmax=17602 heap=63792 min=63792
+I (17755) main: PERF fx=3 fps=30 rus=16912 rmax=17712 heap=63792 min=63792
+I (17778) main: Face: VIDA
+I (18741) main: PERF fx=4 fps=30 rus=3431 rmax=5150 heap=63792 min=63792
+I (19741) main: PERF fx=4 fps=30 rus=3476 rmax=4869 heap=63792 min=63792
+I (20741) main: PERF fx=4 fps=30 rus=3405 rmax=4738 heap=63792 min=63792
+I (20771) temperature_sensor: Range [-10°C ~ 80°C], error < 1°C
+I (20772) main: Face: HUD
+I (21747) main: PERF fx=5 fps=30 rus=8873 rmax=9409 heap=63444 min=63444
+I (22747) main: PERF fx=5 fps=30 rus=8891 rmax=9525 heap=63444 min=63444
+I (23747) main: PERF fx=5 fps=30 rus=8594 rmax=9529 heap=63444 min=63444
+I (23771) main: Face: AVENTURA
+I (24754) main: PERF fx=6 fps=30 rus=16427 rmax=17203 heap=63444 min=63444
+I (25754) main: PERF fx=6 fps=30 rus=16411 rmax=17008 heap=63444 min=63444
+I (26754) main: PERF fx=6 fps=30 rus=16223 rmax=16831 heap=63444 min=63444
+I (26777) main: Face: RPG
+I (27794) main: PERF fx=7 fps=30 rus=22811 rmax=23752 heap=63444 min=63444
+I (28794) main: PERF fx=7 fps=30 rus=22880 rmax=23348 heap=63444 min=63444
+I (29794) main: PERF fx=7 fps=30 rus=22892 rmax=23786 heap=63444 min=63444
+I (29817) main: Face: ESTRELLADA
+I (30792) main: PERF fx=8 fps=29 rus=20234 rmax=21230 heap=63444 min=63364
+I (31792) main: PERF fx=8 fps=30 rus=20195 rmax=20803 heap=63444 min=63364
+I (32792) main: PERF fx=8 fps=30 rus=20192 rmax=20655 heap=63444 min=63364
+I (32804) main: Face: WIFI
+I (33824) main: PERF fx=9 fps=30 rus=17688 rmax=18737 heap=63444 min=63364
+I (34824) main: PERF fx=9 fps=30 rus=17658 rmax=18707 heap=63444 min=63364
+I (35824) main: PERF fx=9 fps=30 rus=17665 rmax=18941 heap=63444 min=63364
+I (35847) main: Face: EL GRITO
+I (36857) main: PERF fx=10 fps=30 rus=18732 rmax=19784 heap=63444 min=63364
+I (37857) main: PERF fx=10 fps=30 rus=18681 rmax=19524 heap=63444 min=63364
+I (38857) main: PERF fx=10 fps=30 rus=18667 rmax=19526 heap=63444 min=63364
+I (39003) main: Face: EARTHRISE
+I (39860) main: PERF fx=11 fps=26 rus=12215 rmax=13105 heap=63444 min=63364
+I (40860) main: PERF fx=11 fps=30 rus=12241 rmax=12902 heap=63444 min=63364
+I (41860) main: PERF fx=11 fps=30 rus=12262 rmax=12890 heap=63444 min=63364
+I (41882) main: Face: SAKURA
+I (42860) main: PERF fx=12 fps=30 rus=12348 rmax=13102 heap=63444 min=63364
+I (43861) main: PERF fx=12 fps=29 rus=12370 rmax=13009 heap=63444 min=63364
+I (44862) main: PERF fx=12 fps=30 rus=12458 rmax=13038 heap=63444 min=63364
+I (44881) main: Face: SYNTHWAVE
+I (45894) main: PERF fx=13 fps=30 rus=13166 rmax=13752 heap=63444 min=63364
+I (46894) main: PERF fx=13 fps=30 rus=13146 rmax=13652 heap=63444 min=63364
+I (47894) main: PERF fx=13 fps=30 rus=13165 rmax=14173 heap=63444 min=63364
+I (47917) main: Face: ARENA
+I (48894) main: PERF fx=14 fps=30 rus=13187 rmax=14270 heap=63444 min=63364
+I (49894) main: PERF fx=14 fps=30 rus=13166 rmax=13616 heap=63444 min=63364
+I (50894) main: PERF fx=14 fps=30 rus=13173 rmax=13588 heap=63444 min=63364
+I (50915) main: Face: ENGRANAJES
+I (51892) main: PERF fx=15 fps=29 rus=9873 rmax=10386 heap=63444 min=63364
+I (52892) main: PERF fx=15 fps=30 rus=9868 rmax=10189 heap=63444 min=63364
+I (53892) main: PERF fx=15 fps=30 rus=9892 rmax=10827 heap=63444 min=63364
+I (53915) main: Face: ACUARIO
+I (54928) main: PERF fx=16 fps=30 rus=13809 rmax=14659 heap=63444 min=63364
+I (55928) main: PERF fx=16 fps=30 rus=13661 rmax=14099 heap=63444 min=63364
+I (56928) main: PERF fx=16 fps=30 rus=13722 rmax=14313 heap=63444 min=63364
+I (56951) main: Face: LLUVIA
+I (57956) main: PERF fx=17 fps=30 rus=8390 rmax=8772 heap=63444 min=63364
+I (58956) main: PERF fx=17 fps=30 rus=8404 rmax=8735 heap=63444 min=63364
+I (59956) main: PERF fx=17 fps=30 rus=8315 rmax=8858 heap=63444 min=63364
+I (60192) main: Face: AGUJERO NEGRO
+I (60987) main: PERF fx=18 fps=24 rus=14947 rmax=15350 heap=63444 min=63364
+I (61987) main: PERF fx=18 fps=30 rus=14892 rmax=15307 heap=63444 min=63364
+I (62987) main: PERF fx=18 fps=30 rus=14891 rmax=15306 heap=63444 min=63364
+I (63006) main: Face: GOL
+I (63985) main: PERF fx=19 fps=30 rus=11914 rmax=12512 heap=63444 min=63364
+I (65019) main: PERF fx=19 fps=30 rus=12371 rmax=13451 heap=63444 min=63364
+I (66018) main: PERF fx=19 fps=30 rus=12661 rmax=13108 heap=63444 min=63364
+I (66039) main: Face: CUENTO
+I (67031) main: PERF fx=20 fps=30 rus=25399 rmax=26238 heap=63444 min=63364
+I (68031) main: PERF fx=20 fps=30 rus=25452 rmax=25749 heap=63444 min=63364
+I (69031) main: PERF fx=20 fps=30 rus=25608 rmax=25836 heap=63444 min=63364
+I (69054) main: Face: TIEMPO
+I (70014) main: PERF fx=21 fps=30 rus=8651 rmax=9317 heap=63444 min=63364
+I (71014) main: PERF fx=21 fps=30 rus=8502 rmax=9006 heap=63444 min=63364
+I (72014) main: PERF fx=21 fps=30 rus=8320 rmax=8456 heap=63444 min=63364
+I (72202) main: Face: CLASICO
+I (73048) main: PERF fx=22 fps=25 rus=23677 rmax=24117 heap=63444 min=63364
+I (74048) main: PERF fx=22 fps=30 rus=23634 rmax=24125 heap=63444 min=63364
+I (75048) main: PERF fx=22 fps=30 rus=23608 rmax=24046 heap=63444 min=63364
+I (76048) main: PERF fx=22 fps=30 rus=23632 rmax=24066 heap=63444 min=63364
+I (77048) main: PERF fx=22 fps=30 rus=23684 rmax=24090 heap=63444 min=63364
+I (78048) main: PERF fx=22 fps=30 rus=23713 rmax=24037 heap=63444 min=63364
+I (79049) main: PERF fx=22 fps=29 rus=23728 rmax=23847 heap=63444 min=63364
+I (80049) main: PERF fx=22 fps=30 rus=23758 rmax=24190 heap=63444 min=63364
+I (81049) main: PERF fx=22 fps=30 rus=23775 rmax=24263 heap=63444 min=63364
+I (82050) main: PERF fx=22 fps=30 rus=23778 rmax=24174 heap=63444 min=63364
+I (83050) main: PERF fx=22 fps=30 rus=23768 rmax=23873 heap=63444 min=63364
+I (84050) main: PERF fx=22 fps=30 rus=23738 rmax=23978 heap=63444 min=63364
+I (85050) main: PERF fx=22 fps=30 rus=23725 rmax=23989 heap=63444 min=63364
+I (86050) main: PERF fx=22 fps=30 rus=23713 rmax=24122 heap=63444 min=63364
+I (87050) main: PERF fx=22 fps=30 rus=23704 rmax=24138 heap=63444 min=63364
+I (88050) main: PERF fx=22 fps=30 rus=23696 rmax=24156 heap=63444 min=63364
+I (89050) main: PERF fx=22 fps=30 rus=23664 rmax=24006 heap=63444 min=63364
+I (90050) main: PERF fx=22 fps=30 rus=23642 rmax=23973 heap=63444 min=63364
+I (91082) main: PERF fx=22 fps=30 rus=23656 rmax=23756 heap=63444 min=63364
+I (92082) main: PERF fx=22 fps=30 rus=23693 rmax=24118 heap=63444 min=63364
+I (93083) main: PERF fx=22 fps=30 rus=23719 rmax=24140 heap=63444 min=63364
+I (94083) main: PERF fx=22 fps=30 rus=23748 rmax=24170 heap=63444 min=63364
+I (95083) main: PERF fx=22 fps=30 rus=23774 rmax=24268 heap=63444 min=63364
+

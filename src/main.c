@@ -29,6 +29,7 @@
 #define SAVE_DELAY_MS 3000
 #define FADE_IN_MS 150
 #define FADE_OUT_MS 400
+#define SPIKE_BLE 1          // PHASE 0 SPIKE: Bluetooth only, Wi-Fi off, measure
 #define CONFIRM_MS 30000     // a new OTA firmware that runs this long is marked as good
 
 static const char *TAG = "main";
@@ -210,9 +211,18 @@ void app_main(void)
     lcd_flush();
     lcd_set_brightness(g_app.brightness);
 
+#if SPIKE_BLE
+    extern void ble_spike_start(void);
+    ESP_LOGI(TAG, "SPIKE: heap before Bluetooth %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+    ble_spike_start();
+    g_app.always_on = 1;  // not saved: dirty stays false
+    g_app.fx = 0;
+    g_app.auto_cycle = 0;
+#else
     web_start();
     clock_start_sntp();
     weather_init();
+#endif
     tunnel_enter();  // builds its lookup tables once
     ESP_LOGI(TAG, "Free heap after Wi-Fi: %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
@@ -314,6 +324,15 @@ void app_main(void)
             g_app.fps = frames * 1000 / (now - fps_t);
             g_app.render_us = frames ? (int)(render_sum / frames) : 0;
             g_app.render_max_us = render_max;
+#if SPIKE_BLE
+            static int spike_secs, spike_done;
+            ESP_LOGI(TAG, "PERF fx=%d fps=%d rus=%d rmax=%d heap=%u min=%u", cur, g_app.fps, g_app.render_us, render_max,
+                     (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT));
+            if (!spike_done && ++spike_secs % 3 == 0) {
+                if (g_app.fx + 1 < FX_COUNT) g_app.fx++;
+                else spike_done = 1;
+            }
+#endif
             render_sum = 0;
             render_max = 0;
             frames = 0;
