@@ -9,18 +9,23 @@
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
+#include "host/ble_store.h"
 #include "host/util/util.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "ota.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
+#include "nvs.h"
 #include "settings.h"
+
+void ble_store_config_init(void);  // NimBLE bond store in NVS (no public header)
 
 static const char *TAG = "ble";
 
@@ -51,7 +56,17 @@ static char s_name[20];
 static uint32_t s_sync_count;
 static int64_t s_sync_last;  // epoch seconds
 
+static volatile bool s_running;  // host stack up (BLE boot mode)
+
 bool ble_connected(void) { return s_conn != BLE_HS_CONN_HANDLE_NONE; }
+
+// Paired with the passkey shown on the screen (encrypted and authenticated, protects against a
+// man in the middle). Only such links may send commands or receive anything.
+static bool link_secure(uint16_t conn)
+{
+    struct ble_gap_conn_desc d;
+    return ble_gap_conn_find(conn, &d) == 0 && d.sec_state.encrypted && d.sec_state.authenticated;
+}
 const char *ble_name(void) { return s_name; }
 
 // ---------------------------------------------------------------- sending
@@ -60,7 +75,7 @@ const char *ble_name(void) { return s_name; }
 static void send_msg(const char *json, size_t len)
 {
     uint16_t conn = s_conn;
-    if (conn == BLE_HS_CONN_HANDLE_NONE || !s_subscribed) return;
+    if (conn == BLE_HS_CONN_HANDLE_NONE || !s_subscribed || !link_secure(conn)) return;
     int chunk = ble_att_mtu(conn) - 3 - 1;  // ATT header and our frame header
     if (chunk < 19) chunk = 19;
     uint8_t id = s_msg_id++ & 0x3F;
@@ -178,6 +193,10 @@ static void worker(void *arg)
                 s_sync_last = tv.tv_sec;
                 s_sync_count++;
                 send_ack("sync");
+            } else if (strcmp(c, "unpair") == 0) {
+                send_ack("unpair");
+                vTaskDelay(pdMS_TO_TICKS(200));  // let the ack out: forgetting drops the link
+                app_command(c);
             } else if (strncmp(c, "mode ", 5) == 0) {
                 send_ack("mode");
                 vTaskDelay(pdMS_TO_TICKS(200));  // let the ack go out before the reboot
@@ -231,7 +250,9 @@ static const struct ble_gatt_svc_def SERVICES[] = {
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = &SVC_UUID.u,
      .characteristics = (struct ble_gatt_chr_def[]){
-         {.uuid = UUID_CLOCK(0x02), .access_cb = clock_access, .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP},
+         {.uuid = UUID_CLOCK(0x02),
+          .access_cb = clock_access,
+          .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP | BLE_GATT_CHR_F_WRITE_ENC | BLE_GATT_CHR_F_WRITE_AUTHEN},
          {.uuid = UUID_CLOCK(0x03), .access_cb = clock_access, .flags = BLE_GATT_CHR_F_NOTIFY, .val_handle = &s_evt_handle},
          {0}}},
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
@@ -284,8 +305,30 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
             advertise(true);
         }
         break;
+    case BLE_GAP_EVENT_PASSKEY_ACTION:
+        if (ev->passkey.params.action == BLE_SM_IOACT_DISP) {
+            // A random 6-digit code on the screen; the phone types it in
+            struct ble_sm_io io = {.action = BLE_SM_IOACT_DISP, .passkey = esp_random() % 1000000};
+            g_app.pairing_code = (int)io.passkey;
+            app_wake();
+            ESP_LOGI(TAG, "Pairing, passkey %06lu", (unsigned long)io.passkey);
+            ble_sm_inject_io(ev->passkey.conn_handle, &io);
+        }
+        break;
+    case BLE_GAP_EVENT_ENC_CHANGE:
+        g_app.pairing_code = -1;
+        ESP_LOGI(TAG, "Encryption %s (status %d)", link_secure(ev->enc_change.conn_handle) ? "on, paired" : "failed",
+                 ev->enc_change.status);
+        break;
+    case BLE_GAP_EVENT_REPEAT_PAIRING: {
+        // The phone lost its bond but the clock kept it: forget the old one and pair again
+        struct ble_gap_conn_desc d;
+        if (ble_gap_conn_find(ev->repeat_pairing.conn_handle, &d) == 0) ble_store_util_delete_peer(&d.peer_id_addr);
+        return BLE_GAP_REPEAT_PAIRING_RETRY;
+    }
     case BLE_GAP_EVENT_DISCONNECT:
         ESP_LOGI(TAG, "Disconnected (reason %d)", ev->disconnect.reason);
+        g_app.pairing_code = -1;
         s_conn = BLE_HS_CONN_HANDLE_NONE;
         s_subscribed = false;
         advertise(true);
@@ -334,6 +377,15 @@ void ble_start(void)
         return;
     }
     ble_hs_cfg.sync_cb = on_sync;
+    // LE Secure Connections with a passkey shown on the screen, bonding (remembered in NVS)
+    ble_hs_cfg.sm_io_cap = BLE_HS_IO_DISPLAY_ONLY;
+    ble_hs_cfg.sm_bonding = 1;
+    ble_hs_cfg.sm_mitm = 1;
+    ble_hs_cfg.sm_sc = 1;
+    ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    ble_hs_cfg.store_status_cb = ble_store_util_status_rr;  // bond list full: forget the oldest
+    ble_store_config_init();
     ble_att_set_preferred_mtu(247);
     ble_svc_gap_init();
     ble_svc_gatt_init();
@@ -341,4 +393,22 @@ void ble_start(void)
     ble_gatts_add_svcs(SERVICES);
     xTaskCreate(worker, "ble_worker", 4096, NULL, 4, NULL);
     nimble_port_freertos_init(host_task);
+    s_running = true;
+}
+
+void ble_forget_all(void)
+{
+    if (s_running) {
+        ble_store_clear();
+        if (ble_connected()) ble_gap_terminate(s_conn, BLE_ERR_REM_USER_CONN_TERM);
+    } else {
+        // Bluetooth not running (Wi-Fi mode): wipe the bond store directly
+        nvs_handle_t h;
+        if (nvs_open("nimble_bond", NVS_READWRITE, &h) == ESP_OK) {
+            nvs_erase_all(h);
+            nvs_commit(h);
+            nvs_close(h);
+        }
+    }
+    ESP_LOGI(TAG, "All paired phones forgotten");
 }

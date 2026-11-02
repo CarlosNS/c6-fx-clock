@@ -10,6 +10,13 @@ Lo que no se puede automatizar desde el PC. Marca cada punto al hacerlo.
 
 ## Fase 3 — Emparejamiento real
 
+La lógica ya la prueban los tests automáticos con la clave real (leída del log serie). Aquí queda lo que se ve y se toca:
+
+- [ ] Al emparejar, la clave aparece en grande sobre la esfera, con "CLAVE BLUETOOTH" y "Escribela en el movil".
+- [ ] La pantalla sigue encendida mientras la clave está en pantalla, aunque tardes más de 10 s en teclearla.
+- [ ] Mantener BOOT: a los 3 s aparece "10 S: OLVIDAR MOVILES" y a los 10 s "MOVILES OLVIDADOS".
+- [ ] Pulsación larga (1–3 s) y soltar: cambia "AUTO: SI / NO" al soltar.
+
 - [ ] Abrir la app y pulsar *Conectar*: el reloj enciende la pantalla y muestra una clave de 6 dígitos.
 - [ ] Teclear la clave en el móvil: queda emparejado y aparecen las esferas.
 - [ ] Teclear una clave **incorrecta**: no empareja y el reloj no cambia nada.

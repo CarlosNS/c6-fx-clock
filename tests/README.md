@@ -20,7 +20,7 @@ Opciones: `--host 192.168.1.140` (modo WiFi), `--port COM5`, `--ble-name "C6 Clo
 | `ble/test_transport.py` | Anuncio, conexión, comandos, notificaciones, fugas de memoria | 2 | adaptador Bluetooth |
 | `ble/test_sync.py` | Sincronización: hora y tiempo enviados por "el móvil", registro | 2 (y 5c con la app real) | adaptador Bluetooth + internet |
 | `ble/test_sync_session.py` | Sesiones completas como la app: duración, 50 sincronizaciones y 30 reconexiones sin fugas | 2 | adaptador Bluetooth + internet |
-| `ble/test_security.py` | Cifrado obligatorio, versión pública, olvidar móviles | 3 | adaptador Bluetooth |
+| `ble/test_security.py` | Emparejamiento con la clave real (leída del log serie), clave errónea, comandos sin emparejar ignorados, emparejamiento que sobrevive a un reinicio, olvidar móviles | 3 | adaptador Bluetooth + USB |
 | `ble/test_screenshot.py` | Capturas de pantalla por Bluetooth | 4 | adaptador Bluetooth |
 | `app/framing.test.html` | Troceado en la interfaz de la app (abrir en el navegador) | 5a | navegador |
 | *(app Android)* | Tests unitarios Kotlin con `gradlew test` dentro del proyecto de la app | 5b–5c | SDK de Android |

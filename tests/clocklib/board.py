@@ -89,6 +89,19 @@ class SerialSession:
             self._read()
         raise AssertionError(f"'{pattern}' not seen in the serial log within {timeout} s")
 
+    def wait_for(self, pattern, timeout=30, since=0):
+        """Like read_until, for when another thread is already reading the port (it only watches
+        the collected text)."""
+        import re
+        rx = re.compile(pattern)
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            m = rx.search(self.text, since)
+            if m:
+                return m
+            time.sleep(0.1)
+        raise AssertionError(f"'{pattern}' not seen in the serial log within {timeout} s")
+
     def mark(self):
         """Position in the log, to search only what comes after it."""
         return len(self.text)

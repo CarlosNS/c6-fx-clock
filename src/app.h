@@ -30,6 +30,7 @@ typedef struct {
     volatile bool freeze_req;  // screenshot: ask the render loop to pause...
     volatile bool frozen;      // ...and it confirms here
     volatile int dbg_h, dbg_m; // screenshot: fake time of day (-1 = real time)
+    volatile int pairing_code; // Bluetooth passkey being shown on the screen, -1 = none
 
     // ---- Network ----
     char ap_ip[16];

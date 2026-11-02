@@ -51,7 +51,20 @@ class ClockLink:
             return None
         return self._run(scan(), (timeout or self.timeout) + 10)
 
-    def connect(self, address=None, pair=False):
+    def connect(self, address=None, pair=False, retries=0):
+        """Connects (scanning by name if no address is given) and subscribes to EVT. With retries,
+        failed attempts are repeated a few seconds apart: after the clock reboots, Windows can hand
+        back a stale session for a paired device until it notices the old link is gone."""
+        for attempt in range(retries + 1):
+            try:
+                return self._connect(address, pair)
+            except Exception:
+                if attempt == retries:
+                    raise
+                import time
+                time.sleep(4)
+
+    def _connect(self, address, pair):
         if address is None:
             hit = self.find()
             if not hit:
@@ -71,6 +84,46 @@ class ClockLink:
             self.close()  # never leave a half-open client behind
             raise
         return self
+
+    def pair_with_pin(self, get_pin, timeout=40):
+        """Pairs using Passkey Entry, as a phone does: the clock shows a 6-digit code and `get_pin()`
+        must return it (tests read it from the serial log). bleak itself only does Just Works, so
+        this drives the Windows custom pairing API directly. Returns the result status name."""
+        from winrt.windows.devices.enumeration import DevicePairingKinds, DevicePairingProtectionLevel
+
+        async def go():
+            info = self._client._backend._requester.device_information
+            if info.pairing.is_paired:
+                return "ALREADY_PAIRED"
+            custom = info.pairing.custom
+
+            def handler(sender, args):
+                deferral = args.get_deferral()
+                try:
+                    if args.pairing_kind == DevicePairingKinds.PROVIDE_PIN:
+                        args.accept(str(get_pin()))
+                    else:
+                        args.accept()
+                finally:
+                    deferral.complete()
+            token = custom.add_pairing_requested(handler)
+            try:
+                kinds = DevicePairingKinds(int(DevicePairingKinds.CONFIRM_ONLY) | int(DevicePairingKinds.PROVIDE_PIN))
+                res = await custom.pair_with_protection_level_async(
+                    kinds, DevicePairingProtectionLevel.ENCRYPTION_AND_AUTHENTICATION)
+            finally:
+                custom.remove_pairing_requested(token)
+            return res.status.name
+        return self._run(go(), timeout)
+
+    def unpair(self):
+        """Makes Windows forget the clock and drops the link. (bleak's unpair alone can leave the
+        radio link up, and while connected the clock does not advertise.)"""
+        if self._client:
+            try:
+                self._run(self._client.unpair())
+            finally:
+                self.disconnect()
 
     def _on_evt(self, _char, data: bytearray):
         done = self._rx.feed(bytes(data))

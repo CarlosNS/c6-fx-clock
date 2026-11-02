@@ -235,6 +235,15 @@ Tests: `tests/ble/test_transport.py` (anuncio, conexión, MTU, info, faces = 23,
 
 Tests: `tests/ble/test_security.py` · prueba manual con el móvil (`tests/MANUAL.md`).
 
+**Resultado (2026-11-03): terminada.** 8 tests de seguridad en verde (`pytest -m phase3`), con la clave real.
+
+- LE Secure Connections con clave de 6 dígitos aleatoria (protección contra intermediarios), bonding en NVS (hasta 3 móviles; el más antiguo se olvida si no cabe). CMD solo acepta escrituras de enlaces emparejados con clave y el reloj no envía nada por enlaces sin emparejar; la versión (0x2A26) sigue siendo pública.
+- La clave aparece en grande sobre cualquier esfera y **la pantalla no se apaga mientras haya un emparejamiento en curso**, aunque se tarde en teclearla.
+- Olvidar móviles: comando `unpair` (Bluetooth o consola serie) o BOOT 10 s (a los 3 s avisa). La pulsación larga normal ahora cambia el modo automático al soltar.
+- **Sin build de pruebas:** el plan preveía uno con *Just Works* porque Windows no teclea la clave, pero la API de Windows que hay debajo de bleak sí permite entregarla desde código (`ClockLink.pair_with_pin`). El reloj escribe la clave en su log serie y los tests la leen de ahí, así que se prueba el mismo firmware que usarás, con clave de verdad.
+- Lo que queda para la prueba manual: ver la clave en la pantalla y teclearla en el móvil (`tests/MANUAL.md`).
+- Detalles de Windows que reflejan los tests: al olvidar un dispositivo lo borra también de su caché (hay que volver a encontrarlo escaneando) y puede mantener el enlace abierto si no se desconecta explícitamente; tras reiniciarse el reloj, el primer intento de conexión a un dispositivo emparejado puede fallar y hay que reintentar (la app hará lo mismo).
+
 ### Fase 4 — Captura de pantalla por Bluetooth (½ día)
 
 - Comando `shot` y `tools/ble_shot.py` → PNG, para comprobar las esferas sin WiFi.

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "ble.h"
 #include "bootmode.h"
 #include "clock.h"
 #include "esp_app_desc.h"
@@ -73,6 +74,10 @@ void app_command(const char *cmd)
         settings_set("nst", b);
         settings_set("nen", c);
         settings_set("nbr", d);
+        return;
+    }
+    if (strcmp(cmd, "unpair") == 0) {  // forget every paired phone
+        ble_forget_all();
         return;
     }
     char key[16], word[16];

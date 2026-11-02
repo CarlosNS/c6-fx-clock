@@ -31,6 +31,8 @@
 #define FRAME_US 33333        // 30 fps cap: keeps the chip cool and the power draw low
 #define MODE_HOLD_MS 2000     // holding BOOT this long on the splash switches Wi-Fi <-> Bluetooth mode
 #define LONG_PRESS_MS 800
+#define FORGET_HINT_MS 3000   // holding BOOT this long shows the "forget phones" hint...
+#define FORGET_MS 10000       // ...and this long forgets every paired phone
 #define TOAST_MS 1500
 #define SAVE_DELAY_MS 3000
 #define FADE_IN_MS 150
@@ -54,6 +56,7 @@ app_state_t g_app = {
     .wake_secs = 10,
     .classic_hue = 146,  // deep green
     .dbg_h = -1,
+    .pairing_code = -1,
 };
 
 static char s_toast[32];
@@ -71,7 +74,8 @@ void app_wake(void)
 
 static bool screen_awake(uint32_t now)
 {
-    return g_app.always_on || (int32_t)(g_app.wake_until - now) > 0;
+    // A pairing passkey stays visible until the pairing ends, however long typing it takes
+    return g_app.always_on || g_app.pairing_code >= 0 || (int32_t)(g_app.wake_until - now) > 0;
 }
 
 static void toast(const char *msg)
@@ -159,6 +163,22 @@ static void draw_ota(uint16_t *fb, int pct)
     gfx_text(fb, (g_lcd_w - gfx_text_width("NO DESCONECTES", 1)) / 2, y + 34, "NO DESCONECTES", rgb565(170, 180, 210), 1);
 }
 
+// Bluetooth pairing: the passkey the phone has to type, over whatever face is showing
+static void draw_pairing(uint16_t *fb, int code)
+{
+    char digits[12];
+    snprintf(digits, sizeof(digits), "%06d", code % 1000000);
+    int w = font_width(&font_round_s, digits, 0), bw = w + 24, bh = 92;
+    int x = (g_lcd_w - bw) / 2, y = (g_lcd_h - bh) / 2;
+    gfx_darken_rect(fb, x, y, bw, bh, 12, 3);
+    gfx_fill_rect(fb, x + 12, y + 1, bw - 24, 1, rgb565(124, 92, 255));
+    const char *t1 = "CLAVE BLUETOOTH", *t2 = "Escribela en el movil";
+    gfx_text(fb, (g_lcd_w - gfx_text_width(t1, 1)) / 2, y + 10, t1, rgb565(170, 180, 210), 1);
+    font_draw(fb, &font_round_s, (g_lcd_w - w) / 2, y + 26, digits, 0, rgb565(255, 255, 255), rgb565(20, 16, 50),
+              FONT_FILL | FONT_OUTLINE);
+    ui_text(fb, &ui_s, (g_lcd_w - ui_width(&ui_s, t2)) / 2, y + 68, t2, rgb565(170, 180, 210), 0, FONT_FILL);
+}
+
 // The RGB LED mirrors the average color of a few screen pixels, like a tiny ambilight
 static void led_follow_screen(const uint16_t *fb, int bri)
 {
@@ -181,28 +201,42 @@ static bool is_night(void)
     return s <= e ? (h >= s && h < e) : (h >= s || h < e);
 }
 
-// Screen off: any press just wakes it. Screen on: short press = next face, long press = auto-cycle.
+// Screen off: any press just wakes it. Screen on: short press = next face, long press (released
+// before 10 s) = auto-cycle on/off, held 10 s = forget every paired phone.
 // Every press keeps the screen on for another wake_secs.
 static void poll_button(uint32_t now)
 {
-    static bool down;
-    static bool long_fired;
+    static bool down, waking, hinted, forgot;
     static uint32_t since;
     bool pressed = gpio_get_level(BOARD_PIN_BUTTON) == 0;
     if (pressed && !down) {
         down = true;
-        long_fired = !screen_awake(now);  // a waking press does nothing else
+        waking = !screen_awake(now);  // a waking press does nothing else
+        hinted = forgot = false;
         since = now;
         app_wake();
-    } else if (pressed && down && !long_fired && now - since > LONG_PRESS_MS) {
-        long_fired = true;
-        g_app.auto_cycle = !g_app.auto_cycle;
-        g_app.dirty = true;
-        toast(g_app.auto_cycle ? "AUTO: SI" : "AUTO: NO");
+    } else if (pressed && down) {
+        app_wake();
+        if (waking) return;
+        if (!hinted && now - since > FORGET_HINT_MS) {
+            hinted = true;
+            toast("10 S: OLVIDAR MOVILES");
+        }
+        if (!forgot && now - since > FORGET_MS) {
+            forgot = true;
+            ble_forget_all();
+            toast("MOVILES OLVIDADOS");
+        }
     } else if (!pressed && down) {
         down = false;
         app_wake();
-        if (!long_fired && now - since > 30) {
+        if (waking || forgot) return;
+        uint32_t held = now - since;
+        if (held > LONG_PRESS_MS) {
+            g_app.auto_cycle = !g_app.auto_cycle;
+            g_app.dirty = true;
+            toast(g_app.auto_cycle ? "AUTO: SI" : "AUTO: NO");
+        } else if (held > 30) {
             g_app.fx = (g_app.fx + 1) % FX_COUNT;
             g_app.auto_cycle = 0;
             g_app.dirty = true;
@@ -335,6 +369,8 @@ void app_main(void)
         draw_toast(fb, now);
         int ota = ota_progress();
         if (ota >= 0) draw_ota(fb, ota);
+        int code = g_app.pairing_code;
+        if (code >= 0) draw_pairing(fb, code);
         if (now - led_t > 40) {
             if (is_night()) led_set(0, 0, 0);
             else led_follow_screen(fb, eff);
