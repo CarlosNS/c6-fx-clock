@@ -169,6 +169,25 @@ Cada fase: implementación → tests automáticos → revisión en la placa → 
 
 Tests: `pytest -m now` en verde (23 tests, ya pasan) · medida de heap anotada en este documento.
 
+**Resultado (2026-11-02): superado.** Prototipo en la rama `spike/ble-medida` (no se fusiona) y log en `docs/spike-ble-medida.log`.
+
+| Medida | Valor |
+|---|---|
+| Heap tras la pantalla, con Bluetooth compilado | 92,7 KB (el controlador reserva ~15 KB estáticos) |
+| Coste de NimBLE en heap (controlador + host + servicio) | 28 KB |
+| **Heap libre en modo BLE, en reposo** | **64 KB** (mínimo histórico 63,3 KB) |
+| **Heap libre con el PC conectado** | **61 KB** (mínimo 60,1 KB) |
+| Flash del firmware sin WiFi | 1,33 MB (frente a 1,60 MB con WiFi) |
+| Esferas | Las 23 a 30 fps; peor fotograma 25,8 ms (Cuento) |
+| Coste de la conexión en CPU | Ninguno apreciable (Cuento y Clásico, iguales conectados y sin conectar) |
+| MTU negociado con Windows | 256 bytes |
+| 100 comandos seguidos | 1,1 s, sin errores |
+
+Hallazgos para las fases siguientes:
+- **RPG tiene picos propios de 35–41 ms** durante 2–3 s cada ~40 s (movimiento de cámara); el resto del tiempo va a 26–29 ms. No es el Bluetooth, y probablemente pasaba ya con WiFi (antes solo se medía 2–3 s). Se corrige en la fase 2 y el test de 30 fps de RPG pasa a medir un minuto entero.
+- **Descubrimiento desde Windows irregular:** 2,8 s en una prueba y más de 30 s en otra. El móvil emparejado conectará por dirección (no necesita buscar), pero en la fase 2 se acelera el anuncio durante 30 s tras cada desconexión y se incluye el UUID del servicio.
+- **Los tests deben guardar y restaurar los ajustes:** las pruebas del prototipo cambiaron la esfera y "siempre encendida", y se guardaron en NVS. Desde la fase 2 un fixture guarda el estado antes y lo restaura después.
+
 ### Fase 1 — Modos de arranque y capa de placa (1 día)
 
 - `boot_mode` en NVS (`ble` / `wifi` / `update`) leído al arrancar. `main.c` arranca solo lo que necesita ese modo.
