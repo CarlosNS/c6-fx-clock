@@ -1,6 +1,7 @@
 package io.github.carlosns.c6clock
 
 import android.Manifest
+import android.app.AlertDialog
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -23,6 +24,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.webkit.JavascriptInterface
+import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -73,7 +75,21 @@ class MainActivity : ComponentActivity() {
             setBackgroundColor(0xFF0B0D14.toInt())
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            webChromeClient = WebChromeClient()  // confirm() dialogs
+            webChromeClient = object : WebChromeClient() {
+                // confirm() as a native dialog, without the "the page at https://appassets… says" header;
+                // the page's ask() sends {title, body, ok}
+                override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean {
+                    val q = runCatching { JSONObject(message) }.getOrNull()
+                    AlertDialog.Builder(this@MainActivity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                        .setTitle(q?.optString("title")?.ifEmpty { null })
+                        .setMessage(q?.optString("body") ?: message)
+                        .setPositiveButton(q?.optString("ok")?.ifEmpty { null } ?: "Aceptar") { _, _ -> result.confirm() }
+                        .setNegativeButton("Cancelar") { _, _ -> result.cancel() }
+                        .setOnCancelListener { result.cancel() }
+                        .show()
+                    return true
+                }
+            }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? =
                     assets.shouldInterceptRequest(req.url)

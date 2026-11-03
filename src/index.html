@@ -277,6 +277,8 @@ function show(s){
  $('wifionly').classList.toggle('hide',s.mode!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
  $('modetxt').textContent=MODE_TXT[s.mode]||''}
 // Updates over the internet: this device reads the manifest, the clock downloads the image itself
+// Yes/no question: in the app Kotlin turns it into a native dialog (title + button named after the action)
+function ask(title,body,ok){return confirm(L.kind==='android'?JSON.stringify({title,body,ok}):title+'\n\n'+body)}
 const MANIFEST='https://carlosns.github.io/c6-fx-clock/manifest.json';
 const UPD_TXT={updated:'Actualizado',up_to_date:'Ya tenía la última versión',no_wifi:'No pudo conectarse a su red WiFi (revisa Conexión)',
  no_internet:'Su red no tenía internet',bad_manifest:'No pudo leer la información de la versión',bad_image:'La descarga no era válida; sigue con la versión anterior',
@@ -294,7 +296,7 @@ async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classL
  catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
 $('updgo').onclick=()=>{if(!offer)return;
- if(!confirm(`El reloj se reiniciará, se conectará a su red WiFi y descargará la ${offer.version} (1–3 min). Si algo falla, sigue con la versión actual.\n\n¿Actualizar?`))return;
+ if(!ask(`¿Actualizar el reloj a la ${offer.version}?`,'El reloj se reiniciará, se conectará a tu WiFi y descargará la nueva versión. Tarda de 1 a 3 minutos. Si algo falla, seguirá con la versión que tiene ahora.','Actualizar'))return;
  if(send('update apply '+MANIFEST)){updWaiting=true;offer=null;$('updgo').classList.add('hide');$('updst').innerHTML='<b>Actualizando…</b> el reloj volverá solo en unos minutos.'}};
 // The clock's time ticks here between status messages (over Bluetooth they come every few seconds)
 function clock(){if(!tick){$('clk').textContent='sin hora';return}const t=Math.floor(tick.t+(Date.now()-tick.at)/1000)%86400;$('clk').textContent=[t/3600,t/60%60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':')}
@@ -317,7 +319,7 @@ async function waitBack(){const t0=Date.now();await new Promise(r=>setTimeout(r,
 const MODE_TXT={wifi:'Ahora en WiFi. En Bluetooth se controla desde la app del móvil, sin WiFi. Para volver aquí: mantén BOOT 2 s en la pantalla de bienvenida.',
  ble:'Ahora en Bluetooth. En WiFi se controla desde el navegador, en la IP del reloj, y la app deja de verlo hasta que vuelva.'};
 $('tomode').onclick=()=>{const to=$('tomode').textContent.includes('WiFi')?'wifi':'ble';
- if(confirm(to==='ble'?'El reloj se reiniciará en modo Bluetooth y esta página dejará de responder.\n\nPara volver al modo WiFi: mantén pulsado BOOT 2 s mientras se ve la pantalla de bienvenida.\n\n¿Cambiar?':'El reloj se reiniciará en modo WiFi y se conectará a tu red guardada.\n\nPara volver a Bluetooth: el botón de esta página (abierta en la IP del reloj) o BOOT 2 s en la bienvenida.\n\n¿Cambiar?'))send('mode '+to)};
+ if((to==='ble'?ask('¿Pasar el reloj a modo Bluetooth?','Se reiniciará y esta página dejará de responder, porque solo funciona por WiFi. Para volver al modo WiFi, mantén pulsado BOOT 2 segundos mientras se ve la pantalla de bienvenida.','Cambiar a Bluetooth'):ask('¿Pasar el reloj a modo WiFi?','Se reiniciará y se conectará a tu red WiFi guardada. Mientras esté en WiFi, la app no podrá controlarlo ni ponerle la hora. Para volver a Bluetooth, usa este mismo botón desde la página del reloj (en su IP) o mantén pulsado BOOT 2 segundos en la pantalla de bienvenida.','Cambiar a WiFi')))send('mode '+to)};
 
 // Bluetooth from a browser: Chrome shows its device chooser after a tap
 $('blego').onclick=async()=>{$('blest').textContent='Elige el reloj en la lista…';
@@ -331,7 +333,7 @@ function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.i
  $('appsync').textContent=(i.lastSync?`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`:'Todavía ninguna')+` · cada ${i.every} min`;
  $('appbg').textContent=i.background?'Permitido: la hora y el tiempo llegan aunque cierres la app':'Sin permitir: el sistema puede cortar la sincronización';$('appbgo').classList.toggle('hide',i.background)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent='Sincronizando…';setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appforget').onclick=()=>{if(confirm('El móvil y el reloj se olvidarán. Para volver a usarlo tendrás que emparejarlo con la clave de su pantalla.\n\n¿Olvidar?'))ClockBridge.forget()};
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appforget').onclick=()=>{if(ask('¿Olvidar este reloj?','El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','Olvidar'))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
  window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();$('appupdst').classList.remove('hide');$('appupdgo').classList.toggle('hide',!o);
