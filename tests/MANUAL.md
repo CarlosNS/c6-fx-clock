@@ -14,6 +14,7 @@ La lógica ya la prueban los tests automáticos con la clave real (leída del lo
 
 - [ ] Al emparejar, la clave aparece en grande sobre la esfera, con "CLAVE BLUETOOTH" y "Escribela en el movil".
 - [ ] La pantalla sigue encendida mientras la clave está en pantalla, aunque tardes más de 10 s en teclearla.
+- [ ] La barra morada sobre la clave se acorta durante 30 s y se pone roja en los 10 últimos.
 - [ ] Mantener BOOT: a los 3 s aparece "10 S: OLVIDAR MOVILES" y a los 10 s "MOVILES OLVIDADOS".
 - [ ] Pulsación larga (1–3 s) y soltar: cambia "AUTO: SI / NO" al soltar.
 
@@ -42,6 +43,7 @@ Preparación (una vez): en el móvil, *Ajustes → Sobre el teléfono → Versi�
 - [ ] Con la app cerrada, a los 30 min la esfera Tiempo tiene datos nuevos (mirar la antigüedad).
 - [ ] Una noche entera con la app cerrada y el móvil en reposo: por la mañana la hora y el tiempo están al día.
 - [ ] Con el reloj fuera de alcance, la sincronización falla sin avisos molestos y se reanuda al volver.
+- [ ] Con la app cerrada, desenchufar el reloj unos minutos y volver a enchufarlo: en pocos segundos tiene la hora del móvil (comprobado por USB el 2026-11-03: 1,6 s).
 - [ ] Publicar una versión nueva: llega una notificación de Android sin abrir la app.
 - [ ] Consumo de batería de la app tras un día (Ajustes → Batería): debe ser despreciable.
 

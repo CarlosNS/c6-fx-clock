@@ -16,7 +16,10 @@ pytestmark = pytest.mark.phase5
 
 PKG = "io.github.carlosns.c6clock"
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-APK = os.path.join(ROOT, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk")
+# The signed release build is what people install; debug and release have different signatures and
+# can't replace each other on the phone, so use release whenever it exists
+APKS = [os.path.join(ROOT, "android", "app", "build", "outputs", "apk", b, f"app-{b}.apk") for b in ("release", "debug")]
+APK = next((p for p in APKS if os.path.exists(p)), APKS[-1])
 
 
 def adb_path():
@@ -46,7 +49,8 @@ def logcat_since(mark, tag):
 
 
 def now_mark():
-    return adb("shell", "date", "+%m-%d %H:%M:%S.000").strip()
+    # one string: adb joins the arguments and the phone's shell would split the format at the space
+    return adb("shell", "date '+%m-%d %H:%M:%S.000'").strip()
 
 
 def test_app_starts_and_shows_the_page(phone):

@@ -357,6 +357,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         if (ev->passkey.params.action == BLE_SM_IOACT_DISP) {
             // A random 6-digit code on the screen; the phone types it in
             struct ble_sm_io io = {.action = BLE_SM_IOACT_DISP, .passkey = esp_random() % 1000000};
+            g_app.pairing_since = (uint32_t)(esp_timer_get_time() / 1000);
             g_app.pairing_code = (int)io.passkey;
             app_wake();
             ESP_LOGI(TAG, "Pairing, passkey %06lu", (unsigned long)io.passkey);

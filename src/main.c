@@ -165,14 +165,21 @@ static void draw_ota(uint16_t *fb, int pct)
 }
 
 // Bluetooth pairing: the passkey the phone has to type, over whatever face is showing
-static void draw_pairing(uint16_t *fb, int code)
+// Bluetooth gives the phone 30 s to send the code (SMP timeout); the bar on top counts them down
+#define PAIRING_WINDOW_MS 30000
+
+static void draw_pairing(uint16_t *fb, int code, uint32_t now)
 {
     char digits[12];
     snprintf(digits, sizeof(digits), "%06d", code % 1000000);
     int w = font_width(&font_round_s, digits, 0), bw = w + 24, bh = 92;
     int x = (g_lcd_w - bw) / 2, y = (g_lcd_h - bh) / 2;
     gfx_darken_rect(fb, x, y, bw, bh, 12, 3);
-    gfx_fill_rect(fb, x + 12, y + 1, bw - 24, 1, rgb565(124, 92, 255));
+    int left = PAIRING_WINDOW_MS - (int)(now - g_app.pairing_since);
+    if (left < 0) left = 0;
+    int bar = (bw - 24) * left / PAIRING_WINDOW_MS;
+    uint16_t bar_c = left > 10000 ? rgb565(124, 92, 255) : rgb565(255, 80, 80);
+    gfx_fill_rect(fb, x + 12, y + 1, bar, 3, bar_c);
     const char *t1 = "CLAVE BLUETOOTH", *t2 = "Escribela en el movil";
     gfx_text(fb, (g_lcd_w - gfx_text_width(t1, 1)) / 2, y + 10, t1, rgb565(170, 180, 210), 1);
     font_draw(fb, &font_round_s, (g_lcd_w - w) / 2, y + 26, digits, 0, rgb565(255, 255, 255), rgb565(20, 16, 50),
@@ -373,7 +380,7 @@ void app_main(void)
         int ota = ota_progress();
         if (ota >= 0) draw_ota(fb, ota);
         int code = g_app.pairing_code;
-        if (code >= 0) draw_pairing(fb, code);
+        if (code >= 0) draw_pairing(fb, code, now);
         if (now - led_t > 40) {
             if (is_night()) led_set(0, 0, 0);
             else led_follow_screen(fb, eff);

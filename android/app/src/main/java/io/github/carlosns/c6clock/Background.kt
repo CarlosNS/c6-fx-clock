@@ -15,6 +15,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -134,6 +135,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         fun runNow(context: Context) {
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(NOW, ExistingWorkPolicy.REPLACE, OneTimeWorkRequestBuilder<SyncWorker>().build())
+        }
+
+        /** From the background (the clock just appeared): expedited, so the system runs it at once.
+         *  Only used on Android 12+, where expedited work needs no foreground notification. */
+        fun runSoon(context: Context) {
+            val req = OneTimeWorkRequestBuilder<SyncWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build()
+            WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.KEEP, req)
         }
 
         fun cancel(context: Context) {

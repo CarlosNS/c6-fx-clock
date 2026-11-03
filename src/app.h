@@ -31,6 +31,7 @@ typedef struct {
     volatile bool frozen;      // ...and it confirms here
     volatile int dbg_h, dbg_m; // screenshot: fake time of day (-1 = real time)
     volatile int pairing_code; // Bluetooth passkey being shown on the screen, -1 = none
+    volatile uint32_t pairing_since; // ms timestamp when it appeared (the phone has 30 s to type it)
 
     // ---- Network ----
     char ap_ip[16];

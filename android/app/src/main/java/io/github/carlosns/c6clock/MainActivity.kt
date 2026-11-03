@@ -84,7 +84,10 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
         }.filter { ContextCompat.checkSelfPermission(this, it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
         if (wanted.isNotEmpty()) permissions.launch(wanted.toTypedArray())
-        if (store.address != null) SyncWorker.schedule(this)
+        store.address?.let {
+            SyncWorker.schedule(this)
+            Presence.observe(this, it)  // also for apps paired before presence existed (0.1.0)
+        }
         syncIfAsked(intent)
     }
 
@@ -189,6 +192,7 @@ class MainActivity : ComponentActivity() {
                 bond(address)
                 store.address = address
                 SyncWorker.schedule(this@MainActivity)
+                Presence.observe(this@MainActivity, address)
                 disconnect()
                 connectIfPaired()
                 SyncWorker.runNow(this@MainActivity)
@@ -216,7 +220,7 @@ class MainActivity : ComponentActivity() {
         try {
             check(dev.createBond()) { "El móvil no pudo empezar el emparejamiento" }
             val s = withTimeout(90_000) { done.await() }
-            check(s == BluetoothDevice.BOND_BONDED) { "Emparejamiento cancelado o clave incorrecta" }
+            check(s == BluetoothDevice.BOND_BONDED) { "No se emparejó: clave incorrecta o pasaron los 30 s. Vuelve a pulsar Buscar el reloj" }
         } finally {
             unregisterReceiver(rx)
         }
@@ -228,6 +232,7 @@ class MainActivity : ComponentActivity() {
             runCatching { link?.send("unpair") }  // the clock forgets this phone too
             disconnect()
             SyncWorker.cancel(this@MainActivity)
+            Presence.stop(this@MainActivity, address)
             store.address = null
             val cdm = getSystemService(CompanionDeviceManager::class.java)
             if (Build.VERSION.SDK_INT >= 33) cdm.myAssociations.filter { it.deviceMacAddress?.toString().equals(address, true) }.forEach { cdm.disassociate(it.id) }
