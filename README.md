@@ -1,6 +1,9 @@
 # ESP32-C6 FX Clock
 
-Reloj con esferas animadas para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), controlado desde el móvil por WiFi.
+Reloj con esferas animadas para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320). Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
+
+- Descargas (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
+- Instalación por USB desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
 
 ## Esferas
 
@@ -49,7 +52,7 @@ Todas van limitadas a **30 fps**.
 | Archivo | Para qué |
 |---|---|
 | `c6-fx-clock.bin` | Instalación completa por USB (bootloader + tabla de particiones + firmware). Primera instalación o recuperación. |
-| `c6-fx-clock-ota.bin` | Solo el firmware, para actualizar **por WiFi** desde la web del reloj. |
+| `c6-fx-clock-ota.bin` | Solo el firmware, para actualizar **por WiFi** subiendo el archivo desde la web del reloj. Normalmente no hace falta: el reloj se actualiza solo por internet (abajo). |
 
 ### Por USB (webflasher)
 
@@ -57,7 +60,7 @@ Todas van limitadas a **30 fps**.
 2. En Chrome o Edge, pulsa **Instalar el reloj** y elige el puerto de la placa.
 3. Si eliges borrar el dispositivo, luego conecta el móvil a `C6-FX-Demo` y configura tu WiFi en la sección **Conexión** de `http://192.168.4.1`.
 
-También se puede publicar la carpeta en cualquier hosting con HTTPS (p. ej. GitHub Pages).
+La misma página está publicada en <https://carlosns.github.io/c6-fx-clock/flasher/> (siempre con la última versión): basta con abrirla en Chrome o Edge.
 
 ### Por WiFi (OTA)
 
@@ -80,6 +83,11 @@ python tools/release.py --notes "Qué cambia"    # compila, GitHub Pages + relea
 
 ## Uso
 
+El reloj tiene dos modos (en el C6 el WiFi y el Bluetooth no caben a la vez en la RAM). Para cambiar de uno a otro: botón en la página de control (*Avanzado → Modo de conexión*) o mantener **BOOT 2 s** en la pantalla de bienvenida.
+
+- **Bluetooth:** se controla con la app Android (abajo). La primera vez se empareja con la clave de 6 cifras que aparece en el reloj. La app le pone la hora y el tiempo cada 30 min aunque esté cerrada.
+- **WiFi:** se controla desde el navegador, como hasta la 2.0:
+
 1. Compila y flashea: `pio run -t upload` (puerto COM5).
 2. Abre el panel web:
    - en tu WiFi: la IP aparece en la pantalla al arrancar;
@@ -88,13 +96,14 @@ python tools/release.py --notes "Qué cambia"    # compila, GitHub Pages + relea
 
 ### Hora
 
-- Se sincroniza por **NTP** si la red WiFi tiene salida a internet (zona horaria Europe/Madrid con horario de verano).
+- En modo Bluetooth la pone la app del móvil (al abrirla y cada 30 min).
+- En modo WiFi se sincroniza por **NTP** si la red tiene salida a internet (zona horaria Europe/Madrid con horario de verano).
 - Si no, la **web la envía sola** al abrirla (o con el botón *Sincronizar hora*).
 - La placa no tiene batería de reloj: tras quitar la corriente hay que volver a sincronizar.
 
 ### Tiempo
 
-- Fuente: [Open-Meteo](https://open-meteo.com) (gratis, sin clave). La placa lo consulta sola por HTTP cada 10 min.
+- Fuente: [Open-Meteo](https://open-meteo.com) (gratis, sin clave). En modo WiFi la placa lo consulta sola cada 10 min; en modo Bluetooth se lo manda la app.
 - Si la red no tiene salida a internet, la web lo consulta desde el móvil al abrirla y se lo pasa a la placa.
 - Ciudad: tarjeta **Tiempo** de la web (busca por nombre y elige el resultado). Por defecto, Sevilla.
 
@@ -118,16 +127,18 @@ Esfera, brillo, velocidad, 24/12 h, segundos, cambio automático y **modo noche*
 - Doble framebuffer (2 × 110 KB) con DMA; el código de WiFi/lwIP/FreeRTOS va en flash para dejar heap a la red (~33 KB libres en marcha).
 - Flash de 8 MB: `nvs` (ajustes y WiFi), `otadata`, dos huecos de app de 3,5 MB para OTA y 896 KB libres (`storage`) para el futuro.
 - DNS públicos (1.1.1.1 / 8.8.8.8): algunos routers rechazan las consultas DNS de la LAN.
-- WiFi en redes malladas: busca en todos los canales y se une al nodo con mejor señal; si un nodo acepta la conexión pero no da IP en 20 s, se desconecta y reintenta.
+- WiFi en redes malladas: busca en todos los canales y se une al nodo con mejor señal; si un nodo acepta la conexión pero no da IP en 20 s, se pasa al siguiente nodo más fuerte de la misma red.
 
 ## Arquitectura
 
 ```
-transportes        web.c (HTTP + WebSocket)        [futuro: ble.c]
+transportes        web.c (HTTP + WebSocket)        ble.c (GATT, NimBLE)        console.c (serie)
                             |                             |
 control            control.c  -- comandos de texto y JSON de estado --
                    settings.c -- tabla única de ajustes (NVS, comando y JSON con la misma clave)
                    ota.c      -- actualización por trozos, sin depender del transporte
+                   update.c   -- modo UPDATE: manifiesto, descarga HTTPS, SHA-256, resultado
+                   bootmode.c -- modos BLE / WIFI / UPDATE (NVS)
 servicios          net.c (WiFi)   clock.c (hora)   weather.c (tiempo)
 pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   gfx.c / lcd.c
 ```
@@ -138,15 +149,13 @@ pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   
 
 ### Bluetooth
 
-En marcha según `docs/PLAN-bluetooth.md` (fases 0–5 hechas). Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj. El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
+Hecho según `docs/PLAN-bluetooth.md`. Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj (hasta 3 móviles; BOOT 10 s los olvida). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
 
 ```
 python tools/ble_console.py          # comandos a mano
 python tools/fake_phone.py           # una sincronización como la hará la app
 python tools/ble_shot.py --fx 22     # captura de pantalla por Bluetooth (PNG)
 ```
-
-En el C6 el WiFi y el Bluetooth no caben a la vez en la RAM, así que cada uno tiene su modo de arranque.
 
 La misma página de control funciona por los tres caminos: servida por el reloj en modo WiFi, desde Chrome/Edge por Web Bluetooth (abre `src/index.html` en `http://localhost`) y dentro de la app. Lo único que cambia es el enlace, en `src/transport.js`.
 

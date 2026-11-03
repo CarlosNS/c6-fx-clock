@@ -321,6 +321,18 @@ Tests: `tests/update/test_update.py` con un **servidor local de pruebas** en el 
 
 Tests: suite completa en verde (`pytest tests`).
 
+**Resultado (2026-11-03): cerrada a falta del móvil.**
+
+- **Documentación:**
+  - README actualizado: modos, app, actualizaciones por internet, enlaces a las releases y al instalador web.
+  - Instalador web: cómo actualizar sin cable y cómo usar la app.
+  - Notas de versión en `CHANGELOG.md`.
+- **La 3.0.0 está preparada pero no publicada.** Se publicará cuando la app pase la prueba manual en el móvil. En ese momento `BOOT_DEFAULT` pasará a `BOOT_BLE` (los pasos están en `CHANGELOG.md`). Hasta entonces, una instalación nueva arranca en WiFi, para no dejar a nadie con un reloj que solo se maneja con una app sin probar.
+- **Prototipo:** la rama `spike/ble-medida` se conserva; sus medidas están en la sección de la fase 0.
+- **Encontrado al pasar la suite completa:** los tests de actualización importaban el fixture de paquete de `tests/ble`. pytest lo cerraba al final de la sesión, y los tests WiFi se ejecutaban con el reloj aún en Bluetooth. Ahora cada paquete crea el suyo con `ble_mode()` (y `tests/update` tiene su `__init__.py`). Además, el test de actualización se detiene si la imagen de prueba no es de la versión que tiene el reloj, para no instalarle otra.
+- **Suite completa:** 72 tests correctos y 3 omitidos (los de la app en el móvil), en 32 min. Falló una vez `test_pairing_code_changes_every_time`, con la cancelación intermitente del emparejamiento en Windows; repetido dos veces, pasa.
+- **Pendiente con el móvil:** `tests/MANUAL.md` (fases 3, 5, 5c y 6) y `tests/app/test_android_app.py`.
+
 **Total estimado: 13–16 días de trabajo**, en sesiones cortas, fase a fase.
 
 ---

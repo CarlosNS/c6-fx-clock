@@ -71,9 +71,10 @@ def test_update_mode_is_one_shot(console):
     console.send("mode update")
     console.read_until(r"Boot mode: update", 30, at)
     console.read_until(r"single buffering", 10, at)
-    console.read_until(r"back to ble mode", 15, at)
+    # Without a manifest ("mode update" by hand) it records bad_manifest...
+    done = console.read_until(r"update: Result: bad_manifest", 15, at)
     # ... and it comes back by itself, without any command
-    after = console.read_until(r"Boot mode: (\w+)", 30, console.text.rfind("back to ble mode"))
+    after = console.read_until(r"Boot mode: (\w+)", 30, done.end())
     assert after.group(1) == "ble"
     assert not PANIC.search(console.text[at:])
 

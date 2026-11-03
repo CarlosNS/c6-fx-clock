@@ -30,8 +30,12 @@ def server():
 
 
 @pytest.fixture(scope="module")
-def clock(link):
+def clock(link, server):
     """The paired clock's address; the module link is closed so every test opens its own."""
+    running = link.request("get info", "info")["ver"]
+    if server.running_version != running:  # the "good" test would install that other version
+        pytest.exit(f"webflasher/c6-fx-clock-ota.bin is {server.running_version}, the clock runs {running}: "
+                    "run `pio run` and tools/build_webflasher.py first", returncode=2)
     addr = link.address
     link.close()
     return addr

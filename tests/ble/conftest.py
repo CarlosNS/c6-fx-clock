@@ -1,3 +1,4 @@
+import contextlib
 import os
 import re
 import threading
@@ -10,12 +11,14 @@ from clocklib.board import SerialSession
 SERIAL_LOG = os.path.join(os.path.dirname(__file__), "..", ".ble_serial.log")
 
 
-@pytest.fixture(scope="package", autouse=True)
-def ble_serial(serial_port):
-    """Bluetooth tests need the BLE boot mode: switch to it over the serial console and go back to
-    the mode the clock was in afterwards (until the app exists the clock lives in Wi-Fi mode).
+@contextlib.contextmanager
+def ble_mode(serial_port):
+    """The clock in BLE mode for a block of tests: switched over the serial console and put back in
+    the mode it was in afterwards (until the app is in daily use the clock lives in Wi-Fi mode).
     The serial port stays open the whole time: its log gives the pairing passkey and is saved to
-    tests/.ble_serial.log, so a failing Bluetooth test can be read against what the clock did."""
+    tests/.ble_serial.log, so a failing Bluetooth test can be read against what the clock did.
+    Each test package that needs it defines its own package-scoped fixture with it (a package
+    fixture imported into another package would only end with the whole session)."""
     s = SerialSession(serial_port)  # opening the port reboots the board
     s.read_until(r"Boot mode: \w+", 30)
     was = re.findall(r"Boot mode: (\w+)", s.text)[-1]
@@ -31,16 +34,24 @@ def ble_serial(serial_port):
             s._read()
     reader = threading.Thread(target=pump, daemon=True)
     reader.start()
-    yield s
-    stop.set()
-    reader.join(30)  # it may be reopening the port after a reboot: let it finish first
-    with open(SERIAL_LOG, "w", encoding="utf-8") as f:
-        f.write(s.text)
-    if was != "ble":
-        at = s.mark()
-        s.send(f"mode {was}")
-        s.read_until(f"Boot mode: {was}", 30, at)
-    s.close()
+    try:
+        yield s
+    finally:
+        stop.set()
+        reader.join(30)  # it may be reopening the port after a reboot: let it finish first
+        with open(SERIAL_LOG, "w", encoding="utf-8") as f:
+            f.write(s.text)
+        if was != "ble":
+            at = s.mark()
+            s.send(f"mode {was}")
+            s.read_until(f"Boot mode: {was}", 30, at)
+        s.close()
+
+
+@pytest.fixture(scope="package", autouse=True)
+def ble_serial(serial_port):
+    with ble_mode(serial_port) as s:
+        yield s
 
 
 def pair(link, serial, wrong_code=None):

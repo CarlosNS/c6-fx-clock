@@ -5,7 +5,7 @@ Automáticos con `pytest`, organizados por fases del plan (`docs/PLAN-bluetooth.
 ```
 pip install -r tests/requirements.txt
 cd tests
-pytest -m now          # lo que ya funciona hoy (firmware 2.0.0)
+pytest -m now          # rápido: unitarios y web (sin Bluetooth)
 pytest -m phase2       # una fase concreta
 pytest                 # todo
 ```
