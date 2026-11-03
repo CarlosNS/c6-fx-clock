@@ -26,7 +26,7 @@ Opciones: `--host 192.168.1.140` (modo WiFi), `--port COM5`, `--ble-name "C6 Clo
 | `ble/test_web_page.py` | La página de control por Web Bluetooth en un Edge/Chrome real, manejado por DevTools (que también elige el reloj en el selector): carga, hora, ajustes en los dos sentidos, esferas, reconexión | 5a | adaptador Bluetooth + USB + Edge |
 | `android/` | Tests unitarios Kotlin: troceado byte a byte contra `app/vectors.json`, comando `wx`, versiones, pasos de la sincronización (`cd android && gradlew test`) | 5b–5c | JDK 21 + SDK de Android |
 | `app/test_android_app.py` | La app en el móvil por `adb`: arranca, sincroniza con el reloj, tarea periódica programada | 5b–5c | móvil por USB con depuración |
-| `update/` | Actualización: al día, correcta, corrupta, otro proyecto, sin manifiesto, lenta, corte de corriente | 6 | Bluetooth + WiFi + puerto 8770 |
+| `update/` | Actualización por internet contra un servidor del PC (`update_server.py`): http:// a internet rechazado, al día, correcta, SHA-256 erróneo, cortada, otro proyecto, sin manifiesto, lenta (límite de 5 min), corte de corriente a mitad (reset por USB) | 6 | Bluetooth + USB + WiFi + puerto 8770 abierto para Python |
 | `MANUAL.md` | Lo que necesita el móvil (clave de emparejamiento, app instalada) | 3, 5, 6 | tú |
 
 Los tests de Bluetooth ponen el reloj en modo BLE por la consola serie y lo devuelven al modo en que estaba al terminar. Los tests guardan los ajustes del reloj antes de empezar y los restauran al terminar (`conftest.py`), porque el reloj está en uso.

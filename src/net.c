@@ -9,10 +9,49 @@
 #include "esp_timer.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
+#include "nvs.h"
 #include "wifi_config.h"
 
 static const char *TAG = "net";
 static esp_netif_t *s_sta_netif;
+
+// Our own copy of the home network ("clock" namespace): the Wi-Fi driver keeps its own, but it can
+// only be read or written with Wi-Fi running, and in Bluetooth mode the network must still be
+// settable (for updates) and known.
+static void saved_put(const char *ssid, const char *pass)
+{
+    nvs_handle_t h;
+    if (nvs_open("clock", NVS_READWRITE, &h) != ESP_OK) return;
+    nvs_set_str(h, "sta_ssid", ssid);
+    nvs_set_str(h, "sta_pass", pass);
+    nvs_commit(h);
+    nvs_close(h);
+}
+
+static bool saved_get(char *ssid, size_t ssid_size, char *pass, size_t pass_size)
+{
+    nvs_handle_t h;
+    if (nvs_open("clock", NVS_READONLY, &h) != ESP_OK) return false;
+    size_t a = ssid_size, b = pass_size;
+    bool ok = nvs_get_str(h, "sta_ssid", ssid, &a) == ESP_OK && nvs_get_str(h, "sta_pass", pass, &b) == ESP_OK && ssid[0];
+    nvs_close(h);
+    return ok;
+}
+
+bool net_has_sta_config(char *ssid, size_t size)
+{
+    char pass[65];
+    if (strlen(STA_SSID) > 0) {
+        strlcpy(ssid, STA_SSID, size);
+        return true;
+    }
+    return saved_get(ssid, size, pass, sizeof(pass));
+}
+
+void net_load_saved_ssid(void)
+{
+    net_has_sta_config(g_app.sta_ssid, sizeof(g_app.sta_ssid));
+}
 
 #define MAX_NETS 20
 static wifi_net_t s_nets[MAX_NETS];
@@ -161,7 +200,14 @@ void net_start(void)
         strlcpy((char *)sta.sta.ssid, STA_SSID, sizeof(sta.sta.ssid));
         strlcpy((char *)sta.sta.password, STA_PASS, sizeof(sta.sta.password));
     } else {
-        esp_wifi_get_config(WIFI_IF_STA, &sta);  // network remembered in NVS, if any
+        esp_wifi_get_config(WIFI_IF_STA, &sta);  // network remembered by the Wi-Fi driver, if any
+        char ssid[33], pass[65];
+        if (saved_get(ssid, sizeof(ssid), pass, sizeof(pass))) {  // set later, maybe in Bluetooth mode
+            strlcpy((char *)sta.sta.ssid, ssid, sizeof(sta.sta.ssid));
+            strlcpy((char *)sta.sta.password, pass, sizeof(sta.sta.password));
+        } else if (sta.sta.ssid[0]) {
+            saved_put((char *)sta.sta.ssid, (char *)sta.sta.password);  // keep a copy for the other modes
+        }
     }
     bool use_sta = sta.sta.ssid[0] != 0;
     sta_prefs(&sta);
@@ -192,6 +238,12 @@ void net_start(void)
 
 void net_set_sta(const char *ssid, const char *pass)
 {
+    saved_put(ssid, pass);
+    if (!s_sta_netif) {  // Wi-Fi is off in this mode: stored for the next Wi-Fi or update boot
+        strlcpy(g_app.sta_ssid, ssid, sizeof(g_app.sta_ssid));
+        ESP_LOGI(TAG, "Network %s stored", ssid);
+        return;
+    }
     wifi_config_t sta = {0};
     strlcpy((char *)sta.sta.ssid, ssid, sizeof(sta.sta.ssid));
     strlcpy((char *)sta.sta.password, pass, sizeof(sta.sta.password));

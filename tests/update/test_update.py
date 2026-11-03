@@ -1,10 +1,12 @@
 """Phase 6: updates over the internet (docs/PLAN-bluetooth.md, 3.4).
 
 Flow per test: over Bluetooth send "update apply <manifest url>" -> the clock reboots into UPDATE
-mode, tries, stores the result and reboots into BLE mode -> reconnect and read "get info".upd.
+mode, tries, stores the result and reboots into BLE mode; the serial log tells when, then
+"get info".upd gives the result. The manifests and images come from a server on this PC
+(update_server.py, http:// is accepted only for LAN addresses).
 
-Needs: a test build (accepts http://), the clock's Wi-Fi network already stored, and the PC
-reachable from the clock on port 8770 (Windows firewall may need an inbound rule).
+Needs: the clock's Wi-Fi network stored, and the PC reachable from the clock on port 8770 (Windows
+firewall: inbound rule for python.exe).
 """
 import os
 import time
@@ -12,7 +14,6 @@ import time
 import pytest
 
 from clocklib.ble import ClockLink
-from clocklib.board import boot_log
 
 from update_server import Server
 
@@ -28,69 +29,91 @@ def server():
     s.stop()
 
 
-def run_update(ble_name, url, timeout=420):
-    lk = ClockLink(ble_name).connect()
-    addr = lk.address
-    before = lk.request("get info", "info")
+@pytest.fixture(scope="module")
+def clock(link):
+    """The paired clock's address; the module link is closed so every test opens its own."""
+    addr = link.address
+    link.close()
+    return addr
+
+
+def info(ble_name, addr):
+    lk = ClockLink(ble_name).connect(addr, retries=3)
+    try:
+        return lk.request("get info", "info", timeout=10)
+    finally:
+        lk.close()
+
+
+def run_update(ble_name, addr, serial, url, timeout=420):
+    before = info(ble_name, addr)
+    lk = ClockLink(ble_name).connect(addr, retries=3)
+    at = serial.mark()
     lk.send(f"update apply {url}")
-    lk.wait_for("ack", match=lambda m: m.get("cmd") == "update")
+    ack = lk.wait_for("ack", match=lambda m: m.get("cmd") == "update")
     lk.close()
-    # The clock is now in UPDATE mode (no Bluetooth); wait for it to come back
-    end = time.monotonic() + timeout
-    while time.monotonic() < end:
-        time.sleep(10)
-        try:
-            lk = ClockLink(ble_name, timeout=10).connect(addr)
-        except Exception:
-            continue
-        try:
-            info = lk.request("get info", "info")
-        finally:
-            lk.close()
-        if info["upd"].get("at") != before["upd"].get("at"):
-            return before, info
-    raise AssertionError("the clock did not come back from UPDATE mode")
+    assert ack["ok"], ack
+    serial.wait_for(r"Boot mode: update", 30, at)
+    serial.wait_for(r"update: Result: (\w+)", timeout, at)
+    serial.wait_for(r"Advertising as", 60, at)
+    after = info(ble_name, addr)
+    assert after["upd"]["at"] == before["upd"]["at"] + 1
+    return before, after
 
 
-def test_same_version_is_up_to_date(ble_name, server):
-    _, info = run_update(ble_name, server.url("same"))
-    assert info["upd"]["state"] == "up_to_date"
+def test_refuses_plain_http_to_the_internet(ble_name, clock):
+    lk = ClockLink(ble_name).connect(clock, retries=3)
+    try:
+        lk.send("update apply http://example.com/manifest.json")
+        ack = lk.wait_for("ack", match=lambda m: m.get("cmd") == "update")
+        assert not ack["ok"] and "https" in ack["msg"]
+    finally:
+        lk.close()
 
 
-def test_good_update_switches_slot(ble_name, server):
-    before, info = run_update(ble_name, server.url("good"))
-    assert info["upd"]["state"] == "updated"
-    assert info["part"] != before["part"]
+def test_same_version_is_up_to_date(ble_name, clock, ble_serial, server):
+    _, after = run_update(ble_name, clock, ble_serial, server.url("same"))
+    assert after["upd"]["state"] == "up_to_date"
+
+
+def test_good_update_switches_slot(ble_name, clock, ble_serial, server):
+    before, after = run_update(ble_name, clock, ble_serial, server.url("good"))
+    assert after["upd"]["state"] == "updated"
+    assert after["upd"]["to"] == "9.9.9" and after["upd"]["from"] == before["ver"]
+    assert after["part"] != before["part"]
 
 
 @pytest.mark.parametrize("scenario", ["badsha", "truncated", "foreign"])
-def test_bad_images_are_rejected(ble_name, server, scenario):
-    before, info = run_update(ble_name, server.url(scenario))
-    assert info["upd"]["state"] == "bad_image"
-    assert info["part"] == before["part"], "a rejected image must never be activated"
+def test_bad_images_are_rejected(ble_name, clock, ble_serial, server, scenario):
+    before, after = run_update(ble_name, clock, ble_serial, server.url(scenario))
+    assert after["upd"]["state"] == "bad_image"
+    assert after["part"] == before["part"], "a rejected image must never be activated"
 
 
-def test_missing_manifest(ble_name, server):
-    _, info = run_update(ble_name, server.url("does-not-exist"))
-    assert info["upd"]["state"] == "bad_manifest"
+def test_missing_manifest(ble_name, clock, ble_serial, server):
+    _, after = run_update(ble_name, clock, ble_serial, server.url("does-not-exist"))
+    assert after["upd"]["state"] == "bad_manifest"
 
 
-def test_slow_download_times_out(ble_name, server):
-    before, info = run_update(ble_name, server.url("slow"), timeout=600)
-    assert info["upd"]["state"] == "timeout"
-    assert info["part"] == before["part"]
+def test_slow_download_times_out(ble_name, clock, ble_serial, server):
+    before, after = run_update(ble_name, clock, ble_serial, server.url("slow"), timeout=600)
+    assert after["upd"]["state"] == "timeout"
+    assert after["part"] == before["part"]
 
 
-def test_power_cut_mid_download_keeps_old_firmware(ble_name, server, serial_port):
-    lk = ClockLink(ble_name).connect()
-    before = lk.request("get info", "info")
+def test_power_cut_mid_download_keeps_old_firmware(ble_name, clock, ble_serial, server):
+    before = info(ble_name, clock)
+    lk = ClockLink(ble_name).connect(clock, retries=3)
+    at = ble_serial.mark()
     lk.send(f"update apply {server.url('slow')}")
+    lk.wait_for("ack", match=lambda m: m.get("cmd") == "update")
     lk.close()
-    time.sleep(40)                     # downloading by now
-    log = boot_log(serial_port, 30)    # opening the port resets the board = power cut
-    assert "Loaded app" in log
-    lk = ClockLink(ble_name).connect()
-    try:
-        assert lk.request("get info", "info")["part"] == before["part"]
-    finally:
-        lk.close()
+    ble_serial.wait_for(r"Offered 9\.9\.9", 90, at)
+    time.sleep(20)                  # downloading by now
+    cut = ble_serial.mark()
+    ble_serial.pulse_reset()        # = power cut
+    ble_serial.wait_for(r"Boot mode: ble", 30, cut)  # never stuck in UPDATE mode
+    ble_serial.wait_for(r"Advertising as", 30, cut)
+    after = info(ble_name, clock)
+    assert after["part"] == before["part"]
+    assert after["upd"]["state"] == "interrupted"

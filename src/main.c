@@ -21,6 +21,7 @@
 #include "nvs_flash.h"
 #include "ota.h"
 #include "settings.h"
+#include "net.h"
 #include "update.h"
 #include "web.h"
 #include "weather.h"
@@ -276,6 +277,8 @@ void app_main(void)
         update_run();  // does not return
     }
 
+    update_boot_check();
+    net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)
     strcpy(g_app.ap_ip, "192.168.4.1");
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot
     draw_splash(lcd_fb(), 0, 0);

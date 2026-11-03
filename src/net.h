@@ -1,10 +1,16 @@
 #pragma once
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // Wi-Fi: the board's own access point plus, optionally, the home network (station)
 void net_start(void);
 // Joins a new home network; the Wi-Fi driver stores it in NVS so it survives reboots
 void net_set_sta(const char *ssid, const char *pass);
+// Whether a home network is stored (any mode, Wi-Fi need not be running); copies its name
+bool net_has_sta_config(char *ssid, size_t size);
+// Puts the stored network's name in g_app.sta_ssid (modes without Wi-Fi, for the status)
+void net_load_saved_ssid(void);
 
 // Background scan of the networks around (used by the "WiFi" face)
 typedef struct {

@@ -154,6 +154,16 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
   </div>
 </div>
 
+<div class="card">
+  <h3>Actualizaciones</h3>
+  <div class="stack">
+    <div class="status" id="updst">--</div>
+    <div class="status" id="updlast"></div>
+    <button class="btn full" id="updcheck">Buscar actualización</button>
+    <button class="btn full hide" id="updgo">Actualizar</button>
+  </div>
+</div>
+
 <div class="card hide" id="appcard">
   <h3>Este móvil</h3>
   <div class="item"><div class="t">Sincronización<small id="appsync">--</small></div><button class="btn" id="appnow">Ahora</button></div>
@@ -220,7 +230,7 @@ function night(){lastUser=Date.now();$('nbrv').textContent=$('nbr').value+'%';se
 ['non','nst','nen','nbr'].forEach(id=>$(id).oninput=night);
 // Options that only matter in some states
 function vis(){$('wksrow').classList.toggle('hide',$('aon').checked);$('nightopts').classList.toggle('hide',!$('non').checked)}
-$('wgo').onclick=()=>{const n=$('wssid').value.trim();if(!n)return;if(send('wifi\n'+n+'\n'+$('wpass').value)){$('wst').textContent='Conectando a '+n+'…';$('wpass').value=''}};
+$('wgo').onclick=()=>{const n=$('wssid').value.trim();if(!n)return;if(send('wifi\n'+n+'\n'+$('wpass').value)){$('wst').textContent=mode==='wifi'?'Conectando a '+n+'…':'Red guardada: '+n;$('wpass').value=''}};
 $('sync').onclick=()=>{if(syncTime()){$('sync').textContent='Hora enviada ✓';setTimeout(()=>$('sync').textContent='Sincronizar hora con este dispositivo',2000)}};
 
 // Touch pad: absolute position (0..1000) plus relative movement, batched every 30 ms
@@ -251,7 +261,10 @@ async function poll(){try{show(await L.request('status'))}catch(e){}}
 let tick=null;
 function show(s){
  $('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
- $('wst').innerHTML=s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi C6-FX-Demo');
+ mode=s.mode;$('wgo').textContent=mode==='wifi'?'Conectar el reloj a esta red':'Guardar esta red para las actualizaciones';
+ $('wst').innerHTML=mode!=='wifi'?(s.ssid?`Red guardada: <b>${s.ssid}</b>. El reloj solo la usa para actualizarse.`:'Sin red guardada: hace falta para que el reloj se actualice.')
+  :s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi C6-FX-Demo');
+ updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
  if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+'%'}
@@ -261,6 +274,25 @@ function show(s){
   vis()}
  $('wifionly').classList.toggle('hide',s.mode!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
  $('modetxt').textContent=MODE_TXT[s.mode]||''}
+// Updates over the internet: this device reads the manifest, the clock downloads the image itself
+const MANIFEST='https://carlosns.github.io/c6-fx-clock/manifest.json';
+const UPD_TXT={updated:'Actualizado',up_to_date:'Ya tenía la última versión',no_wifi:'No pudo conectarse a su red WiFi (revisa Conexión)',
+ no_internet:'Su red no tenía internet',bad_manifest:'No pudo leer la información de la versión',bad_image:'La descarga no era válida; sigue con la versión anterior',
+ timeout:'La descarga tardó demasiado; sigue con la versión anterior',interrupted:'Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior',running:'En curso'};
+let mode='',updAt=null,updWaiting=false,offer=null;
+function updStatus(s){const u=s.upd;if(!u)return;
+ if(u.state!=='none')$('updlast').textContent=`Último intento: ${UPD_TXT[u.state]||u.state}${u.state==='updated'?` (${u.from} → ${u.to})`:''}`;
+ if(updAt===null)updAt=u.at;else if(u.at!==updAt){updAt=u.at;updWaiting=false;$('updst').innerHTML=`<b>${UPD_TXT[u.state]||u.state}</b>`;$('updgo').classList.add('hide')}
+ if(!updWaiting&&!offer&&$('updst').textContent==='--')$('updst').textContent=`Versión ${s.ver}`}
+async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;
+ try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json(),ver=$('ver').textContent;
+  if(m.version===ver){$('updst').innerHTML=`Tienes la última versión (<b>${ver}</b>)`;return}
+  offer=m;$('updst').innerHTML=`Disponible la <b>${m.version}</b> (tienes la ${ver})${m.notes?': '+m.notes:''}`;$('updgo').textContent='Actualizar a la '+m.version;$('updgo').classList.remove('hide')}
+ catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
+$('updcheck').onclick=updCheck;
+$('updgo').onclick=()=>{if(!offer)return;
+ if(!confirm(`El reloj se reiniciará, se conectará a su red WiFi y descargará la ${offer.version} (1–3 min). Si algo falla, sigue con la versión actual.\n\n¿Actualizar?`))return;
+ if(send('update apply '+MANIFEST)){updWaiting=true;offer=null;$('updgo').classList.add('hide');$('updst').innerHTML='<b>Actualizando…</b> el reloj volverá solo en unos minutos.'}};
 // The clock's time ticks here between status messages (over Bluetooth they come every few seconds)
 function clock(){if(!tick){$('clk').textContent='sin hora';return}const t=Math.floor(tick.t+(Date.now()-tick.at)/1000)%86400;$('clk').textContent=[t/3600,t/60%60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':')}
 // OTA: upload firmware.bin straight to /ota, then wait for the board to come back

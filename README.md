@@ -68,6 +68,16 @@ En la web del reloj: **Avanzado → Actualizar por WiFi**, elige `c6-fx-clock-ot
 - **Vuelta atrás automática:** una versión nueva debe funcionar 30 s para quedar confirmada; si se cuelga antes, el reloj vuelve solo a la anterior en el siguiente arranque.
 - Cambiar la tabla de particiones (como el paso a 2.0.0) exige una instalación por USB; OTA solo sustituye el firmware.
 
+### Por internet (desde 2.1.0)
+
+En la página de control (también en la app y en modo Bluetooth): **Actualizaciones → Buscar actualización**. El móvil o el navegador lee `https://carlosns.github.io/c6-fx-clock/manifest.json` y, si hay versión nueva, *Actualizar* envía `update apply <manifiesto>`. El reloj se reinicia en modo UPDATE, se conecta a su red WiFi guardada, descarga la imagen comprobando proyecto, tamaño y SHA-256 (máximo 5 min) y vuelve al modo en que estaba. El resultado (`updated`, `up_to_date`, `no_wifi`, `bad_image`, `timeout`, `interrupted`…) aparece en la página. Si algo falla, se queda la versión actual; un corte de corriente a mitad tampoco la estropea.
+
+La red WiFi se puede guardar también en modo Bluetooth (*Conexión*): el reloj solo la usa para actualizarse. Publicar una versión (sube el número en `CMakeLists.txt` antes):
+
+```
+python tools/release.py --notes "Qué cambia"    # compila, GitHub Pages + release con la app
+```
+
 ## Uso
 
 1. Compila y flashea: `pio run -t upload` (puerto COM5).

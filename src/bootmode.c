@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "nvs.h"
+#include "ota.h"
 
 static const char *TAG = "bootmode";
 static const char *const NAMES[] = {"ble", "wifi", "update"};
@@ -58,6 +59,9 @@ void boot_mode_switch(boot_mode_t m)
 {
     if (m == BOOT_UPDATE) nvs_put("bret", s_mode == BOOT_UPDATE ? s_return : s_mode);
     nvs_put("bmode", m);
+    // A switch is asked for by a working firmware: confirm it, or a version installed less than 30 s
+    // ago would be rolled back by this very restart
+    ota_confirm_app();
     ESP_LOGI(TAG, "Switching to %s mode, restarting", NAMES[m]);
     vTaskDelay(pdMS_TO_TICKS(300));  // let the log and any reply go out
     esp_restart();

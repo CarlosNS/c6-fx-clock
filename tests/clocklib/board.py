@@ -46,6 +46,7 @@ class SerialSession:
         self.text = ""
         self._s = None
         self._closed = False
+        self._busy = False
         self._open()
 
     def _open(self):
@@ -62,7 +63,8 @@ class SerialSession:
                 time.sleep(0.5)
 
     def _read(self):
-        if self._closed:
+        if self._closed or self._busy:
+            time.sleep(0.05)
             return
         try:
             data = self._s.read(4096)
@@ -72,7 +74,8 @@ class SerialSession:
             except Exception:
                 pass
             time.sleep(1)
-            if not self._closed:  # never reopen a session that was closed meanwhile
+            # never reopen a session closed meanwhile, nor one pulse_reset already reopened
+            if not self._closed and not self._busy and not (self._s and self._s.is_open):
                 self._open()
             return
         self.text += data.decode("utf-8", "replace")
@@ -118,6 +121,17 @@ class SerialSession:
         self.send("status")
         m = (self.wait_for if reading else self.read_until)(r"status (\{.*\})\r?\n", timeout, at)
         return json.loads(m.group(1))
+
+    def pulse_reset(self):
+        """Resets the board like a power cut, keeping the session (and the reader thread): the
+        port is closed and opened again, and opening it is what resets the chip."""
+        self._busy = True
+        try:
+            self._s.close()
+            time.sleep(0.3)
+            self._open()
+        finally:
+            self._busy = False
 
     def reset(self):
         """Closes and reopens the port, which resets the board (like a power cut)."""

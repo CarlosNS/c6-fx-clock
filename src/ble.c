@@ -22,6 +22,7 @@
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "ota.h"
+#include "update.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include "nvs.h"
@@ -145,12 +146,13 @@ static void send_faces(void)
 
 static void send_info(void)
 {
-    char buf[320];
+    char buf[400], upd[128];
+    if (!update_result_json(upd, sizeof(upd))) strcpy(upd, "{}");
     snprintf(buf, sizeof(buf),
              "{\"t\":\"info\",\"ver\":\"%s\",\"mode\":\"%s\",\"part\":\"%s\",\"name\":\"%s\","
-             "\"sync\":{\"last\":%lld,\"count\":%lu},\"upd\":{\"state\":\"none\",\"at\":0},\"heap\":%u}",
+             "\"sync\":{\"last\":%lld,\"count\":%lu},\"heap\":%u,\"upd\":%s}",
              esp_app_get_description()->version, boot_mode_name(boot_mode()), ota_running_label(), s_name,
-             (long long)s_sync_last, (unsigned long)s_sync_count, (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+             (long long)s_sync_last, (unsigned long)s_sync_count, (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), upd);
     send_str(buf);
 }
 
@@ -233,6 +235,16 @@ static void worker(void *arg)
                 send_ack("unpair");
                 vTaskDelay(pdMS_TO_TICKS(200));  // let the ack out: forgetting drops the link
                 app_command(c);
+            } else if (strncmp(c, "update apply ", 13) == 0) {
+                const char *msg = "";
+                bool ok = update_request(c + 13, &msg);
+                char buf[160];
+                snprintf(buf, sizeof(buf), "{\"t\":\"ack\",\"cmd\":\"update\",\"ok\":%s,\"msg\":\"%s\"}", ok ? "true" : "false", msg);
+                send_str(buf);
+                if (ok) {
+                    vTaskDelay(pdMS_TO_TICKS(200));  // let the ack go out before the reboot
+                    boot_mode_switch(BOOT_UPDATE);
+                }
             } else if (strncmp(c, "mode ", 5) == 0) {
                 send_ack("mode");
                 vTaskDelay(pdMS_TO_TICKS(200));  // let the ack go out before the reboot
