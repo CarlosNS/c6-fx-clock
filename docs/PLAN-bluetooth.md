@@ -296,7 +296,7 @@ Tests: `tests/update/test_update.py` con un **servidor local de pruebas** en el 
 - descarga lenta → `timeout`;
 - corte de corriente a mitad.
 
-**Resultado (2026-11-03): firmware, página y tests hechos (2.1.0); falta publicar la primera versión.**
+**Resultado (2026-11-03): terminada. Publicada la 2.1.0.**
 
 - **El modo UPDATE** tiene 203 KB libres (un solo framebuffer y sin Bluetooth), sobra para HTTPS. Pasos:
   1. Conecta con la red guardada; la vuelta a otro nodo de la malla también vale aquí.
@@ -312,7 +312,8 @@ Tests: `tests/update/test_update.py` con un **servidor local de pruebas** en el 
 - **Encontrado por los tests:** un cambio de modo en los 30 s siguientes a una actualización provocaba la vuelta atrás. Ahora `boot_mode_switch` confirma la versión en uso.
 - **Página y app:** la tarjeta *Actualizaciones* lee el manifiesto desde el móvil o navegador, ofrece la versión nueva y muestra el resultado al volver el reloj. La app no necesita nada más: usa la misma página, y su sincronización avisa con una notificación.
 - **Tests:** `tests/update`, 9 de 9: http hacia internet rechazado, ya al día, actualiza, SHA-256 erróneo, imagen cortada, otro proyecto, sin manifiesto, lenta → `timeout` a los 5 min, corte de corriente → `interrupted`. El corte se simula reabriendo el puerto USB: el truco de RTS de esptool no reinicia esta placa en Windows.
-- **Publicación:** `tools/release.py` está probado en seco (`--dry-run`); la primera publicación real espera autorización.
+- **Publicación:** `tools/release.py` publicó la 2.1.0 en GitHub Pages (manifiesto, imagen y web de instalación en `/flasher/`) y como release con la app. Pages envía `Access-Control-Allow-Origin: *`, así que la página puede leer el manifiesto desde cualquier origen.
+- **Prueba real por HTTPS:** el reloj, con una 2.0.99 grabada por USB, se actualizó a la 2.1.0 desde GitHub Pages en **35 s** de principio a fin. La página mostró "Actualizado (2.0.99 → 2.1.0)" y "Tienes la última versión", y tras un reset arranca desde `ota_1` con la 2.1.0 (confirmada). Heap en modo WiFi: 29,8 KB.
 
 ### Fase 7 — Cierre (½ día)
 

@@ -106,7 +106,7 @@ def publish_pages(version):
 
 def publish_release(version, notes):
     assets = [os.path.join(OUT, "assets", f) for f in sorted(os.listdir(os.path.join(OUT, "assets")))]
-    body = f"{notes}\n\nLos relojes con la app se actualizan solos desde el móvil (Este móvil → Actualizar). " \
+    body = f"{notes}\n\nLos relojes con la app se actualizan solos desde el móvil (Actualizaciones → Buscar actualización). " \
            f"Instalación por USB: {PAGES}/flasher/"
     run(GH, "release", "create", f"v{version}", *assets, "--repo", REPO, "--title", f"C6 FX Clock {version}", "--notes", body)
 
