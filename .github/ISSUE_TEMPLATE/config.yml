@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Guía y solución de problemas
+    url: https://github.com/CarlosNS/c6-fx-clock/wiki/Solución-de-problemas
+    about: Mira antes si tu problema ya tiene solución en la wiki.
+  - name: Licencia comercial
+    url: https://github.com/CarlosNS/c6-fx-clock/issues/new?title=Licencia%20comercial
+    about: Para vender el reloj o usar el proyecto con ánimo de lucro.

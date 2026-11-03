@@ -1,9 +1,13 @@
 # ESP32-C6 FX Clock
 
-Reloj con esferas animadas para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320). Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
+Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
 
-- Descargas (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
-- Instalación por USB desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
+![Algunas esferas: Clásico, Tiempo, RPG, El grito, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
+
+- **Guía completa:** [wiki](https://github.com/CarlosNS/c6-fx-clock/wiki) (instalación, uso, app, esferas, solución de problemas, desarrollo)
+- **Descargas** (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
+- **Instalación por USB** desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
+- **Licencia:** [PolyForm Noncommercial 1.0.0](LICENSE.md): libre para uso personal y sin ánimo de lucro; para uso comercial, [pide una licencia](#licencia)
 
 ## Esferas
 
@@ -161,7 +165,7 @@ La misma página de control funciona por los tres caminos: servida por el reloj 
 
 ### App Android (`android/`)
 
-App en Kotlin con la página de control en un WebView. El emparejamiento lo hace el sistema (Companion Device Manager) con la clave de la pantalla del reloj. Cada 30 min, aunque la app esté cerrada, sincroniza la hora y el tiempo de la ciudad del reloj y avisa si hay firmware nuevo. Requiere Android 10 o superior.
+App en Kotlin con la página de control en un WebView. El emparejamiento lo hace el sistema (Companion Device Manager) con la clave de la pantalla del reloj. Cada 30 min, aunque la app esté cerrada, sincroniza la hora y el tiempo de la ciudad del reloj; al encender el reloj o volver a estar cerca le pone la hora en segundos (Android 12+). Avisa de firmware y de app nuevos, y la app se actualiza sola. Requiere Android 10 o superior.
 
 ```
 cd android
@@ -171,3 +175,13 @@ gradlew assembleRelease      # firmada; necesita android/keystore.properties (no
 ```
 
 Necesita JDK 21 (`JAVA_HOME`) y el SDK de Android (`android/local.properties` con `sdk.dir=...`).
+
+## Licencia
+
+Copyright 2026 CarlosNS. Este proyecto se distribuye con la licencia [PolyForm Noncommercial 1.0.0](LICENSE.md):
+
+- **Puedes**, sin pedir permiso: usarlo, estudiarlo, modificarlo y compartirlo (también tus versiones modificadas) para fines personales, de aprendizaje, investigación, aficionados o de organizaciones sin ánimo de lucro, siempre que incluyas la licencia y la línea `Required Notice` de [LICENSE.md](LICENSE.md).
+- **No puedes**, sin una licencia comercial: venderlo, venderlo instalado en un reloj o dentro de un producto, ni usarlo en una empresa o servicio con ánimo de lucro.
+- **Uso comercial:** abre una [issue](https://github.com/CarlosNS/c6-fx-clock/issues/new?title=Licencia%20comercial) con el título *Licencia comercial* y acordamos las condiciones.
+
+Al ser una licencia no comercial, no es «open source» en el sentido de la OSI: el código es público y libre para la comunidad, pero no para lucrarse con él. Los componentes de terceros conservan sus licencias: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Para contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).
