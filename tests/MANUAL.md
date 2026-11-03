@@ -52,4 +52,5 @@ Preparación (una vez): en el móvil, *Ajustes → Sobre el teléfono → Versi�
 - [ ] Con una versión nueva publicada, la app la muestra con sus notas.
 - [ ] *Actualizar*: el reloj enseña el progreso, se reinicia y la app indica "Actualizado a X".
 - [ ] Con la versión al día: la app indica que no hay nada nuevo.
+- [x] App nueva publicada: llega la notificación "Nueva versión de la app", y *Actualizar la app* la descarga, pide confirmación a Android y conserva el emparejamiento (2026-11-03, 0.3.0 → 0.3.1 desde un servidor del PC: `adb reverse tcp:8771 tcp:8771` y `am start … --es manifest http://127.0.0.1:8771/manifest.json`).
 - [ ] Con el WiFi del reloj mal configurado: la app indica "El reloj no pudo conectarse al WiFi".

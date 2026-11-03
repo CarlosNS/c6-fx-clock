@@ -5,6 +5,7 @@
 Se publicará con `tools/release.py` cuando la app esté probada en un móvil real (`tests/MANUAL.md`). Antes de publicarla:
 
 - `PROJECT_VER` a 3.0.0 en `CMakeLists.txt` y `versionName` a 1.0.0 en `android/app/build.gradle.kts`.
+- `versionCode` de la app mayor que el publicado (la app solo se actualiza a un `versionCode` superior; `release.py` lo escribe en el bloque `app` del manifiesto).
 - `BOOT_DEFAULT` a `BOOT_BLE` en `src/bootmode.h`. Solo afecta a las instalaciones nuevas, porque los relojes ya instalados conservan su modo.
 
 Notas para la release:
@@ -13,6 +14,7 @@ Notas para la release:
 >
 > - Al encender el reloj o al volver a estar cerca, el móvil le pone la hora en segundos, sin esperar a la siguiente sincronización (Android 12 o superior).
 > - Al emparejar, una barra sobre la clave cuenta los 30 segundos que hay para escribirla.
+> - La app avisa también de sus propias versiones nuevas y se actualiza sola (*Actualizaciones → Actualizar la app*), sin desinstalar ni perder el emparejamiento.
 > - Las actualizaciones llegan por internet: *Actualizaciones → Buscar actualización*, en la app o en la página. Si algo falla, el reloj se queda con la versión que tenía.
 > - El modo WiFi sigue disponible: BOOT 2 s en la pantalla de bienvenida.
 > - Instalación por USB: <https://carlosns.github.io/c6-fx-clock/flasher/>

@@ -87,4 +87,17 @@ class ProtocolTest {
         assertNull(Firmware.newer(JSONObject("""{"version":"2.1.0"}"""), ""))
         assertNull(Firmware.newer(JSONObject("{}"), "2.0.0"))
     }
+
+    @Test fun appUpdateComparesVersionCodeAndNeedsACompleteEntry() {
+        val sha = "a".repeat(64)
+        fun m(app: String) = JSONObject("""{"version":"2.1.0","app":$app}""")
+        val ok = """{"version":"0.3.1","code":4,"url":"https://x/a.apk","size":10,"sha256":"$sha"}"""
+        assertEquals("0.3.1", Firmware.newerApp(m(ok), 3)?.optString("version"))
+        assertNull(Firmware.newerApp(m(ok), 4))  // same build
+        assertNull(Firmware.newerApp(m(ok), 5))  // never downgrade
+        assertNull(Firmware.newerApp(JSONObject("""{"version":"2.1.0"}"""), 3))  // manifests before 3.0.0
+        assertNull(Firmware.newerApp(m(ok.replace(sha, "abc")), 3))
+        assertNull(Firmware.newerApp(m(ok.replace("\"size\":10", "\"size\":0")), 3))
+        assertNull(Firmware.newerApp(m(ok.replace("https://x/a.apk", "")), 3))
+    }
 }

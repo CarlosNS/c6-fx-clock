@@ -3,6 +3,7 @@ and puts everything on GitHub Pages (branch gh-pages), where the clocks look for
 
     https://carlosns.github.io/c6-fx-clock/manifest.json       what the app and the clock read
     https://carlosns.github.io/c6-fx-clock/c6-fx-clock-ota.bin the image itself
+    https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk    the Android app (it updates itself)
     https://carlosns.github.io/c6-fx-clock/flasher/            the web installer (USB, first install)
 
 and creates the GitHub release vX.Y.Z with the images and the Android app.
@@ -27,6 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "CarlosNS/c6-fx-clock"
 PAGES = "https://carlosns.github.io/c6-fx-clock"
 OUT = os.path.join(ROOT, "release")
+APP_APK = "c6-clock-app.apk"  # fixed name on Pages, so the manifest URL never changes
 GH = shutil.which("gh") or os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "gh", "bin", "gh.exe")
 PIO = shutil.which("pio") or os.path.join(os.path.expanduser("~"), ".platformio", "penv", "Scripts", "pio.exe")
 
@@ -42,11 +44,23 @@ def project_version():
     return re.search(r'set\(PROJECT_VER "([^"]+)"\)', text).group(1)
 
 
-def manifest(version, notes, ota):
+def app_version():
+    """(versionName, versionCode) of the Android app, from android/app/build.gradle.kts."""
+    text = open(os.path.join(ROOT, "android", "app", "build.gradle.kts"), encoding="utf-8").read()
+    return re.search(r'versionName = "([^"]+)"', text).group(1), int(re.search(r"versionCode = (\d+)", text).group(1))
+
+
+def manifest(version, notes, ota, apk=None):
     data = open(ota, "rb").read()
-    return {"project": "c6-fx-clock", "version": version, "url": f"{PAGES}/c6-fx-clock-ota.bin", "size": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(), "notes": notes,
-            "date": datetime.date.today().isoformat()}
+    m = {"project": "c6-fx-clock", "version": version, "url": f"{PAGES}/c6-fx-clock-ota.bin", "size": len(data),
+         "sha256": hashlib.sha256(data).hexdigest(), "notes": notes,
+         "date": datetime.date.today().isoformat()}
+    if apk:  # the app updates itself from here too (it compares versionCode)
+        name, code = app_version()
+        blob = open(apk, "rb").read()
+        m["app"] = {"version": name, "code": code, "url": f"{PAGES}/{APP_APK}", "size": len(blob),
+                    "sha256": hashlib.sha256(blob).hexdigest()}
+    return m
 
 
 def build(with_app):
@@ -65,8 +79,11 @@ def stage(version, notes, with_app):
     os.makedirs(assets)
     web = os.path.join(ROOT, "webflasher")
     ota = os.path.join(web, "c6-fx-clock-ota.bin")
-    m = manifest(version, notes, ota)
+    apk = os.path.join(ROOT, "android", "app", "build", "outputs", "apk", "release", "app-release.apk") if with_app else None
+    m = manifest(version, notes, ota, apk)
     shutil.copy(ota, pages)
+    if apk:
+        shutil.copy(apk, os.path.join(pages, APP_APK))
     for f in ("index.html", "manifest.json", "c6-fx-clock.bin"):
         shutil.copy(os.path.join(web, f), os.path.join(pages, "flasher"))
     with open(os.path.join(pages, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
@@ -74,9 +91,8 @@ def stage(version, notes, with_app):
     open(os.path.join(pages, ".nojekyll"), "w").close()
     shutil.copy(ota, assets)
     shutil.copy(os.path.join(web, "c6-fx-clock.bin"), assets)
-    if with_app:
-        apk = os.path.join(ROOT, "android", "app", "build", "outputs", "apk", "release", "app-release.apk")
-        shutil.copy(apk, os.path.join(assets, f"c6-clock-app-{version}.apk"))
+    if apk:
+        shutil.copy(apk, os.path.join(assets, f"c6-clock-app-{m['app']['version']}.apk"))
     return m
 
 

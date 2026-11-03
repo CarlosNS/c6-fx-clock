@@ -161,6 +161,8 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
     <div class="status" id="updlast"></div>
     <button class="btn full" id="updcheck">Buscar actualización</button>
     <button class="btn full hide" id="updgo">Actualizar</button>
+    <div class="status hide" id="appupdst" style="margin-top:6px"></div>
+    <button class="btn full hide" id="appupdgo">Actualizar la app</button>
   </div>
 </div>
 
@@ -279,17 +281,18 @@ const MANIFEST='https://carlosns.github.io/c6-fx-clock/manifest.json';
 const UPD_TXT={updated:'Actualizado',up_to_date:'Ya tenía la última versión',no_wifi:'No pudo conectarse a su red WiFi (revisa Conexión)',
  no_internet:'Su red no tenía internet',bad_manifest:'No pudo leer la información de la versión',bad_image:'La descarga no era válida; sigue con la versión anterior',
  timeout:'La descarga tardó demasiado; sigue con la versión anterior',interrupted:'Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior',running:'En curso'};
-let mode='',updAt=null,updWaiting=false,offer=null;
+let mode='',updAt=null,updWaiting=false,offer=null,autoUpd=false;
 function updStatus(s){const u=s.upd;if(!u)return;
  if(u.state!=='none')$('updlast').textContent=`Último intento: ${UPD_TXT[u.state]||u.state}${u.state==='updated'?` (${u.from} → ${u.to})`:''}`;
  if(updAt===null)updAt=u.at;else if(u.at!==updAt){updAt=u.at;updWaiting=false;$('updst').innerHTML=`<b>${UPD_TXT[u.state]||u.state}</b>`;$('updgo').classList.add('hide')}
- if(!updWaiting&&!offer&&$('updst').textContent==='--')$('updst').textContent=`Versión ${s.ver}`}
+ if(!updWaiting&&!offer&&$('updst').textContent==='--')$('updst').textContent=`Versión ${s.ver}`;
+ if(L.kind==='android'&&!autoUpd&&s.ver){autoUpd=true;updCheck()}}  // the app looks by itself on opening
 async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;
  try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json(),ver=$('ver').textContent;
   if(m.version===ver){$('updst').innerHTML=`Tienes la última versión (<b>${ver}</b>)`;return}
   offer=m;$('updst').innerHTML=`Disponible la <b>${m.version}</b> (tienes la ${ver})${m.notes?': '+m.notes:''}`;$('updgo').textContent='Actualizar a la '+m.version;$('updgo').classList.remove('hide')}
  catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
-$('updcheck').onclick=updCheck;
+$('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
 $('updgo').onclick=()=>{if(!offer)return;
  if(!confirm(`El reloj se reiniciará, se conectará a su red WiFi y descargará la ${offer.version} (1–3 min). Si algo falla, sigue con la versión actual.\n\n¿Actualizar?`))return;
  if(send('update apply '+MANIFEST)){updWaiting=true;offer=null;$('updgo').classList.add('hide');$('updst').innerHTML='<b>Actualizando…</b> el reloj volverá solo en unos minutos.'}};
@@ -329,7 +332,14 @@ function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.i
  $('appbg').textContent=i.background?'Permitido: la hora y el tiempo llegan aunque cierres la app':'Sin permitir: el sistema puede cortar la sincronización';$('appbgo').classList.toggle('hide',i.background)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent='Sincronizando…';setTimeout(appInfo,6000)};
  $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appforget').onclick=()=>{if(confirm('El móvil y el reloj se olvidarán. Para volver a usarlo tendrás que emparejarlo con la clave de su pantalla.\n\n¿Olvidar?'))ClockBridge.forget()};
- appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo)}
+ appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
+ // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
+ window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();$('appupdst').classList.remove('hide');$('appupdgo').classList.toggle('hide',!o);
+  if(!o){$('appupdst').innerHTML=`App: tienes la última (<b>${v}</b>)`;return}
+  $('appupdst').innerHTML=`App: disponible la <b>${o.version}</b> (tienes la ${v})`;$('appupdgo').textContent='Actualizar la app a la '+o.version};
+ window.appUpdateState=t=>{$('appupdst').textContent=t};
+ $('appupdgo').onclick=()=>ClockBridge.installApp();
+ ClockBridge.checkApp()}
 loadFaces();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
 </script>
 </body>

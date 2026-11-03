@@ -28,10 +28,13 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.CompletableDeferred
@@ -77,7 +80,15 @@ class MainActivity : ComponentActivity() {
             }
             addJavascriptInterface(Bridge(), "ClockBridge")
         }
-        setContentView(web)
+        // Android 15 draws apps under the status and navigation bars: keep the page clear of them.
+        // The padding goes on a frame around the WebView (a WebView's own padding doesn't move its content)
+        val frame = FrameLayout(this).apply { setBackgroundColor(0xFF0B0D14.toInt()); addView(web) }
+        ViewCompat.setOnApplyWindowInsetsListener(frame) { v, insets ->
+            val b = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            v.setPadding(b.left, b.top, b.right, b.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        setContentView(frame)
         web.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
         val wanted = buildList {
             if (Build.VERSION.SDK_INT >= 31) add(Manifest.permission.BLUETOOTH_CONNECT)
@@ -98,6 +109,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun syncIfAsked(i: Intent?) {
+        // For the tests: read updates from the PC (adb reverse); never from any other host
+        i?.getStringExtra("manifest")?.takeIf { it.startsWith("http://127.0.0.1:") }?.let { Firmware.manifestUrl = it }
         if (i?.getBooleanExtra("sync", false) == true) SyncWorker.runNow(this)
     }
 
@@ -148,7 +161,8 @@ class MainActivity : ComponentActivity() {
         js("clockState", "false")
     }
 
-    private fun js(fn: String, arg: String) {
+    /** Calls window.fn(arg) in the page; from any thread (the WebView only accepts the main one). */
+    private fun js(fn: String, arg: String) = runOnUiThread {
         if (pageReady) web.evaluateJavascript("window.$fn&&$fn($arg)", null)
     }
 
@@ -257,6 +271,38 @@ class MainActivity : ComponentActivity() {
         startActivity(i)
     }
 
+    // ---- the app's own updates (AppUpdate); the page shows them in its "Actualizaciones" card ----
+    private var appOffer: JSONObject? = null
+    private var installing = false
+
+    private fun checkApp() {
+        lifecycleScope.launch {
+            appOffer = AppUpdate.check(this@MainActivity)
+            js("appOffer", appOffer?.let { JSONObject.quote(it.toString()) } ?: "null")
+        }
+    }
+
+    private fun installApp() {
+        val app = appOffer ?: return
+        if (!AppUpdate.mayInstall(this)) {
+            js("appUpdateState", JSONObject.quote("Activa «Permitir de esta fuente» para C6 Clock, vuelve y pulsa otra vez"))
+            startActivity(AppUpdate.allowInstallIntent(this))
+            return
+        }
+        if (installing) return
+        installing = true
+        lifecycleScope.launch {
+            try {
+                AppUpdate.install(this@MainActivity, app) { js("appUpdateState", JSONObject.quote(it)) }
+                js("appUpdateState", JSONObject.quote("Confirma la instalación en la ventana de Android"))
+            } catch (e: Exception) {
+                js("appUpdateState", JSONObject.quote("No se pudo actualizar: ${e.message}"))
+            } finally {
+                installing = false
+            }
+        }
+    }
+
     /** What the page may call. Runs on a WebView thread: work goes to the UI thread / lifecycle scope. */
     inner class Bridge {
         @JavascriptInterface fun ready() = runOnUiThread {
@@ -281,6 +327,9 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun syncNow() = SyncWorker.runNow(this@MainActivity)
         @JavascriptInterface fun forget() = runOnUiThread { this@MainActivity.forget() }
         @JavascriptInterface fun allowBackground() = runOnUiThread { this@MainActivity.allowBackground() }
+        @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
+        @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }
+        @JavascriptInterface fun installApp() = runOnUiThread { this@MainActivity.installApp() }
     }
 
     companion object {

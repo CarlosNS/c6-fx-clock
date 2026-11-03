@@ -45,6 +45,10 @@ class Store(context: Context) {
     var notifiedVersion: String
         get() = p.getString("notified", "") ?: ""
         set(v) = p.edit().putString("notified", v).apply()
+    /** Same for the app itself (versionCode). */
+    var notifiedApp: Long
+        get() = p.getLong("notifiedApp", 0)
+        set(v) = p.edit().putLong("notifiedApp", v).apply()
 }
 
 object Net {
@@ -64,9 +68,11 @@ object Net {
         withContext(Dispatchers.IO) { Protocol.weatherCommand(getJson(Protocol.weatherUrl(lat, lon))) }
 }
 
-/** Firmware published on GitHub Pages (phase 6 fills it in; until then the check finds nothing). */
+/** What is published on GitHub Pages: the firmware and, in the same manifest, the app itself. */
 object Firmware {
     const val MANIFEST = "https://carlosns.github.io/c6-fx-clock/manifest.json"
+    /** Where updates are read from; the phone tests point it at the PC (MainActivity, extra "manifest"). */
+    @Volatile var manifestUrl = MANIFEST
 
     /** -1, 0 or 1, comparing "major.minor.patch" numerically ("2.10.0" is newer than "2.9.1"). */
     fun compare(a: String, b: String): Int {
@@ -82,6 +88,12 @@ object Firmware {
     /** The newer version on offer for a clock running [running], or null. */
     fun newer(manifest: JSONObject, running: String): String? =
         manifest.optString("version").takeIf { it.isNotEmpty() && running.isNotEmpty() && compare(it, running) > 0 }
+
+    /** The manifest's "app" block when it is newer than the installed [versionCode] and complete, or null. */
+    fun newerApp(manifest: JSONObject, versionCode: Long): JSONObject? = manifest.optJSONObject("app")?.takeIf {
+        it.optLong("code") > versionCode && it.optString("url").isNotEmpty() && it.optString("sha256").length == 64 &&
+            it.optLong("size") > 0
+    }
 }
 
 /**
@@ -95,30 +107,35 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!Perms.canConnect(applicationContext)) return Result.success()
         val shared = Live.link?.takeIf { it.ready && it.address == address }
         val link = shared ?: ClockBle(applicationContext, address)
-        return try {
+        try {
             if (shared == null) link.connect()
             val r = SyncSession(link, Net::weatherCommand).run()
             store.lastSyncMs = System.currentTimeMillis()
             store.clockVersion = r.version
             store.lastResult = "ok" + if (r.weatherSent) "" else " (sin tiempo: no hay internet)"
             Log.i(TAG, "sync ok: ${r.version}, ${r.place}, #${r.syncCount}")
-            checkFirmware(store, r.version)
-            Result.success()
         } catch (e: Exception) {
             Log.w(TAG, "sync failed: ${e.message}")
             store.lastResult = "falló: ${e.message}"
-            Result.success()  // the next period tries again; a retry storm would only drain the battery
         } finally {
             if (shared == null) link.close()
         }
+        checkUpdates(store)  // even when the clock is out of reach: the app may have one of its own
+        return Result.success()  // the next period tries again; a retry storm would only drain the battery
     }
 
-    private suspend fun checkFirmware(store: Store, running: String) {
-        val manifest = runCatching { withContext(Dispatchers.IO) { Net.getJson(Firmware.MANIFEST) } }.getOrNull() ?: return
-        val v = Firmware.newer(manifest, running) ?: return
-        if (v == store.notifiedVersion) return
-        store.notifiedVersion = v
-        Notify.newFirmware(applicationContext, v, running)
+    /** New firmware (for the clock version last seen) or a new app: one notification per version. */
+    private suspend fun checkUpdates(store: Store) {
+        val manifest = runCatching { withContext(Dispatchers.IO) { Net.getJson(Firmware.manifestUrl) } }.getOrNull() ?: return
+        val running = store.clockVersion
+        Firmware.newer(manifest, running)?.takeIf { it != store.notifiedVersion }?.let {
+            store.notifiedVersion = it
+            Notify.newFirmware(applicationContext, it, running)
+        }
+        Firmware.newerApp(manifest, AppUpdate.installedCode(applicationContext))?.takeIf { it.optLong("code") != store.notifiedApp }?.let {
+            store.notifiedApp = it.optLong("code")
+            Notify.newApp(applicationContext, it.optString("version"))
+        }
     }
 
     companion object {
@@ -164,7 +181,13 @@ object Perms {
 object Notify {
     private const val CHANNEL = "updates"
 
-    fun newFirmware(c: Context, version: String, running: String) {
+    fun newFirmware(c: Context, version: String, running: String) =
+        show(c, 1, "Nueva versión del reloj: $version", "Tu reloj tiene la $running. Abre la app para actualizarlo.")
+
+    fun newApp(c: Context, version: String) =
+        show(c, 2, "Nueva versión de la app: $version", "Abre la app y pulsa Actualizar la app.")
+
+    private fun show(c: Context, id: Int, title: String, text: String) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
@@ -173,11 +196,11 @@ object Notify {
         val open = PendingIntent.getActivity(c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_clock)
-            .setContentTitle("Nueva versión del reloj: $version")
-            .setContentText("Tu reloj tiene la $running. Abre la app para actualizarlo.")
+            .setContentTitle(title)
+            .setContentText(text)
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()
-        nm.notify(1, n)
+        nm.notify(id, n)
     }
 }
