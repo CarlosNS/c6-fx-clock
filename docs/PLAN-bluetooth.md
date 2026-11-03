@@ -296,6 +296,24 @@ Tests: `tests/update/test_update.py` con un **servidor local de pruebas** en el 
 - descarga lenta → `timeout`;
 - corte de corriente a mitad.
 
+**Resultado (2026-11-03): firmware, página y tests hechos (2.1.0); falta publicar la primera versión.**
+
+- **El modo UPDATE** tiene 203 KB libres (un solo framebuffer y sin Bluetooth), sobra para HTTPS. Pasos:
+  1. Conecta con la red guardada; la vuelta a otro nodo de la malla también vale aquí.
+  2. Lee el manifiesto y compara la versión.
+  3. Descarga en trozos de 4 KB calculando el SHA-256 sobre la marcha.
+  4. `ota.c` rechaza otro proyecto antes de escribir nada; se comprueban también tamaño, hash y límite de 5 min.
+  5. Guarda el resultado y vuelve al modo anterior.
+  
+  Los buffers se reservan solo en ese modo: como `static` costaban 5,5 KB de RAM en todos los modos.
+- **http://** solo se acepta hacia direcciones privadas (10/8, 172.16/12, 192.168/16), así que no hace falta una versión especial para los tests. Hacia internet, solo https. La orden también exige estar emparejado.
+- **Resultado:** el campo `upd` sale en `/status`, en el estado por Bluetooth y en `get info`. Además de los estados previstos, existen `running`, que pasa a `interrupted` si un reset corta la actualización, y `none`.
+- **Red WiFi en modo Bluetooth:** se puede guardar (copia propia en NVS), porque el driver WiFi solo deja leer su copia con el WiFi en marcha.
+- **Encontrado por los tests:** un cambio de modo en los 30 s siguientes a una actualización provocaba la vuelta atrás. Ahora `boot_mode_switch` confirma la versión en uso.
+- **Página y app:** la tarjeta *Actualizaciones* lee el manifiesto desde el móvil o navegador, ofrece la versión nueva y muestra el resultado al volver el reloj. La app no necesita nada más: usa la misma página, y su sincronización avisa con una notificación.
+- **Tests:** `tests/update`, 9 de 9: http hacia internet rechazado, ya al día, actualiza, SHA-256 erróneo, imagen cortada, otro proyecto, sin manifiesto, lenta → `timeout` a los 5 min, corte de corriente → `interrupted`. El corte se simula reabriendo el puerto USB: el truco de RTS de esptool no reinicia esta placa en Windows.
+- **Publicación:** `tools/release.py` está probado en seco (`--dry-run`); la primera publicación real espera autorización.
+
 ### Fase 7 — Cierre (½ día)
 
 - README, webflasher, notas de versión 3.0.0, limpieza del prototipo, memoria del proyecto.
