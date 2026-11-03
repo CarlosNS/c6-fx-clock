@@ -1,0 +1,11 @@
+{
+  "name": "ESP32-C6 FX Clock",
+  "version": "1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "parts": [{ "path": "c6-fx-clock.bin", "offset": 0 }]
+    }
+  ]
+}
