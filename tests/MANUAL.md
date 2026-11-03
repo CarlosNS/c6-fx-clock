@@ -25,8 +25,12 @@ La lógica ya la prueban los tests automáticos con la clave real (leída del lo
 
 ## Fase 5 — App
 
-- [ ] La APK se instala y pide los permisos de Bluetooth y notificaciones.
-- [ ] El emparejamiento lo hace el sistema (Companion Device Manager) y el reloj aparece como accesorio.
+Preparación (una vez): en el móvil, *Ajustes → Sobre el teléfono → Versión de HyperOS*, tocar 7 veces; luego *Ajustes adicionales → Opciones de desarrollador → Depuración USB* (y en HyperOS también *Instalar vía USB*). Conectar por USB y aceptar la huella del PC. Poner el reloj en modo Bluetooth (BOOT 2 s en la bienvenida).
+
+- [ ] La APK se instala (`adb install android/app/build/outputs/apk/debug/app-debug.apk`) y pide los permisos de Bluetooth y notificaciones.
+- [ ] *Buscar el reloj*: aparece la lista del sistema con "C6 Clock XXXX"; al elegirlo, el reloj enseña la clave y el móvil la pide. Tras teclearla se ven las esferas.
+- [ ] En *Este móvil → Funcionar en segundo plano → Permitir*: aceptar. En HyperOS, además: *Ajustes → Apps → C6 Clock → Inicio automático* activado y *Ahorro de batería → Sin restricciones*.
+- [ ] Con la app emparejada, `pytest tests/app -m phase5` pasa (arranque, sincronización por `adb`, tarea periódica).
 - [ ] Cambiar de esfera, brillo, color del Clásico y ciudad del tiempo: se ve en el reloj al instante.
 - [ ] Al abrir la app, el reloj pone la hora del móvil (comparar segundos).
 - [ ] La esfera Tiempo se actualiza con los datos que manda el móvil.

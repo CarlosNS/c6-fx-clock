@@ -30,7 +30,7 @@ def test_many_syncs_do_not_leak(ble_name):
     addr = lk.address
     lk.close()
     for _ in range(50):
-        sync_session(ble_name, addr)
+        sync_session(ble_name, addr, retries=2)  # leaks are the point here, not Windows' odd failed connect
     lk = ClockLink(ble_name).connect(addr)
     heap1 = lk.request("get status", "status")["heap"]
     lk.close()
@@ -54,7 +54,7 @@ def test_reconnect_cycles_do_not_leak(ble_name):
     addr = lk.address
     lk.close()
     for _ in range(30):
-        lk = ClockLink(ble_name).connect(addr)
+        lk = ClockLink(ble_name).connect(addr, retries=2)
         lk.close()
     lk = ClockLink(ble_name).connect(addr)
     last = lk.request("get status", "status")["heap"]

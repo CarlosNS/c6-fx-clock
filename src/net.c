@@ -4,6 +4,7 @@
 #include "app.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
@@ -40,6 +41,23 @@ int net_wifi_scan_get(wifi_net_t *out, int max, uint32_t *stamp)
     return n;
 }
 
+// Mesh networks: a node can associate and never hand out an address. The DHCP watchdog notes that
+// node and a scan picks the strongest other node of the same network; the link is pinned to it.
+static uint8_t s_bad_bssid[6];
+static volatile bool s_avoid;  // the next scan chooses the node to join
+static bool s_pinned;          // the STA config names one node (bssid_set)
+
+static void connect_to(const uint8_t *bssid)
+{
+    wifi_config_t sta;
+    esp_wifi_get_config(WIFI_IF_STA, &sta);
+    sta.sta.bssid_set = bssid != NULL;
+    if (bssid) memcpy(sta.sta.bssid, bssid, 6);
+    s_pinned = bssid != NULL;
+    esp_wifi_set_config(WIFI_IF_STA, &sta);
+    esp_wifi_connect();
+}
+
 static void scan_done(void)
 {
     static wifi_ap_record_t recs[MAX_NETS];
@@ -56,6 +74,16 @@ static void scan_done(void)
     s_scan_stamp++;
     taskEXIT_CRITICAL(&s_scan_mux);
     s_scanning = false;
+    if (!s_avoid) return;
+    s_avoid = false;
+    const wifi_ap_record_t *best = NULL;
+    for (int i = 0; i < n; i++)
+        if (strcmp((const char *)recs[i].ssid, g_app.sta_ssid) == 0 && memcmp(recs[i].bssid, s_bad_bssid, 6) != 0 &&
+            (!best || recs[i].rssi > best->rssi))
+            best = &recs[i];
+    if (best) ESP_LOGI(TAG, "Trying another node: " MACSTR " (ch %d, %d dBm)", MAC2STR(best->bssid), best->primary, best->rssi);
+    else ESP_LOGW(TAG, "No other node of %s in range", g_app.sta_ssid);
+    connect_to(best ? best->bssid : NULL);
 }
 
 // Mesh networks: pick the strongest node of the network, not the first one the scan finds
@@ -76,6 +104,9 @@ static void dhcp_watchdog(void *arg)
     if (since && esp_timer_get_time() - since > DHCP_TIMEOUT_US) {
         ESP_LOGW(TAG, "No IP from the router after 20 s, reconnecting");
         s_assoc_since = 0;
+        wifi_ap_record_t ap;
+        if (esp_wifi_sta_get_ap_info(&ap) == ESP_OK) memcpy(s_bad_bssid, ap.bssid, 6);
+        s_avoid = true;
         esp_wifi_disconnect();
     }
 }
@@ -91,7 +122,14 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         s_assoc_since = 0;
         g_app.sta_ip[0] = 0;
-        esp_wifi_connect();
+        if (s_avoid) {  // the watchdog dropped a node without DHCP: look for another one
+            if (!s_scanning && esp_wifi_scan_start(NULL, false) == ESP_OK) s_scanning = true;
+            if (!s_scanning) s_avoid = false, esp_wifi_connect();
+        } else if (s_pinned) {
+            connect_to(NULL);  // the chosen node went away: any node again
+        } else {
+            esp_wifi_connect();
+        }
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *e = data;
         // Route internet traffic (DNS, NTP) through the home network, not the board's own AP
@@ -160,6 +198,7 @@ void net_set_sta(const char *ssid, const char *pass)
     sta_prefs(&sta);
     strlcpy(g_app.sta_ssid, ssid, sizeof(g_app.sta_ssid));
     g_app.sta_ip[0] = 0;
+    s_pinned = false;
     esp_wifi_set_mode(WIFI_MODE_APSTA);
     esp_wifi_disconnect();
     esp_wifi_set_config(WIFI_IF_STA, &sta);

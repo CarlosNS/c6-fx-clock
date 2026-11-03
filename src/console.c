@@ -1,6 +1,7 @@
 #include "console.h"
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include "control.h"
@@ -26,6 +27,15 @@ static void run_line(char *line)
         line[4] = '\n';
     }
     ESP_LOGI(TAG, "> %s", strncmp(line, "wifi\n", 5) == 0 ? "wifi ***" : line);
+    if (strcmp(line, "status") == 0) {  // for the tests: the state as JSON, whatever link is in use
+        char *buf = malloc(1536);
+        if (buf) {
+            app_status_json(buf, 1536);
+            printf("status %s\n", buf);
+            free(buf);
+        }
+        return;
+    }
     app_command(line);
 }
 

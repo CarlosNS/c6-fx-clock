@@ -1,0 +1,6 @@
+.gradle/
+build/
+local.properties
+# Release signing: the key and its passwords never go to the repository
+keystore.properties
+*.jks

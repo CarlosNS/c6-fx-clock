@@ -12,34 +12,14 @@ li.ok{color:var(--ok)}li.bad{color:var(--bad)}#sum{font-weight:600}
 </head>
 <body>
 <h1>Troceado de mensajes (app)</h1>
-<p style="color:var(--dim)">Fase 5. Comprueba que el troceado de la app es igual al de <code>tests/clocklib/protocol.py</code>. Ábrelo en el navegador; hasta que exista <code>transport.js</code> usa la implementación de referencia de abajo.</p>
+<p style="color:var(--dim)">Fase 5. Comprueba que el troceado de la app es igual al de <code>tests/clocklib/protocol.py</code>. Prueba <code>src/transport.js</code>, el mismo archivo que usan el reloj en modo WiFi y la app. Ábrelo en el navegador.</p>
 <p id="sum"></p>
 <ul id="out"></ul>
+<script src="../../src/transport.js"></script>
 <script type="module">
-// Phase 5: replace with  import {frame, Reassembler} from '../../app/transport.js'
-const LAST = 0x80, FIRST = 0x40, ID = 0x3f;
-function frame(id, payload, chunk) {
-  const body = chunk - 1, parts = [];
-  for (let i = 0; i < payload.length; i += body) parts.push(payload.slice(i, i + body));
-  if (!parts.length) parts.push(new Uint8Array(0));
-  return parts.map((p, i) => {
-    const f = new Uint8Array(p.length + 1);
-    f[0] = (id & ID) | (i === 0 ? FIRST : 0) | (i === parts.length - 1 ? LAST : 0);
-    f.set(p, 1);
-    return f;
-  });
-}
-class Reassembler {
-  constructor() { this.id = null; this.buf = []; this.dropped = 0; }
-  feed(d) {
-    const h = d[0], id = h & ID, body = d.slice(1);
-    if (h & FIRST) { if (this.id !== null) this.dropped++; this.id = id; this.buf = [...body]; }
-    else if (this.id === id) this.buf.push(...body);
-    else { this.dropped++; this.id = null; this.buf = []; return null; }
-    if (h & LAST && this.id === id) { const out = new Uint8Array(this.buf); this.id = null; this.buf = []; return out; }
-    return null;
-  }
-}
+// The page's own framing (src/transport.js); the clock, the PC tests and the app must agree byte for byte
+const {frame, Reassembler} = ClockLink;
+const LAST = 0x80, FIRST = 0x40;
 
 const results = [];
 function test(name, fn) { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } }

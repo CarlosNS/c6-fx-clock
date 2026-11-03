@@ -86,6 +86,13 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
   <div class="badge"><span id="clk">--:--:--</span><div class="dot" id="dot" title="Conexión con el reloj"></div></div>
 </header>
 
+<div class="card hide" id="blecard">
+  <h3>Conectar por Bluetooth</h3>
+  <p class="desc" style="margin-bottom:10px">La primera vez, el sistema te pedirá la clave de 6 cifras que aparece en la pantalla del reloj.</p>
+  <button class="btn full" id="blego">Buscar el reloj</button>
+  <div class="status" id="blest" style="margin-top:8px"></div>
+</div>
+
 <h2>Esfera actual</h2>
 <div class="card cur">
   <h3 id="cname">--</h3>
@@ -147,6 +154,13 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
   </div>
 </div>
 
+<div class="card hide" id="appcard">
+  <h3>Este móvil</h3>
+  <div class="item"><div class="t">Sincronización<small id="appsync">--</small></div><button class="btn" id="appnow">Ahora</button></div>
+  <div class="item"><div class="t">Funcionar en segundo plano<small id="appbg">--</small></div><button class="btn" id="appbgo">Permitir</button></div>
+  <div class="item"><div class="t">Olvidar este reloj<small>Borra el emparejamiento en el móvil y en el reloj</small></div><button class="btn" id="appforget">Olvidar</button></div>
+</div>
+
 <div class="card">
   <details>
     <summary>Avanzado</summary>
@@ -154,8 +168,8 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
       <div class="item"><div class="t">Info de depuración en pantalla<small>Nombre de la esfera, fps e IP</small></div><input type="checkbox" class="sw" id="ovl"></div>
       <div class="item"><div class="t">Rendimiento</div><span class="status"><b id="fps">--</b> fps · <b id="heap">--</b> KB libres</span></div>
       <div class="item"><div class="t">Firmware<small id="otainfo">--</small></div><span class="status">versión <b id="ver">--</b></span></div>
-      <div class="item"><div class="t">Modo Bluetooth<small>El reloj se reinicia y se controla desde la app del móvil, sin WiFi. Para volver aquí: mantén BOOT 2 s en la pantalla de bienvenida.</small></div><button class="btn" id="toble">Cambiar</button></div>
-      <div class="stack" style="padding-top:9px;border-top:1px solid var(--line)">
+      <div class="item"><div class="t">Modo de conexión<small id="modetxt"></small></div><button class="btn" id="tomode">Cambiar</button></div>
+      <div class="stack" id="wifionly" style="padding-top:9px;border-top:1px solid var(--line)">
         <div class="t">Actualizar por WiFi (OTA)<small style="display:block;color:var(--dim);font-size:12px">Elige <b>c6-fx-clock-ota.bin</b> de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
         <input type="file" id="otafile" accept=".bin" style="font-size:13px;color:var(--dim)">
         <button class="btn full" id="otago" disabled>Actualizar firmware</button>
@@ -169,19 +183,21 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 <footer>Botón BOOT: con la pantalla apagada, la enciende · encendida, pulsación corta = siguiente esfera, larga = cambio automático</footer>
 </main>
 
+<script src="transport.js"></script>
 <script>
 // Face catalogue comes from the firmware (/faces): one source of truth
 let FX=[],GROUPS=[];
 const $=id=>document.getElementById(id);
-let ws,cur=-1,lastUser=0,synced=false;
-function conn(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onopen=()=>{$('dot').classList.add('on')};ws.onclose=()=>{$('dot').classList.remove('on');setTimeout(conn,1000)}}
-function send(s){if(ws&&ws.readyState===1){ws.send(s);return true}return false}
+let cur=-1,lastUser=0,synced=false;
+// The link (Wi-Fi, Web Bluetooth or the Android app) comes from transport.js
+const L=ClockLink.pick();
+function send(s){return L.send(s)}
 function syncTime(){const n=Date.now();return send(`time ${Math.floor(n/1000)} ${n%1000}`)}
 
 // Face picker, grouped
 const btns=[];
 async function loadFaces(){
- for(;;){try{const r=await(await fetch('/faces')).json();FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
+ for(;;){try{const r=await L.request('faces');FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
  GROUPS.forEach((g,gi)=>{const d=document.createElement('div');d.className='group';d.innerHTML=`<div class="gname">${g}</div><div class="fx"></div>`;
   FX.forEach((f,i)=>{if(f.g!==gi)return;const b=document.createElement('button');b.innerHTML=`<i class="${f.o}"></i>`;b.append(f.label);
    b.onclick=()=>{lastUser=Date.now();setFx(i);$('auto').checked=false;send('fx '+i)};btns[i]=b;d.lastChild.appendChild(b)});
@@ -211,7 +227,7 @@ $('sync').onclick=()=>{if(syncTime()){$('sync').textContent='Hora enviada ✓';s
 const pad=$('pad'),dot=$('touch');let down=false,px=0,py=0,ax=0,ay=0,nx=0,ny=0,timer=null;
 function pos(e){const r=pad.getBoundingClientRect();const x=Math.min(Math.max(e.clientX-r.left,0),r.width),y=Math.min(Math.max(e.clientY-r.top,0),r.height);dot.style.left=x+'px';dot.style.top=y+'px';nx=Math.round(x/r.width*1000);ny=Math.round(y/r.height*1000);return[e.clientX,e.clientY]}
 function flush(){if(!down){clearInterval(timer);timer=null;return}send(`drag ${nx} ${ny} ${Math.round(ax)} ${Math.round(ay)}`);ax-=Math.round(ax);ay-=Math.round(ay)}
-pad.onpointerdown=e=>{pad.setPointerCapture(e.pointerId);down=true;[px,py]=pos(e);ax=ay=0;dot.style.display='block';send(`drag ${nx} ${ny} 0 0`);if(!timer)timer=setInterval(flush,30)};
+pad.onpointerdown=e=>{pad.setPointerCapture(e.pointerId);down=true;[px,py]=pos(e);ax=ay=0;dot.style.display='block';send(`drag ${nx} ${ny} 0 0`);if(!timer)timer=setInterval(flush,L.kind==='wifi'?30:60)};
 pad.onpointermove=e=>{if(!down)return;const[x,y]=pos(e);ax+=x-px;ay+=y-py;px=x;py=y};
 pad.onpointerup=pad.onpointercancel=()=>{if(!down)return;flush();down=false;dot.style.display='none';send('up')};
 
@@ -230,8 +246,11 @@ $('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)r
    b.onclick=()=>{const n=p.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7e]/g,'').slice(0,31);send(`loc ${p.latitude.toFixed(4)} ${p.longitude.toFixed(4)} ${n}`);box.textContent='Ciudad cambiada a '+n;$('wxq').value='';wxFetched=0};box.appendChild(b)}}
  catch(e){box.textContent='Este dispositivo no tiene internet para buscar'}};
 
-async function poll(){try{const s=await(await fetch('/status')).json();
- $('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);$('clk').textContent=s.tv?s.time:'sin hora';
+// Status: polled, and pushed by the clock over Bluetooth whenever a setting changes
+async function poll(){try{show(await L.request('status'))}catch(e){}}
+let tick=null;
+function show(s){
+ $('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
  $('wst').innerHTML=s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi C6-FX-Demo');
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
  if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
@@ -239,7 +258,11 @@ async function poll(){try{const s=await(await fetch('/status')).json();
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   for(const k of['wks','nst','nen','chue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
   if(s.chue!==undefined)swatch($('chue').value);
-  vis()}}catch(e){}}
+  vis()}
+ $('wifionly').classList.toggle('hide',s.mode!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
+ $('modetxt').textContent=MODE_TXT[s.mode]||''}
+// The clock's time ticks here between status messages (over Bluetooth they come every few seconds)
+function clock(){if(!tick){$('clk').textContent='sin hora';return}const t=Math.floor(tick.t+(Date.now()-tick.at)/1000)%86400;$('clk').textContent=[t/3600,t/60%60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':')}
 // OTA: upload firmware.bin straight to /ota, then wait for the board to come back
 let otaMax=0,otaBusy=false;
 $('otafile').onchange=()=>{$('otago').disabled=!$('otafile').files.length;$('otast').textContent=''};
@@ -256,9 +279,26 @@ $('otago').onclick=async()=>{const file=$('otafile').files[0];if(!file||otaBusy)
 async function waitBack(){const t0=Date.now();await new Promise(r=>setTimeout(r,4000));
  for(;;){try{const s=await(await fetch('/status',{cache:'no-store'})).json();$('otast').textContent=`Listo: versión ${s.ver} funcionando`;otaBusy=false;break}catch(e){if(Date.now()-t0>120000){$('otast').textContent='El reloj tarda en volver; recarga la página en un momento';otaBusy=false;break}await new Promise(r=>setTimeout(r,2000))}}}
 
-$('toble').onclick=()=>{if(confirm('El reloj se reiniciará en modo Bluetooth y esta página dejará de responder.\n\nPara volver al modo WiFi: mantén pulsado BOOT 2 s mientras se ve la pantalla de bienvenida.\n\n¿Cambiar?'))send('mode ble')};
+const MODE_TXT={wifi:'Ahora en WiFi. En Bluetooth se controla desde la app del móvil, sin WiFi. Para volver aquí: mantén BOOT 2 s en la pantalla de bienvenida.',
+ ble:'Ahora en Bluetooth. En WiFi se controla desde el navegador, en la IP del reloj, y la app deja de verlo hasta que vuelva.'};
+$('tomode').onclick=()=>{const to=$('tomode').textContent.includes('WiFi')?'wifi':'ble';
+ if(confirm(to==='ble'?'El reloj se reiniciará en modo Bluetooth y esta página dejará de responder.\n\nPara volver al modo WiFi: mantén pulsado BOOT 2 s mientras se ve la pantalla de bienvenida.\n\n¿Cambiar?':'El reloj se reiniciará en modo WiFi y se conectará a tu red guardada.\n\nPara volver a Bluetooth: el botón de esta página (abierta en la IP del reloj) o BOOT 2 s en la bienvenida.\n\n¿Cambiar?'))send('mode '+to)};
 
-loadFaces();conn();poll();setInterval(poll,1000);
+// Bluetooth from a browser: Chrome shows its device chooser after a tap
+$('blego').onclick=async()=>{$('blest').textContent='Elige el reloj en la lista…';
+ try{await L.pick();$('blest').textContent='';if(L.kind==='android'){$('appcard').classList.remove('hide');appInfo()}}catch(e){$('blest').textContent=e.name==='NotFoundError'?'No elegiste ningún reloj':'No se pudo conectar: '+e.message}};
+$('blecard').classList.toggle('hide',!L.needsPick);
+if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent='Este navegador no tiene Web Bluetooth: usa Chrome o Edge'}
+L.start({onState:up=>{$('dot').classList.toggle('on',up);if(L.needsPick&&up)$('blecard').classList.add('hide');if(up)poll()},
+ onMessage:m=>{if(m.t==='status')show(m)}});
+// Android app: sync, background permission and forgetting the clock live in Kotlin
+function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
+ $('appsync').textContent=(i.lastSync?`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`:'Todavía ninguna')+` · cada ${i.every} min`;
+ $('appbg').textContent=i.background?'Permitido: la hora y el tiempo llegan aunque cierres la app':'Sin permitir: el sistema puede cortar la sincronización';$('appbgo').classList.toggle('hide',i.background)}
+if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent='Sincronizando…';setTimeout(appInfo,6000)};
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appforget').onclick=()=>{if(confirm('El móvil y el reloj se olvidarán. Para volver a usarlo tendrás que emparejarlo con la clave de su pantalla.\n\n¿Olvidar?'))ClockBridge.forget()};
+ appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo)}
+loadFaces();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
 </script>
 </body>
 </html>

@@ -269,6 +269,17 @@ Tests:
 - `tests/ble/test_sync.py` contra el reloj usando la app real (`adb` lanza una sincronización).
 - Prueba manual en el móvil (`tests/MANUAL.md`), incluida una noche con la app cerrada.
 
+**Resultado (2026-11-03): hecha la parte que no necesita el móvil.** Falta instalarla en el móvil, emparejarla con la clave real y la noche en segundo plano (`tests/MANUAL.md`).
+
+- **5a.** `src/transport.js` (el reloj lo sirve en `/transport.js`) da a la página los tres enlaces con las mismas llamadas: `start`, `send`, `request('status'|'faces'|'info')`. Por Bluetooth el estado llega empujado por el reloj y la página pide uno cada 5 s; la hora avanza en local entre mensajes. Las órdenes de arrastre van cada 60 ms en vez de 30. Por Bluetooth se oculta la subida de firmware por archivo, y el botón de modo sirve en los dos sentidos. Probado en un Edge real con el pincho: conecta, carga las 23 esferas, los ajustes llegan en los dos sentidos y se reconecta sola **4,5 s** después de que vuelva el reloj. El selector de dispositivos se contesta por DevTools (`DeviceAccess`), así que no hace falta nadie delante. El navegador integrado de la app de Claude no tiene selector.
+- **5b.** `android/` (Kotlin, minSdk 29, targetSdk 35): WebView con la página (copiada de `src/` al compilar, una sola copia), puente `ClockBridge`, `ClockBle` (MTU 247, notificaciones cifradas, una operación GATT a la vez), emparejamiento con Companion Device Manager + `createBond` (Android pide la clave), "Olvidar este reloj" y acceso a los ajustes de batería. APK firmada con clave propia (fuera del repositorio, en `%USERPROFILE%\.c6clock`).
+- **5c.** `SyncWorker` (WorkManager, cada 30 min): hora, tiempo de Open-Meteo para la ciudad del reloj, `get info`, `sync done`. Si la app está abierta reutiliza su enlace. Avisa con una notificación, una vez por versión, si el manifiesto de la fase 6 trae una versión mayor (hasta entonces el manifiesto no existe y no pasa nada).
+- **Tests:** 11 tests unitarios de Kotlin, que comprueban el troceado byte a byte contra `tests/app/vectors.json` (generado desde `protocol.py`); `framing.test.html` 15/15 sobre el `transport.js` real; `tests/ble/test_web_page.py` 6/6; `tests/app/test_android_app.py` listo para cuando el móvil esté conectado por USB.
+- **De paso:**
+  - `net.c`: si un nodo de la malla asocia pero no da IP en 20 s, el reloj busca y fija el siguiente nodo más fuerte de la misma red (antes reintentaba siempre el mismo y se quedaba sin red).
+  - La consola serie tiene `status`, que imprime el estado en JSON en cualquier modo; los tests la usan para comprobar el reloj mientras otro programa tiene el enlace Bluetooth.
+- **Memoria:** en modo WiFi quedan unos 30–33 KB libres frente a los 35,8 KB de la fase 2. No viene de esta fase (la RAM fija es la misma que en la fase 4, +8 bytes); queda por investigar.
+
 ### Fase 6 — Actualización por internet (2 días)
 
 - `update.c`: modo UPDATE, manifiesto, `esp_https_ota`, SHA-256, resultado en NVS, límites de tiempo.

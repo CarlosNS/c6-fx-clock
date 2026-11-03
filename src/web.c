@@ -19,11 +19,18 @@
 
 static const char *TAG = "web";
 extern const char index_html_start[] asm("_binary_index_html_start");
+extern const char transport_js_start[] asm("_binary_transport_js_start");  // shared with the Android app
 
 static esp_err_t index_get(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     return httpd_resp_send(req, index_html_start, HTTPD_RESP_USE_STRLEN);
+}
+
+static esp_err_t transport_get(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/javascript; charset=utf-8");
+    return httpd_resp_send(req, transport_js_start, HTTPD_RESP_USE_STRLEN);
 }
 
 static esp_err_t send_json(httpd_req_t *req, const char *json)
@@ -188,6 +195,7 @@ void web_start(void)
 
     const httpd_uri_t uris[] = {
         {.uri = "/", .method = HTTP_GET, .handler = index_get},
+        {.uri = "/transport.js", .method = HTTP_GET, .handler = transport_get},
         {.uri = "/status", .method = HTTP_GET, .handler = status_get},
         {.uri = "/faces", .method = HTTP_GET, .handler = faces_get},
         {.uri = "/screenshot", .method = HTTP_GET, .handler = screenshot_get},

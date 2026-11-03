@@ -110,6 +110,15 @@ class SerialSession:
         self._s.write((line + "\n").encode("utf-8"))
         self._s.flush()
 
+    def status(self, timeout=5, reading=True):
+        """The clock's status JSON (same as /status) via the console, whatever link is in use.
+        reading=True when another thread is already reading the port (as in tests/ble)."""
+        import json
+        at = self.mark()
+        self.send("status")
+        m = (self.wait_for if reading else self.read_until)(r"status (\{.*\})\r?\n", timeout, at)
+        return json.loads(m.group(1))
+
     def reset(self):
         """Closes and reopens the port, which resets the board (like a power cut)."""
         if self._s:

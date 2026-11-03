@@ -1,3 +1,7 @@
 * text=auto
 *.bin binary
 *.png binary
+*.jar binary
+# Shell and batch scripts need their own line endings on any system
+gradlew text eol=lf
+*.bat text eol=crlf

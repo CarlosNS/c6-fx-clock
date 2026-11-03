@@ -128,7 +128,7 @@ pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   
 
 ### Bluetooth
 
-En marcha según `docs/PLAN-bluetooth.md` (fases 0–4 hechas). Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj. El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
+En marcha según `docs/PLAN-bluetooth.md` (fases 0–5 hechas). Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj. El modo Bluetooth se activa desde la web (*Avanzado → Modo Bluetooth*) o manteniendo BOOT 2 s en la pantalla de bienvenida (también para volver al WiFi). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
 
 ```
 python tools/ble_console.py          # comandos a mano
@@ -136,4 +136,19 @@ python tools/fake_phone.py           # una sincronización como la hará la app
 python tools/ble_shot.py --fx 22     # captura de pantalla por Bluetooth (PNG)
 ```
 
-En el C6 el WiFi y el Bluetooth no caben a la vez en la RAM, así que cada uno tiene su modo de arranque. La app Android llegará en la fase 5.
+En el C6 el WiFi y el Bluetooth no caben a la vez en la RAM, así que cada uno tiene su modo de arranque.
+
+La misma página de control funciona por los tres caminos: servida por el reloj en modo WiFi, desde Chrome/Edge por Web Bluetooth (abre `src/index.html` en `http://localhost`) y dentro de la app. Lo único que cambia es el enlace, en `src/transport.js`.
+
+### App Android (`android/`)
+
+App en Kotlin con la página de control en un WebView. El emparejamiento lo hace el sistema (Companion Device Manager) con la clave de la pantalla del reloj. Cada 30 min, aunque la app esté cerrada, sincroniza la hora y el tiempo de la ciudad del reloj y avisa si hay firmware nuevo. Requiere Android 10 o superior.
+
+```
+cd android
+gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+gradlew test                 # tests unitarios (troceado, sincronización)
+gradlew assembleRelease      # firmada; necesita android/keystore.properties (no está en git)
+```
+
+Necesita JDK 21 (`JAVA_HOME`) y el SDK de Android (`android/local.properties` con `sdk.dir=...`).
