@@ -38,4 +38,4 @@ Son reinterpretaciones animadas dibujadas por código, no copias de las imágene
 
 ## Nombres de personas y marcas
 
-La licencia cubre el código y el diseño de este proyecto, no los nombres ni la imagen de personas reales ni las marcas que se mencionen (por ejemplo, el jugador que aparece en la esfera *Gol*, o Waveshare, Espressif y Android). Quien los use, sobre todo con fines comerciales, debe obtener por su cuenta los permisos que hagan falta.
+La licencia cubre el código y el diseño de este proyecto, no los nombres ni la imagen de personas reales ni las marcas que se mencionen (por ejemplo, el nombre del jugador en que se inspira la esfera *Gol*, que no lo representa, o Waveshare, Espressif y Android). Quien los use, sobre todo con fines comerciales, debe obtener por su cuenta los permisos que hagan falta.

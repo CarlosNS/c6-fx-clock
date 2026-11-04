@@ -68,7 +68,7 @@ El reloj trae **23 esferas**, todas dibujadas por código a 30 fps. Cada una eli
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx19.png" alt="Esfera Gol" width="320">
 
-*Horizontal · número 19* — Jugada de fútbol en 16 bits con Mbappé: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados; la hora en el marcador del estadio. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave.
+*Horizontal · número 19* — Jugada de fútbol en 16 bits con un delantero inspirado en Mbappé: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados; la hora en el marcador del estadio. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave.
 
 ## Arte
 
