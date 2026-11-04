@@ -74,7 +74,7 @@ class ClockPresence : CompanionDeviceService() {
     private companion object {
         const val TAG = "ClockPresence"
         const val MIN_GAP_MS = 2 * 60_000L
-        const val AWAY_MS = 25_000L
+        const val AWAY_MS = 35_000L
         const val STALE_MS = 30 * 60_000L
     }
 }
