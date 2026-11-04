@@ -1,6 +1,6 @@
 # ESP32-C6 FX Clock
 
-Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
+Reloj con **24 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, El grito, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
@@ -47,6 +47,7 @@ Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 | 20 | Cuento | horizontal | fantasía oscura pintada como un libro infantil en acuarela: un árbol dorado gigante que respira luz en el horizonte, hojas doradas que caen y un osito caballero (personaje original) que camina hacia él; hora en tinta caligráfica |
 | 21 | Tiempo | vertical | minimalista: esfera analógica con agujas suavizadas y segundero de barrido; debajo, icono animado, temperatura, máx/mín y estado del cielo de la ciudad configurada. El fondo cambia con el tiempo (sol, gris, lluvia, noche) |
 | 22 | Clásico | vertical | reloj de vestir rectangular Art Déco: caja de metal pulido con corona, esfera sunburst cuyos reflejos se mueven (verde por defecto; el color se elige con un slider en la web), minutería de raíles, índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 con 8 pulsos por segundo |
+| 23 | Feria de Sevilla | vertical | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año a partir de la Semana Santa): portada de bombillas que parpadean, farolillos que se mecen, toldo de caseta y traje de lunares con la hora; durante la Feria, fuegos artificiales y el día en que va, y después la cuenta atrás hacia la del año siguiente |
 
 Todas van limitadas a **30 fps**.
 

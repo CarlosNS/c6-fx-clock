@@ -26,7 +26,7 @@ typedef struct {
     const char *opts;      // face-specific settings block in the apps ("wx", "cl"); NULL = none
 } fx_t;
 
-#define FX_COUNT 23
+#define FX_COUNT 24
 extern const fx_t fx_list[FX_COUNT];
 
 extern int16_t sin_q14[1024];  // sin(i * 2pi / 1024) * 16384
@@ -98,6 +98,8 @@ void weather_enter(void);
 void weather_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void classic_enter(void);
 void classic_render(uint16_t *fb, uint32_t t, uint32_t dt);
+void feria_enter(void);
+void feria_render(uint16_t *fb, uint32_t t, uint32_t dt);
 
 // Scratch memory shared by faces that need big lookup tables. Only one face runs at a time:
 // a face claims it in enter() (rebuilding its tables if another face used it in between).

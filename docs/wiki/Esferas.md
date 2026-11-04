@@ -1,4 +1,4 @@
-El reloj trae **23 esferas**, todas dibujadas por código a 30 fps. Cada una elige su orientación: el reloj gira la pantalla solo.
+El reloj trae **24 esferas**, todas dibujadas por código a 30 fps. Cada una elige su orientación: el reloj gira la pantalla solo.
 
 - Se cambian con una **pulsación corta de BOOT**, desde la app o desde la página; con *cambio automático* pasan solas cada 30 s.
 - Las que tienen ajustes propios o son interactivas lo indican en la tarjeta *Esfera actual* de la app (ver [[Página de control]]).
@@ -154,6 +154,12 @@ El reloj trae **23 esferas**, todas dibujadas por código a 30 fps. Cada una eli
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx22.png" alt="Esfera Clásico" width="160">
 
 *Vertical · número 22* — Reloj de vestir rectangular Art Déco: caja de metal pulido con corona, esfera sunburst cuyos reflejos se mueven (verde por defecto; el color se elige con un slider en la web), minutería de raíles, índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 con 8 pulsos por segundo.
+
+### Feria de Sevilla
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx23.png" alt="Esfera Feria de Sevilla: cuenta atrás" width="160"> <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx23-feria.png" alt="Esfera Feria de Sevilla durante la Feria" width="160">
+
+*Vertical · número 23* — Cuenta atrás hasta el alumbrado de la Feria de Abril de Sevilla: portada de bombillas que parpadean, farolillos que se mecen, toldo de caseta y, abajo, la hora sobre un traje de lunares. Muestra los días, horas, minutos y segundos que faltan (sin segundos si se desactivan). La fecha se calcula sola cada año: el alumbrado es a la medianoche del lunes al martes, 16 días después del Domingo de Resurrección (13 de abril de 2027). Desde la víspera y durante la Feria hay fuegos artificiales, y de martes a domingo pone «¡Es Feria!» y el día en que va; pasada la Feria, cuenta hacia la del año siguiente. Necesita la hora puesta (la da la app).
 
 ## ¿Una esfera nueva?
 

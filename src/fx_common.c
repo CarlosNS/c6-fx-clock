@@ -77,6 +77,9 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "CLASICO", .landscape = false, .enter = classic_enter, .render = classic_render,
      .label = "Clásico", .group = FX_G_CLOCKS, .opts = "cl",
      .desc = "Reloj de vestir rectangular de estilo Art Déco: caja de metal pulido, esfera sunburst del color que elijas con reflejos que se mueven, agujas doradas, fecha a las 3 y pequeño segundero a las 6 que late 8 veces por segundo."},
+    {.name = "FERIA DE SEVILLA", .landscape = false, .enter = feria_enter, .render = feria_render,
+     .label = "Feria de Sevilla", .group = FX_G_CLOCKS,
+     .desc = "Cuenta atrás hasta el alumbrado de la Feria de Abril de Sevilla, con portada de bombillas, farolillos y lunares; durante la Feria, fuegos artificiales."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

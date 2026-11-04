@@ -10,6 +10,8 @@ Se publicará con `tools/release.py` cuando la app esté probada en un móvil re
 
 Notas para la release:
 
+> **Esfera nueva: Feria de Sevilla.** Cuenta atrás hasta el alumbrado de la Feria de Abril, con fuegos artificiales durante la Feria. La fecha se calcula sola cada año.
+
 > **El reloj se controla desde el móvil.** Nueva app Android (*C6 Clock*): cambia de esfera y ajustes por Bluetooth, sin WiFi, y cada 30 minutos le pone la hora y el tiempo aunque la app esté cerrada. Se empareja una vez con la clave que aparece en la pantalla del reloj.
 >
 > - Al encender el reloj o al volver a estar cerca, el móvil le pone la hora en menos de un minuto, sin esperar a la siguiente sincronización (Android 12 o superior).
