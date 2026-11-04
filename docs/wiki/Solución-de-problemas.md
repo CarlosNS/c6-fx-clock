@@ -15,7 +15,7 @@
 
 ## La hora y el tiempo
 
-**El reloj no tiene la hora al enchufarlo.** La placa no tiene pila de reloj. En modo Bluetooth el móvil se la pone en segundos al detectarlo (Android 12+) o, como mucho, en la siguiente sincronización de 30 minutos; abrir la app lo hace al momento. En modo WiFi la toma de internet al conectarse.
+**El reloj no tiene la hora al enchufarlo.** La placa no tiene pila de reloj. En modo Bluetooth el móvil se la pone en menos de un minuto al detectarlo (Android 12+) o, como mucho, en la siguiente sincronización de 30 minutos; abrir la app lo hace al momento. En modo WiFi la toma de internet al conectarse.
 
 **Deja de sincronizar con la app cerrada.** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. La tarjeta *Este móvil* dice cuándo fue la última sincronización.
 

@@ -35,6 +35,10 @@ class Store(context: Context) {
     var lastSyncMs: Long
         get() = p.getLong("lastSync", 0)
         set(v) = p.edit().putLong("lastSync", v).apply()
+    /** When Android last reported the clock out of range (0: present). */
+    var goneSinceMs: Long
+        get() = p.getLong("goneSince", 0)
+        set(v) = p.edit().putLong("goneSince", v).apply()
     var lastResult: String
         get() = p.getString("lastResult", "") ?: ""
         set(v) = p.edit().putString("lastResult", v).apply()

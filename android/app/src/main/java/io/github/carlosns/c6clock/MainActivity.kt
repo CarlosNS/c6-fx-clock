@@ -37,6 +37,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.CompletableDeferred
@@ -107,7 +108,7 @@ class MainActivity : ComponentActivity() {
         setContentView(frame)
         web.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
         val wanted = buildList {
-            if (Build.VERSION.SDK_INT >= 31) add(Manifest.permission.BLUETOOTH_CONNECT)
+            if (Build.VERSION.SDK_INT >= 31) { add(Manifest.permission.BLUETOOTH_CONNECT); add(Manifest.permission.BLUETOOTH_SCAN) }
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
         }.filter { ContextCompat.checkSelfPermission(this, it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
         if (wanted.isNotEmpty()) permissions.launch(wanted.toTypedArray())
@@ -144,6 +145,8 @@ class MainActivity : ComponentActivity() {
     /** Keeps the link up while the app is visible, retrying with growing pauses. */
     private fun connectIfPaired() {
         val address = store.address ?: return
+        // Only while visible: the page can finish loading (or pairing end) after the user has left
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
         if (!pageReady || !Perms.canConnect(this) || keeper?.isActive == true) return
         keeper = lifecycleScope.launch {
             var wait = 1_000L

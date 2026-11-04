@@ -37,7 +37,7 @@ Sin esto, Android puede cortar la sincronización cuando cierras la app.
 |---|---|
 | Al abrir la app | Conecta, pone la hora y busca actualizaciones del reloj y de la propia app |
 | Cada 30 minutos, aunque esté cerrada | Conecta unos segundos: hora, tiempo de la ciudad del reloj, y comprueba versiones nuevas |
-| Al encender el reloj o volver a tenerlo cerca (Android 12+) | Android avisa a la app y esta le pone la hora en segundos |
+| Al encender el reloj o volver a tenerlo cerca (Android 12+) | Android avisa a la app y esta le pone la hora (menos de un minuto) |
 | Hay firmware o app nuevos | Notificación (una por versión) |
 
 La tarjeta **Este móvil** enseña cuándo fue la última sincronización y si salió bien, y tiene el botón **Ahora** para forzar una.

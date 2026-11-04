@@ -12,7 +12,7 @@ Notas para la release:
 
 > **El reloj se controla desde el móvil.** Nueva app Android (*C6 Clock*): cambia de esfera y ajustes por Bluetooth, sin WiFi, y cada 30 minutos le pone la hora y el tiempo aunque la app esté cerrada. Se empareja una vez con la clave que aparece en la pantalla del reloj.
 >
-> - Al encender el reloj o al volver a estar cerca, el móvil le pone la hora en segundos, sin esperar a la siguiente sincronización (Android 12 o superior).
+> - Al encender el reloj o al volver a estar cerca, el móvil le pone la hora en menos de un minuto, sin esperar a la siguiente sincronización (Android 12 o superior).
 > - Al emparejar, una barra sobre la clave cuenta los 30 segundos que hay para escribirla.
 > - La app avisa también de sus propias versiones nuevas y se actualiza sola (*Actualizaciones → Actualizar la app*), sin desinstalar ni perder el emparejamiento.
 > - Las actualizaciones llegan por internet: *Actualizaciones → Buscar actualización*, en la app o en la página. Si algo falla, el reloj se queda con la versión que tenía.

@@ -8,6 +8,8 @@
     <!-- Android 12+: talk to the paired clock. Association goes through the Companion Device Manager,
          so the app never scans by itself and needs no location permission. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Only to read the clock's advertising (does it have the time?), never for location -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="31" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <!-- Weather (Open-Meteo) and the firmware manifest -->

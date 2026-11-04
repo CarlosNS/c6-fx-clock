@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include "app.h"
 #include "bootmode.h"
+#include "clock.h"
 #include "control.h"
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
@@ -34,6 +35,7 @@ static const char *TAG = "ble";
 
 #define CMD_MAX 248             // longest command accepted (MTU 251+)
 #define FAST_ADV_MS 30000       // after boot / disconnect: advertise fast so the phone finds it quickly
+#define QUIET_BOOT_MS 45000     // paired clock booting without the time: stay silent this long first
 #define HEARTBEAT_MS 30000      // status sent unasked this often while connected
 #define STATUS_GAP_MS 300       // at most one change notification this often
 #define QUEUE_LEN 16
@@ -54,7 +56,7 @@ static volatile uint16_t s_conn = BLE_HS_CONN_HANDLE_NONE;
 static volatile bool s_subscribed;
 static uint16_t s_evt_handle;
 static uint8_t s_msg_id;
-static esp_timer_handle_t s_adv_timer;
+static esp_timer_handle_t s_adv_timer, s_quiet_timer;
 static char s_name[20];
 static uint32_t s_sync_count;
 static int64_t s_sync_last;  // epoch seconds
@@ -324,6 +326,12 @@ static void advertise(bool fast)
     f.uuids128 = &SVC_UUID;
     f.num_uuids128 = 1;
     f.uuids128_is_complete = 1;
+    // Manufacturer data (test company id 0xFFFF) + a flags byte, bit 0 = the clock has the time.
+    // The phone peeks at it when the clock reappears and only connects if the time is missing
+    // (e.g. after a quick power cycle that Android never noticed as an absence).
+    uint8_t mfg[3] = {0xFF, 0xFF, g_now.valid ? 0x01 : 0x00};
+    f.mfg_data = mfg;
+    f.mfg_data_len = sizeof(mfg);
     ble_gap_adv_set_fields(&f);
     struct ble_hs_adv_fields r = {0};
     r.name = (uint8_t *)s_name;
@@ -331,8 +339,11 @@ static void advertise(bool fast)
     r.name_is_complete = 1;
     ble_gap_adv_rsp_set_fields(&r);
     struct ble_gap_adv_params p = {.conn_mode = BLE_GAP_CONN_MODE_UND, .disc_mode = BLE_GAP_DISC_MODE_GEN};
-    p.itvl_min = fast ? BLE_GAP_ADV_ITVL_MS(100) : BLE_GAP_ADV_ITVL_MS(1000);
-    p.itvl_max = fast ? BLE_GAP_ADV_ITVL_MS(150) : BLE_GAP_ADV_ITVL_MS(1200);
+    // Slow rate ~420 ms: at 1 s, Android's low-power presence scan (a short window every few
+    // seconds) kept missing the clock, reported it lost and found every ~20 s, and each "found"
+    // could start a sync.
+    p.itvl_min = fast ? BLE_GAP_ADV_ITVL_MS(100) : BLE_GAP_ADV_ITVL_MS(400);
+    p.itvl_max = fast ? BLE_GAP_ADV_ITVL_MS(150) : BLE_GAP_ADV_ITVL_MS(440);
     int rc = ble_gap_adv_start(s_addr_type, NULL, BLE_HS_FOREVER, &p, gap_event, NULL);
     if (rc) ESP_LOGW(TAG, "Advertising failed: %d", rc);
     if (fast) esp_timer_start_once(s_adv_timer, FAST_ADV_MS * 1000LL);
@@ -405,9 +416,23 @@ static void on_sync(void)
     ble_hs_id_copy_addr(s_addr_type, mac, NULL);
     snprintf(s_name, sizeof(s_name), "C6 Clock %02X%02X", mac[1], mac[0]);
     ble_svc_gap_device_name_set(s_name);
+    // A quick power cycle is too short for the phone to notice the clock was gone, so it would not
+    // bring the time until its next periodic sync (Xiaomi phones can't peek at the advertising
+    // flag from the background either). A paired clock without the time stays silent a while:
+    // Android then reports it lost and found again, and the app syncs at once.
+    ble_addr_t peers[1];
+    int bonds = 0;
+    ble_store_util_bonded_peers(peers, &bonds, 1);
+    if (bonds > 0 && !g_now.valid) {
+        ESP_LOGI(TAG, "Advertising as %s in %d s (paired, no time yet)", s_name, QUIET_BOOT_MS / 1000);
+        esp_timer_start_once(s_quiet_timer, QUIET_BOOT_MS * 1000LL);
+        return;
+    }
     ESP_LOGI(TAG, "Advertising as %s", s_name);
     advertise(true);
 }
+
+static void quiet_over(void *arg) { advertise(true); }
 
 static void host_task(void *arg)
 {
@@ -420,6 +445,8 @@ void ble_start(void)
     s_queue = xQueueCreate(QUEUE_LEN, sizeof(cmd_t));
     const esp_timer_create_args_t t = {.callback = slow_down, .name = "ble_adv"};
     esp_timer_create(&t, &s_adv_timer);
+    const esp_timer_create_args_t q = {.callback = quiet_over, .name = "ble_quiet"};
+    esp_timer_create(&q, &s_quiet_timer);
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "NimBLE init failed: %s", esp_err_to_name(err));
