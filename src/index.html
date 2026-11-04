@@ -102,12 +102,12 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
     <div class="lbl">Interactúa con esta esfera</div>
     <div class="padrow"><div id="pad"><div class="touch" id="touch"></div></div><div class="hint" id="hint"></div></div>
   </div>
-  <div class="own hide" id="owncl">
+  <div class="own hide" id="owncl" data-opts="cl">
     <div class="lbl">Ajustes de esta esfera</div>
     <div class="slider" style="padding-top:0"><div class="top">Color de la esfera <span class="swatch" id="chuesw"></span></div><input type="range" id="chue" class="hue" min="0" max="359"></div>
     <button class="btn" id="chuereset" style="margin-top:6px">Volver al verde original</button>
   </div>
-  <div class="own hide" id="ownwx">
+  <div class="own hide" id="ownwx" data-opts="wx">
     <div class="lbl">Ajustes de esta esfera</div>
     <div class="stack">
       <div class="status" id="wxst">--</div>
@@ -220,7 +220,7 @@ function setFx(i){cur=i;btns.forEach((b,j)=>b&&b.classList.toggle('on',j===i));c
  $('cname').textContent=f.label;$('cdesc').textContent=f.desc;
  $('ctags').innerHTML=`<span class="tag">${f.o==='h'?'Horizontal':'Vertical'}</span><span class="tag">${GROUPS[f.g]}</span>`+(f.hint?'<span class="tag int">Interactiva</span>':'');
  $('ownpad').classList.toggle('hide',!f.hint);$('hint').textContent=f.hint;$('pad').classList.toggle('land',f.o==='h');
- $('ownwx').classList.toggle('hide',f.opts!=='wx');$('owncl').classList.toggle('hide',f.opts!=='cl')}
+ for(const el of document.querySelectorAll('.own[data-opts]'))el.classList.toggle('hide',el.dataset.opts!==f.opts)}
 
 for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).padStart(2,'0')+':00',h));
 function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}

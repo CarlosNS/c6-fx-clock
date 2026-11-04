@@ -105,6 +105,16 @@ class SerialSession:
             time.sleep(0.1)
         raise AssertionError(f"'{pattern}' not seen in the serial log within {timeout} s")
 
+    def wait_advertising(self, since=0, timeout=30):
+        """Waits until the clock advertises over Bluetooth after a boot. A paired clock that boots
+        without the time keeps quiet 60 s so the phone notices (src/ble.c); here it gets the time
+        over the console instead, which ends the silence at once."""
+        m = self.wait_for(r"Advertising as|Quiet for", timeout, since)
+        if m.group(0) == "Quiet for":
+            t = time.time()
+            self.send(f"time {int(t)} {int(t * 1000) % 1000}")
+            self.wait_for(r"Advertising as", 10, m.end())
+
     def mark(self):
         """Position in the log, to search only what comes after it."""
         return len(self.text)

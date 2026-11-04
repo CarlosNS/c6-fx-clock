@@ -82,7 +82,7 @@ def test_pairing_survives_a_reboot(ble_name, ble_serial, fresh):
     fresh.close()
     at = ble_serial.mark()
     ble_serial.send("mode ble")  # restarts the clock in the same mode
-    ble_serial.wait_for(r"Advertising as", 30, at)
+    ble_serial.wait_advertising(at, 30)
     lk = ClockLink(ble_name).connect(addr, retries=3)  # an app retries the same way
     try:
         assert lk.request("get status", "status", timeout=10)["mode"] == "ble"

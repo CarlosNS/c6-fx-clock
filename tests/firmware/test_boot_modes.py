@@ -8,6 +8,7 @@ import re
 
 import pytest
 
+from clocklib import fx_count
 from clocklib.board import SerialSession, http_json, wait_http
 
 pytestmark = pytest.mark.phase1
@@ -94,4 +95,4 @@ def test_back_to_wifi_keeps_the_web(console, host):
     assert log.startswith("Boot mode: wifi")
     st = wait_http(host, 180)
     assert st["mode"] == "wifi"
-    assert len(http_json(host, "/faces")["faces"]) == 23
+    assert len(http_json(host, "/faces")["faces"]) == fx_count()

@@ -17,6 +17,7 @@ Notas para la release:
 > - La app avisa también de sus propias versiones nuevas y se actualiza sola (*Actualizaciones → Actualizar la app*), sin desinstalar ni perder el emparejamiento.
 > - Las actualizaciones llegan por internet: *Actualizaciones → Buscar actualización*, en la app o en la página. Si algo falla, el reloj se queda con la versión que tenía.
 > - El modo WiFi sigue disponible: BOOT 2 s en la pantalla de bienvenida.
+> - ¿Quieres hacer tu propia esfera? `tools/new_face.py` crea una que ya funciona, y la wiki tiene la guía completa: [Crear una esfera](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera).
 > - Instalación por USB: <https://carlosns.github.io/c6-fx-clock/flasher/>
 
 ## 2.1.0 — 2026-11-03

@@ -26,7 +26,6 @@ def ble_mode(serial_port):
         at = s.mark()
         s.send("mode ble")
         s.read_until(r"Boot mode: ble", 30, at)
-    s.read_until(r"Advertising as", 30)
     stop = threading.Event()
 
     def pump():
@@ -34,6 +33,7 @@ def ble_mode(serial_port):
             s._read()
     reader = threading.Thread(target=pump, daemon=True)
     reader.start()
+    s.wait_advertising(0, 30)
     try:
         yield s
     finally:

@@ -36,6 +36,7 @@ static const char *TAG = "ble";
 #define CMD_MAX 248             // longest command accepted (MTU 251+)
 #define FAST_ADV_MS 30000       // after boot / disconnect: advertise fast so the phone finds it quickly
 #define QUIET_BOOT_MS 60000     // paired clock booting without the time: stay silent this long first
+#define QUIET_STEP_MS 500       // ...checking this often whether the time came some other way
 #define HEARTBEAT_MS 30000      // status sent unasked this often while connected
 #define STATUS_GAP_MS 300       // at most one change notification this often
 #define QUEUE_LEN 16
@@ -57,6 +58,7 @@ static volatile bool s_subscribed;
 static uint16_t s_evt_handle;
 static uint8_t s_msg_id;
 static esp_timer_handle_t s_adv_timer, s_quiet_timer;
+static int s_quiet_left;  // ms of silence left (quiet_tick)
 static char s_name[20];
 static uint32_t s_sync_count;
 static int64_t s_sync_last;  // epoch seconds
@@ -419,20 +421,29 @@ static void on_sync(void)
     // A quick power cycle is too short for the phone to notice the clock was gone, so it would not
     // bring the time until its next periodic sync (Xiaomi phones can't peek at the advertising
     // flag from the background either). A paired clock without the time stays silent a while:
-    // Android then reports it lost and found again, and the app syncs at once.
+    // Android then reports it lost and found again, and the app syncs at once. If the time arrives
+    // some other way meanwhile (serial console, tests), it starts advertising right away.
     ble_addr_t peers[1];
     int bonds = 0;
     ble_store_util_bonded_peers(peers, &bonds, 1);
     if (bonds > 0 && !g_now.valid) {
-        ESP_LOGI(TAG, "Advertising as %s in %d s (paired, no time yet)", s_name, QUIET_BOOT_MS / 1000);
-        esp_timer_start_once(s_quiet_timer, QUIET_BOOT_MS * 1000LL);
+        ESP_LOGI(TAG, "Quiet for %d s before advertising (paired, no time yet)", QUIET_BOOT_MS / 1000);
+        s_quiet_left = QUIET_BOOT_MS;
+        esp_timer_start_periodic(s_quiet_timer, QUIET_STEP_MS * 1000LL);
         return;
     }
     ESP_LOGI(TAG, "Advertising as %s", s_name);
     advertise(true);
 }
 
-static void quiet_over(void *arg) { advertise(true); }
+static void quiet_tick(void *arg)
+{
+    s_quiet_left -= QUIET_STEP_MS;
+    if (s_quiet_left > 0 && !g_now.valid) return;
+    esp_timer_stop(s_quiet_timer);
+    ESP_LOGI(TAG, "Advertising as %s", s_name);
+    advertise(true);
+}
 
 static void host_task(void *arg)
 {
@@ -445,7 +456,7 @@ void ble_start(void)
     s_queue = xQueueCreate(QUEUE_LEN, sizeof(cmd_t));
     const esp_timer_create_args_t t = {.callback = slow_down, .name = "ble_adv"};
     esp_timer_create(&t, &s_adv_timer);
-    const esp_timer_create_args_t q = {.callback = quiet_over, .name = "ble_quiet"};
+    const esp_timer_create_args_t q = {.callback = quiet_tick, .name = "ble_quiet"};
     esp_timer_create(&q, &s_quiet_timer);
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {

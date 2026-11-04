@@ -10,6 +10,7 @@ import urllib.request
 import pytest
 import websockets
 
+from clocklib import fx_count
 from clocklib.board import http_json, post, wait_http
 
 pytestmark = pytest.mark.now
@@ -39,11 +40,11 @@ def test_status_is_complete_json(status):
 def test_faces_catalogue(host):
     f = http_json(host, "/faces")
     assert len(f["groups"]) == 5
-    assert len(f["faces"]) == 23
+    assert len(f["faces"]) == fx_count()
     for face in f["faces"]:
         assert face["label"] and face["desc"] and face["o"] in ("h", "v")
         assert 0 <= face["g"] < len(f["groups"])
-    assert {x["label"] for x in f["faces"] if x["hint"]} == {"Plasma", "Cubo 3D", "Túnel", "Lava", "Vida"}
+    assert {x["label"] for x in f["faces"] if x["hint"]} >= {"Plasma", "Cubo 3D", "Túnel", "Lava", "Vida"}
 
 
 def test_setting_roundtrip(host, status):

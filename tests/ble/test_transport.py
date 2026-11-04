@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+from clocklib import fx_count
 from clocklib.ble import ClockLink
 
 pytestmark = pytest.mark.phase2
@@ -32,7 +33,7 @@ def test_info(link):
 
 def test_faces_match_the_firmware(link):
     f = link.request("get faces", "faces", timeout=20)
-    assert len(f["faces"]) == 23 and len(f["groups"]) == 5
+    assert len(f["faces"]) == fx_count() and len(f["groups"]) == 5
     assert link._rx.dropped == 0
 
 

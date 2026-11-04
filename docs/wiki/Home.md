@@ -21,6 +21,7 @@
 | [[Hardware]] | La placa actual y la definitiva (ESP32-S3 AMOLED) |
 | [[Arquitectura]] | Módulos del firmware, comandos, ajustes y modos de arranque |
 | [[Protocolo Bluetooth]] | Servicio GATT, troceado de mensajes y seguridad |
+| [[Crear una esfera]] | Haz tu propia esfera: plantilla, herramientas de dibujo, rendimiento y cómo enviarla |
 | [[Compilar y contribuir]] | Firmware, app, tests y publicar versiones |
 | [[Licencia]] | Software libre con la GPL-3.0: qué puedes hacer y qué debes cumplir |
 

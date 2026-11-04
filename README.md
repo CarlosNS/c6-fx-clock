@@ -5,6 +5,7 @@ Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 ![Algunas esferas: Clásico, Tiempo, RPG, El grito, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
 - **Guía completa:** [wiki](https://github.com/CarlosNS/c6-fx-clock/wiki) (instalación, uso, app, esferas, solución de problemas, desarrollo)
+- **Crea tu propia esfera:** [guía paso a paso](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera)
 - **Descargas** (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
 - **Instalación por USB** desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
 - **Licencia:** software libre, [GPL-3.0-or-later](LICENSE): úsalo, modifícalo y compártelo; quien distribuya versiones debe publicar también su código ([más](#licencia))
@@ -48,6 +49,8 @@ Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 | 22 | Clásico | vertical | reloj de vestir rectangular Art Déco: caja de metal pulido con corona, esfera sunburst cuyos reflejos se mueven (verde por defecto; el color se elige con un slider en la web), minutería de raíles, índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 con 8 pulsos por segundo |
 
 Todas van limitadas a **30 fps**.
+
+**¿Quieres hacer la tuya?** `python tools/new_face.py burbujas "Burbujas"` crea una esfera que ya funciona, lista para cambiarla. La guía completa (pantalla, hora, herramientas de dibujo, rendimiento, ajustes propios y cómo enviarla) está en la wiki: [Crear una esfera](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera).
 
 ## Instalar y actualizar
 

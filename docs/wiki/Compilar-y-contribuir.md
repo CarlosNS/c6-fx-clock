@@ -56,7 +56,7 @@ Publica el firmware, el instalador web y la app, y escribe el manifiesto que lee
 
 - Fallos e ideas: [issues](https://github.com/CarlosNS/c6-fx-clock/issues).
 - Normas de estilo y la licencia de las contribuciones: [CONTRIBUTING.md](https://github.com/CarlosNS/c6-fx-clock/blob/main/CONTRIBUTING.md). Resumen: el código se aporta con la misma licencia GPL-3.0-or-later y su autor puede ofrecerlo también con otras licencias.
-- Las esferas se dibujan por código: sin imágenes ni fuentes de terceros.
+- Las esferas se dibujan por código: sin imágenes ni fuentes de terceros. Para hacer una: [[Crear una esfera]].
 
 ## Esta wiki
 

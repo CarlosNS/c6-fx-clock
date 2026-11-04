@@ -5,6 +5,7 @@
 ## Antes de empezar
 
 - **Fallos e ideas:** abre una [issue](https://github.com/CarlosNS/c6-fx-clock/issues) con lo que pasa, la versión del firmware y de la app, y cómo reproducirlo.
+- **Esferas nuevas:** sigue la guía [Crear una esfera](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera); `python tools/new_face.py` te da una plantilla que ya funciona.
 - **Cambios de código:** para algo grande (una esfera, un transporte nuevo), abre antes una issue y lo hablamos.
 - Cómo compilar, probar y publicar: [wiki → Compilar y contribuir](https://github.com/CarlosNS/c6-fx-clock/wiki/Compilar-y-contribuir).
 

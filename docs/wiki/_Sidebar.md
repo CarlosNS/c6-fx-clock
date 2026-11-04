@@ -13,6 +13,7 @@
 - [[Hardware]]
 - [[Arquitectura]]
 - [[Protocolo Bluetooth]]
+- [[Crear una esfera]]
 - [[Compilar y contribuir]]
 
 **Proyecto**

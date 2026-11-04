@@ -59,7 +59,7 @@ def run_update(ble_name, addr, serial, url, timeout=420):
     assert ack["ok"], ack
     serial.wait_for(r"Boot mode: update", 30, at)
     serial.wait_for(r"update: Result: (\w+)", timeout, at)
-    serial.wait_for(r"Advertising as", 60, at)
+    serial.wait_advertising(at, 60)
     after = info(ble_name, addr)
     assert after["upd"]["at"] == before["upd"]["at"] + 1
     return before, after
@@ -117,7 +117,7 @@ def test_power_cut_mid_download_keeps_old_firmware(ble_name, clock, ble_serial, 
     cut = ble_serial.mark()
     ble_serial.pulse_reset()        # = power cut
     ble_serial.wait_for(r"Boot mode: ble", 30, cut)  # never stuck in UPDATE mode
-    ble_serial.wait_for(r"Advertising as", 30, cut)
+    ble_serial.wait_advertising(cut, 30)
     after = info(ble_name, clock)
     assert after["part"] == before["part"]
     assert after["upd"]["state"] == "interrupted"
