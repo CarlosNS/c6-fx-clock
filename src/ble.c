@@ -35,7 +35,7 @@ static const char *TAG = "ble";
 
 #define CMD_MAX 248             // longest command accepted (MTU 251+)
 #define FAST_ADV_MS 30000       // after boot / disconnect: advertise fast so the phone finds it quickly
-#define QUIET_BOOT_MS 45000     // paired clock booting without the time: stay silent this long first
+#define QUIET_BOOT_MS 60000     // paired clock booting without the time: stay silent this long first
 #define HEARTBEAT_MS 30000      // status sent unasked this often while connected
 #define STATUS_GAP_MS 300       // at most one change notification this often
 #define QUEUE_LEN 16

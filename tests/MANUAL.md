@@ -43,7 +43,7 @@ Preparación (una vez): en el móvil, *Ajustes → Sobre el teléfono → Versi�
 - [ ] Con la app cerrada, a los 30 min la esfera Tiempo tiene datos nuevos (mirar la antigüedad).
 - [ ] Una noche entera con la app cerrada y el móvil en reposo: por la mañana la hora y el tiempo están al día.
 - [ ] Con el reloj fuera de alcance, la sincronización falla sin avisos molestos y se reanuda al volver.
-- [ ] Con la app cerrada, desenchufar el reloj unos minutos y volver a enchufarlo: en menos de un minuto tiene la hora del móvil (comprobado el 2026-11-04 con reinicios rápidos: ~50 s; el reloj emparejado que arranca sin hora espera 45 s antes de anunciarse para que Android note que se fue).
+- [ ] Con la app cerrada, desenchufar el reloj unos minutos y volver a enchufarlo: en menos de un minuto tiene la hora del móvil (comprobado el 2026-11-04 con reinicios rápidos: ~65 s; el reloj emparejado que arranca sin hora espera 60 s antes de anunciarse para que Android note que se fue).
 - [ ] Publicar una versión nueva: llega una notificación de Android sin abrir la app.
 - [ ] Consumo de batería de la app tras un día (Ajustes → Batería): debe ser despreciable.
 

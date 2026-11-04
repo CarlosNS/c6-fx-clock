@@ -60,7 +60,7 @@ class ClockPresence : CompanionDeviceService() {
         store.goneSinceMs = 0
         // Android's presence scan loses a nearby clock for a few seconds now and then: only a real
         // absence (switched off, carried away; a paired clock that boots without the time stays
-        // silent 45 s on purpose, src/ble.c) or a long time without sync is worth a connection.
+        // silent 60 s on purpose, src/ble.c) or a long time without sync is worth a connection.
         val sync = ago > STALE_MS || gone >= AWAY_MS
         Log.i(TAG, "clock appeared, gone ${gone / 1000} s, last sync ${ago / 1000} s ago" + if (sync) ": sync" else "")
         if (sync) SyncWorker.runSoon(applicationContext)
@@ -74,7 +74,7 @@ class ClockPresence : CompanionDeviceService() {
     private companion object {
         const val TAG = "ClockPresence"
         const val MIN_GAP_MS = 2 * 60_000L
-        const val AWAY_MS = 35_000L
+        const val AWAY_MS = 30_000L
         const val STALE_MS = 30 * 60_000L
     }
 }
