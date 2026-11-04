@@ -1,6 +1,6 @@
 # Avisos de terceros
 
-El código de este repositorio es de CarlosNS y se distribuye con la [licencia PolyForm Noncommercial 1.0.0](LICENSE.md). Los firmwares y la app que se publican incluyen o usan además estos componentes de terceros, cada uno con su propia licencia, que **no cambia** por estar aquí:
+El código de este repositorio es de CarlosNS y se distribuye con la licencia [GPL-3.0-or-later](LICENSE). Todas las licencias de abajo son compatibles con ella. Los firmwares y la app que se publican incluyen o usan además estos componentes de terceros, cada uno con su propia licencia, que **no cambia** por estar aquí:
 
 ## Firmware del reloj
 

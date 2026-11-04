@@ -7,7 +7,7 @@ Reloj con **23 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 - **Guía completa:** [wiki](https://github.com/CarlosNS/c6-fx-clock/wiki) (instalación, uso, app, esferas, solución de problemas, desarrollo)
 - **Descargas** (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
 - **Instalación por USB** desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
-- **Licencia:** [PolyForm Noncommercial 1.0.0](LICENSE.md): libre para uso personal y sin ánimo de lucro; para uso comercial, [pide una licencia](#licencia)
+- **Licencia:** software libre, [GPL-3.0-or-later](LICENSE): úsalo, modifícalo y compártelo; quien distribuya versiones debe publicar también su código ([más](#licencia))
 
 ## Esferas
 
@@ -178,10 +178,10 @@ Necesita JDK 21 (`JAVA_HOME`) y el SDK de Android (`android/local.properties` co
 
 ## Licencia
 
-Copyright 2026 CarlosNS. Este proyecto se distribuye con la licencia [PolyForm Noncommercial 1.0.0](LICENSE.md):
+Copyright 2026 CarlosNS. Es **software libre y open source**: puedes redistribuirlo y modificarlo según los términos de la Licencia Pública General de GNU, versión 3 o posterior ([GPL-3.0-or-later](LICENSE)).
 
-- **Puedes**, sin pedir permiso: usarlo, estudiarlo, modificarlo y compartirlo (también tus versiones modificadas) para fines personales, de aprendizaje, investigación, aficionados o de organizaciones sin ánimo de lucro, siempre que incluyas la licencia y la línea `Required Notice` de [LICENSE.md](LICENSE.md).
-- **No puedes**, sin una licencia comercial: venderlo, venderlo instalado en un reloj o dentro de un producto, ni usarlo en una empresa o servicio con ánimo de lucro.
-- **Uso comercial:** abre una [issue](https://github.com/CarlosNS/c6-fx-clock/issues/new?title=Licencia%20comercial) con el título *Licencia comercial* y acordamos las condiciones.
+- **Puedes**, sin pedir permiso y para cualquier fin (también comercial): usarlo, estudiarlo, modificarlo, compartirlo y venderlo.
+- **A cambio**, quien distribuya el firmware o la app, originales o modificados (también instalados en un reloj que venda), debe hacerlo con la misma licencia, dar el código fuente completo de su versión y mantener el aviso de copyright. Nadie puede cerrar el código ni quedarse las mejoras para sí.
+- **Otra licencia:** si quieres incluir el proyecto en un producto sin publicar tu código, abre una [issue](https://github.com/CarlosNS/c6-fx-clock/issues/new?title=Licencia%20comercial) con el título *Licencia comercial* y acordamos las condiciones.
 
-Al ser una licencia no comercial, no es «open source» en el sentido de la OSI: el código es público y libre para la comunidad, pero no para lucrarse con él. Los componentes de terceros conservan sus licencias: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Para contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).
+Se ofrece sin ninguna garantía. Los componentes de terceros conservan sus licencias: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Para contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).

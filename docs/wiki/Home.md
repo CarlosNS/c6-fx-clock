@@ -22,7 +22,7 @@
 | [[Arquitectura]] | Módulos del firmware, comandos, ajustes y modos de arranque |
 | [[Protocolo Bluetooth]] | Servicio GATT, troceado de mensajes y seguridad |
 | [[Compilar y contribuir]] | Firmware, app, tests y publicar versiones |
-| [[Licencia]] | Qué se puede hacer con el proyecto y cómo pedir una licencia comercial |
+| [[Licencia]] | Software libre con la GPL-3.0: qué puedes hacer y qué debes cumplir |
 
 ## En pocas palabras
 

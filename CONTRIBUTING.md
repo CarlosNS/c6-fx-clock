@@ -16,10 +16,10 @@
 
 ## Licencia de las contribuciones
 
-El proyecto se distribuye con la [PolyForm Noncommercial 1.0.0](LICENSE.md) y su autor puede, además, conceder licencias comerciales. Para que eso siga siendo posible, al enviar una contribución (pull request, parche o código en una issue):
+El proyecto se distribuye con la [GPL-3.0-or-later](LICENSE) y su autor puede, además, ofrecerlo con otras licencias a quien no pueda cumplir la GPL. Para que eso siga siendo posible, al enviar una contribución (pull request, parche o código en una issue):
 
 1. Declaras que es obra tuya, o que tienes derecho a aportarla.
-2. La aportas con la misma licencia PolyForm Noncommercial 1.0.0.
+2. La aportas con la misma licencia, GPL-3.0-or-later.
 3. Concedes además a CarlosNS una licencia perpetua, mundial, gratuita e irrevocable para usarla, modificarla, sublicenciarla y distribuirla con cualquier licencia, incluidas licencias comerciales.
 
 Si no estás de acuerdo con el punto 3, dilo en la pull request antes de que se acepte.
