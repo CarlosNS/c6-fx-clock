@@ -1,6 +1,6 @@
 El reloj trae **24 esferas**, todas dibujadas por código a 30 fps. Cada una elige su orientación: el reloj gira la pantalla solo.
 
-- Se cambian con una **pulsación corta de BOOT**, desde la app o desde la página; con *cambio automático* pasan solas cada 30 s.
+- Se cambian con una **pulsación corta de BOOT**, desde la app o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican en la tarjeta *Esfera actual* de la app (ver [[Página de control]]).
 - Las capturas son de la pantalla real (172×320), sacadas por Bluetooth con `tools/ble_shot.py`.
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.

@@ -79,6 +79,20 @@ def test_face_button_changes_the_face(page, ble_serial):
     assert page.eval("document.querySelectorAll('.fx button')[3].classList.contains('on')")
 
 
+def test_faces_can_be_left_out_of_the_automatic_rotation(page, ble_serial):
+    page.eval("document.getElementById('editauto').click()", gesture=True)
+    page.eval("document.querySelectorAll('.fx button')[4].click()", gesture=True)  # edit mode: toggles, does not select
+    time.sleep(1.5)
+    assert ble_serial.status()["fxoff"] == 1 << 4
+    assert page.eval("document.querySelectorAll('.fx button')[4].classList.contains('off')")
+    assert page.eval("document.getElementById('offinfo').textContent").startswith("Toca")
+    page.eval("document.querySelectorAll('.fx button')[4].click()", gesture=True)  # back in
+    page.eval("document.getElementById('editauto').click()", gesture=True)
+    time.sleep(1.5)
+    assert ble_serial.status()["fxoff"] == 0
+    assert page.eval("document.getElementById('offinfo').textContent") == "Todas"
+
+
 def test_page_reconnects_after_a_drop(page, ble_serial):
     at = ble_serial.mark()
     ble_serial.send("mode ble")  # the clock restarts: the link drops

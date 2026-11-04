@@ -227,7 +227,7 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 | `.desc` | `"Burbujas que…"` | Una o dos frases para la tarjeta *Esfera actual* |
 | `.opts` | `"bb"` | Solo si tiene [ajustes propios](#ajustes-propios) |
 
-**Las esferas nuevas van siempre al final.** El número de cada esfera es su posición en la lista, y los relojes lo guardan (la esfera elegida, el cambio automático). Si insertas una en medio o reordenas, a quien actualice le cambiará la esfera. La app las agrupa por `.group`, así que el orden de la lista no se ve. La app lee el catálogo del propio reloj, así que no hay que tocarla.
+**Las esferas nuevas van siempre al final.** El número de cada esfera es su posición en la lista, y los relojes lo guardan (la esfera elegida, el cambio automático). Si insertas una en medio o reordenas, a quien actualice le cambiará la esfera. El cambio automático se salta las esferas que el usuario quita en la app (`fxoff`, máscara de 31 bits: hay un `_Static_assert` en `fx.h` que avisa si pasas de 31 esferas). La app las agrupa por `.group`, así que el orden de la lista no se ve. La app lee el catálogo del propio reloj, así que no hay que tocarla.
 
 ## Probarla
 

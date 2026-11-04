@@ -19,7 +19,7 @@ def host(request):
 
 
 # User settings the tests may touch (settings.c keys). Saved before the run, restored after it.
-USER_SETTINGS = ("fx", "auto", "spd", "bri", "h24", "secs", "non", "nst", "nen", "nbr", "aon", "wks", "chue")
+USER_SETTINGS = ("fx", "fxoff", "auto", "spd", "bri", "h24", "secs", "non", "nst", "nen", "nbr", "aon", "wks", "chue")
 
 
 @pytest.fixture(scope="session", autouse=True)

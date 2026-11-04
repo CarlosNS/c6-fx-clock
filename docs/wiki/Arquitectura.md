@@ -40,6 +40,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `shot` (captura de pa
 |---|---|---|
 | `fx` | 0–22 | Esfera |
 | `auto` | 0/1 | Cambio automático cada 30 s |
+| `fxoff` | 0–2³¹−1 | Esferas que el cambio automático se salta: máscara de bits, el bit *n* es la esfera *n* (máximo 31 esferas) |
 | `spd` | 10–300 | Velocidad de las animaciones (%) |
 | `bri` | 5–100 | Brillo (%) |
 | `h24` | 0/1 | Formato 24 h |

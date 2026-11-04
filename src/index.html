@@ -40,6 +40,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);m
 .fx button{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 8px;font:inherit;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:7px;text-align:left}
 .fx button i{display:inline-block;border:2px solid currentColor;border-radius:2px;opacity:.55;flex:none}
 .fx button i.v{width:8px;height:14px}.fx button i.h{width:14px;height:8px}
+.fx button.off{opacity:.45}
+.fx button.off::after{content:"";flex:none;margin-left:auto;width:11px;height:11px;border:2px solid currentColor;border-radius:50%;background:linear-gradient(135deg,transparent 42%,currentColor 42%,currentColor 58%,transparent 58%)}
+.editing .fx button:not(.off)::after{content:"";flex:none;margin-left:auto;width:5px;height:10px;border:solid #4ade80;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-2px,-1px)}
 .fx button.on{background:linear-gradient(135deg,var(--acc),#4f46e5);border-color:transparent;box-shadow:0 4px 18px #7c5cff55}
 /* controls */
 .item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
@@ -141,6 +144,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
   <div class="item"><div class="t">Formato 24 h</div><input type="checkbox" class="sw" id="h24"></div>
   <div class="item"><div class="t">Mostrar segundos<small>Barra, anillo o segundero, según la esfera</small></div><input type="checkbox" class="sw" id="secs"></div>
   <div class="item"><div class="t">Cambiar de esfera sola<small>Pasa a la siguiente cada 30 s</small></div><input type="checkbox" class="sw" id="auto"></div>
+  <div class="item"><div class="t">Esferas del cambio automático<small id="offinfo">Todas</small></div><button class="btn" id="editauto">Elegir</button></div>
   <div class="slider" style="border-top:1px solid var(--line)"><div class="top">Velocidad de las animaciones <b id="spdv"></b></div><input type="range" id="spd" min="10" max="300" step="5"></div>
 </div>
 
@@ -208,14 +212,19 @@ function send(s){return L.send(s)}
 function syncTime(){const n=Date.now();return send(`time ${Math.floor(n/1000)} ${n%1000}`)}
 
 // Face picker, grouped
-const btns=[];
+const btns=[];let offMask=0,editAuto=false;
+function renderOff(){btns.forEach((b,i)=>b&&b.classList.toggle('off',!!(offMask>>i&1)));const n=FX.length-btns.filter((b,i)=>b&&(offMask>>i&1)).length;
+ $('offinfo').textContent=editAuto?'Toca las esferas para quitarlas o ponerlas':(n===FX.length?'Todas':n+' de '+FX.length);$('groups').classList.toggle('editing',editAuto);$('editauto').textContent=editAuto?'Hecho':'Elegir'}
 async function loadFaces(){
  for(;;){try{const r=await L.request('faces');FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
  GROUPS.forEach((g,gi)=>{const d=document.createElement('div');d.className='group';d.innerHTML=`<div class="gname">${g}</div><div class="fx"></div>`;
   FX.forEach((f,i)=>{if(f.g!==gi)return;const b=document.createElement('button');b.innerHTML=`<i class="${f.o}"></i>`;b.append(f.label);
-   b.onclick=()=>{lastUser=Date.now();setFx(i);$('auto').checked=false;send('fx '+i)};btns[i]=b;d.lastChild.appendChild(b)});
+   b.onclick=()=>{lastUser=Date.now();
+    if(editAuto){const m=offMask^(1<<i);if(m===(1<<FX.length)-1)return;offMask=m;renderOff();send('fxoff '+offMask);return}
+    setFx(i);$('auto').checked=false;send('fx '+i)};btns[i]=b;d.lastChild.appendChild(b)});
   $('groups').appendChild(d)});
- if(cur>=0){const c=cur;cur=-1;setFx(c)}}
+ renderOff();if(cur>=0){const c=cur;cur=-1;setFx(c)}}
+$('editauto').onclick=()=>{editAuto=!editAuto;renderOff()};
 function setFx(i){cur=i;btns.forEach((b,j)=>b&&b.classList.toggle('on',j===i));const f=FX[i];if(!f)return;
  $('cname').textContent=f.label;$('cdesc').textContent=f.desc;
  $('ctags').innerHTML=`<span class="tag">${f.o==='h'?'Horizontal':'Vertical'}</span><span class="tag">${GROUPS[f.g]}</span>`+(f.hint?'<span class="tag int">Interactiva</span>':'');
@@ -270,6 +279,7 @@ function show(s){
  updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
  if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
+  if(s.fxoff!==undefined&&s.fxoff!==offMask){offMask=s.fxoff;if(FX.length)renderOff()}
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+'%'}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   for(const k of['wks','nst','nen','chue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];

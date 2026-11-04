@@ -335,7 +335,16 @@ void app_main(void)
             confirmed = true;
         }
 
-        if (g_app.auto_cycle && now - fx_since > AUTO_CYCLE_MS) g_app.fx = (g_app.fx + 1) % FX_COUNT;
+        if (g_app.auto_cycle && now - fx_since > AUTO_CYCLE_MS) {
+            // next face not switched off in the app; if there is none, stay where we are
+            for (int k = 1; k <= FX_COUNT; k++) {
+                int n = (g_app.fx + k) % FX_COUNT;
+                if (!((g_app.fx_off >> n) & 1)) {
+                    g_app.fx = n;
+                    break;
+                }
+            }
+        }
         if (g_app.fx != cur) {
             cur = g_app.fx;
             lcd_set_landscape(fx_list[cur].landscape);

@@ -5,7 +5,7 @@
 // both just pass text commands in and read the status JSON back.
 //
 // Commands (one per message):
-//   <setting> <int>          any key from settings.c, e.g. "bri 80", "fx 3", "chue 200"
+//   <setting> <int>          any key from settings.c, e.g. "bri 80", "fx 3", "chue 200", "fxoff 5" (faces 0 and 2 skipped by the auto rotation)
 //   night <on> <from> <to> <bri>
 //   time <epoch_s> <ms>      set the clock from the phone
 //   loc <lat> <lon> <name>   weather location

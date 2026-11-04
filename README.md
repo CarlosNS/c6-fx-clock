@@ -117,7 +117,7 @@ El reloj tiene dos modos (en el C6 el WiFi y el Bluetooth no caben a la vez en l
 
 ### Ajustes (se guardan en flash)
 
-Esfera, brillo, velocidad, 24/12 h, segundos, cambio automático y **modo noche** (por defecto 23:00–07:00 al 10 % de brillo, con el LED apagado).
+Esfera, brillo, velocidad, 24/12 h, segundos, cambio automático (con las esferas que elijas) y **modo noche** (por defecto 23:00–07:00 al 10 % de brillo, con el LED apagado).
 
 ### Depuración
 

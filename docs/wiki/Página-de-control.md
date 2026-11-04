@@ -11,7 +11,7 @@ La misma página de control funciona por tres caminos. Lo único que cambia es c
 - **Esfera actual:** nombre, orientación, grupo y descripción. Algunas esferas tienen ajustes propios (color de Clásico, ciudad de Tiempo) o son **interactivas**: en Plasma, Cubo 3D, Túnel, Lava y Vida aparece un panel táctil para moverlas con el dedo.
 - **Elegir esfera:** todas las esferas por grupos; el icono indica si es vertical u horizontal.
 - **Pantalla:** brillo, tiempo de encendido, siempre encendida y modo noche (horas y brillo).
-- **Reloj:** formato 24 h, segundos, cambio automático cada 30 s y velocidad de las animaciones.
+- **Reloj:** formato 24 h, segundos, cambio automático cada 30 s (con **Esferas del cambio automático → Elegir** se marcan las que no deben salir solas) y velocidad de las animaciones.
 - **Conexión:** la red WiFi del reloj (también en modo Bluetooth, para las actualizaciones) y *Sincronizar hora con este dispositivo*.
 - **Actualizaciones:** versión del reloj y de la app, y botones para actualizar (ver [[Actualizaciones]]).
 - **Este móvil** (solo en la app): última sincronización, permiso de segundo plano y olvidar el reloj.

@@ -28,6 +28,7 @@ typedef struct {
 
 #define FX_COUNT 24
 extern const fx_t fx_list[FX_COUNT];
+_Static_assert(FX_COUNT <= 31, "g_app.fx_off is a 31-bit mask: widen it before adding more faces");
 
 extern int16_t sin_q14[1024];  // sin(i * 2pi / 1024) * 16384
 extern uint8_t sin_u8[256];    // (sin(i * 2pi / 256) + 1) * 127.5

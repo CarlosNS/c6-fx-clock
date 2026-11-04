@@ -6,7 +6,7 @@ Es el único botón que hace falta (el otro, RESET, reinicia la placa).
 |---|---|---|
 | Pantalla apagada | Pulsación | Enciende la pantalla |
 | Pantalla encendida | Pulsación corta | Siguiente esfera |
-| Pantalla encendida | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); al soltar se ve «AUTO: SÍ / NO» |
+| Pantalla encendida | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); al soltar se ve «AUTO: SÍ / NO». Salta las esferas que hayas quitado en la app |
 | Pantalla de bienvenida (al encender) | Mantener 2 s | Cambia de modo: WiFi ↔ Bluetooth (se llena una barra y se reinicia) |
 | En cualquier momento | Mantener 3 s | Aparece «10 S: OLVIDAR MÓVILES» |
 | En cualquier momento | Mantener 10 s | **Olvida todos los móviles emparejados** («MÓVILES OLVIDADOS») |
@@ -52,4 +52,4 @@ Lo usa la esfera **Tiempo** (y algunos fondos). Los datos son de [Open-Meteo](ht
 
 ## Ajustes que se guardan
 
-Esfera, brillo, velocidad de las animaciones, formato 24 h, segundos, cambio automático, modo noche, tiempo de encendido, color de la esfera Clásico y ciudad. Se guardan en la memoria flash 3 segundos después del último cambio.
+Esfera, brillo, velocidad de las animaciones, formato 24 h, segundos, cambio automático (y qué esferas entran), modo noche, tiempo de encendido, color de la esfera Clásico y ciudad. Se guardan en la memoria flash 3 segundos después del último cambio.

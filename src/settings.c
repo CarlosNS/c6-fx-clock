@@ -22,6 +22,7 @@ static void on_wake(void) { app_wake(); }          // show the new timeout strai
 static const setting_t SETTINGS[] = {
     {"fx", &g_app.fx, 0, FX_COUNT - 1, true, on_fx},
     {"auto", &g_app.auto_cycle, 0, 1, true, NULL},
+    {"fxoff", &g_app.fx_off, 0, 0x7FFFFFFF, true, NULL},  // faces left out of the auto rotation (bitmask)
     {"spd", &g_app.speed, 10, 300, true, NULL},
     {"bri", &g_app.brightness, 5, 100, true, NULL},
     {"h24", &g_app.h24, 0, 1, true, NULL},

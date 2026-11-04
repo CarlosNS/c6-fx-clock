@@ -17,6 +17,7 @@ typedef struct {
     volatile int night_start, night_end, night_bri;  // hours 0..23, percent
     volatile int always_on;    // 0: screen sleeps until the BOOT button (or the web) wakes it
     volatile int wake_secs;    // how long the screen stays on after the button / web (3..600 s)
+    volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (max 31 faces)
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
 
     // ---- Live state ----
