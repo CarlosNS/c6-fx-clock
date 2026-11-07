@@ -1,9 +1,1 @@
-{
- "project": "c6-fx-clock",
- "version": "2.1.0",
- "url": "https://carlosns.github.io/c6-fx-clock/c6-fx-clock-ota.bin",
- "size": 2039904,
- "sha256": "ed1dec0452368e64602efc8203195feaf3beb31bedc0832fd8817949c4499b44",
- "notes": "Actualización por internet desde el móvil y app Android",
- "date": "2026-11-03"
-}
+{"project":"c6-fx-clock","version":"2.1.0","url":"https://carlosns.github.io/c6-fx-clock/c6-fx-clock-ota.bin","size":2039904,"sha256":"ed1dec0452368e64602efc8203195feaf3beb31bedc0832fd8817949c4499b44","notes":"Actualización por internet desde el móvil y app Android","date":"2026-11-03","boards":{"s3amoled":{"version":"3.0.0-beta.1","url":"https://carlosns.github.io/c6-fx-clock/s3-fx-clock-ota.bin","size":1879200,"sha256":"6aac64256a5c060f734780c3311e93be5c9b03c7d7d99e7212ecc5096a212c58"}}}
