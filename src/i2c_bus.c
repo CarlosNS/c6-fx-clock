@@ -1,6 +1,9 @@
 #include "i2c_bus.h"
+#include <string.h>
 #include "board.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #define I2C_HZ 400000
 #define I2C_TIMEOUT_MS 50
@@ -8,6 +11,7 @@
 
 static const char *TAG = "i2c";
 static i2c_master_bus_handle_t s_bus;
+static SemaphoreHandle_t s_devs_lock;  // drivers may first use a device from different tasks
 static struct {
     uint8_t addr;
     i2c_master_dev_handle_t dev;
@@ -38,6 +42,7 @@ void i2c_bus_init(void)
         .flags.enable_internal_pullup = true,
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&cfg, &s_bus));
+    s_devs_lock = xSemaphoreCreateMutex();
 }
 
 i2c_master_bus_handle_t i2c_bus(void)
@@ -61,20 +66,26 @@ void i2c_bus_scan(void)
 
 static i2c_master_dev_handle_t dev_for(uint8_t addr)
 {
-    for (int i = 0; i < MAX_DEVS; i++) {
-        if (s_devs[i].dev && s_devs[i].addr == addr) return s_devs[i].dev;
-        if (!s_devs[i].dev) {
+    i2c_master_dev_handle_t found = NULL;
+    xSemaphoreTake(s_devs_lock, portMAX_DELAY);
+    for (int i = 0; i < MAX_DEVS && !found; i++) {
+        if (s_devs[i].dev && s_devs[i].addr == addr) {
+            found = s_devs[i].dev;
+        } else if (!s_devs[i].dev) {
             i2c_device_config_t cfg = {
                 .dev_addr_length = I2C_ADDR_BIT_LEN_7,
                 .device_address = addr,
                 .scl_speed_hz = I2C_HZ,
             };
-            if (i2c_master_bus_add_device(s_bus, &cfg, &s_devs[i].dev) != ESP_OK) return NULL;
-            s_devs[i].addr = addr;
-            return s_devs[i].dev;
+            if (i2c_master_bus_add_device(s_bus, &cfg, &s_devs[i].dev) == ESP_OK) {
+                s_devs[i].addr = addr;
+                found = s_devs[i].dev;
+            }
+            break;
         }
     }
-    return NULL;
+    xSemaphoreGive(s_devs_lock);
+    return found;
 }
 
 bool i2c_reg_read(uint8_t addr, uint8_t reg, uint8_t *data, size_t len)
@@ -88,4 +99,14 @@ bool i2c_reg_write(uint8_t addr, uint8_t reg, uint8_t value)
     i2c_master_dev_handle_t dev = dev_for(addr);
     uint8_t buf[2] = {reg, value};
     return dev && i2c_master_transmit(dev, buf, 2, I2C_TIMEOUT_MS) == ESP_OK;
+}
+
+bool i2c_regs_write(uint8_t addr, uint8_t reg, const uint8_t *data, size_t len)
+{
+    uint8_t buf[16];
+    if (len > sizeof(buf) - 1) return false;
+    buf[0] = reg;
+    memcpy(buf + 1, data, len);
+    i2c_master_dev_handle_t dev = dev_for(addr);
+    return dev && i2c_master_transmit(dev, buf, len + 1, I2C_TIMEOUT_MS) == ESP_OK;
 }

@@ -11,3 +11,5 @@ void i2c_bus_scan(void);
 // Register access for small drivers; each call adds the device on first use. false on error.
 bool i2c_reg_read(uint8_t addr, uint8_t reg, uint8_t *data, size_t len);
 bool i2c_reg_write(uint8_t addr, uint8_t reg, uint8_t value);
+// Several consecutive registers in one transfer (at most 15 bytes)
+bool i2c_regs_write(uint8_t addr, uint8_t reg, const uint8_t *data, size_t len);

@@ -104,7 +104,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 2 ✅ | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps, medida con el contador en pantalla y el log (la orden `ovl 1` llega con `main.c` en la fase 3) |
 
 | 3 ✅ | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 21 esferas funcionan en la pantalla nueva (comprobado por el dueño) |
-| 4 | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil |
+| 4 ⏳ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil. Hecho salvo esta prueba, pendiente del dueño (ver las notas) |
 | 5 | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo |
 | 6 | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3 |
 | 7 | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal |
@@ -164,6 +164,19 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 - **Pendiente para la fase 9** (esferas a tamaño completo y verticales): con 3,7 veces más píxeles, las esferas más pesadas (Clásico, Estrellada) no cabrían en 33 ms dibujando en la PSRAM con un solo núcleo. Habrá que repartir entre los dos núcleos (el envío ya ocupa parte del núcleo 1), dibujar en RAM interna por franjas, o las dos cosas.
 - **Esferas retiradas** (decisión del dueño): El grito (10), Acuario (16) y Cuento (20) se quitan para siempre. Su código se borra, pero sus números siguen ocupados en `fx_list` como entradas `.retired`: el reloj las salta y el catálogo las envía con grupo `-1`. Quedan 21 esferas.
 - **Nombres de la C6 que quedan en la S3:** la red WiFi propia sigue llamándose `C6-FX-Demo` y el Bluetooth anuncia el mismo nombre que el C6. Se revisan en la fase 6.
+
+### Fase 4 (7 de noviembre de 2026; falta la prueba de apagado)
+
+- **`rtc_pcf85063.c`** (solo la S3, `BOARD_HAS_RTC 1`): el PCF85063A guarda la hora en UTC; la zona horaria la sigue poniendo `clock.c`.
+  - `clock_init()` lee el RTC esperando al cambio de segundo (hasta 1 s de espera al arrancar), y así la hora sale exacta a unos pocos ms. Si el RTC dice que su oscilador se paró (bit OS) o tiene una fecha imposible, no se usa y el reloj arranca sin hora, como el C6.
+  - `clock_set_epoch()` (móvil, página, consola) y la sincronización NTP guardan la hora en el RTC. Lo hace un temporizador en el siguiente cambio de segundo, así que quien manda la hora no espera.
+  - **Puesta en hora exacta:** se para el reloj (bit STOP), se escribe la hora justo en el cambio de segundo y se suelta STOP 492 ms después. Según la hoja de datos, el primer salto llega 0,508 s después de soltarlo, así que cae en el segundo exacto.
+  - **Medido:** tras un reinicio, la hora coincide con la del PC con 24–66 ms de diferencia, que es lo que tarda en medirse por la consola.
+- **El RTC llegó parado de fábrica:** con el bit OS activo, sin hora guardada.
+- **Arranque callado:** `ble.c` ya se lo saltaba si había hora al arrancar. Como ahora `clock_init()` la tiene antes de `ble_start()`, en la S3 desaparece solo, sin tocar `ble.c`. Si el RTC perdiera la hora, el arranque callado vuelve a hacer falta y sigue funcionando.
+- **`i2c_bus.c`:** escritura de varios registros seguidos y un mutex al registrar dispositivos, porque el RTC se escribe desde el temporizador.
+- **Pendiente, prueba del dueño:** desenchufar el USB, apagar con una pulsación larga de PWR, esperar y volver a encender, y ver que la hora está bien desde el principio. La S3 no conoce la WiFi ni tiene móvil emparejado, así que solo puede sacarla del RTC. Queda por confirmar que PWR apaga la placa con la configuración de fábrica del AXP2101, y que el RTC sigue alimentado con la placa apagada.
+- **Comprobación también pendiente:** que el Bluetooth anuncie al instante con un móvil emparejado y la hora del RTC. Sin emparejar, el arranque callado no llega a activarse.
 
 ## Cómo trabajar
 

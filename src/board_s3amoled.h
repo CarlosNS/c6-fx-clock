@@ -41,6 +41,9 @@
 #define BOARD_TOUCH_INT 38
 #define BOARD_TOUCH_RST 9
 
+// PCF85063A real-time clock on the I2C bus (rtc_pcf85063.c): keeps the time while the board is off
+#define BOARD_HAS_RTC 1
+
 // ---- Audio (I2S) ----
 #define BOARD_I2S_MCLK 16
 #define BOARD_I2S_SCLK 41

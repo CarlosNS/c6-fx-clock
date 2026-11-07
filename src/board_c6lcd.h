@@ -27,6 +27,9 @@
 #define BOARD_SD_CS 4        // the SD card shares the bus: keep it deselected
 #define BOARD_LCD_X_GAP 34   // the 172 px panel sits in the middle of the 240 px controller RAM
 
+// No real-time clock: the time is lost at every power cut
+#define BOARD_HAS_RTC 0
+
 // ---- Inputs / outputs ----
 // BOOT button, active low. It is also a strapping pin: held at power-on it enters the ROM download
 // mode, so the firmware only reads it once running.

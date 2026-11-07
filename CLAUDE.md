@@ -22,7 +22,7 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
 | `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED. `board.h` elige `board_c6lcd.h` o `board_s3amoled.h` según el chip |
-| `src/board_*.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Código propio de cada placa: `board_init()`; en la S3, el bus I2C, el AXP2101 y la pantalla. `lcd_co5300.c` implementa `lcd.h` ampliando el lienzo de 172×320 (modo compatibilidad) |
+| `src/board_*.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c`, `src/rtc_pcf85063.c` | Código propio de cada placa: `board_init()`; en la S3, el bus I2C, el AXP2101, el RTC y la pantalla. `lcd_co5300.c` implementa `lcd.h` ampliando el lienzo de 172×320 (modo compatibilidad) |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |

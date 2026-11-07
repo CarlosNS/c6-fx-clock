@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 typedef struct {
-    bool valid;            // false until NTP or the phone has set the time
+    bool valid;            // false until NTP, the phone or the RTC has set the time
     int h, m, s, ms;       // h is 0..23
     int day, mon, year;    // mon 1..12
     int wday;              // 0 = Sunday
@@ -13,10 +13,10 @@ typedef struct {
 // Updated once per frame by the main loop
 extern clock_now_t g_now;
 
-void clock_init(void);         // time zone (Europe/Madrid)
+void clock_init(void);         // time zone (Europe/Madrid) and, on boards with an RTC, the saved time
 void clock_start_sntp(void);   // call once the network stack is up
 void clock_update(void);       // refreshes g_now
-void clock_set_epoch(int64_t sec, int ms);
+void clock_set_epoch(int64_t sec, int ms);   // also stored in the RTC, if the board has one
 
 // Helpers for faces
 int clock_display_hour(void);                  // honours the 12/24 h setting
