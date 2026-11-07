@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from clocklib import fx_count
+from clocklib import fx_live
 from clocklib.browser import Browser, find_browser, serve_repo
 
 pytestmark = [pytest.mark.phase5, pytest.mark.skipif(not find_browser(), reason="needs Edge or Chrome")]
@@ -46,7 +46,7 @@ def page(link, ble_name, ble_serial):
 
 def test_page_connects_and_loads_everything(page):
     assert page.connect_s < 20
-    page.wait_until(f"document.querySelectorAll('.fx button').length === {fx_count()}", 20)
+    page.wait_until(f"document.querySelectorAll('.fx button').length === {len(fx_live())}", 20)
     page.wait_until("document.getElementById('cname').textContent !== '--'", 15)
     assert page.eval("document.getElementById('blecard').classList.contains('hide')")
     assert page.eval("document.getElementById('wifionly').classList.contains('hide')"), "OTA upload shown over Bluetooth"

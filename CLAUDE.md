@@ -12,7 +12,7 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 - **Todo en español:** respuestas, lista de tareas, resúmenes, documentación y mensajes de commit. Los comentarios del código están en inglés; mantén ese estilo.
 - **Commits:** autor `CarlosNS <19167897+CarlosNS@users.noreply.github.com>`, ya configurado en el repositorio. **Nunca** escribas el correo personal del dueño en ningún archivo del repositorio. Termina cada commit con la línea `Co-Authored-By` que indique el sistema.
 - **Publicar** necesita permiso explícito **cada vez**: `tools/release.py` (release, GitHub Pages y manifiesto que leen los relojes) y `tools/publish_wiki.py`. Hacer push a `main` también se pregunta, salvo que el dueño ya lo haya pedido en esa tarea.
-- **Esferas:** las nuevas van **siempre al final** de `fx_list`, porque los relojes guardan el número de la esfera elegida. Nunca reordenes. Usa `python tools/new_face.py` y sigue la guía de la wiki `Crear-una-esfera.md`, que el dueño quiere completa y al día.
+- **Esferas:** las nuevas van **siempre al final** de `fx_list`, porque los relojes guardan el número de la esfera elegida. Nunca reordenes. Para quitar una, se **retira** (entrada `.retired`, ver la guía) y su número no se reutiliza. Retiradas para siempre: El grito (10), Acuario (16) y Cuento (20); el dueño no quiere dedicarles más tiempo. Usa `python tools/new_face.py` y sigue la guía de la wiki `Crear-una-esfera.md`, que el dueño quiere completa y al día.
 - **Documentación:** cada cambio visible para el usuario se documenta en el README, en `docs/wiki/` y en `CHANGELOG.md`.
 - **Derechos:** nada de arte, marcas ni personajes copiados. Solo obras de dominio público o inspiración libre (ver THIRD-PARTY-NOTICES.md).
 
@@ -22,7 +22,7 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
 | `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED. `board.h` elige `board_c6lcd.h` o `board_s3amoled.h` según el chip |
-| `src/main_s3.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Firmware de arranque de la S3 (fases 1–2 de `docs/PLAN-s3.md`). `lcd_co5300.c` implementa `lcd.h` en la S3 |
+| `src/board_*.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Código propio de cada placa: `board_init()`; en la S3, el bus I2C, el AXP2101 y la pantalla. `lcd_co5300.c` implementa `lcd.h` ampliando el lienzo de 172×320 (modo compatibilidad) |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |

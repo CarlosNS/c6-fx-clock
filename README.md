@@ -1,8 +1,8 @@
 # ESP32-C6 FX Clock
 
-Reloj con **24 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
+Reloj con **21 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
 
-![Algunas esferas: Clásico, Tiempo, RPG, El grito, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
+![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
 - **Guía completa:** [wiki](https://github.com/CarlosNS/c6-fx-clock/wiki) (instalación, uso, app, esferas, solución de problemas, desarrollo)
 - **Crea tu propia esfera:** [guía paso a paso](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera)
@@ -28,7 +28,6 @@ Reloj con **24 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 | # | Esfera | Orientación | Obra y animación |
 |---|--------|-------------|------------------|
 | 8 | Estrellada | horizontal | *La noche estrellada* (Van Gogh, 1889): cielo de pinceladas en remolino, halos que laten, ciprés que se mece |
-| 10 | El grito | vertical | *El grito* (Munch, 1893): cielo ondulante, fiordo en espiral, puente en perspectiva, figura que se retuerce |
 | 11 | Earthrise | horizontal | Foto del Apolo 8 (NASA, 1968): Tierra 3D con continentes y nubes que giran saliendo sobre la Luna |
 
 **Diseño libre:**
@@ -40,14 +39,14 @@ Reloj con **24 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 | 13 | Synthwave | horizontal | sol a franjas, rejilla de neón, palmeras, números cromados |
 | 14 | Arena | vertical | reloj de arena con física de granos: se vacía exactamente en un minuto y gira |
 | 15 | Engranajes | vertical | reloj analógico mecánico: engranajes que engranan, volante oscilante, agujas con segundero |
-| 16 | Acuario | horizontal | peces a dos profundidades, burbujas, algas, rayos de luz y cáusticas |
 | 17 | Lluvia | vertical | gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea |
 | 18 | Agujero negro | horizontal | disco de acreción con efecto Doppler, lente gravitatoria del disco trasero y anillo de fotones; las estrellas se curvan alrededor (ecuación de lente puntual) |
 | 19 | Gol | horizontal | jugada de fútbol en 16 bits con un delantero inspirado en Mbappé: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados; la hora en el marcador del estadio. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave |
-| 20 | Cuento | horizontal | fantasía oscura pintada como un libro infantil en acuarela: un árbol dorado gigante que respira luz en el horizonte, hojas doradas que caen y un osito caballero (personaje original) que camina hacia él; hora en tinta caligráfica |
 | 21 | Tiempo | vertical | minimalista: esfera analógica con agujas suavizadas y segundero de barrido; debajo, icono animado, temperatura, máx/mín y estado del cielo de la ciudad configurada. El fondo cambia con el tiempo (sol, gris, lluvia, noche) |
 | 22 | Clásico | vertical | reloj de vestir rectangular Art Déco: caja de metal pulido con corona, esfera sunburst cuyos reflejos se mueven (verde por defecto; el color se elige con un slider en la web), minutería de raíles, índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 con 8 pulsos por segundo |
 | 23 | Feria de Sevilla | vertical | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año a partir de la Semana Santa): portada de bombillas que parpadean, farolillos que se mecen, toldo de caseta y traje de lunares con la hora; durante la Feria, fuegos artificiales y el día en que va, y después la cuenta atrás hacia la del año siguiente |
+
+Los números 10, 16 y 20 están **retirados**: eran esferas eliminadas (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar. Si un reloj tenía elegida una de ellas, muestra la siguiente.
 
 Todas van limitadas a **30 fps**.
 

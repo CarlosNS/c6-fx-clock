@@ -213,14 +213,16 @@ function syncTime(){const n=Date.now();return send(`time ${Math.floor(n/1000)} $
 
 // Face picker, grouped
 const btns=[];let offMask=0,editAuto=false;
-function renderOff(){btns.forEach((b,i)=>b&&b.classList.toggle('off',!!(offMask>>i&1)));const n=FX.length-btns.filter((b,i)=>b&&(offMask>>i&1)).length;
- $('offinfo').textContent=editAuto?'Toca las esferas para quitarlas o ponerlas':(n===FX.length?'Todas':n+' de '+FX.length);$('groups').classList.toggle('editing',editAuto);$('editauto').textContent=editAuto?'Hecho':'Elegir'}
+// Retired faces (x) keep their number in the catalogue but are never shown or counted
+const liveMask=()=>FX.reduce((m,f,i)=>f.x?m:m|1<<i,0),liveCount=()=>FX.filter(f=>!f.x).length;
+function renderOff(){btns.forEach((b,i)=>b&&b.classList.toggle('off',!!(offMask>>i&1)));const all=liveCount(),n=all-btns.filter((b,i)=>b&&(offMask>>i&1)).length;
+ $('offinfo').textContent=editAuto?'Toca las esferas para quitarlas o ponerlas':(n===all?'Todas':n+' de '+all);$('groups').classList.toggle('editing',editAuto);$('editauto').textContent=editAuto?'Hecho':'Elegir'}
 async function loadFaces(){
  for(;;){try{const r=await L.request('faces');FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
  GROUPS.forEach((g,gi)=>{const d=document.createElement('div');d.className='group';d.innerHTML=`<div class="gname">${g}</div><div class="fx"></div>`;
   FX.forEach((f,i)=>{if(f.g!==gi)return;const b=document.createElement('button');b.innerHTML=`<i class="${f.o}"></i>`;b.append(f.label);
    b.onclick=()=>{lastUser=Date.now();
-    if(editAuto){const m=offMask^(1<<i);if(m===(1<<FX.length)-1)return;offMask=m;renderOff();send('fxoff '+offMask);return}
+    if(editAuto){const m=offMask^(1<<i);if((m&liveMask())===liveMask())return;offMask=m;renderOff();send('fxoff '+offMask);return}
     setFx(i);$('auto').checked=false;send('fx '+i)};btns[i]=b;d.lastChild.appendChild(b)});
   $('groups').appendChild(d)});
  renderOff();if(cur>=0){const c=cur;cur=-1;setFx(c)}}

@@ -4,6 +4,7 @@
 // rest of the board-specific code lives in lcd.c and in the input handling.
 
 #define BOARD_NAME "Waveshare ESP32-C6-LCD-1.47"
+#define BOARD_CHIP "ESP32-C6"
 
 // ---- Capabilities ----
 // Wi-Fi and Bluetooth can't run at the same time here: two 110 KB framebuffers leave room for one

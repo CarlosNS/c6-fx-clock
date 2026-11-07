@@ -4,6 +4,7 @@
 // Pins from Waveshare's BSP (examples/factory/components/waveshare__esp32_s3_touch_amoled_2_06).
 
 #define BOARD_NAME "Waveshare ESP32-S3-Touch-AMOLED-2.06"
+#define BOARD_CHIP "ESP32-S3"
 
 // ---- Capabilities ----
 // 8 MB of PSRAM: framebuffers live there, so both radio stacks fit at once (phase 6 checks it)
@@ -11,8 +12,13 @@
 #define BOARD_FB_COUNT 2
 
 // ---- Display: CO5300 AMOLED 410x502 over QSPI (sh8601-compatible command set) ----
-#define BOARD_LCD_W 410
-#define BOARD_LCD_H 502
+// Compatibility mode (phase 3 of docs/PLAN-s3.md): the faces still draw on the C6's 172x320 canvas
+// (LCD_W x LCD_H) and lcd_co5300.c enlarges it while sending: portrait x1.5 (258x480), landscape
+// x1.25 (400x215), centred on the panel.
+#define BOARD_LCD_W 172
+#define BOARD_LCD_H 320
+#define BOARD_PANEL_W 410
+#define BOARD_PANEL_H 502
 #define BOARD_LCD_CS 12
 #define BOARD_LCD_SCLK 11
 #define BOARD_LCD_D0 4
@@ -47,6 +53,8 @@
 #define BOARD_SD_CLK 2
 #define BOARD_SD_CMD 1
 #define BOARD_SD_D0 3
+
+// No RGB LED on this board (BOARD_PIN_LED undefined: led.c does nothing)
 
 // ---- Inputs ----
 // BOOT button, active low (also a strapping pin: held at power-on it enters the ROM download mode)

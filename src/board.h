@@ -11,3 +11,6 @@
 #else
 #error "No board header for this chip"
 #endif
+
+// Board bring-up that has to happen before anything else (I2C devices, power manager...)
+void board_init(void);

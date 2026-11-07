@@ -153,6 +153,11 @@ void app_faces_json(void (*emit)(const char *piece, void *ctx), void *ctx)
     emit("],\"faces\":[", ctx);
     for (int i = 0; i < FX_COUNT; i++) {
         const fx_t *f = &fx_list[i];
+        if (f->retired) {  // keeps the numbering; group -1 so no page or app version shows it
+            snprintf(buf, sizeof(buf), "%s{\"label\":\"\",\"o\":\"v\",\"g\":-1,\"hint\":\"\",\"desc\":\"\",\"opts\":\"\",\"x\":1}", i ? "," : "");
+            emit(buf, ctx);
+            continue;
+        }
         json_escape(a, sizeof(a), f->label);
         json_escape(b, sizeof(b), f->desc);
         json_escape(hint, sizeof(hint), f->hint ? f->hint : "");

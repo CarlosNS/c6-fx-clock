@@ -1,5 +1,11 @@
 # Cambios
 
+## Sin publicar (rama `s3`)
+
+> **Esferas retiradas: El grito, Acuario y Cuento.** Quedan 21 esferas. Sus números (10, 16 y 20) no se reutilizan; si un reloj tenía elegida una de ellas, pasa a la siguiente.
+
+- El catálogo de esferas (`/faces`, `get faces`) sigue teniendo una entrada por número; las retiradas llevan `"x":1` y grupo `-1`, y ninguna versión de la app ni de la página las muestra.
+
 ## 3.0.0 — preparada, sin publicar
 
 Se publicará con `tools/release.py` cuando la app esté probada en un móvil real (`tests/MANUAL.md`). Antes de publicarla:

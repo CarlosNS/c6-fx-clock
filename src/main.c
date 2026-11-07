@@ -1,4 +1,5 @@
-// ESP32-C6 FX Clock — animated clock faces on the Waveshare ESP32-C6-LCD-1.47, controlled from a phone
+// FX Clock — animated clock faces controlled from a phone. Boards: Waveshare ESP32-C6-LCD-1.47 and
+// ESP32-S3-Touch-AMOLED-2.06 (see board.h)
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
@@ -101,7 +102,7 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
     }
     uint16_t white = rgb565(255, 255, 255), dim = rgb565(170, 180, 210);
     uint16_t accent = hsv565((uint8_t)(t / 8), 160, 255);
-    text_centered(fb, 40, "ESP32-C6", accent, 3);
+    text_centered(fb, 40, BOARD_CHIP, accent, 3);
     text_centered(fb, 72, "FX CLOCK", white, 3);
     bool wifi = boot_mode() == BOOT_WIFI;
     if (wifi) {
@@ -245,7 +246,7 @@ static void poll_button(uint32_t now)
             g_app.dirty = true;
             toast(g_app.auto_cycle ? "AUTO: SI" : "AUTO: NO");
         } else if (held > 30) {
-            g_app.fx = (g_app.fx + 1) % FX_COUNT;
+            g_app.fx = fx_next(g_app.fx);
             g_app.auto_cycle = 0;
             g_app.dirty = true;
         }
@@ -254,6 +255,7 @@ static void poll_button(uint32_t now)
 
 void app_main(void)
 {
+    board_init();
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         nvs_flash_erase();
@@ -339,12 +341,14 @@ void app_main(void)
             // next face not switched off in the app; if there is none, stay where we are
             for (int k = 1; k <= FX_COUNT; k++) {
                 int n = (g_app.fx + k) % FX_COUNT;
-                if (!((g_app.fx_off >> n) & 1)) {
+                if (!fx_list[n].retired && !((g_app.fx_off >> n) & 1)) {
                     g_app.fx = n;
                     break;
                 }
             }
         }
+        // A retired face (saved on the clock, or asked for by number) shows the next one instead
+        if (fx_list[g_app.fx].retired) g_app.fx = fx_next(g_app.fx);
         if (g_app.fx != cur) {
             cur = g_app.fx;
             lcd_set_landscape(fx_list[cur].landscape);

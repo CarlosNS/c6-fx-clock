@@ -38,9 +38,8 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "WIFI", .landscape = true, .enter = wifimon_enter, .render = wifimon_render,
      .label = "WiFi", .group = FX_G_CLOCKS,
      .desc = "La hora en grande sobre un espectro tenue de las redes WiFi de alrededor, que se escanean en segundo plano."},
-    {.name = "EL GRITO", .landscape = false, .enter = scream_enter, .render = scream_render,
-     .label = "El grito", .group = FX_G_ART,
-     .desc = "El grito (Munch, 1893): cielo ondulante, fiordo en espiral y la figura que se retuerce."},
+    // 10: retired (El grito, removed for good on 2026-11-07). The number stays taken.
+    {.name = "RETIRED", .retired = true, .label = "", .desc = ""},
     {.name = "EARTHRISE", .landscape = true, .enter = earthrise_enter, .render = earthrise_render,
      .label = "Earthrise", .group = FX_G_ART,
      .desc = "La foto del Apolo 8 (1968): la Tierra en 3D, con continentes y nubes que giran, saliendo sobre la Luna."},
@@ -56,9 +55,8 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "ENGRANAJES", .landscape = false, .enter = gears_enter, .render = gears_render,
      .label = "Engranajes", .group = FX_G_CLOCKS,
      .desc = "Reloj analógico mecánico: engranajes que engranan, volante oscilante y agujas con segundero."},
-    {.name = "ACUARIO", .landscape = true, .enter = aquarium_enter, .render = aquarium_render,
-     .label = "Acuario", .group = FX_G_NATURE,
-     .desc = "Peces a dos profundidades, burbujas, algas, rayos de luz y cáusticas en el fondo."},
+    // 16: retired (Acuario, removed for good on 2026-11-07). The number stays taken.
+    {.name = "RETIRED", .retired = true, .label = "", .desc = ""},
     {.name = "LLUVIA", .landscape = false, .enter = rain_enter, .render = rain_render,
      .label = "Lluvia", .group = FX_G_NATURE,
      .desc = "Gotas que resbalan por el cristal sobre una ciudad desenfocada; la hora en neón que parpadea."},
@@ -68,9 +66,8 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "GOL", .landscape = true, .enter = goal_enter, .render = goal_render,
      .label = "Gol", .group = FX_G_GAMES,
      .desc = "Jugada de fútbol en 16 bits: regate, salto sobre una entrada, gol por la escuadra y celebración. La hora, en el marcador."},
-    {.name = "CUENTO", .landscape = true, .enter = tale_enter, .render = tale_render,
-     .label = "Cuento", .group = FX_G_ART,
-     .desc = "Fantasía oscura pintada como un libro infantil: un árbol dorado gigante y un osito caballero que viaja hacia él."},
+    // 20: retired (Cuento, removed for good on 2026-11-07). The number stays taken.
+    {.name = "RETIRED", .retired = true, .label = "", .desc = ""},
     {.name = "TIEMPO", .landscape = false, .enter = weather_enter, .render = weather_render,
      .label = "Tiempo", .group = FX_G_CLOCKS, .opts = "wx",
      .desc = "Esfera analógica minimalista con el tiempo actual de tu ciudad: temperatura, máxima y mínima, y un icono animado."},
@@ -149,6 +146,7 @@ void fx_common_init(void)
 {
     // FX_COUNT and the list must agree: a missing entry would be a NULL render at runtime
     for (int i = 0; i < FX_COUNT; i++) {
+        if (fx_list[i].retired) continue;
         if (!fx_list[i].render || !fx_list[i].enter || !fx_list[i].label || !fx_list[i].desc) {
             ESP_LOGE("fx", "fx_list[%d] is incomplete", i);
             abort();
@@ -157,6 +155,15 @@ void fx_common_init(void)
     for (int i = 0; i < 1024; i++) sin_q14[i] = (int16_t)lroundf(sinf(i * 6.2831853f / 1024) * 16384);
     for (int i = 0; i < 256; i++) sin_u8[i] = (uint8_t)(127.5f + 127.5f * sinf(i * 6.2831853f / 256));
     s_rng = esp_random() | 1;
+}
+
+int fx_next(int from)
+{
+    for (int k = 1; k <= FX_COUNT; k++) {
+        int n = (from + k) % FX_COUNT;
+        if (!fx_list[n].retired) return n;
+    }
+    return 0;
 }
 
 uint32_t fx_rand(void)

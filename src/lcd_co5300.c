@@ -1,10 +1,15 @@
 // lcd.h for the Waveshare ESP32-S3-Touch-AMOLED-2.06: CO5300 AMOLED, 410x502, over QSPI.
 //
-// Frames are drawn into two framebuffers in PSRAM. lcd_flush hands the finished one to a task on
-// the second core, which sends it while the caller draws the next. The SPI DMA can't read PSRAM
-// directly, so the task copies the frame in strips into two internal buffers, filling one while the
-// other is on the wire. Landscape frames (LAND_W x LAND_H) are rotated during that copy, because the
-// CO5300 can't swap rows and columns itself.
+// Compatibility mode: the faces draw on the C6's canvas (LCD_W x LCD_H = 172x320, or 320x172 in
+// landscape) and this driver enlarges it while sending: portrait x1.5 to 258x480, landscape x1.25 to
+// 400x215 (the watch is worn upright, so landscape faces are shown level, not turned), both centred
+// with black around. Every third (x1.5) or fifth (x1.25) output pixel is the average of its two
+// neighbours instead of a repeated one, which keeps lines even.
+//
+// Two canvases live in PSRAM. lcd_flush hands the finished one to a task on the second core, which
+// sends it while the caller draws the next. The SPI DMA can't read PSRAM, so the task builds the panel
+// rows in strips in two internal buffers, filling one while the other is on the wire. That task is
+// the only one talking to the panel after lcd_init (brightness changes go through it as well).
 #include "lcd.h"
 #include <assert.h>
 #include <string.h>
@@ -26,15 +31,19 @@
 #define LCD_PCLK (80 * 1000 * 1000)
 #define CMD(c) ((0x02u << 24) | ((uint32_t)(c) << 8))
 #define PIXELS(c) ((0x32u << 24) | ((uint32_t)(c) << 8))
+#define PW BOARD_PANEL_W
+#define PH BOARD_PANEL_H
 #define FB_BYTES (LCD_W * LCD_H * sizeof(uint16_t))
 // Even (the CO5300 wants even start rows and heights) and 38 * 410 * 2 bytes fits in one 32 KB
 // SPI transfer
 #define STRIP_LINES 38
-#define STRIP_BYTES (STRIP_LINES * LCD_W * sizeof(uint16_t))
+#define STRIP_BYTES (STRIP_LINES * PW * sizeof(uint16_t))
+
+#define BIT_FRAME 1
+#define BIT_BRIGHTNESS 2
 
 static const char *TAG = "co5300";
 static esp_lcd_panel_io_handle_t s_io;
-static SemaphoreHandle_t s_bus;      // the panel IO is not thread safe: frames vs. brightness
 static SemaphoreHandle_t s_idle;     // given when the sender has finished the last frame
 static TaskHandle_t s_sender;
 static uint16_t *s_buf[2], *s_strip[2];
@@ -42,8 +51,13 @@ static int s_idx;
 static uint16_t *s_last;
 static const uint16_t *s_sending;
 static bool s_send_landscape;
+static volatile uint8_t s_brightness;
 static volatile int s_send_us;
 int g_lcd_w = LCD_W, g_lcd_h = LCD_H;
+
+// Panel column / row -> canvas pixels to show there: a and b equal = that pixel, different = their
+// average, -1 = black border. [0] portrait, [1] landscape.
+static int16_t s_col_a[2][PW], s_col_b[2][PW], s_row_a[2][PH], s_row_b[2][PH];
 
 typedef struct {
     uint8_t cmd;
@@ -69,60 +83,119 @@ static const init_cmd_t s_init[] = {
     {0x29, {0}, 0, 10},                            // display on
 };
 
-static void set_window(int y, int h)
+// Fills one axis of the scaling tables: `src` canvas pixels become src * num / den panel pixels
+// starting at `offset`. pattern[] lists, for each output pixel of a group, the two source pixels
+// (relative to the group) it shows.
+static void build_axis(int16_t *a, int16_t *b, int out_len, int offset, int src, int num, int den,
+                       const int8_t (*pattern)[2])
 {
-    int x0 = BOARD_LCD_X_GAP, x1 = x0 + LCD_W - 1, y1 = y + h - 1;
-    uint8_t col[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF};
-    uint8_t row[4] = {y >> 8, y & 0xFF, y1 >> 8, y1 & 0xFF};
-    // tx_param first waits for the strip still on the wire, so the next strip can be copied meanwhile
-    esp_lcd_panel_io_tx_param(s_io, CMD(0x2A), col, 4);
-    esp_lcd_panel_io_tx_param(s_io, CMD(0x2B), row, 4);
+    int len = src * num / den;
+    for (int i = 0; i < out_len; i++) {
+        int r = i - offset;
+        if (r < 0 || r >= len) {
+            a[i] = b[i] = -1;
+            continue;
+        }
+        int g = r / num, p = r % num;
+        a[i] = (int16_t)(g * den + pattern[p][0]);
+        b[i] = (int16_t)(g * den + pattern[p][1]);
+    }
 }
 
-// Portrait rows y0..y0+n-1 of the frame into a strip. In landscape the frame is LAND_W x LAND_H
-// and is turned a quarter: its top edge ends up on the panel's right side (the USB side).
-static void copy_strip(uint16_t *dst, const uint16_t *fb, int y0, int n, bool landscape)
+static void build_tables(void)
 {
-    if (!landscape) {
-        memcpy(dst, fb + y0 * LCD_W, (size_t)n * LCD_W * 2);
-        return;
+    static const int8_t x15[3][2] = {{0, 0}, {0, 1}, {1, 1}};                  // 2 -> 3
+    static const int8_t x125[5][2] = {{0, 0}, {1, 1}, {1, 2}, {2, 2}, {3, 3}}; // 4 -> 5
+    int pw = LCD_W * 3 / 2, ph = LCD_H * 3 / 2;
+    build_axis(s_col_a[0], s_col_b[0], PW, (PW - pw) / 2, LCD_W, 3, 2, x15);
+    build_axis(s_row_a[0], s_row_b[0], PH, (PH - ph) / 2, LCD_H, 3, 2, x15);
+    int lw = LAND_W * 5 / 4, lh = LAND_H * 5 / 4;
+    build_axis(s_col_a[1], s_col_b[1], PW, (PW - lw) / 2, LAND_W, 5, 4, x125);
+    build_axis(s_row_a[1], s_row_b[1], PH, (PH - lh) / 2, LAND_H, 5, 4, x125);
+}
+
+// Average of two byte-swapped RGB565 pixels
+static inline uint16_t avg565(uint16_t p, uint16_t q)
+{
+    uint16_t a = __builtin_bswap16(p), b = __builtin_bswap16(q);
+    return __builtin_bswap16((uint16_t)((((a ^ b) & 0xF7DE) >> 1) + (a & b)));
+}
+
+// Panel rows y0..y0+n-1 into a strip
+static void build_strip(uint16_t *dst, const uint16_t *fb, int y0, int n, bool landscape)
+{
+    int o = landscape ? 1 : 0, cw = landscape ? LAND_W : LCD_W;
+    const int16_t *ca = s_col_a[o], *cb = s_col_b[o];
+    uint16_t mix[LAND_W > LCD_W ? LAND_W : LCD_W];
+    for (int j = 0; j < n; j++, dst += PW) {
+        int ra = s_row_a[o][y0 + j], rb = s_row_b[o][y0 + j];
+        if (ra < 0) {
+            memset(dst, 0, PW * 2);
+            continue;
+        }
+        const uint16_t *line = fb + ra * cw;
+        if (rb != ra) {  // halfway between two canvas rows
+            const uint16_t *l2 = fb + rb * cw;
+            for (int i = 0; i < cw; i++) mix[i] = avg565(line[i], l2[i]);
+            line = mix;
+        }
+        for (int x = 0; x < PW; x++) {
+            int a = ca[x];
+            if (a < 0) dst[x] = 0;
+            else if (a == cb[x]) dst[x] = line[a];
+            else dst[x] = avg565(line[a], line[cb[x]]);
+        }
     }
-    // panel (px, py) = frame (lx = py, ly = LAND_H - 1 - px); read the frame row by row
-    for (int ly = 0; ly < LAND_H; ly++) {
-        const uint16_t *src = fb + ly * LAND_W + y0;
-        uint16_t *d = dst + (LAND_H - 1 - ly);
-        for (int j = 0; j < n; j++) d[j * LCD_W] = src[j];
-    }
+}
+
+static void set_window(int y, int h)
+{
+    int x0 = BOARD_LCD_X_GAP, x1 = x0 + PW - 1, y1 = y + h - 1;
+    uint8_t col[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF};
+    uint8_t row[4] = {y >> 8, y & 0xFF, y1 >> 8, y1 & 0xFF};
+    // tx_param first waits for the strip still on the wire, so the next strip can be built meanwhile
+    esp_lcd_panel_io_tx_param(s_io, CMD(0x2A), col, 4);
+    esp_lcd_panel_io_tx_param(s_io, CMD(0x2B), row, 4);
 }
 
 static void send_frame(const uint16_t *fb, bool landscape)
 {
     int64_t t0 = esp_timer_get_time();
-    xSemaphoreTake(s_bus, portMAX_DELAY);
-    for (int y = 0, k = 0; y < LCD_H; y += STRIP_LINES, k ^= 1) {
-        int n = LCD_H - y < STRIP_LINES ? LCD_H - y : STRIP_LINES;
+    for (int y = 0, k = 0; y < PH; y += STRIP_LINES, k ^= 1) {
+        int n = PH - y < STRIP_LINES ? PH - y : STRIP_LINES;
         // The strip sent two rounds ago has finished: set_window of the last round waited for it
-        copy_strip(s_strip[k], fb, y, n, landscape);
+        build_strip(s_strip[k], fb, y, n, landscape);
         set_window(y, n);
-        esp_lcd_panel_io_tx_color(s_io, PIXELS(0x2C), s_strip[k], (size_t)n * LCD_W * 2);
+        esp_lcd_panel_io_tx_color(s_io, PIXELS(0x2C), s_strip[k], (size_t)n * PW * 2);
     }
-    // A zero-length parameter write waits for the last strip without sending anything
+    // A parameter write with no command and no data just waits for the last strip
     esp_lcd_panel_io_tx_param(s_io, -1, NULL, 0);
-    xSemaphoreGive(s_bus);
     s_send_us = (int)(esp_timer_get_time() - t0);
 }
 
 static void sender_task(void *arg)
 {
+    uint8_t applied = 0;
     for (;;) {
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        send_frame(s_sending, s_send_landscape);
-        xSemaphoreGive(s_idle);
+        uint32_t bits = 0;
+        xTaskNotifyWait(0, UINT32_MAX, &bits, portMAX_DELAY);
+        if (bits & BIT_FRAME) {
+            send_frame(s_sending, s_send_landscape);
+            xSemaphoreGive(s_idle);
+        }
+        // After the frame: the panel lights up only once the first frame is on it
+        uint8_t v = s_brightness;
+        if ((bits & BIT_BRIGHTNESS) && v != applied) {
+            esp_lcd_panel_io_tx_param(s_io, CMD(0x51), &v, 1);
+            applied = v;
+        }
     }
 }
 
 void lcd_init(int buffers)
 {
+    build_tables();
+
     spi_bus_config_t bus = {
         .sclk_io_num = BOARD_LCD_SCLK,
         .data0_io_num = BOARD_LCD_D0,
@@ -158,30 +231,24 @@ void lcd_init(int buffers)
         if (c->delay_ms) vTaskDelay(pdMS_TO_TICKS(c->delay_ms));
     }
 
-    for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) {
-        s_buf[i] = heap_caps_calloc(1, FB_BYTES, MALLOC_CAP_SPIRAM);
-        s_strip[i] = heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    }
-    if (!s_strip[1]) s_strip[1] = heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+    for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) s_buf[i] = heap_caps_calloc(1, FB_BYTES, MALLOC_CAP_SPIRAM);
+    for (int i = 0; i < 2; i++) s_strip[i] = heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
     assert(s_buf[0] && s_strip[0] && s_strip[1]);
 
-    s_bus = xSemaphoreCreateMutex();
     s_idle = xSemaphoreCreateBinary();
     xSemaphoreGive(s_idle);
     // The main loop runs on core 0; sending on core 1 overlaps it with drawing the next frame
     xTaskCreatePinnedToCore(sender_task, "lcd_send", 3072, NULL, configMAX_PRIORITIES - 2, &s_sender, 1);
-    ESP_LOGI(TAG, "CO5300 %dx%d ready, QSPI %d MHz, %s buffering in PSRAM", LCD_W, LCD_H,
-             LCD_PCLK / 1000000, s_buf[1] ? "double" : "single");
+    ESP_LOGI(TAG, "CO5300 %dx%d ready, QSPI %d MHz, %dx%d canvas %s buffered in PSRAM", PW, PH,
+             LCD_PCLK / 1000000, LCD_W, LCD_H, s_buf[1] ? "double" : "single");
 }
 
 void lcd_set_brightness(int percent)
 {
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
-    uint8_t v = (uint8_t)(percent * 255 / 100);
-    xSemaphoreTake(s_bus, portMAX_DELAY);
-    esp_lcd_panel_io_tx_param(s_io, CMD(0x51), &v, 1);
-    xSemaphoreGive(s_bus);
+    s_brightness = (uint8_t)(percent * 255 / 100);
+    xTaskNotify(s_sender, BIT_BRIGHTNESS, eSetBits);
 }
 
 void lcd_set_landscape(bool landscape)
@@ -208,7 +275,7 @@ void lcd_flush(void)
     xSemaphoreTake(s_idle, portMAX_DELAY);  // the previous frame has been sent
     s_sending = s_last = s_buf[s_idx];
     s_send_landscape = g_lcd_w == LAND_W;
-    xTaskNotifyGive(s_sender);
+    xTaskNotify(s_sender, BIT_FRAME, eSetBits);
     if (s_buf[1]) {
         s_idx ^= 1;
     } else {

@@ -1,9 +1,10 @@
-El reloj trae **24 esferas**, todas dibujadas por código a 30 fps. Cada una elige su orientación: el reloj gira la pantalla solo.
+El reloj trae **21 esferas**, todas dibujadas por código a 30 fps. Cada una elige su orientación: el reloj gira la pantalla solo.
 
 - Se cambian con una **pulsación corta de BOOT**, desde la app o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican en la tarjeta *Esfera actual* de la app (ver [[Página de control]]).
 - Las capturas son de la pantalla real (172×320), sacadas por Bluetooth con `tools/ble_shot.py`.
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.
+- Los números 10, 16 y 20 están **retirados**: eran esferas eliminadas (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar. Si un reloj tenía elegida una de ellas, muestra la siguiente.
 
 Índice: [Efectos](#efectos) · [Videojuegos](#videojuegos) · [Arte](#arte) · [Naturaleza y espacio](#naturaleza-y-espacio) · [Relojes y útiles](#relojes-y-útiles)
 
@@ -79,23 +80,11 @@ El reloj trae **24 esferas**, todas dibujadas por código a 30 fps. Cada una eli
 
 *Horizontal · número 8* — *La noche estrellada* (Van Gogh, 1889): cielo de pinceladas en remolino, halos que laten, ciprés que se mece.
 
-### El grito
-
-<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx10.png" alt="Esfera El grito" width="160">
-
-*Vertical · número 10* — *El grito* (Munch, 1893): cielo ondulante, fiordo en espiral, puente en perspectiva, figura que se retuerce.
-
 ### Earthrise
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx11.png" alt="Esfera Earthrise" width="320">
 
 *Horizontal · número 11* — Foto del Apolo 8 (NASA, 1968): Tierra 3D con continentes y nubes que giran saliendo sobre la Luna.
-
-### Cuento
-
-<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx20.png" alt="Esfera Cuento" width="320">
-
-*Horizontal · número 20* — Fantasía oscura pintada como un libro infantil en acuarela: un árbol dorado gigante que respira luz en el horizonte, hojas doradas que caen y un osito caballero (personaje original) que camina hacia él; hora en tinta caligráfica.
 
 ## Naturaleza y espacio
 
@@ -104,12 +93,6 @@ El reloj trae **24 esferas**, todas dibujadas por código a 30 fps. Cada una eli
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx12.png" alt="Esfera Sakura" width="320">
 
 *Horizontal · número 12* — Cerezo en flor junto a un estanque: pétalos que caen revoloteando y ondas donde tocan el agua.
-
-### Acuario
-
-<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx16.png" alt="Esfera Acuario" width="320">
-
-*Horizontal · número 16* — Peces a dos profundidades, burbujas, algas, rayos de luz y cáusticas.
 
 ### Lluvia
 

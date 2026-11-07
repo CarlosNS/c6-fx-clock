@@ -24,6 +24,9 @@ typedef struct {
     const char *hint;      // what touching the pad does; NULL = not interactive
     const char *desc;      // what the face shows
     const char *opts;      // face-specific settings block in the apps ("wx", "cl"); NULL = none
+    // Retired face: its code is gone but its number stays taken (clocks save the chosen number), so
+    // the list never shifts. The clock skips it and the catalogue sends it with group -1.
+    bool retired;
 } fx_t;
 
 #define FX_COUNT 24
@@ -36,6 +39,8 @@ extern uint8_t sin_u8[256];    // (sin(i * 2pi / 256) + 1) * 127.5
 void fx_common_init(void);
 uint16_t hsv565(uint8_t h, uint8_t s, uint8_t v);
 uint32_t fx_rand(void);
+// Next face after `from` that is not retired (wraps around)
+int fx_next(int from);
 
 // Shared clock layouts (centered horizontally on the current orientation)
 // Hours above minutes starting at y; returns the y just below the minutes
@@ -72,8 +77,6 @@ void starry_enter(void);
 void starry_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void wifimon_enter(void);
 void wifimon_render(uint16_t *fb, uint32_t t, uint32_t dt);
-void scream_enter(void);
-void scream_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void earthrise_enter(void);
 void earthrise_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void sakura_enter(void);
@@ -87,14 +90,10 @@ void sand_enter(void);
 void sand_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void gears_enter(void);
 void gears_render(uint16_t *fb, uint32_t t, uint32_t dt);
-void aquarium_enter(void);
-void aquarium_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void rain_enter(void);
 void rain_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void goal_enter(void);
 void goal_render(uint16_t *fb, uint32_t t, uint32_t dt);
-void tale_enter(void);
-void tale_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void weather_enter(void);
 void weather_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void classic_enter(void);

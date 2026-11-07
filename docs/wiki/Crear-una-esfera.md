@@ -229,6 +229,8 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 
 **Las esferas nuevas van siempre al final.** El número de cada esfera es su posición en la lista, y los relojes lo guardan (la esfera elegida, el cambio automático). Si insertas una en medio o reordenas, a quien actualice le cambiará la esfera. El cambio automático se salta las esferas que el usuario quita en la app (`fxoff`, máscara de 31 bits: hay un `_Static_assert` en `fx.h` que avisa si pasas de 31 esferas). La app las agrupa por `.group`, así que el orden de la lista no se ve. La app lee el catálogo del propio reloj, así que no hay que tocarla.
 
+**Para quitar una esfera, se retira, no se borra de la lista.** Su entrada se queda en `fx_list` como `{.name = "RETIRED", .retired = true, .label = "", .desc = ""}`, con un comentario que diga cuál era, y se borra su archivo `fx_*.c`, sus prototipos en `fx.h` y su línea en `src/CMakeLists.txt`. El reloj salta los números retirados (si uno estaba elegido, muestra la siguiente esfera), el catálogo los envía con grupo `-1` para que ni la app ni la página los enseñen, y `FX_COUNT` no cambia. Un número retirado no se reutiliza nunca: hoy lo están el 10, el 16 y el 20.
+
 ## Probarla
 
 1. **Grábala:** `pio run -e c6lcd -t upload`. Si el reloj está en modo Bluetooth y emparejado, tarda un minuto en volver a anunciarse (espera la hora del móvil).
@@ -248,7 +250,7 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 ## Normas
 
 - **Todo dibujado por código.** Sin imágenes, fuentes ni sprites copiados de juegos, películas, series o webs. Inspirarse en un estilo (pixel art de 16 bits, Art Déco, un cuadro) está bien; copiar personajes o logotipos, no.
-- **Obras de arte:** solo de dominio público, como *La noche estrellada* (Van Gogh, 1889) o *El grito* (Munch, 1893), reinterpretadas por código. Indica la obra y el año en `.desc`.
+- **Obras de arte:** solo de dominio público, como *La noche estrellada* (Van Gogh, 1889), reinterpretadas por código. Indica la obra y el año en `.desc`.
 - **Personas reales y marcas:** mejor no. Si la esfera se inspira en alguien, que no lo represente ni use su imagen ([THIRD-PARTY-NOTICES.md](https://github.com/CarlosNS/c6-fx-clock/blob/main/THIRD-PARTY-NOTICES.md)).
 - **Estilo:** el del resto del código. Comentarios en inglés, textos de la app en español, un comentario al principio del fichero que explique la esfera.
 - **Licencia:** al enviarla la aportas con la GPL-3.0-or-later, en las condiciones de [CONTRIBUTING.md](https://github.com/CarlosNS/c6-fx-clock/blob/main/CONTRIBUTING.md).

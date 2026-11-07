@@ -1,6 +1,6 @@
 ![Algunas esferas del reloj](https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/esferas.png)
 
-**C6 FX Clock** es un reloj de escritorio con **24 esferas animadas** a 30 fps para la placa **Waveshare ESP32-C6-LCD-1.47**. Se controla desde el móvil con una app Android por Bluetooth, o desde cualquier navegador por WiFi, recibe la hora y el tiempo del móvil y se actualiza solo por internet.
+**C6 FX Clock** es un reloj de escritorio con **21 esferas animadas** a 30 fps para la placa **Waveshare ESP32-C6-LCD-1.47**. Se controla desde el móvil con una app Android por Bluetooth, o desde cualquier navegador por WiFi, recibe la hora y el tiempo del móvil y se actualiza solo por internet.
 
 ## Empieza aquí
 

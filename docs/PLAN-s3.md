@@ -103,7 +103,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 1 ✅ | **Arranque mínimo:** entorno `s3amoled`, PSRAM, escaneo I2C (direcciones de cada chip), AXP2101 encendiendo la pantalla, CO5300 mostrando un degradado | Una imagen fija sin parpadeos; el log lista los chips del bus I2C |
 | 2 ✅ | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps, medida con el contador en pantalla y el log (la orden `ovl 1` llega con `main.c` en la fase 3) |
 
-| 3 | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 24 esferas funcionan en la pantalla nueva |
+| 3 ✅ | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 21 esferas funcionan en la pantalla nueva (comprobado por el dueño) |
 | 4 | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil |
 | 5 | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo |
 | 6 | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3 |
@@ -137,6 +137,33 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
   - **Bordes rectos:** se ven las líneas a 2, 4 y 6 px; la de 0 px no se distingue con claridad (`BOARD_LCD_EDGE 2`).
   - **Para la fase 3:** el lienzo ×1,5 (258×480, centrado en 76, 11) tiene las esquinas a 117,5 px del centro del redondeo. Queda visible, pero sin margen: lo que haya en las esquinas del lienzo se verá recortado.
 - **Pruebas sin tocar la placa:** por la consola serie, `0`, `1` y `2` eligen pantalla y `b` cambia el brillo. El botón BOOT hace lo mismo: pulsación corta para la pantalla, larga para el brillo.
+
+### Fase 3 (hecha el 7 de noviembre de 2026)
+
+- **El reloj entero corre en la S3:** `main.c`, las esferas, el WiFi, el Bluetooth, la consola, los ajustes y las actualizaciones. `main_s3.c` desaparece (queda en el historial). Las dos placas comparten la lista de archivos de `src/CMakeLists.txt`; solo cambian la pantalla (`lcd.c` / `lcd_co5300.c`) y `board_*.c`.
+- **`board_init()`** (en `board_c6lcd.c` y `board_s3amoled.c`) se llama lo primero en `app_main`. En la S3 saca el táctil de reset, escanea el bus I2C y lee el AXP2101.
+- **Lienzo:** en la S3, `LCD_W`×`LCD_H` sigue siendo 172×320, así que las esferas no cambian. `BOARD_PANEL_W`×`BOARD_PANEL_H` es el panel. `lcd_co5300.c` amplía el lienzo al enviarlo:
+  - **vertical ×1,5** → 258×480, en (76, 11);
+  - **horizontal ×1,25** → 400×215, en (5, 143), **sin girar**. El reloj se lleva en vertical y todas las esferas acabarán siendo verticales (decisión del dueño), así que mientras tanto las horizontales se ven derechas en una franja central, lejos de las esquinas.
+  - En cada grupo de píxeles (3 por cada 2 a ×1,5, 5 por cada 4 a ×1,25), uno es la media de sus vecinos en vez de repetir uno: las líneas quedan de grosor uniforme.
+  - Las capturas (`/screenshot`, `ble_shot.py`) siguen dando el lienzo de 172×320.
+- **Brillo:** solo lo envía la tarea de la pantalla, después del fotograma en curso. Así los fundidos no frenan el bucle principal.
+- **Sin LED RGB:** `led.c` no hace nada si la placa no define `BOARD_PIN_LED`.
+- **Medidas** (lienzo en la PSRAM, núcleo 0 dibujando, núcleo 1 enviando): **todas a 30 fps**. Dibujo medio por esfera, en ms:
+
+| Esfera | ms | Esfera | ms | Esfera | ms |
+|---|---|---|---|---|---|
+| Plasma | 11,2 | RPG | 12,5 | Engranajes | 11,3 |
+| Cubo 3D | 5,3 | Estrellada | 15,3 | Lluvia | 8,3 |
+| Túnel | 10,1 | WiFi | 9,4 | Agujero negro | 10,6 |
+| Lava | 10,6 | Earthrise | 10,5 | Gol | 11,8 |
+| Vida | 5,9 | Sakura | 9,9 | Tiempo | 6,6 |
+| HUD | 9,0 | Synthwave | 10,6 | Clásico | 19,8 |
+| Aventura | 13,3 | Arena | 9,9 | Feria de Sevilla | 7,6 |
+
+- **Pendiente para la fase 9** (esferas a tamaño completo y verticales): con 3,7 veces más píxeles, las esferas más pesadas (Clásico, Estrellada) no cabrían en 33 ms dibujando en la PSRAM con un solo núcleo. Habrá que repartir entre los dos núcleos (el envío ya ocupa parte del núcleo 1), dibujar en RAM interna por franjas, o las dos cosas.
+- **Esferas retiradas** (decisión del dueño): El grito (10), Acuario (16) y Cuento (20) se quitan para siempre. Su código se borra, pero sus números siguen ocupados en `fx_list` como entradas `.retired`: el reloj las salta y el catálogo las envía con grupo `-1`. Quedan 21 esferas.
+- **Nombres de la C6 que quedan en la S3:** la red WiFi propia sigue llamándose `C6-FX-Demo` y el Bluetooth anuncia el mismo nombre que el C6. Se revisan en la fase 6.
 
 ## Cómo trabajar
 

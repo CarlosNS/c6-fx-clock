@@ -310,7 +310,7 @@ static void boards(uint16_t *fb, uint32_t t, bool goal)
     int y0 = PITCH_TOP - 10;
     gfx_fill_rect(fb, 0, y0, W, 10, rgb565(10, 10, 18));
     gfx_fill_rect(fb, 0, y0 + 9, W, 1, rgb565(60, 60, 80));
-    const char *msg = goal ? "GOOOL  *  MBAPPE 10  *  " : "ESP32-C6  *  FX CLOCK  *  ";
+    const char *msg = goal ? "GOOOL  *  MBAPPE 10  *  " : BOARD_CHIP "  *  FX CLOCK  *  ";
     int mw = gfx_text_width(msg, 1) + 6, off = (int)(t / 25 % (uint32_t)mw);
     uint16_t c = goal ? ((t / 150) & 1 ? rgb565(255, 230, 60) : rgb565(255, 255, 255)) : rgb565(90, 200, 255);
     for (int x = -off; x < W; x += mw) gfx_text_ol(fb, x, y0 + 1, msg, c, rgb565(10, 10, 18), 1, 0);

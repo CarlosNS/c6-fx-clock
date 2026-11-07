@@ -10,7 +10,7 @@ import urllib.request
 import pytest
 import websockets
 
-from clocklib import fx_count
+from clocklib import fx_count, fx_retired
 from clocklib.board import http_json, post, wait_http
 
 pytestmark = pytest.mark.now
@@ -88,6 +88,8 @@ def test_every_face_holds_30fps(host, status):
     slow, spikes = [], []
     try:
         for i, f in enumerate(faces):
+            if f.get("x"):  # retired face: nothing to measure
+                continue
             ws_send(host, f"fx {i}", settle=2.4)
             s = http_json(host, "/status")
             if s["rus"] > 33333 or s["fps"] < 28:
@@ -99,3 +101,21 @@ def test_every_face_holds_30fps(host, status):
     if spikes:
         print(f"\nframes over 45 ms (stutter): {spikes}")
     assert not slow, f"faces below 30 fps (label, fps, average us): {slow}"
+
+
+def test_retired_faces(host, status):
+    """Retired faces keep their place in the catalogue (group -1, flag x) and asking for one shows the
+    next face that exists."""
+    faces = http_json(host, "/faces")["faces"]
+    retired = fx_retired()
+    assert {i for i, f in enumerate(faces) if f.get("x")} == retired
+    assert all(faces[i]["g"] == -1 for i in retired)
+    if not retired:
+        return
+    n = min(retired)
+    expected = next(i % len(faces) for i in range(n + 1, n + 1 + len(faces)) if i % len(faces) not in retired)
+    try:
+        ws_send(host, f"fx {n}", settle=1.5)
+        assert http_json(host, "/status")["fx"] == expected
+    finally:
+        ws_send(host, f"fx {status['fx']}")

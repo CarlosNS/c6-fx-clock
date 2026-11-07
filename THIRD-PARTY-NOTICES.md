@@ -33,7 +33,6 @@ Los dígitos grandes, los sprites y todas las esferas son diseño propio, dibuja
 Son reinterpretaciones animadas dibujadas por código, no copias de las imágenes:
 
 - *La noche estrellada*, Vincent van Gogh (1889), dominio público.
-- *El grito*, Edvard Munch (1893), dominio público.
 - *Earthrise*, fotografía de William Anders, Apolo 8 (NASA, 1968), dominio público.
 
 ## Nombres de personas y marcas

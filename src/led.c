@@ -1,5 +1,12 @@
 #include "led.h"
 #include "board.h"
+
+#ifndef BOARD_PIN_LED
+// Board without an RGB LED
+void led_init(void) {}
+void led_set(uint8_t r, uint8_t g, uint8_t b) {}
+#else
+
 #include "driver/rmt_tx.h"
 
 #define PIN_LED    BOARD_PIN_LED
@@ -39,3 +46,5 @@ void led_set(uint8_t r, uint8_t g, uint8_t b)
     rmt_transmit_config_t tx = {.loop_count = 0};
     rmt_transmit(s_chan, s_enc, s_grb, sizeof(s_grb), &tx);
 }
+
+#endif  // BOARD_PIN_LED
