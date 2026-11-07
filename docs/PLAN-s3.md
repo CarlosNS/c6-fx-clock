@@ -105,7 +105,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 
 | 3 ✅ | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 21 esferas funcionan en la pantalla nueva (comprobado por el dueño) |
 | 4 ⏳ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil. Hecho salvo esta prueba, pendiente del dueño (ver las notas) |
-| 5 | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo |
+| 5 ⏳ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo. Programado; falta que el dueño lo pruebe con el dedo |
 | 6 | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3 |
 | 7 | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal |
 | 8 | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen |
@@ -177,6 +177,17 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 - **`i2c_bus.c`:** escritura de varios registros seguidos y un mutex al registrar dispositivos, porque el RTC se escribe desde el temporizador.
 - **Pendiente, prueba del dueño:** desenchufar el USB, apagar con una pulsación larga de PWR, esperar y volver a encender, y ver que la hora está bien desde el principio. La S3 no conoce la WiFi ni tiene móvil emparejado, así que solo puede sacarla del RTC. Queda por confirmar que PWR apaga la placa con la configuración de fábrica del AXP2101, y que el RTC sigue alimentado con la placa apagada.
 - **Comprobación también pendiente:** que el Bluetooth anuncie al instante con un móvil emparejado y la hora del RTC. Sin emparejar, el arranque callado no llega a activarse.
+
+### Fase 5 (7 de noviembre de 2026; falta probarla con el dedo)
+
+- **`touch_ft3168.c`** (`BOARD_HAS_TOUCH 1`): el FT3168 se lee por I2C en cada vuelta del bucle principal, unos 5 bytes, sin usar la interrupción. Responde con identificador 0x64 y firmware 0x02. `board_init()` lo saca de reset y lo inicia.
+- **Gestos** (`poll_touch()` en `main.c`):
+  - **Pantalla apagada:** un toque solo la enciende, como el botón. Cualquier toque la mantiene encendida.
+  - **Deslizar en horizontal** (al menos 60 px, en menos de 0,8 s y más horizontal que vertical): hacia la izquierda pasa a la siguiente esfera y hacia la derecha a la anterior (`fx_prev()`, nueva). Se saltan las retiradas y se para el cambio automático, como con el botón.
+  - **Esferas interactivas** (las que tienen `hint`): el dedo va a la esfera, igual que el panel de la app (`app_drag()`/`app_drag_end()`, que ahora usan también la orden `drag` y `up`). La posición va de 0 a 999 sobre la esfera y el movimiento en píxeles del lienzo (`lcd_panel_to_canvas()`).
+  - **Para cambiar de esfera desde una interactiva:** el gesto tiene que empezar fuera de la esfera (las bandas negras del modo compatibilidad) o a menos de 40 px de un borde lateral.
+- **Comprobado sin dedo:** el chip responde, no aparecen toques fantasma (15 s con la misma esfera) y se mantienen los 30 fps.
+- **Pendiente, prueba del dueño:** deslizar para cambiar de esfera en los dos sentidos; tocar con la pantalla apagada; usar con el dedo una esfera interactiva (Lava: la bola sigue al dedo; Túnel: girar y avanzar; Vida: dibujar células); y cambiar de esfera desde una interactiva empezando en el borde. Ajustar los umbrales si hace falta.
 
 ## Cómo trabajar
 

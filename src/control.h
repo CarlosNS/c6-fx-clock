@@ -21,9 +21,13 @@ void app_command(const char *cmd);
 size_t app_status_json(char *buf, size_t size);
 
 // Face catalogue as JSON, {"groups":[...],"faces":[{label,o,g,hint,desc,opts}...]} (index =
-// face id), handed to `emit` in pieces so callers can stream it (HTTP) or collect it (Bluetooth)
+// face id; retired faces come with "x":1 and group -1), handed to `emit` in pieces so callers can stream it (HTTP) or collect it (Bluetooth)
 void app_faces_json(void (*emit)(const char *piece, void *ctx), void *ctx);
 
+// A finger on the face: position 0..999 over the face, movement in canvas pixels. Fed by the "drag"
+// command (the pad in the apps) and by the touch screen.
+void app_drag(int x, int y, int dx, int dy);
+void app_drag_end(void);
 // Returns and clears the drag delta accumulated since the last call
 void app_take_drag(int *dx, int *dy);
 

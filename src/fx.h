@@ -41,6 +41,8 @@ uint16_t hsv565(uint8_t h, uint8_t s, uint8_t v);
 uint32_t fx_rand(void);
 // Next face after `from` that is not retired (wraps around)
 int fx_next(int from);
+// Previous face before `from` that is not retired (wraps around)
+int fx_prev(int from);
 
 // Shared clock layouts (centered horizontally on the current orientation)
 // Hours above minutes starting at y; returns the y just below the minutes

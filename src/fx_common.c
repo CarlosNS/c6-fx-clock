@@ -166,6 +166,15 @@ int fx_next(int from)
     return 0;
 }
 
+int fx_prev(int from)
+{
+    for (int k = 1; k <= FX_COUNT; k++) {
+        int n = (from - k + FX_COUNT) % FX_COUNT;
+        if (!fx_list[n].retired) return n;
+    }
+    return 0;
+}
+
 uint32_t fx_rand(void)
 {
     s_rng ^= s_rng << 13;

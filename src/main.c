@@ -1,6 +1,7 @@
 // FX Clock — animated clock faces controlled from a phone. Boards: Waveshare ESP32-C6-LCD-1.47 and
 // ESP32-S3-Touch-AMOLED-2.06 (see board.h)
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "app.h"
 #include "ble.h"
@@ -27,6 +28,11 @@
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
+#if BOARD_HAS_TOUCH
+#include "lcd_co5300.h"
+#include "control.h"
+#include "touch.h"
+#endif
 
 #define AUTO_CYCLE_MS 30000
 #define SPLASH_MS 5000
@@ -253,6 +259,60 @@ static void poll_button(uint32_t now)
     }
 }
 
+#if BOARD_HAS_TOUCH
+// Touch screen. Screen off: a touch only wakes it, like the button. Swiping left / right shows the
+// next / previous face. On interactive faces (those with a hint) the finger goes to the face, as on
+// the pad in the apps, unless the swipe starts outside the face or close to a side edge: those still
+// change face. Every touch keeps the screen on.
+#define TOUCH_EDGE 40       // px from the left and right edges that always mean "change face"
+#define SWIPE_MIN 60        // px of horizontal travel
+#define SWIPE_MS 800        // a slower movement is not a swipe
+
+static void poll_touch(uint32_t now)
+{
+    static bool down, waking, to_face;
+    static int x0, y0, lx, ly, lcx, lcy;  // start, last panel position, last canvas position
+    static uint32_t t0;
+    int x, y, cx, cy;
+    bool pressed = touch_read(&x, &y);
+    if (pressed && !down) {
+        down = true;
+        waking = !screen_awake(now);
+        app_wake();
+        x0 = lx = x;
+        y0 = ly = y;
+        t0 = now;
+        bool inside = lcd_panel_to_canvas(x, y, &cx, &cy);
+        to_face = !waking && fx_list[g_app.fx].hint && inside && x >= TOUCH_EDGE && x < BOARD_PANEL_W - TOUCH_EDGE;
+        lcx = cx;
+        lcy = cy;
+        if (to_face) app_drag(cx * 1000 / g_lcd_w, cy * 1000 / g_lcd_h, 0, 0);
+    } else if (pressed && down) {
+        app_wake();
+        if (to_face) {
+            lcd_panel_to_canvas(x, y, &cx, &cy);
+            app_drag(cx * 1000 / g_lcd_w, cy * 1000 / g_lcd_h, cx - lcx, cy - lcy);
+            lcx = cx;
+            lcy = cy;
+        }
+        lx = x;
+        ly = y;
+    } else if (!pressed && down) {
+        down = false;
+        if (to_face) {
+            app_drag_end();
+            return;
+        }
+        int dx = lx - x0, dy = ly - y0;
+        if (!waking && now - t0 < SWIPE_MS && abs(dx) >= SWIPE_MIN && abs(dx) > 2 * abs(dy)) {
+            g_app.fx = dx < 0 ? fx_next(g_app.fx) : fx_prev(g_app.fx);
+            g_app.auto_cycle = 0;
+            g_app.dirty = true;
+        }
+    }
+}
+#endif
+
 void app_main(void)
 {
     board_init();
@@ -331,6 +391,9 @@ void app_main(void)
         last = now;
         clock_update();
         poll_button(now);
+#if BOARD_HAS_TOUCH
+        poll_touch(now);
+#endif
         console_poll();
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
             ota_confirm_app();

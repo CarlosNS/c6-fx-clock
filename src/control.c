@@ -29,17 +29,11 @@ void app_command(const char *cmd)
     if (strncmp(cmd, "time ", 5) != 0 && strncmp(cmd, "wx ", 3) != 0) app_wake();
 
     if (sscanf(cmd, "drag %d %d %d %d", &a, &b, &c, &d) == 4) {
-        taskENTER_CRITICAL(&s_mux);
-        g_app.tx = clampi(a, 0, 999);
-        g_app.ty = clampi(b, 0, 999);
-        s_drag_dx += c;
-        s_drag_dy += d;
-        g_app.touch = true;
-        taskEXIT_CRITICAL(&s_mux);
+        app_drag(a, b, c, d);
         return;
     }
     if (strcmp(cmd, "up") == 0) {
-        g_app.touch = false;
+        app_drag_end();
         return;
     }
     if (strncmp(cmd, "wifi\n", 5) == 0) {  // "wifi\n<ssid>\n<password>"
@@ -95,6 +89,22 @@ void app_command(const char *cmd)
         return;
     }
     if (sscanf(cmd, "%15s %d", key, &a) == 2) settings_set(key, a);
+}
+
+void app_drag(int x, int y, int dx, int dy)
+{
+    taskENTER_CRITICAL(&s_mux);
+    g_app.tx = clampi(x, 0, 999);
+    g_app.ty = clampi(y, 0, 999);
+    s_drag_dx += dx;
+    s_drag_dy += dy;
+    g_app.touch = true;
+    taskEXIT_CRITICAL(&s_mux);
+}
+
+void app_drag_end(void)
+{
+    g_app.touch = false;
 }
 
 void app_take_drag(int *dx, int *dy)

@@ -289,3 +289,15 @@ int lcd_send_us(void)
 {
     return s_send_us;
 }
+
+bool lcd_panel_to_canvas(int px, int py, int *cx, int *cy)
+{
+    bool land = g_lcd_w == LAND_W;
+    int num = land ? 5 : 3, den = land ? 4 : 2;     // the enlargement used by build_tables()
+    int ox = (PW - g_lcd_w * num / den) / 2, oy = (PH - g_lcd_h * num / den) / 2;
+    int x = px - ox, y = py - oy;
+    // floor division, so points left of / above the canvas stay negative
+    *cx = (x >= 0 ? x * den : x * den - (num - 1)) / num;
+    *cy = (y >= 0 ? y * den : y * den - (num - 1)) / num;
+    return *cx >= 0 && *cy >= 0 && *cx < g_lcd_w && *cy < g_lcd_h;
+}

@@ -8,6 +8,7 @@
 #include "freertos/task.h"
 #include "i2c_bus.h"
 #include "pmu_axp2101.h"
+#include "touch.h"
 
 static const char *TAG = "board";
 
@@ -34,4 +35,5 @@ void board_init(void)
     ESP_LOGI(TAG, "I2C bus:");
     i2c_bus_scan();
     pmu_log_status();
+    touch_init();
 }
