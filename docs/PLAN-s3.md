@@ -104,11 +104,11 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 2 ✅ | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps, medida con el contador en pantalla y el log (la orden `ovl 1` llega con `main.c` en la fase 3) |
 
 | 3 ✅ | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 21 esferas funcionan en la pantalla nueva (comprobado por el dueño) |
-| 4 ⏳ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil. Hecho salvo esta prueba, pendiente del dueño (ver las notas) |
-| 5 ⏳ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo. Programado; falta que el dueño lo pruebe con el dedo |
+| 4 ✅ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil (comprobado por el dueño el 8 de noviembre de 2026) |
+| 5 ✅ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo (comprobado por el dueño) |
 | 6 ⏳ | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3. Las dos radios funcionan a la vez; faltan los tests (dongle desconectado) y la app |
-| 7 ⏳ | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal. Programado lo básico; falta medir y probar con el dueño |
-| 8 ⏳ | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen. Preparado en local; falta subir la rama y probarlo de verdad |
+| 7 ⏳ | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal. Batería, reposo del panel y levantar la muñeca comprobados por el dueño; falta medir las horas de batería |
+| 8 ⏳ | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen. La S3 se actualizó desde GitHub (8 de noviembre de 2026); falta el C6 con el manifiesto nuevo |
 | 9 | **Esferas a resolución completa**, una a una | Tantas como se quiera; la guía «Crear una esfera» explica las dos placas |
 
 ## Notas de las fases
@@ -175,7 +175,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 - **El RTC llegó parado de fábrica:** con el bit OS activo, sin hora guardada.
 - **Arranque callado:** `ble.c` ya se lo saltaba si había hora al arrancar. Como ahora `clock_init()` la tiene antes de `ble_start()`, en la S3 desaparece solo, sin tocar `ble.c`. Si el RTC perdiera la hora, el arranque callado vuelve a hacer falta y sigue funcionando.
 - **`i2c_bus.c`:** escritura de varios registros seguidos y un mutex al registrar dispositivos, porque el RTC se escribe desde el temporizador.
-- **Pendiente, prueba del dueño:** desenchufar el USB, apagar con una pulsación larga de PWR, esperar y volver a encender, y ver que la hora está bien desde el principio. La S3 no conoce la WiFi ni tiene móvil emparejado, así que solo puede sacarla del RTC. Queda por confirmar que PWR apaga la placa con la configuración de fábrica del AXP2101, y que el RTC sigue alimentado con la placa apagada.
+- **Prueba de apagado, hecha por el dueño (8 de noviembre de 2026):** desenchufar el USB, apagar con una pulsación larga de PWR, esperar y volver a encender: la hora está bien desde el principio. La S3 no conocía la WiFi ni tenía móvil emparejado, así que solo podía sacarla del RTC. Queda confirmado que PWR apaga la placa con la configuración de fábrica del AXP2101 y que el RTC sigue alimentado con ella apagada.
 - **Comprobación también pendiente:** que el Bluetooth anuncie al instante con un móvil emparejado y la hora del RTC. Sin emparejar, el arranque callado no llega a activarse.
 
 ### Fase 5 (7 de noviembre de 2026; falta probarla con el dedo)
@@ -240,6 +240,20 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
   - probar la actualización de verdad en las dos placas: la S3 necesita la WiFi de casa y el C6 estar conectado;
   - `tests/update` con un manifiesto que tenga `boards`;
   - publicar la versión siguiente con `release.py`, que necesita permiso expreso.
+
+### Fase 8: prueba real (8 de noviembre de 2026)
+
+- **Rama subida:** `s3` está en GitHub.
+- **`release.py --only s3amoled`** (nuevo) publicó en Pages solo `boards.s3amoled` (versión `3.0.0-beta.1`) y `s3-fx-clock-ota.bin`. Las claves del C6 (2.1.0) siguieron igual, sin release ni cambios en la app ni en el instalador, así que los relojes instalados no vieron nada.
+- **La S3** (con la 2.1.0 en `ota_0` y la WiFi de casa puesta por el dueño) recibió `update apply https://carlosns.github.io/c6-fx-clock/manifest.json` por la consola:
+  - se reinició en modo actualización, se conectó a Merlos y eligió su entrada (`Offered 3.0.0-beta.1, running 2.1.0`);
+  - descargó 1,88 MB en `ota_1` en unos 25 s, comprobó el SHA-256 y arrancó con la `3.0.0-beta.1`, con el estado `updated 2.1.0 → 3.0.0-beta.1`. En total, 47 s;
+  - pasados los 30 s de confirmación y tras otro reinicio, sigue en `ota_1`: confirmada, sin vuelta atrás.
+- **`PROJECT_VER`** de la rama es ahora `3.0.0-beta.1`.
+- **Pendiente:**
+  - el C6 con un manifiesto que tenga `boards` (debería ignorarlo; su firmware solo lee las claves de arriba);
+  - la página y la app ofreciendo la versión de su placa, con el móvil;
+  - la publicación completa con `release.py`, que necesita permiso expreso.
 
 ## Cómo trabajar
 

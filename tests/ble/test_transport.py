@@ -1,4 +1,5 @@
 """Phase 2: Bluetooth transport (docs/PLAN-bluetooth.md, 3.1 and 3.2)."""
+import re
 import time
 
 import pytest
@@ -26,7 +27,7 @@ def test_mtu_is_negotiated(link):
 def test_info(link):
     info = link.request("get info", "info")
     assert info["mode"] == "ble"
-    assert info["ver"].count(".") == 2
+    assert re.match(r"\d+\.\d+\.\d+", info["ver"])  # "3.0.0", or with a suffix such as "3.0.0-beta.1"
     assert info["part"] in ("ota_0", "ota_1")
     assert "sync" in info and "upd" in info
 
