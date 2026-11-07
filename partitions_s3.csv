@@ -1,0 +1,10 @@
+# Name,   Type, SubType, Offset,    Size
+# Waveshare ESP32-S3-Touch-AMOLED-2.06, 32 MB flash. The two 7 MB OTA app slots end below 16 MB,
+# the limit the CPU can map; the rest is a data partition (read through the flash driver, which
+# reaches the whole chip) for later: backgrounds, sounds, logs. Phase 8 may still adjust it.
+nvs,      data, nvs,     0x9000,    0x10000
+otadata,  data, ota,     0x19000,   0x2000
+phy_init, data, phy,     0x1B000,   0x1000
+ota_0,    app,  ota_0,   0x20000,   0x700000
+ota_1,    app,  ota_1,   0x720000,  0x700000
+storage,  data, spiffs,  0xE20000,  0x11E0000

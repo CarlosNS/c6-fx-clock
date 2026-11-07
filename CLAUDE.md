@@ -21,7 +21,8 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 | Ruta | Qué es |
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
-| `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED |
+| `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED. `board.h` elige `board_c6lcd.h` o `board_s3amoled.h` según el chip |
+| `src/main_s3.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Firmware de arranque de la S3 (fase 1 de `docs/PLAN-s3.md`) |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |
@@ -40,7 +41,11 @@ PIO="$USERPROFILE/.platformio/penv/Scripts/pio.exe"
 "$PIO" run -e c6lcd -t upload       # flashear por COM5
 python tools/build_webflasher.py    # después de cada cambio: imágenes para el instalador web y los tests de actualización
 cd tests && python -m pytest -m now # unitarios (16) y web
+"$PIO" run -e s3amoled              # placa S3 AMOLED (rama s3); -t upload flashea por COM7
+python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
 ```
+
+- `pio run` sin `-e` compila solo el C6 (`default_envs`). Los ajustes de ESP-IDF propios de la S3 están en `sdkconfig.defaults.esp32s3`; si los cambias, borra `sdkconfig.s3amoled` para que se regenere.
 
 - `pio run` tarda más de 2 minutos en limpio: lánzalo en segundo plano y espera el aviso. No hagas sondeos con `sleep`.
 - **Abrir COM5 reinicia el C6**, aunque sea solo para leer. Comprueba lo que haga falta antes de abrirlo.
@@ -65,6 +70,7 @@ cd tests && python -m pytest -m now # unitarios (16) y web
 - **Red WiFi «Merlos»:** es una red mallada. Un nodo puede asociar el reloj sin darle IP; `net.c` lo vigila.
 - **El C6 no tiene coma flotante (FPU):** las esferas usan enteros y tablas (`sin_q14`).
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
+- **La pantalla de la S3 tiene las esquinas redondeadas** (radio de unos 60–70 px): ten en cuenta siempre esa zona perdida al colocar cualquier cosa (esferas, textos, avisos, la superposición `ovl`).
 - **No renombres el repositorio:** los relojes instalados y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`, y un cambio de nombre rompería esa dirección de GitHub Pages.
 
 ## Estado (noviembre de 2026)
@@ -76,4 +82,5 @@ cd tests && python -m pytest -m now # unitarios (16) y web
   - `BOOT_DEFAULT` → `BOOT_BLE`;
   - y permiso del dueño.
 - **App:** la 0.3.10 (código 13) está compilada pero no instalada en el móvil del dueño.
-- **Placa nueva:** ha llegado la S3 AMOLED. El trabajo sigue según [docs/PLAN-s3.md](docs/PLAN-s3.md).
+- **Placa nueva:** ha llegado la S3 AMOLED. El trabajo sigue según [docs/PLAN-s3.md](docs/PLAN-s3.md), en la rama `s3`.
+  - Copia del firmware de fábrica: `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`.

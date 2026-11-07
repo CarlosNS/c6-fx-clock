@@ -8,9 +8,9 @@ La placa llegó el 7 de noviembre de 2026. Este plan es el punto de partida de u
 |---|---|
 | Chip | ESP32-S3 rev. 0.2, doble núcleo a 240 MHz, **con FPU** de precisión simple e instrucciones SIMD |
 | Memoria | **8 MB de PSRAM octal** a 80 MHz y **32 MB de flash** GigaDevice. La cabecera del firmware de fábrica declara 16 MB |
-| Pantalla | AMOLED de 2,06", **410×502**, controlador CO5300 por QSPI (en ESP-IDF, driver compatible `sh8601`). Sin pin de retroiluminación: el brillo es el registro 0x51 (0–255) |
+| Pantalla | AMOLED de 2,06", **410×502**, controlador CO5300 por QSPI (en ESP-IDF, driver compatible `sh8601`). Sin pin de retroiluminación: el brillo es el registro 0x51 (0–255). **Esquinas redondeadas** (radio de unos 60–70 px, por medir en la fase 2): todo lo que se dibuje cerca de las esquinas se pierde |
 | Táctil | FT3168 por I2C |
-| Energía | PMIC AXP2101 (carga, batería de 3,7 V por conector MX1.25, medidas). Botón PWR en el expansor de pines (EXIO6) |
+| Energía | PMIC AXP2101 (carga, batería de 3,7 V por conector MX1.25, medidas). No hay expansor de pines en el bus I2C: el botón PWR va, con toda probabilidad, a la entrada PWRON del AXP2101 (por confirmar en el esquema, fase 7) |
 | Reloj de hardware | PCF85063A, alimentado por la batería: **conserva la hora apagado** |
 | Movimiento | QMI8658, acelerómetro y giroscopio |
 | Audio | ES8311 (altavoz, amplificador en GPIO46) y ES7210 (3 micrófonos, TDM) |
@@ -33,7 +33,22 @@ Sacados del BSP de Waveshare (`examples/factory/components/waveshare__esp32_s3_t
 
 La tabla de particiones de fábrica solo usa los primeros 16 MB (la app `factory` de 8 MB empieza en 0x200000), por eso su cabecera declara 16 MB. esptool detecta 32 MB de flash quad.
 
-Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1. El esquema está en https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-2.06/ESP32-S3-Touch-AMOLED-2.06.pdf.
+El esquema está en https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-2.06/ESP32-S3-Touch-AMOLED-2.06.pdf.
+
+### Bus I2C (escaneado en la fase 1)
+
+| Dirección | Chip |
+|---|---|
+| 0x18 | ES8311 (audio de salida) |
+| 0x34 | AXP2101 (energía) |
+| 0x38 | FT3168 (táctil; solo responde tras sacarlo de reset con GPIO9) |
+| 0x40 | ES7210 (micrófonos) |
+| 0x51 | PCF85063 (RTC) |
+| 0x6B | QMI8658 (IMU) |
+
+### Tensiones del AXP2101 al arrancar
+
+Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan sin configurar el AXP2101 (el ejemplo de Waveshare tampoco lo toca): DC1 3,3 V, ALDO1 3,3 V, ALDO2 3,3 V, ALDO3 3,0 V, ALDO4 1,8 V, BLDO1 1,2 V, BLDO2 2,8 V, y DC2–DC4, CPUSLDO, DLDO1 y DLDO2 encendidas. Antes de apagar alguna para ahorrar (fase 7) hay que ver en el esquema qué alimenta cada una.
 
 ## Qué se reutiliza tal cual
 
@@ -51,7 +66,7 @@ Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1
    - Hoy dibujan en 172×320 o 320×172 con coordenadas fijas. La pantalla nueva tiene otra proporción: 0,82 frente a 0,54.
    - Hay 3,7 veces más píxeles, pero el S3 tiene dos núcleos y FPU.
    - Propuesta en tres pasos, decisión de la fase 3:
-     1. **Compatibilidad:** las esferas actuales dibujan en un lienzo de 172×320 que se escala, por ejemplo ×1,5 → 258×480, centrado con bandas negras. Las horizontales se dibujan giradas. Así funcionan todas desde el primer día.
+     1. **Compatibilidad:** las esferas actuales dibujan en un lienzo de 172×320 que se escala, por ejemplo ×1,5 → 258×480, centrado con bandas negras. Las horizontales se dibujan giradas. Así funcionan todas desde el primer día. Hay que comprobar que las esquinas del lienzo escalado no caen en las esquinas redondeadas de la pantalla.
      2. **Esferas a tamaño completo:** `fx_t` gana un campo de resolución, y cada esfera usa `W` y `H` en vez de números fijos. Se adaptan una a una, empezando por las más sencillas (Clásico, Tiempo, Plasma).
      3. **Reparto entre los dos núcleos:** cada núcleo pinta media pantalla, si alguna esfera no llega a 30 fps.
 3. **Placa y modos:**
@@ -85,8 +100,16 @@ Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1
 | # | Fase | Hecho cuando |
 |---|---|---|
 | 0 ✅ | **Copia del firmware de fábrica:** `esptool read_flash 0 0x2000000`. Guárdala fuera del repositorio: es de Waveshare | Hecha el 7 de noviembre de 2026: 32 MB en `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`, comprobada con `verify_flash` contra la placa (sin volver a escribirla). El `LEEME.md` de esa carpeta tiene el SHA-256, la tabla de particiones de fábrica y cómo restaurarla |
-| 1 | **Arranque mínimo:** entorno `s3amoled`, PSRAM, escaneo I2C (direcciones de cada chip), AXP2101 encendiendo la pantalla, CO5300 mostrando un degradado | Una imagen fija sin parpadeos; el log lista los chips del bus I2C |
+| 1 ✅ | **Arranque mínimo:** entorno `s3amoled`, PSRAM, escaneo I2C (direcciones de cada chip), AXP2101 encendiendo la pantalla, CO5300 mostrando un degradado | Una imagen fija sin parpadeos; el log lista los chips del bus I2C |
 | 2 | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps medida con `ovl 1` |
+
+**Notas de la fase 1 para la fase 2** (fase 1 hecha el 7 de noviembre de 2026):
+- Imagen de prueba comprobada por el dueño: colores y orientación correctos con el USB a la derecha, sin parpadeo, y el botón BOOT cambia el brillo.
+- **Esquinas redondeadas:** se comen casi todo un cuadrado de 44 px en cada esquina. El borde blanco de 1 px no se distingue en la foto. La fase 2 mostrará un patrón de medida (marcas cada 10 px desde cada borde y arcos de radio conocido) para fijar el radio y el área útil, que se guardarán en `board_s3amoled.h`. Las esferas, la superposición `ovl`, los avisos y la clave Bluetooth tienen que quedar dentro de esa área.
+- `main_s3.c` es un firmware de arranque aparte; `src/CMakeLists.txt` elige los archivos según el chip. `lcd_co5300.c` habla QSPI directamente con `esp_lcd_panel_io`, sin el componente `esp_lcd_sh8601`.
+- Enviar un fotograma completo tarda **40 ms** a 40 MHz, copiando trozos de 38 líneas de la PSRAM a un búfer interno y esperando cada uno. No llega a 30 fps. Para ganar: QSPI a 80 MHz y dos búferes internos alternos, de modo que se copie uno mientras se envía el otro (en teoría unos 10 ms).
+- El driver SPI de ESP-IDF 5.5 no hace DMA directo desde la PSRAM: si se le pasa un búfer de PSRAM, reserva y copia uno interno en cada envío.
+- En Windows, abrir COM7 no reinicia la S3. `python tools/bootlog.py` la reinicia por RTS y guarda el log.
 | 3 | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 24 esferas funcionan en la pantalla nueva |
 | 4 | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil |
 | 5 | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo |
@@ -99,5 +122,5 @@ Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1
 
 - **Rama `s3`:** un solo código para las dos placas, con dos entornos de PlatformIO. La rama se une con `main` cuando el C6 siga compilando y pasando sus tests.
 - **No romper el C6:** antes de cada unión con `main`, compila el C6 con `pio run -e c6lcd` y pasa `pytest -m now`.
-- **Puertos:** el C6 está en COM5 y la S3 en COM7. En la S3, comprueba si abrir el puerto también la reinicia; parece que sí, porque el log de fábrica empezó desde el arranque.
+- **Puertos:** el C6 está en COM5 y la S3 en COM7. Abrir COM7 no reinicia la S3; para ver su arranque, usa `python tools/bootlog.py`.
 - **3.0.0 del C6:** aplazada (7 de noviembre de 2026); ver `CLAUDE.md`, sección Estado.

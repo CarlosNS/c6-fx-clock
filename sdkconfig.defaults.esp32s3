@@ -1,0 +1,17 @@
+# ESP32-S3 (Waveshare ESP32-S3-Touch-AMOLED-2.06). ESP-IDF applies this file after
+# sdkconfig.defaults when building for the S3; the C6 never reads it.
+# PlatformIO only notices changes to sdkconfig.defaults: after editing this file, delete
+# sdkconfig.s3amoled so it is generated again.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# 32 MB GigaDevice quad flash. The CPU can only map the first 16 MB without experimental options,
+# so the app partitions stay below that line (partitions_s3.csv)
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_s3.csv"
+
+# 8 MB octal PSRAM: framebuffers and big buffers go there
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
