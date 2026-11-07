@@ -11,6 +11,10 @@ and creates the GitHub release vX.Y.Z with the images and the Android app.
 
     python tools/release.py --notes "Qué cambia"          # version from CMakeLists.txt (PROJECT_VER)
     python tools/release.py --dry-run                     # build and write release/ only
+    python tools/release.py --only s3amoled               # just that board's entry on Pages (tests)
+
+--only touches nothing but manifest.boards.<board> and that board's image on Pages: the C6 keys, the
+app, the web installer and the releases stay as they are, so installed clocks see nothing new.
 
 Needs PlatformIO, the GitHub CLI logged in, and for the app JAVA_HOME (JDK 21) and
 android/keystore.properties. The version must be new: clocks only update to a different version.
@@ -152,14 +156,51 @@ def publish_release(version, notes):
     run(GH, "release", "create", f"v{version}", *assets, "--repo", REPO, "--title", f"FX Clock {version}", "--notes", body)
 
 
+def publish_board_only(env, version, dry_run):
+    """Adds or replaces manifest.boards.<env> and its OTA image on gh-pages, leaving the rest alone."""
+    ota = os.path.join(ROOT, "webflasher", OTHER_BOARDS[env])
+    tree = os.path.join(OUT, "gh-pages")
+    shutil.rmtree(OUT, ignore_errors=True)
+    os.makedirs(OUT)
+    run("git", "fetch", "origin", "gh-pages")
+    run("git", "worktree", "add", "-f", tree, "origin/gh-pages", "--detach")
+    try:
+        path = os.path.join(tree, "manifest.json")
+        m = json.load(open(path, encoding="utf-8"))
+        m.setdefault("boards", {})[env] = image_entry(version, ota)
+        text = json.dumps(m, ensure_ascii=False, separators=(",", ":"))
+        if len(text.encode("utf-8")) > MANIFEST_MAX:
+            sys.exit(f"manifest.json would take {len(text.encode('utf-8'))} bytes, over {MANIFEST_MAX}")
+        print(json.dumps(m, ensure_ascii=False, indent=1))
+        if dry_run:
+            print("--dry-run: no se ha publicado nada.")
+            return
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        shutil.copy(ota, tree)
+        run("git", "add", "-A", cwd=tree)
+        run("git", "commit", "-m", f"Firmware {env} {version}", cwd=tree)
+        run("git", "push", "origin", "HEAD:refs/heads/gh-pages", cwd=tree)
+    finally:
+        run("git", "worktree", "remove", "--force", tree)
+    print(f"\nPublicada la {version} para {env}: {PAGES}/manifest.json (boards.{env})")
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--only", choices=sorted(OTHER_BOARDS), help="publish just this board's entry (no release)")
     ap.add_argument("--notes", default="")
     ap.add_argument("--dry-run", action="store_true", help="build and stage in release/, publish nothing")
     ap.add_argument("--no-build", action="store_true", help="use the files already built")
     ap.add_argument("--no-app", action="store_true", help="leave the Android app out of the release")
     a = ap.parse_args()
     version = project_version()
+    if a.only:
+        if not a.no_build:
+            run(PIO, "run", "-e", a.only)
+            run(sys.executable, "tools/build_webflasher.py", "--board", a.only)
+        publish_board_only(a.only, version, a.dry_run)
+        return
     with_app = not a.no_app
     if not a.no_build:
         build(with_app)
