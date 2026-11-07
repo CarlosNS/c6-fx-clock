@@ -2,10 +2,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Waveshare ESP32-C6-LCD-1.47: ST7789, 172x320. Faces are either portrait (LCD_W x LCD_H)
-// or landscape (LAND_W x LAND_H); the framebuffer holds the same number of pixels in both.
-#define LCD_W 172
-#define LCD_H 320
+#include "board.h"
+
+// Screen size comes from the board (C6: ST7789 172x320, lcd.c; S3: CO5300 410x502, lcd_co5300.c).
+// Faces are either portrait (LCD_W x LCD_H) or landscape (LAND_W x LAND_H); the framebuffer holds
+// the same number of pixels in both.
+#define LCD_W BOARD_LCD_W
+#define LCD_H BOARD_LCD_H
 #define LAND_W LCD_H
 #define LAND_H LCD_W
 
@@ -19,7 +22,7 @@ static inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b)
     return (uint16_t)((c >> 8) | (c << 8));
 }
 
-// buffers: 2 = double buffering (normal), 1 = single (frees 110 KB of RAM)
+// buffers: 2 = double buffering (normal), 1 = single (on the C6 it frees 110 KB of RAM)
 void lcd_init(int buffers);
 // Framebuffer to draw the next frame into (changes after every lcd_flush when double buffered)
 uint16_t *lcd_fb(void);
@@ -28,5 +31,6 @@ void lcd_flush(void);
 void lcd_set_brightness(int percent);
 // Frame most recently sent to the panel (for screenshots; only stable while rendering is paused)
 const uint16_t *lcd_last_frame(void);
-// Rotates the panel by hardware; waits for any frame in flight first
+// Switches to the landscape orientation (C6: by hardware; S3: rotated while sending). Waits for
+// any frame in flight first
 void lcd_set_landscape(bool landscape);

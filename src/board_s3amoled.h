@@ -22,6 +22,12 @@
 #define BOARD_LCD_RST 8
 #define BOARD_LCD_X_GAP 22   // the 410 px panel starts 22 columns into the controller RAM
 // No backlight pin: brightness is the panel's register 0x51
+// Visible area: the corners are rounded with a radius of about 115-120 px (measured with arcs of
+// known radius on 2026-11-07), and the outermost 2 px of each edge may be hidden. A pixel (x, y)
+// in a corner is visible if it lies inside the circle of radius BOARD_LCD_CORNER_R centred
+// BOARD_LCD_CORNER_R px in from both edges. Keep anything that matters inside.
+#define BOARD_LCD_CORNER_R 120
+#define BOARD_LCD_EDGE 2
 
 // ---- Shared I2C bus: touch, AXP2101, PCF85063 RTC, QMI8658 IMU, ES8311 / ES7210 codecs ----
 #define BOARD_I2C_SDA 15

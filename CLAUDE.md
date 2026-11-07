@@ -22,7 +22,7 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
 | `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED. `board.h` elige `board_c6lcd.h` o `board_s3amoled.h` según el chip |
-| `src/main_s3.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Firmware de arranque de la S3 (fase 1 de `docs/PLAN-s3.md`) |
+| `src/main_s3.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c` | Firmware de arranque de la S3 (fases 1–2 de `docs/PLAN-s3.md`). `lcd_co5300.c` implementa `lcd.h` en la S3 |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |
@@ -70,7 +70,7 @@ python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
 - **Red WiFi «Merlos»:** es una red mallada. Un nodo puede asociar el reloj sin darle IP; `net.c` lo vigila.
 - **El C6 no tiene coma flotante (FPU):** las esferas usan enteros y tablas (`sin_q14`).
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
-- **La pantalla de la S3 tiene las esquinas redondeadas** (radio de unos 60–70 px): ten en cuenta siempre esa zona perdida al colocar cualquier cosa (esferas, textos, avisos, la superposición `ovl`).
+- **La pantalla de la S3 tiene las esquinas redondeadas**, con un radio de unos 120 px (`BOARD_LCD_CORNER_R`), y los 2 px exteriores de cada borde pueden no verse. Ten en cuenta siempre esa zona perdida al colocar cualquier cosa: esferas, textos, avisos, la superposición `ovl` y la clave Bluetooth.
 - **No renombres el repositorio:** los relojes instalados y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`, y un cambio de nombre rompería esa dirección de GitHub Pages.
 
 ## Estado (noviembre de 2026)

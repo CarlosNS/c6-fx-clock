@@ -8,7 +8,7 @@ La placa llegó el 7 de noviembre de 2026. Este plan es el punto de partida de u
 |---|---|
 | Chip | ESP32-S3 rev. 0.2, doble núcleo a 240 MHz, **con FPU** de precisión simple e instrucciones SIMD |
 | Memoria | **8 MB de PSRAM octal** a 80 MHz y **32 MB de flash** GigaDevice. La cabecera del firmware de fábrica declara 16 MB |
-| Pantalla | AMOLED de 2,06", **410×502**, controlador CO5300 por QSPI (en ESP-IDF, driver compatible `sh8601`). Sin pin de retroiluminación: el brillo es el registro 0x51 (0–255). **Esquinas redondeadas** (radio de unos 60–70 px, por medir en la fase 2): todo lo que se dibuje cerca de las esquinas se pierde |
+| Pantalla | AMOLED de 2,06", **410×502**, controlador CO5300 por QSPI (en ESP-IDF, driver compatible `sh8601`). Sin pin de retroiluminación: el brillo es el registro 0x51 (0–255). **Esquinas redondeadas** con un radio de unos 120 px (medido en la fase 2): todo lo que se dibuje cerca de las esquinas se pierde |
 | Táctil | FT3168 por I2C |
 | Energía | PMIC AXP2101 (carga, batería de 3,7 V por conector MX1.25, medidas). No hay expansor de pines en el bus I2C: el botón PWR va, con toda probabilidad, a la entrada PWRON del AXP2101 (por confirmar en el esquema, fase 7) |
 | Reloj de hardware | PCF85063A, alimentado por la batería: **conserva la hora apagado** |
@@ -24,7 +24,7 @@ Sacados del BSP de Waveshare (`examples/factory/components/waveshare__esp32_s3_t
 | Función | GPIO |
 |---|---|
 | LCD QSPI: CS, CLK, D0–D3, RST | 12, 11, 4/5/6/7, 8 |
-| I2C compartido: SDA, SCL (táctil, AXP2101, RTC, IMU, códecs, expansor) | 15, 14 |
+| I2C compartido: SDA, SCL (táctil, AXP2101, RTC, IMU, códecs) | 15, 14 |
 | Táctil: INT, RST | 38, 9 |
 | I2S: MCLK, SCLK, LRCK, DOUT (al ES8311), DIN (del ES7210) | 16, 41, 45, 40, 42 |
 | Amplificador del altavoz | 46 |
@@ -78,7 +78,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 5. **Entradas:**
    - El táctil sustituye al panel de la app en las esferas interactivas. `app_take_drag` recibe también los gestos de la pantalla.
    - Deslizar el dedo cambia de esfera.
-   - El botón BOOT sigue como está. El botón PWR va por el expansor.
+   - El botón BOOT sigue como está. El botón PWR va, con toda probabilidad, al AXP2101.
 6. **Energía (es un reloj con batería):**
    - Brillo bajo y pantalla apagada a los pocos segundos.
    - Encender al levantar la muñeca (IMU) o al tocar.
@@ -101,15 +101,8 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 |---|---|---|
 | 0 ✅ | **Copia del firmware de fábrica:** `esptool read_flash 0 0x2000000`. Guárdala fuera del repositorio: es de Waveshare | Hecha el 7 de noviembre de 2026: 32 MB en `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`, comprobada con `verify_flash` contra la placa (sin volver a escribirla). El `LEEME.md` de esa carpeta tiene el SHA-256, la tabla de particiones de fábrica y cómo restaurarla |
 | 1 ✅ | **Arranque mínimo:** entorno `s3amoled`, PSRAM, escaneo I2C (direcciones de cada chip), AXP2101 encendiendo la pantalla, CO5300 mostrando un degradado | Una imagen fija sin parpadeos; el log lista los chips del bus I2C |
-| 2 | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps medida con `ovl 1` |
+| 2 ✅ | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps, medida con el contador en pantalla y el log (la orden `ovl 1` llega con `main.c` en la fase 3) |
 
-**Notas de la fase 1 para la fase 2** (fase 1 hecha el 7 de noviembre de 2026):
-- Imagen de prueba comprobada por el dueño: colores y orientación correctos con el USB a la derecha, sin parpadeo, y el botón BOOT cambia el brillo.
-- **Esquinas redondeadas:** se comen casi todo un cuadrado de 44 px en cada esquina. El borde blanco de 1 px no se distingue en la foto. La fase 2 mostrará un patrón de medida (marcas cada 10 px desde cada borde y arcos de radio conocido) para fijar el radio y el área útil, que se guardarán en `board_s3amoled.h`. Las esferas, la superposición `ovl`, los avisos y la clave Bluetooth tienen que quedar dentro de esa área.
-- `main_s3.c` es un firmware de arranque aparte; `src/CMakeLists.txt` elige los archivos según el chip. `lcd_co5300.c` habla QSPI directamente con `esp_lcd_panel_io`, sin el componente `esp_lcd_sh8601`.
-- Enviar un fotograma completo tarda **40 ms** a 40 MHz, copiando trozos de 38 líneas de la PSRAM a un búfer interno y esperando cada uno. No llega a 30 fps. Para ganar: QSPI a 80 MHz y dos búferes internos alternos, de modo que se copie uno mientras se envía el otro (en teoría unos 10 ms).
-- El driver SPI de ESP-IDF 5.5 no hace DMA directo desde la PSRAM: si se le pasa un búfer de PSRAM, reserva y copia uno interno en cada envío.
-- En Windows, abrir COM7 no reinicia la S3. `python tools/bootlog.py` la reinicia por RTS y guarda el log.
 | 3 | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 24 esferas funcionan en la pantalla nueva |
 | 4 | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil |
 | 5 | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo |
@@ -117,6 +110,33 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 7 | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal |
 | 8 | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen |
 | 9 | **Esferas a resolución completa**, una a una | Tantas como se quiera; la guía «Crear una esfera» explica las dos placas |
+
+## Notas de las fases
+
+### Fase 1 (hecha el 7 de noviembre de 2026)
+
+- Imagen de prueba comprobada por el dueño: colores y orientación correctos con el USB a la derecha, sin parpadeo, y el botón BOOT cambia el brillo.
+- **Esquinas redondeadas:** se comen casi todo un cuadrado de 44 px en cada esquina (medidas en la fase 2).
+- `main_s3.c` es un firmware de arranque aparte; `src/CMakeLists.txt` elige los archivos según el chip. `lcd_co5300.c` habla QSPI directamente con `esp_lcd_panel_io`, sin el componente `esp_lcd_sh8601`.
+- Enviar un fotograma completo tarda **40 ms** a 40 MHz, copiando trozos de 38 líneas de la PSRAM a un búfer interno y esperando cada uno. No llega a 30 fps. (Resuelto en la fase 2.)
+- El driver SPI de ESP-IDF 5.5 no hace DMA directo desde la PSRAM: si se le pasa un búfer de PSRAM, reserva y copia uno interno en cada envío.
+- En Windows, abrir COM7 no reinicia la S3. `python tools/bootlog.py` la reinicia por RTS y guarda el log.
+
+### Fase 2 (hecha el 7 de noviembre de 2026)
+
+- **`lcd.h` es común:** toma el tamaño de `board.h`, y `lcd_co5300.c` implementa en la S3 la misma API que `lcd.c` en el C6 (`lcd_init`, `lcd_fb`, `lcd_flush`, brillo, horizontal y último fotograma). `gfx.c`, `fonts.c` y `uifont.c` ya compilan para la S3 sin cambios.
+- **Envío:**
+  - QSPI a 80 MHz, con dos fotogramas en la PSRAM. Una tarea en el núcleo 1 envía cada fotograma mientras el núcleo 0 dibuja el siguiente.
+  - El envío copia trozos de 38 líneas a dos búferes internos alternos: copia uno mientras el otro sale. Se pone la ventana de cada trozo, porque `tx_param` espera a que termine el trozo anterior. No hace falta el comando de continuación 0x3C.
+  - Un fotograma tarda **12,4 ms** (12,6 ms mientras se dibuja a la vez).
+- **Horizontal:** la esfera dibuja en 502×410 y el envío la gira al copiar. Cuesta +0,5 ms. El borde superior de la imagen horizontal queda en el lado del USB; si hace falta, se cambia en `copy_strip`.
+- **Esfera de prueba** (plasma por tablas a pantalla completa, en `main_s3.c`): 30 fps en vertical y en horizontal. Dibujarla tarda **20 ms** de los 33 disponibles: escribir 411 KB por fotograma en la PSRAM cuesta. Las esferas reales a tamaño completo pueden necesitar el reparto entre los dos núcleos.
+- **Caché de datos de 64 KB** (`CONFIG_ESP32S3_DATA_CACHE_64KB`, con líneas de 32 o 64 B): la placa se cuelga justo al pasar del bootloader a la app. Descartada, y anotado en `sdkconfig.defaults.esp32s3`.
+- **Área visible**, medida con arcos de radio conocido sobre las fotos del dueño:
+  - **Esquinas:** radio de 115–120 px. Los arcos de 120 px o más se ven enteros y los de 100 y 110 px no. `BOARD_LCD_CORNER_R 120` en `board_s3amoled.h`.
+  - **Bordes rectos:** se ven las líneas a 2, 4 y 6 px; la de 0 px no se distingue con claridad (`BOARD_LCD_EDGE 2`).
+  - **Para la fase 3:** el lienzo ×1,5 (258×480, centrado en 76, 11) tiene las esquinas a 117,5 px del centro del redondeo. Queda visible, pero sin margen: lo que haya en las esquinas del lienzo se verá recortado.
+- **Pruebas sin tocar la placa:** por la consola serie, `0`, `1` y `2` eligen pantalla y `b` cambia el brillo. El botón BOOT hace lo mismo: pulsación corta para la pantalla, larga para el brillo.
 
 ## Cómo trabajar
 

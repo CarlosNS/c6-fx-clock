@@ -15,3 +15,6 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_s3.csv"
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
+
+# Not set: the 64 KB data cache (CONFIG_ESP32S3_DATA_CACHE_64KB, with 32 or 64 B lines) hangs this
+# board right after the bootloader hands over to the app (ESP-IDF 5.5.0, tried 2026-11-07)

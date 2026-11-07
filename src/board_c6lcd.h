@@ -13,6 +13,10 @@
 #define BOARD_FB_COUNT 2
 
 // ---- Display: ST7789 172x320 over SPI ----
+#define BOARD_LCD_W 172
+#define BOARD_LCD_H 320
+#define BOARD_LCD_CORNER_R 0     // not measured: the faces were laid out by eye on this panel
+#define BOARD_LCD_EDGE 0
 #define BOARD_LCD_MOSI 6
 #define BOARD_LCD_SCLK 7
 #define BOARD_LCD_CS 14
