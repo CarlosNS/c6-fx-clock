@@ -15,6 +15,11 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_s3.csv"
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
+# Wi-Fi and Bluetooth run together on this board: their buffers, NimBLE's memory and the TLS
+# buffers (HTTPS: weather, updates) go to PSRAM to keep internal RAM free
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
 
 # Not set: the 64 KB data cache (CONFIG_ESP32S3_DATA_CACHE_64KB, with 32 or 64 B lines) hangs this
 # board right after the bootloader hands over to the app (ESP-IDF 5.5.0, tried 2026-11-07)

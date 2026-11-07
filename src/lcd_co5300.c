@@ -34,9 +34,9 @@
 #define PW BOARD_PANEL_W
 #define PH BOARD_PANEL_H
 #define FB_BYTES (LCD_W * LCD_H * sizeof(uint16_t))
-// Even (the CO5300 wants even start rows and heights) and 38 * 410 * 2 bytes fits in one 32 KB
-// SPI transfer
-#define STRIP_LINES 38
+// Even (the CO5300 wants even start rows and heights). Two strips of 20 lines take 33 KB of internal
+// RAM; taller strips send a frame no faster and leave less room for Wi-Fi + Bluetooth + HTTPS
+#define STRIP_LINES 20
 #define STRIP_BYTES (STRIP_LINES * PW * sizeof(uint16_t))
 
 #define BIT_FRAME 1

@@ -35,9 +35,10 @@ def post(host, path, data: bytes, timeout=120):
 
 
 class SerialSession:
-    """Serial console of the clock: reads the log and sends commands (console.c). Opening the port
-    resets the board; when the firmware itself restarts (mode switch) the USB port drops for a
-    moment and the session reopens it, which keeps the log going."""
+    """Serial console of the clock: reads the log and sends commands (console.c). Opening the session
+    resets the board: the C6 resets when its port is opened, the S3 does not, so if no boot banner
+    shows up the session pulses RTS (_ensure_reset). When the firmware itself restarts (mode switch)
+    the USB port drops for a moment and the session reopens it, which keeps the log going."""
 
     def __init__(self, port):
         import serial
@@ -48,6 +49,22 @@ class SerialSession:
         self._closed = False
         self._busy = False
         self._open()
+        self._ensure_reset()
+
+    def _ensure_reset(self):
+        """Waits briefly for the ROM banner of a reset; without it, resets through RTS. On Windows the
+        usbser.sys driver only sends the line state when DTR is written too (esptool does the same)."""
+        start = len(self.text)
+        end = time.monotonic() + 1.5
+        while time.monotonic() < end:
+            self._read()
+            if "ESP-ROM:" in self.text[start:]:
+                return
+        self._s.rts = True
+        self._s.dtr = self._s.dtr
+        time.sleep(0.1)
+        self._s.rts = False
+        self._s.dtr = self._s.dtr
 
     def _open(self):
         end = time.monotonic() + 15
@@ -142,12 +159,14 @@ class SerialSession:
             self._open()
         finally:
             self._busy = False
+        self._ensure_reset()
 
     def reset(self):
         """Closes and reopens the port, which resets the board (like a power cut)."""
         if self._s:
             self._s.close()
         self._open()
+        self._ensure_reset()
 
     def close(self):
         self._closed = True

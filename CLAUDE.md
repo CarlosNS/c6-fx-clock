@@ -62,7 +62,7 @@ python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
 
 ## Rarezas conocidas
 
-- **Memoria del C6:** no caben WiFi y Bluetooth a la vez, por eso existen los modos de arranque BLE, WIFI y UPDATE.
+- **Memoria del C6:** no caben WiFi y Bluetooth a la vez, por eso existen los modos de arranque BLE, WIFI y UPDATE. En la S3 sí caben (`BOARD_RADIO_EXCLUSIVE 0`): el arranque normal levanta las dos, y solo UPDATE es aparte. Allí lo justo es la RAM interna, unos 70 KB libres: lo grande va a la PSRAM.
 - **HyperOS:**
   - bloquea los escaneos Bluetooth en segundo plano;
   - avisa de que el reloj desaparece y reaparece cada unos 20 s, así que la presencia solo sincroniza tras 30 s de ausencia;

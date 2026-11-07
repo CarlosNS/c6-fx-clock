@@ -106,7 +106,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 3 ✅ | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 21 esferas funcionan en la pantalla nueva (comprobado por el dueño) |
 | 4 ⏳ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil. Hecho salvo esta prueba, pendiente del dueño (ver las notas) |
 | 5 ⏳ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo. Programado; falta que el dueño lo pruebe con el dedo |
-| 6 | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3 |
+| 6 ⏳ | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3. Las dos radios funcionan a la vez; faltan los tests (dongle desconectado) y la app |
 | 7 | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal |
 | 8 | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen |
 | 9 | **Esferas a resolución completa**, una a una | Tantas como se quiera; la guía «Crear una esfera» explica las dos placas |
@@ -188,6 +188,23 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
   - **Para cambiar de esfera desde una interactiva:** el gesto tiene que empezar fuera de la esfera (las bandas negras del modo compatibilidad) o a menos de 40 px de un borde lateral.
 - **Comprobado sin dedo:** el chip responde, no aparecen toques fantasma (15 s con la misma esfera) y se mantienen los 30 fps.
 - **Pendiente, prueba del dueño:** deslizar para cambiar de esfera en los dos sentidos; tocar con la pantalla apagada; usar con el dedo una esfera interactiva (Lava: la bola sigue al dedo; Túnel: girar y avanzar; Vida: dibujar células); y cambiar de esfera desde una interactiva empezando en el borde. Ajustar los umbrales si hace falta.
+
+### Fase 6 (7 de noviembre de 2026; faltan los tests y la app)
+
+- **Las dos radios a la vez:** con `BOARD_RADIO_EXCLUSIVE 0`, el arranque normal inicia el WiFi (página, NTP y tiempo) y el Bluetooth, sea cual sea el modo guardado. UPDATE sigue siendo un arranque aparte. Las órdenes `mode ble|wifi` siguen existiendo (los tests las usan): reinician y la S3 vuelve a levantar las dos radios. Se nota en el campo `mode` del estado.
+- **Pantalla de inicio:** en esta placa muestra el nombre Bluetooth y los datos del WiFi a la vez, y mantener BOOT ya no cambia de modo.
+- **RAM interna** (la que se agota; la PSRAM sobra):
+  - con las dos radios y sin más cambios quedaban 37 KB, con bloques de 26 KB como máximo: poco para HTTPS;
+  - trozos de envío de 20 líneas en vez de 38 (ahorran 29 KB y no se nota en los fps);
+  - y en la PSRAM los búferes del WiFi y lwIP (`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP`), la memoria de NimBLE (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`) y la de mbedTLS (`CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`);
+  - resultado: **70 KB libres** (bloque máximo de 31 KB).
+- **Rendimiento:** con las dos radios, todo sigue a 30 fps. Dibujar cuesta algo más por el reparto de la PSRAM: Plasma 14,5 ms (antes 11,2) y Clásico 20,5 ms.
+- **La app encuentra el reloj por el UUID del servicio, no por el nombre.** Se podrá cambiar el nombre «C6 Clock XXXX» (y la WiFi propia `C6-FX-Demo`) en la S3 sin romperla, si el dueño quiere otro nombre. Los tests usan `--ble-name`.
+- **`SerialSession`** (tests): si al abrir el puerto no aparece el mensaje de la ROM, reinicia por RTS. Así los tests que cuentan con un reinicio al abrir funcionan también en la S3: `pytest ... --port COM7`.
+- **Pendiente:**
+  - `pytest -m phase2 --port COM7`: lanzado, pero el adaptador Bluetooth TP-Link del PC está desconectado, así que no llegó a probar la S3;
+  - los tests por WiFi, cuando la S3 conozca la red de casa (la contraseña la pone el dueño, desde la página o con `wifi <red> <clave>` por la consola);
+  - `pytest -m phase5` y la app en el móvil.
 
 ## Cómo trabajar
 

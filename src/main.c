@@ -110,6 +110,24 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
     uint16_t accent = hsv565((uint8_t)(t / 8), 160, 255);
     text_centered(fb, 40, BOARD_CHIP, accent, 3);
     text_centered(fb, 72, "FX CLOCK", white, 3);
+#if !BOARD_RADIO_EXCLUSIVE
+    // Both radios at once: the app over Bluetooth and the web page over Wi-Fi, no modes to switch
+    text_centered(fb, 116, "WIFI Y BLUETOOTH", accent, 1);
+    text_centered(fb, 140, "En la app del reloj, busca:", dim, 1);
+    text_centered(fb, 156, ble_name()[0] ? ble_name() : "...", white, 2);
+    text_centered(fb, 190, "o conecta tu movil a:", dim, 1);
+    text_centered(fb, 206, AP_SSID, white, 2);
+    text_centered(fb, 228, "clave: " AP_PASS, dim, 1);
+    text_centered(fb, 248, "y abre", dim, 1);
+    text_centered(fb, 262, g_app.ap_ip, white, 2);
+    if (g_app.sta_ip[0]) {
+        text_centered(fb, 288, "o en tu red WiFi:", dim, 1);
+        text_centered(fb, 302, g_app.sta_ip, white, 1);
+    } else if (g_app.sta_ssid[0]) {
+        text_centered(fb, 288, "conectando a tu WiFi...", dim, 1);
+    }
+    (void)hold;
+#else
     bool wifi = boot_mode() == BOOT_WIFI;
     if (wifi) {
         text_centered(fb, 116, "MODO WIFI", accent, 1);
@@ -137,6 +155,7 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
         gfx_fill_rect(fb, 20, 302, LCD_W - 40, 4, rgb565(40, 46, 70));
         gfx_fill_rect(fb, 20, 302, (LCD_W - 40) * hold / 1000, 4, accent);
     }
+#endif
 }
 
 static void draw_overlay(uint16_t *fb, int fx)
@@ -323,9 +342,13 @@ void app_main(void)
     }
     settings_load();
     boot_mode_t mode = boot_mode_init();
-    // Bluetooth is compiled in but only used in BLE mode: elsewhere give its static RAM (~15 KB)
-    // back to the heap. Irreversible until the next reboot, and changing mode always reboots.
-    if (mode != BOOT_BLE) {
+    // Which radios this boot starts. Where they don't fit together (BOARD_RADIO_EXCLUSIVE) the boot
+    // mode picks one; elsewhere both run in every mode but UPDATE.
+    bool use_wifi = mode == BOOT_WIFI || (!BOARD_RADIO_EXCLUSIVE && mode != BOOT_UPDATE);
+    bool use_ble = mode == BOOT_BLE || (!BOARD_RADIO_EXCLUSIVE && mode != BOOT_UPDATE);
+    // Bluetooth is compiled in but not always used: then give its static RAM (~15 KB) back to the
+    // heap. Irreversible until the next reboot, and changing mode always reboots.
+    if (!use_ble) {
         unsigned before = (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
         esp_bt_mem_release(ESP_BT_MODE_BTDM);
         ESP_LOGI(TAG, "Bluetooth memory released: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT) - before);
@@ -354,16 +377,19 @@ void app_main(void)
     lcd_flush();
     lcd_set_brightness(g_app.brightness);
 
-    if (mode == BOOT_WIFI) {
+    if (use_wifi) {
         web_start();
         clock_start_sntp();
         weather_init();
     }
-    if (mode == BOOT_BLE) ble_start();
+    if (use_ble) ble_start();
     tunnel_enter();  // builds its lookup tables once
-    ESP_LOGI(TAG, "Free heap after start: %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+    ESP_LOGI(TAG, "Free heap after start: %u (internal RAM %u, largest block %u)",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 
-    // Splash; holding BOOT through it switches between the Wi-Fi and Bluetooth modes
+    // Splash; holding BOOT through it switches between the Wi-Fi and Bluetooth modes (boards that
+    // run one radio at a time)
     uint32_t start = now_ms(), held_since = 0;
     while (now_ms() - start < SPLASH_MS || held_since) {
         uint32_t now = now_ms();
@@ -371,7 +397,7 @@ void app_main(void)
         if (pressed && !held_since) held_since = now ? now : 1;
         if (!pressed) held_since = 0;
         int hold = held_since ? (int)(now - held_since) * 1000 / MODE_HOLD_MS : 0;
-        if (hold >= 1000) boot_mode_switch(mode == BOOT_WIFI ? BOOT_BLE : BOOT_WIFI);
+        if (BOARD_RADIO_EXCLUSIVE && hold >= 1000) boot_mode_switch(mode == BOOT_WIFI ? BOOT_BLE : BOOT_WIFI);
         console_poll();
         clock_update();
         draw_splash(lcd_fb(), now - start, hold);
