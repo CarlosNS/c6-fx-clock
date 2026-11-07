@@ -70,7 +70,7 @@ cd tests && python -m pytest -m now # unitarios (16) y web
 ## Estado (noviembre de 2026)
 
 - **Versión publicada:** 2.1.0.
-- **3.0.0:** preparada en `CHANGELOG.md` y sin publicar. Antes de publicarla:
+- **3.0.0:** preparada en `CHANGELOG.md` y sin publicar. **Aplazada** por decisión del dueño (7 de noviembre de 2026) mientras se trabaja en la S3; faltan las pruebas con el móvil de `tests/MANUAL.md`. Antes de publicarla:
   - `PROJECT_VER` 3.0.0;
   - en la app, `versionName` 1.0.0 y un `versionCode` mayor;
   - `BOOT_DEFAULT` → `BOOT_BLE`;

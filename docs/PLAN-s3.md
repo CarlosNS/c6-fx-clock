@@ -31,6 +31,8 @@ Sacados del BSP de Waveshare (`examples/factory/components/waveshare__esp32_s3_t
 | microSD (SDMMC de 1 bit): CLK, CMD, D0 | 2, 1, 3 (en modo SPI, CS es el 17) |
 | BOOT | 0 |
 
+La tabla de particiones de fábrica solo usa los primeros 16 MB (la app `factory` de 8 MB empieza en 0x200000), por eso su cabecera declara 16 MB. esptool detecta 32 MB de flash quad.
+
 Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1. El esquema está en https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-2.06/ESP32-S3-Touch-AMOLED-2.06.pdf.
 
 ## Qué se reutiliza tal cual
@@ -82,7 +84,7 @@ Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1
 
 | # | Fase | Hecho cuando |
 |---|---|---|
-| 0 | **Copia del firmware de fábrica:** `esptool read_flash 0 0x2000000`. Guárdala fuera del repositorio: es de Waveshare | Hay una copia de 32 MB guardada y se ha comprobado que se puede volver a flashear |
+| 0 ✅ | **Copia del firmware de fábrica:** `esptool read_flash 0 0x2000000`. Guárdala fuera del repositorio: es de Waveshare | Hecha el 7 de noviembre de 2026: 32 MB en `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`, comprobada con `verify_flash` contra la placa (sin volver a escribirla). El `LEEME.md` de esa carpeta tiene el SHA-256, la tabla de particiones de fábrica y cómo restaurarla |
 | 1 | **Arranque mínimo:** entorno `s3amoled`, PSRAM, escaneo I2C (direcciones de cada chip), AXP2101 encendiendo la pantalla, CO5300 mostrando un degradado | Una imagen fija sin parpadeos; el log lista los chips del bus I2C |
 | 2 | **Bucle de render a 30 fps** con doble búfer en la PSRAM, brillo y rotación | Una esfera de prueba a 30 fps medida con `ovl 1` |
 | 3 | **Esferas en modo compatibilidad** (lienzo escalado), y decidir el diseño definitivo de resolución | Las 24 esferas funcionan en la pantalla nueva |
@@ -98,4 +100,4 @@ Las direcciones I2C no vienen documentadas: hay que escanear el bus en la fase 1
 - **Rama `s3`:** un solo código para las dos placas, con dos entornos de PlatformIO. La rama se une con `main` cuando el C6 siga compilando y pasando sus tests.
 - **No romper el C6:** antes de cada unión con `main`, compila el C6 con `pio run -e c6lcd` y pasa `pytest -m now`.
 - **Puertos:** el C6 está en COM5 y la S3 en COM7. En la S3, comprueba si abrir el puerto también la reinicia; parece que sí, porque el log de fábrica empezó desde el arranque.
-- **Pendiente del C6 antes de empezar:** publicar o aplazar la 3.0.0 (ver `CLAUDE.md`, sección Estado).
+- **3.0.0 del C6:** aplazada (7 de noviembre de 2026); ver `CLAUDE.md`, sección Estado.
