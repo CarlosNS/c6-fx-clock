@@ -14,10 +14,12 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "fx.h"
 #include "gfx.h"
+#include "hang.h"
 #include "lcd.h"
 #include "led.h"
 #include "nvs_flash.h"
@@ -415,6 +417,14 @@ void app_main(void)
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 
+#if BOARD_HANG_REBOOT
+    // From here on the main loop must keep turning: if it stalls 8 s, the task watchdog reboots the
+    // clock (and board_init() reports the step it was stuck in, see hang.h)
+    esp_task_wdt_config_t wdt = {.timeout_ms = 8000, .idle_core_mask = 0, .trigger_panic = true};
+    esp_task_wdt_reconfigure(&wdt);
+    esp_task_wdt_add(NULL);
+#endif
+
     // Splash; holding BOOT through it switches between the Wi-Fi and Bluetooth modes (boards that
     // run one radio at a time)
     uint32_t start = now_ms(), held_since = 0;
@@ -427,6 +437,9 @@ void app_main(void)
         if (BOARD_RADIO_EXCLUSIVE && hold >= 1000) boot_mode_switch(mode == BOOT_WIFI ? BOOT_BLE : BOOT_WIFI);
         console_poll();
         clock_update();
+#if BOARD_HANG_REBOOT
+        esp_task_wdt_reset();
+#endif
         draw_splash(lcd_fb(), now - start, hold);
         lcd_flush();
         vTaskDelay(pdMS_TO_TICKS(33));
@@ -442,11 +455,18 @@ void app_main(void)
         uint32_t dt = now - last;
         if (dt > 100) dt = 100;
         last = now;
+#if BOARD_HANG_REBOOT
+        esp_task_wdt_reset();
+#endif
+        STAGE_MAIN(1);
         clock_update();
+        STAGE_MAIN(2);
         poll_button(now);
 #if BOARD_HAS_TOUCH
+        STAGE_MAIN(3);
         poll_touch(now);
 #endif
+        STAGE_MAIN(4);
         console_poll();
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
             ota_confirm_app();
@@ -467,7 +487,9 @@ void app_main(void)
         if (fx_list[g_app.fx].retired) g_app.fx = fx_next(g_app.fx);
         if (g_app.fx != cur) {
             cur = g_app.fx;
+            STAGE_MAIN(5);
             lcd_set_landscape(fx_list[cur].landscape);
+            STAGE_MAIN(6);
             fx_list[cur].enter();
             fx_since = now;
             ESP_LOGI(TAG, "Face: %s", fx_list[cur].name);
@@ -484,6 +506,7 @@ void app_main(void)
             cur_bri = eff;
         }
         if (!awake && fade == 0) {  // asleep: no rendering at all, just watch the button
+            STAGE_MAIN(8);
             if (!panel_asleep) {
                 lcd_sleep(true);
                 panel_asleep = true;
@@ -504,6 +527,7 @@ void app_main(void)
         }
 
         if (panel_asleep) {
+            STAGE_MAIN(9);
             lcd_sleep(false);
             panel_asleep = false;
         }
@@ -511,7 +535,9 @@ void app_main(void)
         anim_t += sdt;
         uint16_t *fb = lcd_fb();
         int64_t r0 = esp_timer_get_time();
+        STAGE_MAIN(10);
         fx_list[cur].render(fb, anim_t, sdt);
+        STAGE_MAIN(11);
         int ru = (int)(esp_timer_get_time() - r0);
         render_sum += ru;
         if (ru > render_max) render_max = ru;
@@ -526,7 +552,9 @@ void app_main(void)
             else led_follow_screen(fb, eff);
             led_t = now;
         }
+        STAGE_MAIN(12);
         lcd_flush();
+        STAGE_MAIN(13);
 
         if (g_app.freeze_req) {  // a screenshot is reading the last frame
             g_app.frozen = true;
@@ -542,6 +570,7 @@ void app_main(void)
         }
         if (dirty_t && now - dirty_t > SAVE_DELAY_MS) {
             dirty_t = 0;
+            STAGE_MAIN(14);
             settings_save();
         }
 

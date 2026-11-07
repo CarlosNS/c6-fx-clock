@@ -4,6 +4,8 @@
 #include "esp_flash.h"
 #include "esp_log.h"
 #include "esp_psram.h"
+#include "esp_system.h"
+#include "hang.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "i2c_bus.h"
@@ -12,11 +14,17 @@
 #include "touch.h"
 
 static const char *TAG = "board";
+RTC_NOINIT_ATTR volatile uint32_t g_stage_main, g_stage_lcd;
 
 // Waveshare ESP32-S3-Touch-AMOLED-2.06: the shared I2C bus and a report of what is on it. The
 // AXP2101's power-on defaults already feed the screen and every chip, so it is only read for now.
 void board_init(void)
 {
+    esp_reset_reason_t why = esp_reset_reason();
+    if (why == ESP_RST_TASK_WDT || why == ESP_RST_PANIC || why == ESP_RST_INT_WDT || why == ESP_RST_WDT)
+        ESP_LOGW(TAG, "restarted after a hang or crash (reason %d): main loop at step %lu, display sender at step %lu",
+                 why, (unsigned long)g_stage_main, (unsigned long)g_stage_lcd);
+    g_stage_main = g_stage_lcd = 0;
     esp_chip_info_t chip;
     esp_chip_info(&chip);
     uint32_t flash = 0;

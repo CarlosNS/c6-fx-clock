@@ -23,6 +23,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "hang.h"
 
 // The CO5300 speaks the SH8601 QSPI protocol: every transfer starts with a 32-bit header
 // (opcode, 0x00, command, 0x00). Opcode 0x02 writes a command with 1-line parameters, opcode
@@ -166,11 +167,15 @@ static void send_frame(const uint16_t *fb, bool landscape)
     for (int y = 0, k = 0; y < PH; y += STRIP_LINES, k ^= 1) {
         int n = PH - y < STRIP_LINES ? PH - y : STRIP_LINES;
         // The strip sent two rounds ago has finished: set_window of the last round waited for it
+        STAGE_LCD(3);
         build_strip(s_strip[k], fb, y, n, landscape);
+        STAGE_LCD(4);
         set_window(y, n);
+        STAGE_LCD(5);
         esp_lcd_panel_io_tx_color(s_io, PIXELS(0x2C), s_strip[k], (size_t)n * PW * 2);
     }
     // A parameter write with no command and no data just waits for the last strip
+    STAGE_LCD(6);
     esp_lcd_panel_io_tx_param(s_io, -1, NULL, 0);
     s_send_us = (int)(esp_timer_get_time() - t0);
 }
@@ -194,8 +199,10 @@ static void sender_task(void *arg)
     bool asleep = false;
     for (;;) {
         uint32_t bits = 0;
+        STAGE_LCD(1);
         xTaskNotifyWait(0, UINT32_MAX, &bits, portMAX_DELAY);
         if (asleep && !s_want_sleep) {  // awake before drawing
+            STAGE_LCD(2);
             set_panel_sleep(false);
             asleep = false;
         }
@@ -205,11 +212,13 @@ static void sender_task(void *arg)
         }
         // After the frame: the panel lights up only once the first frame is on it
         uint8_t v = s_brightness;
+        STAGE_LCD(7);
         if ((bits & BIT_BRIGHTNESS) && v != applied) {
             esp_lcd_panel_io_tx_param(s_io, CMD(0x51), &v, 1);
             applied = v;
         }
         if (!asleep && s_want_sleep) {
+            STAGE_LCD(8);
             set_panel_sleep(true);
             asleep = true;
         }

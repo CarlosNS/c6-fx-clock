@@ -12,6 +12,9 @@
 // 8 MB of PSRAM: framebuffers live there, so both radio stacks fit at once (phase 6 checks it)
 #define BOARD_RADIO_EXCLUSIVE 0
 #define BOARD_FB_COUNT 2
+// A watch must not freeze: the task watchdog reboots it if the main loop stalls, and the step it was
+// in is reported at the next boot (hang.h)
+#define BOARD_HANG_REBOOT 1
 
 // ---- Display: CO5300 AMOLED 410x502 over QSPI (sh8601-compatible command set) ----
 // Compatibility mode (phase 3 of docs/PLAN-s3.md): the faces still draw on the C6's 172x320 canvas

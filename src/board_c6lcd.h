@@ -15,6 +15,7 @@
 #define BOARD_RADIO_EXCLUSIVE 1
 // Framebuffers in normal use (the UPDATE mode always uses 1 to leave heap for HTTPS)
 #define BOARD_FB_COUNT 2
+#define BOARD_HANG_REBOOT 0
 
 // ---- Display: ST7789 172x320 over SPI ----
 #define BOARD_LCD_W 172
