@@ -41,9 +41,16 @@
 #define BOARD_TOUCH_INT 38
 #define BOARD_TOUCH_RST 9
 #define BOARD_HAS_TOUCH 1    // FT3168 (touch_ft3168.c)
+// QMI8658 accelerometer (imu_qmi8658.c). Board axis <- {chip axis 0..2, sign}, for x (right),
+// y (up) and z (out of the screen) with the screen upright
+#define BOARD_HAS_IMU 1
+// z: lying flat with the screen up the chip reads z = -1 g (2026-11-07). x / y not checked yet.
+#define BOARD_IMU_MAP {{0, 1}, {1, 1}, {2, -1}}
 
 // PCF85063A real-time clock on the I2C bus (rtc_pcf85063.c): keeps the time while the board is off
 #define BOARD_HAS_RTC 1
+// AXP2101 power manager with a battery (pmu_axp2101.c): its level goes into the status
+#define BOARD_HAS_PMU 1
 
 // ---- Audio (I2S) ----
 #define BOARD_I2S_MCLK 16

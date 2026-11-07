@@ -161,3 +161,8 @@ void lcd_flush(void)
         xSemaphoreGive(s_done);
     }
 }
+
+void lcd_sleep(bool sleep)
+{
+    // The backlight at 0 already turns the screen off; the ST7789 itself draws little
+}

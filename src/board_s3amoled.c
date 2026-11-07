@@ -8,6 +8,7 @@
 #include "freertos/task.h"
 #include "i2c_bus.h"
 #include "pmu_axp2101.h"
+#include "imu.h"
 #include "touch.h"
 
 static const char *TAG = "board";
@@ -31,9 +32,17 @@ void board_init(void)
     gpio_set_level(BOARD_TOUCH_RST, 1);
     vTaskDelay(pdMS_TO_TICKS(300));
 
+    // The touch controller sometimes skips an acknowledge (touch_ft3168.c copes with it); ESP-IDF
+    // would print three error lines each time. Our drivers report their own failures.
+    esp_log_level_set("i2c.master", ESP_LOG_NONE);
     i2c_bus_init();
     ESP_LOGI(TAG, "I2C bus:");
     i2c_bus_scan();
     pmu_log_status();
     touch_init();
+    if (imu_init()) {
+        int x, y, z;
+        vTaskDelay(pdMS_TO_TICKS(100));  // first sample
+        if (imu_read(&x, &y, &z)) ESP_LOGI(TAG, "accelerometer: x %d y %d z %d mg", x, y, z);
+    }
 }

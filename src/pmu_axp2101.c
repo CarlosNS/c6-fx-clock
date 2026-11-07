@@ -60,3 +60,20 @@ bool pmu_log_status(void)
              ldo1 & 1 ? "on" : "off");
     return true;
 }
+
+bool pmu_battery(pmu_battery_t *b)
+{
+    int s1 = reg(REG_STATUS1), s2 = reg(REG_STATUS2);
+    if (s1 < 0 || s2 < 0) return false;
+    b->usb = (s1 >> 5) & 1;
+    b->present = (s1 >> 3) & 1;
+    b->charging = ((s2 >> 5) & 3) == 1;  // battery current direction: 01 = charging
+    b->percent = b->mv = -1;
+    if (b->present) {
+        int pct = reg(REG_BAT_PCT);
+        if (pct >= 0 && pct <= 100) b->percent = pct;
+        uint8_t v[2];
+        if ((reg(REG_ADC_EN) & 1) && i2c_reg_read(AXP_ADDR, REG_VBAT_H, v, 2)) b->mv = ((v[0] & 0x3F) << 8) | v[1];
+    }
+    return true;
+}

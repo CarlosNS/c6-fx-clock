@@ -41,6 +41,7 @@
 
 #define BIT_FRAME 1
 #define BIT_BRIGHTNESS 2
+#define BIT_POWER 4
 
 static const char *TAG = "co5300";
 static esp_lcd_panel_io_handle_t s_io;
@@ -52,6 +53,7 @@ static uint16_t *s_last;
 static const uint16_t *s_sending;
 static bool s_send_landscape;
 static volatile uint8_t s_brightness;
+static volatile bool s_want_sleep;
 static volatile int s_send_us;
 int g_lcd_w = LCD_W, g_lcd_h = LCD_H;
 
@@ -173,12 +175,30 @@ static void send_frame(const uint16_t *fb, bool landscape)
     s_send_us = (int)(esp_timer_get_time() - t0);
 }
 
+// Panel sleep: display off + sleep in; waking takes sleep out, the 120 ms the panel needs, display on
+static void set_panel_sleep(bool sleep)
+{
+    if (sleep) {
+        esp_lcd_panel_io_tx_param(s_io, CMD(0x28), NULL, 0);
+        esp_lcd_panel_io_tx_param(s_io, CMD(0x10), NULL, 0);
+    } else {
+        esp_lcd_panel_io_tx_param(s_io, CMD(0x11), NULL, 0);
+        vTaskDelay(pdMS_TO_TICKS(120));
+        esp_lcd_panel_io_tx_param(s_io, CMD(0x29), NULL, 0);
+    }
+}
+
 static void sender_task(void *arg)
 {
     uint8_t applied = 0;
+    bool asleep = false;
     for (;;) {
         uint32_t bits = 0;
         xTaskNotifyWait(0, UINT32_MAX, &bits, portMAX_DELAY);
+        if (asleep && !s_want_sleep) {  // awake before drawing
+            set_panel_sleep(false);
+            asleep = false;
+        }
         if (bits & BIT_FRAME) {
             send_frame(s_sending, s_send_landscape);
             xSemaphoreGive(s_idle);
@@ -188,6 +208,10 @@ static void sender_task(void *arg)
         if ((bits & BIT_BRIGHTNESS) && v != applied) {
             esp_lcd_panel_io_tx_param(s_io, CMD(0x51), &v, 1);
             applied = v;
+        }
+        if (!asleep && s_want_sleep) {
+            set_panel_sleep(true);
+            asleep = true;
         }
     }
 }
@@ -249,6 +273,12 @@ void lcd_set_brightness(int percent)
     if (percent > 100) percent = 100;
     s_brightness = (uint8_t)(percent * 255 / 100);
     xTaskNotify(s_sender, BIT_BRIGHTNESS, eSetBits);
+}
+
+void lcd_sleep(bool sleep)
+{
+    s_want_sleep = sleep;
+    xTaskNotify(s_sender, BIT_POWER, eSetBits);
 }
 
 void lcd_set_landscape(bool landscape)

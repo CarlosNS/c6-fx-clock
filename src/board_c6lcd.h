@@ -29,8 +29,11 @@
 
 // No real-time clock: the time is lost at every power cut
 #define BOARD_HAS_RTC 0
+// USB powered, no battery
+#define BOARD_HAS_PMU 0
 // No touch screen: the interactive faces use the pad in the apps
 #define BOARD_HAS_TOUCH 0
+#define BOARD_HAS_IMU 0
 
 // ---- Inputs / outputs ----
 // BOOT button, active low. It is also a strapping pin: held at power-on it enters the ROM download

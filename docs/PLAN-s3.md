@@ -107,7 +107,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 4 ⏳ | **Hora del RTC** y fuera el arranque callado en esta placa | La hora sobrevive a un apagado sin móvil. Hecho salvo esta prueba, pendiente del dueño (ver las notas) |
 | 5 ⏳ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo. Programado; falta que el dueño lo pruebe con el dedo |
 | 6 ⏳ | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3. Las dos radios funcionan a la vez; faltan los tests (dongle desconectado) y la app |
-| 7 | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal |
+| 7 ⏳ | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal. Programado lo básico; falta medir y probar con el dueño |
 | 8 | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen |
 | 9 | **Esferas a resolución completa**, una a una | Tantas como se quiera; la guía «Crear una esfera» explica las dos placas |
 
@@ -205,6 +205,25 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
   - `pytest -m phase2 --port COM7`: lanzado, pero el adaptador Bluetooth TP-Link del PC está desconectado, así que no llegó a probar la S3;
   - los tests por WiFi, cuando la S3 conozca la red de casa (la contraseña la pone el dueño, desde la página o con `wifi <red> <clave>` por la consola);
   - `pytest -m phase5` y la app en el móvil.
+
+### Fase 7 (7 de noviembre de 2026; primera parte)
+
+- **Batería en el estado:** `pmu_battery()` (AXP2101) añade al JSON `bat` (%, −1 sin batería), `bmv` (mV), `chg` (cargando) y `usb`. La página de control muestra una línea «Batería» solo si el reloj la manda: en el C6 no sale. Medido: 100 %, 4,18 V con USB.
+- **Panel en reposo con la pantalla apagada:** `lcd_sleep()` (nuevo en `lcd.h`; en el C6 no hace nada). Cuando `main.c` deja de dibujar porque la pantalla se ha apagado, el CO5300 recibe «display off» y «sleep in». Al despertar, «sleep out», los 120 ms que pide y «display on», antes del primer fotograma. Lo hace la tarea de envío, que es la única que habla con el panel.
+- **Levantar la muñeca** (`imu_qmi8658.c`, `BOARD_HAS_IMU`, ajuste `raise`, activado por defecto, con interruptor en la página solo si el reloj lo manda):
+  - QMI8658 con solo el acelerómetro, ±4 g a 21 Hz en bajo consumo.
+  - Con la pantalla apagada se lee unas 25 veces por segundo. Enciende si la pantalla queda mirando hacia arriba (z > 0,7 g durante 3 muestras) y en los últimos 1,2 s no lo estaba (z < 0,3 g).
+  - Ejes: con la placa plana y la pantalla hacia arriba, el chip da z = −1 g, así que en `BOARD_IMU_MAP` z va con el signo cambiado. x e y están sin comprobar; para este gesto no hacen falta.
+  - Comprobado: quieta sobre la mesa no se enciende sola (15 s).
+- **Táctil:** el FT3168 a veces no responde a una lectura (unas pocas veces por minuto). Ahora una lectura fallida conserva el último estado, para no partir un deslizamiento, y los fallos se resumen como mucho una vez por minuto. Los mensajes de error de `i2c.master` de ESP-IDF están silenciados en esta placa.
+- **Pendiente:**
+  - con el dueño: el gesto de levantar la muñeca, ajustando los umbrales si hace falta;
+  - medir el consumo y las horas de batería con un uso normal;
+  - apagar con el botón PWR (AXP2101);
+  - decidir si se apagan tensiones del AXP2101 que no se usen (hace falta el esquema);
+  - sueño ligero del procesador con la pantalla apagada, que con las dos radios encendidas hay que medir;
+  - el nivel de batería en las esferas (con el rediseño vertical, fase 9);
+  - el riesgo de quemado del AMOLED: desplazar el contenido unos píxeles de vez en cuando.
 
 ## Cómo trabajar
 

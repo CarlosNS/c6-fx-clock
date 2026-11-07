@@ -28,6 +28,9 @@
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
+#if BOARD_HAS_IMU
+#include "imu.h"
+#endif
 #if BOARD_HAS_TOUCH
 #include "lcd_co5300.h"
 #include "control.h"
@@ -63,6 +66,7 @@ app_state_t g_app = {
     .night_bri = 10,
     .wake_secs = 10,
     .classic_hue = 146,  // deep green
+    .raise_wake = 1,
     .dbg_h = -1,
     .pairing_code = -1,
 };
@@ -332,6 +336,29 @@ static void poll_touch(uint32_t now)
 }
 #endif
 
+#if BOARD_HAS_IMU
+// Raise to wake, checked while the screen is off (about 25 times a second). The screen comes on when
+// it ends up facing up (z over 0.7 g for 3 samples in a row) after not facing up within the last
+// 1.2 s (z under 0.3 g): turning the wrist to look. A watch lying still on the table never triggers.
+#define RAISE_UP_MG 700
+#define RAISE_AWAY_MG 300
+#define RAISE_WINDOW_MS 1200
+
+static void poll_raise(uint32_t now)
+{
+    static uint32_t away_t;
+    static int up_count;
+    int x, y, z;
+    if (!g_app.raise_wake || !imu_read(&x, &y, &z)) return;
+    if (z < RAISE_AWAY_MG) away_t = now ? now : 1;
+    up_count = z > RAISE_UP_MG ? up_count + 1 : 0;
+    if (up_count >= 3 && away_t && now - away_t < RAISE_WINDOW_MS) {
+        away_t = 0;
+        app_wake();
+    }
+}
+#endif
+
 void app_main(void)
 {
     board_init();
@@ -407,7 +434,7 @@ void app_main(void)
 
     int cur = -1, frames = 0, cur_bri = -1, render_max = 0, fade = 1000;
     int64_t render_sum = 0;
-    bool confirmed = false;
+    bool confirmed = false, panel_asleep = false;
     uint32_t last = now_ms(), fx_since = last, fps_t = last, led_t = last, anim_t = 0, dirty_t = 0;
     int64_t next_frame = esp_timer_get_time();
     for (;;) {
@@ -457,7 +484,14 @@ void app_main(void)
             cur_bri = eff;
         }
         if (!awake && fade == 0) {  // asleep: no rendering at all, just watch the button
+            if (!panel_asleep) {
+                lcd_sleep(true);
+                panel_asleep = true;
+            }
             led_set(0, 0, 0);
+#if BOARD_HAS_IMU
+            poll_raise(now);
+#endif
             if (g_app.dirty) {
                 g_app.dirty = false;
                 settings_save();
@@ -469,6 +503,10 @@ void app_main(void)
             continue;
         }
 
+        if (panel_asleep) {
+            lcd_sleep(false);
+            panel_asleep = false;
+        }
         uint32_t sdt = dt * g_app.speed / 100;
         anim_t += sdt;
         uint16_t *fb = lcd_fb();

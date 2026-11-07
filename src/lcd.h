@@ -29,6 +29,9 @@ uint16_t *lcd_fb(void);
 // Sends the current framebuffer to the panel and switches to the other buffer
 void lcd_flush(void);
 void lcd_set_brightness(int percent);
+// Puts the panel to sleep while the screen is off (saves power on the AMOLED; nothing on the C6, whose
+// backlight is simply off) and wakes it before the next frame
+void lcd_sleep(bool sleep);
 // Frame most recently sent to the panel (for screenshots; only stable while rendering is paused)
 const uint16_t *lcd_last_frame(void);
 // Switches to the landscape orientation (C6: by hardware; S3: rotated while sending). Waits for
