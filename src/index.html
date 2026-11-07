@@ -205,7 +205,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 <script src="transport.js"></script>
 <script>
 // Face catalogue comes from the firmware (/faces): one source of truth
-let FX=[],GROUPS=[];
+let FX=[],GROUPS=[],BOARD='c6lcd';  // BOARD: which entry of the update manifest is this clock's
 const $=id=>document.getElementById(id);
 let cur=-1,lastUser=0,synced=false;
 // The link (Wi-Fi, Web Bluetooth or the Android app) comes from transport.js
@@ -276,7 +276,7 @@ $('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)r
 async function poll(){try{show(await L.request('status'))}catch(e){}}
 let tick=null;
 function show(s){
- $('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);
+ BOARD=s.board||'c6lcd';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);
  if(s.bat!==undefined){$('batrow').hidden=false;$('bat').innerHTML=s.bat<0?(s.usb?'Sin batería · USB':'--'):`<b>${s.bat} %</b>`+(s.chg?' · cargando':s.usb?' · USB':'')+(s.bmv>0?` · ${(s.bmv/1000).toFixed(2)} V`:'')}tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
  mode=s.mode;$('wgo').textContent=mode==='wifi'?'Conectar el reloj a esta red':'Guardar esta red para las actualizaciones';
  $('wst').innerHTML=mode!=='wifi'?(s.ssid?`Red guardada: <b>${s.ssid}</b>. El reloj solo la usa para actualizarse.`:'Sin red guardada: hace falta para que el reloj se actualice.')
@@ -308,8 +308,11 @@ function updStatus(s){const u=s.upd;if(!u)return;
  if(L.kind==='android'&&!autoUpd&&s.ver){autoUpd=true;updCheck()}}  // the app looks by itself on opening
 async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;
  try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json(),ver=$('ver').textContent;
-  if(m.version===ver){$('updst').innerHTML=`Tienes la última versión (<b>${ver}</b>)`;return}
-  offer=m;$('updst').innerHTML=`Disponible la <b>${m.version}</b> (tienes la ${ver})${m.notes?': '+m.notes:''}`;$('updgo').textContent='Actualizar a la '+m.version;$('updgo').classList.remove('hide')}
+  // The C6 image is the manifest's top level (as always); other boards have theirs under boards.<id>
+  const e=BOARD==='c6lcd'?m:(m.boards||{})[BOARD];
+  if(!e){$('updst').textContent='Aún no hay versiones publicadas para esta placa';return}
+  if(e.version===ver){$('updst').innerHTML=`Tienes la última versión (<b>${ver}</b>)`;return}
+  offer=e;$('updst').innerHTML=`Disponible la <b>${e.version}</b> (tienes la ${ver})${m.notes?': '+m.notes:''}`;$('updgo').textContent='Actualizar a la '+e.version;$('updgo').classList.remove('hide')}
  catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
 $('updgo').onclick=()=>{if(!offer)return;

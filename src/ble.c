@@ -1,4 +1,5 @@
 #include "ble.h"
+#include "board.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -153,7 +154,7 @@ static void send_info(void)
     char buf[400], upd[128];
     if (!update_result_json(upd, sizeof(upd))) strcpy(upd, "{}");
     snprintf(buf, sizeof(buf),
-             "{\"t\":\"info\",\"ver\":\"%s\",\"mode\":\"%s\",\"part\":\"%s\",\"name\":\"%s\","
+             "{\"t\":\"info\",\"ver\":\"%s\",\"board\":\"" BOARD_ID "\",\"mode\":\"%s\",\"part\":\"%s\",\"name\":\"%s\","
              "\"sync\":{\"last\":%lld,\"count\":%lu},\"heap\":%u,\"upd\":%s}",
              esp_app_get_description()->version, boot_mode_name(boot_mode()), ota_running_label(), s_name,
              (long long)s_sync_last, (unsigned long)s_sync_count, (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), upd);

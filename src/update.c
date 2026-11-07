@@ -1,4 +1,5 @@
 #include "update.h"
+#include "board.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,7 +166,7 @@ static void close_url(esp_http_client_handle_t c)
 void update_run(void)
 {
     // Buffers from the heap, not static: static RAM would be lost in every other mode too
-    char *url = malloc(URL_MAX), *body = malloc(1024), *img_url = malloc(URL_MAX);
+    char *url = malloc(URL_MAX), *body = malloc(4096), *img_url = malloc(URL_MAX);
     uint8_t *chunk = malloc(CHUNK);
     char version[32], sha_hex[65];
     if (!url || !body || !img_url || !chunk) finish("no_internet", NULL, "sin memoria");
@@ -193,13 +194,21 @@ void update_run(void)
     int64_t len = 0;
     esp_http_client_handle_t c = open_url(url, &status, &len);
     if (!c) finish("no_internet", NULL, "sin internet");
-    int n = status == 200 ? esp_http_client_read_response(c, body, 1023) : -1;
+    // Clocks up to 3.0.0 read at most 1023 bytes: tools/release.py keeps the manifest under that
+    int n = status == 200 ? esp_http_client_read_response(c, body, 4095) : -1;
     close_url(c);
     if (n <= 0) finish("bad_manifest", NULL, "manifiesto no valido");
     body[n] = 0;
     cJSON *m = cJSON_Parse(body);
-    const cJSON *jv = cJSON_GetObjectItem(m, "version"), *ju = cJSON_GetObjectItem(m, "url");
-    const cJSON *js = cJSON_GetObjectItem(m, "size"), *jh = cJSON_GetObjectItem(m, "sha256");
+    // This board's entry: the top level for the C6 (as the manifest has always been), boards.<id> for
+    // the others. A manifest without one has nothing for this board: never try another board's image.
+    const cJSON *e = strcmp(BOARD_ID, "c6lcd") == 0 ? m : cJSON_GetObjectItem(cJSON_GetObjectItem(m, "boards"), BOARD_ID);
+    if (m && !e) {
+        cJSON_Delete(m);
+        finish("up_to_date", running, "no hay version para esta placa");
+    }
+    const cJSON *jv = cJSON_GetObjectItem(e, "version"), *ju = cJSON_GetObjectItem(e, "url");
+    const cJSON *js = cJSON_GetObjectItem(e, "size"), *jh = cJSON_GetObjectItem(e, "sha256");
     bool ok = cJSON_IsString(jv) && cJSON_IsString(ju) && cJSON_IsNumber(js) && cJSON_IsString(jh) &&
               strlen(jh->valuestring) == 64 && strlen(ju->valuestring) < URL_MAX && strlen(jv->valuestring) < sizeof(version);
     size_t size = 0;

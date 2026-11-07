@@ -5,6 +5,8 @@
 
 #define BOARD_NAME "Waveshare ESP32-S3-Touch-AMOLED-2.06"
 #define BOARD_CHIP "ESP32-S3"
+// Board id in the status and in the update manifest (its image is under manifest.boards.s3amoled)
+#define BOARD_ID "s3amoled"
 
 // ---- Capabilities ----
 // 8 MB of PSRAM: framebuffers live there, so both radio stacks fit at once (phase 6 checks it)

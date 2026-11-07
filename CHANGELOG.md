@@ -5,6 +5,7 @@
 > **Esferas retiradas: El grito, Acuario y Cuento.** Quedan 21 esferas. Sus números (10, 16 y 20) no se reutilizan; si un reloj tenía elegida una de ellas, pasa a la siguiente.
 
 - Placa ESP32-S3-Touch-AMOLED-2.06 (en desarrollo, ver `docs/PLAN-s3.md`): el firmware completo funciona en modo compatibilidad, y la hora se guarda en su reloj de hardware (PCF85063), que la conserva con el reloj apagado. En esta placa desaparece la espera de 60 s del Bluetooth al arrancar. Su pantalla táctil enciende la pantalla, cambia de esfera al deslizar el dedo y mueve las esferas interactivas. Usa el WiFi y el Bluetooth a la vez, sin modos que cambiar. La página de control muestra su batería; la pantalla se enciende al levantar la muñeca (se puede desactivar) y el panel se pone en reposo cuando está apagada.
+- Actualizaciones por placa: el manifiesto conserva las claves del C6 y añade `boards.s3amoled`; el instalador web elige la imagen según el chip; la página y la app ofrecen la versión de la placa del reloj. El estado y el mensaje `info` dicen la placa (`board`).
 - El catálogo de esferas (`/faces`, `get faces`) sigue teniendo una entrada por número; las retiradas llevan `"x":1` y grupo `-1`, y ninguna versión de la app ni de la página las muestra.
 
 ## 3.0.0 — preparada, sin publicar

@@ -2,7 +2,8 @@
 and puts everything on GitHub Pages (branch gh-pages), where the clocks look for updates:
 
     https://carlosns.github.io/c6-fx-clock/manifest.json       what the app and the clock read
-    https://carlosns.github.io/c6-fx-clock/c6-fx-clock-ota.bin the image itself
+    https://carlosns.github.io/c6-fx-clock/c6-fx-clock-ota.bin the C6 image (top-level manifest keys)
+    https://carlosns.github.io/c6-fx-clock/s3-fx-clock-ota.bin the S3 image (manifest boards.s3amoled)
     https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk    the Android app (it updates itself)
     https://carlosns.github.io/c6-fx-clock/flasher/            the web installer (USB, first install)
 
@@ -31,6 +32,11 @@ OUT = os.path.join(ROOT, "release")
 APP_APK = "c6-clock-app.apk"  # fixed name on Pages, so the manifest URL never changes
 GH = shutil.which("gh") or os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "gh", "bin", "gh.exe")
 PIO = shutil.which("pio") or os.path.join(os.path.expanduser("~"), ".platformio", "penv", "Scripts", "pio.exe")
+# Clocks up to 3.0.0 read at most 1023 bytes of manifest (src/update.c): a longer one would leave every
+# installed C6 unable to update. Written compact, and checked before anything is published.
+MANIFEST_MAX = 1000
+# Boards besides the C6 (whose image stays in the manifest's top-level keys): env -> OTA image name
+OTHER_BOARDS = {"s3amoled": "s3-fx-clock-ota.bin"}
 
 
 def run(*cmd, cwd=ROOT, capture=False):
@@ -50,11 +56,17 @@ def app_version():
     return re.search(r'versionName = "([^"]+)"', text).group(1), int(re.search(r"versionCode = (\d+)", text).group(1))
 
 
-def manifest(version, notes, ota, apk=None):
-    data = open(ota, "rb").read()
-    m = {"project": "c6-fx-clock", "version": version, "url": f"{PAGES}/c6-fx-clock-ota.bin", "size": len(data),
-         "sha256": hashlib.sha256(data).hexdigest(), "notes": notes,
+def image_entry(version, path):
+    data = open(path, "rb").read()
+    return {"version": version, "url": f"{PAGES}/{os.path.basename(path)}", "size": len(data),
+            "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def manifest(version, notes, ota, apk=None, others=None):
+    m = {"project": "c6-fx-clock", **image_entry(version, ota), "notes": notes,
          "date": datetime.date.today().isoformat()}
+    if others:  # {board id: OTA image path}
+        m["boards"] = {b: image_entry(version, p) for b, p in others.items()}
     if apk:  # the app updates itself from here too (it compares versionCode)
         name, code = app_version()
         blob = open(apk, "rb").read()
@@ -65,6 +77,8 @@ def manifest(version, notes, ota, apk=None):
 
 def build(with_app):
     run(PIO, "run", "-e", "c6lcd")
+    for env in OTHER_BOARDS:
+        run(PIO, "run", "-e", env)
     run(sys.executable, "tools/build_webflasher.py")
     if with_app:
         gradlew = os.path.join(ROOT, "android", "gradlew.bat" if os.name == "nt" else "gradlew")
@@ -80,17 +94,28 @@ def stage(version, notes, with_app):
     web = os.path.join(ROOT, "webflasher")
     ota = os.path.join(web, "c6-fx-clock-ota.bin")
     apk = os.path.join(ROOT, "android", "app", "build", "outputs", "apk", "release", "app-release.apk") if with_app else None
-    m = manifest(version, notes, ota, apk)
-    shutil.copy(ota, pages)
+    others = {b: os.path.join(web, name) for b, name in OTHER_BOARDS.items()}
+    for path in others.values():
+        if not os.path.exists(path):
+            sys.exit(f"Missing {path}: build every board (without --no-build) first")
+    m = manifest(version, notes, ota, apk, others)
+    text = json.dumps(m, ensure_ascii=False, separators=(",", ":"))
+    if len(text.encode("utf-8")) > MANIFEST_MAX:
+        sys.exit(f"manifest.json takes {len(text.encode('utf-8'))} bytes, over {MANIFEST_MAX}: installed C6 clocks "
+                 "could not read it. Shorten --notes.")
+    full_images = ["c6-fx-clock.bin"] + [n.replace("-ota", "") for n in OTHER_BOARDS.values()]
+    for path in [ota, *others.values()]:
+        shutil.copy(path, pages)
+        shutil.copy(path, assets)
     if apk:
         shutil.copy(apk, os.path.join(pages, APP_APK))
-    for f in ("index.html", "manifest.json", "c6-fx-clock.bin"):
+    for f in ["index.html", "manifest.json", *full_images]:
         shutil.copy(os.path.join(web, f), os.path.join(pages, "flasher"))
     with open(os.path.join(pages, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
-        json.dump(m, f, ensure_ascii=False, indent=1)
+        f.write(text)
     open(os.path.join(pages, ".nojekyll"), "w").close()
-    shutil.copy(ota, assets)
-    shutil.copy(os.path.join(web, "c6-fx-clock.bin"), assets)
+    for f in full_images:
+        shutil.copy(os.path.join(web, f), assets)
     if apk:
         shutil.copy(apk, os.path.join(assets, f"c6-clock-app-{m['app']['version']}.apk"))
     return m
@@ -124,7 +149,7 @@ def publish_release(version, notes):
     assets = [os.path.join(OUT, "assets", f) for f in sorted(os.listdir(os.path.join(OUT, "assets")))]
     body = f"{notes}\n\nLos relojes con la app se actualizan solos desde el móvil (Actualizaciones → Buscar actualización). " \
            f"Instalación por USB: {PAGES}/flasher/"
-    run(GH, "release", "create", f"v{version}", *assets, "--repo", REPO, "--title", f"C6 FX Clock {version}", "--notes", body)
+    run(GH, "release", "create", f"v{version}", *assets, "--repo", REPO, "--title", f"FX Clock {version}", "--notes", body)
 
 
 def main():

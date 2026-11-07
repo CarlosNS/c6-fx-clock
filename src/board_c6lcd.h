@@ -5,6 +5,9 @@
 
 #define BOARD_NAME "Waveshare ESP32-C6-LCD-1.47"
 #define BOARD_CHIP "ESP32-C6"
+// Board id in the status and in the update manifest. The C6 reads the manifest's top-level keys, as
+// every clock installed before the S3 existed does; other boards read manifest.boards.<id>
+#define BOARD_ID "c6lcd"
 
 // ---- Capabilities ----
 // Wi-Fi and Bluetooth can't run at the same time here: two 110 KB framebuffers leave room for one

@@ -39,7 +39,7 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 PIO="$USERPROFILE/.platformio/penv/Scripts/pio.exe"
 "$PIO" run -e c6lcd                 # compilar (la primera vez tarda unos 2 min)
 "$PIO" run -e c6lcd -t upload       # flashear por COM5
-python tools/build_webflasher.py    # después de cada cambio: imágenes para el instalador web y los tests de actualización
+python tools/build_webflasher.py    # después de cada cambio: imágenes de cada placa compilada (instalador web, tests de actualización)
 cd tests && python -m pytest -m now # unitarios (16) y web
 "$PIO" run -e s3amoled              # placa S3 AMOLED (rama s3); -t upload flashea por COM7
 python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
@@ -71,6 +71,7 @@ python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
 - **El C6 no tiene coma flotante (FPU):** las esferas usan enteros y tablas (`sin_q14`).
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
 - **La pantalla de la S3 tiene las esquinas redondeadas**, con un radio de unos 120 px (`BOARD_LCD_CORNER_R`), y los 2 px exteriores de cada borde pueden no verse. Ten en cuenta siempre esa zona perdida al colocar cualquier cosa: esferas, textos, avisos, la superposición `ovl` y la clave Bluetooth.
+- **Manifiesto de actualizaciones:** las claves de arriba son del C6 y no se tocan; cada placa nueva va en `boards.<BOARD_ID>`. Los relojes hasta la 3.0.0 solo leen 1023 bytes: `release.py` lo comprueba.
 - **No renombres el repositorio:** los relojes instalados y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`, y un cambio de nombre rompería esa dirección de GitHub Pages.
 
 ## Estado (noviembre de 2026)

@@ -86,6 +86,11 @@ class ProtocolTest {
         assertNull(Firmware.newer(JSONObject("""{"version":"2.0.0"}"""), "2.0.0"))
         assertNull(Firmware.newer(JSONObject("""{"version":"2.1.0"}"""), ""))
         assertNull(Firmware.newer(JSONObject("{}"), "2.0.0"))
+        // Each board reads its own image: the C6 the top level, the others boards.<id>
+        val both = JSONObject("""{"version":"2.0.0","boards":{"s3amoled":{"version":"3.0.0"}}}""")
+        assertNull(Firmware.newer(both, "2.0.0", "c6lcd"))
+        assertEquals("3.0.0", Firmware.newer(both, "2.0.0", "s3amoled"))
+        assertNull(Firmware.newer(JSONObject("""{"version":"9.0.0"}"""), "2.0.0", "s3amoled"))
     }
 
     @Test fun appUpdateComparesVersionCodeAndNeedsACompleteEntry() {

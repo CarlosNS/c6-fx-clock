@@ -14,6 +14,8 @@ suspend fun ClockChannel.request(what: String) = exchange("get $what", what)
 
 data class SyncResult(
     val version: String,
+    /** Board id ("c6lcd", "s3amoled"); empty from firmware older than the S3 port, which means C6. */
+    val board: String,
     val syncCount: Int,
     val weatherSent: Boolean,
     val place: String,
@@ -40,6 +42,7 @@ class SyncSession(
         link.exchange("sync done", "ack") { it.optString("cmd") == "sync" }
         return SyncResult(
             version = info.optString("ver"),
+            board = info.optString("board"),
             syncCount = info.optJSONObject("sync")?.optInt("count") ?: 0,
             weatherSent = wx != null,
             place = status.optString("wloc"),

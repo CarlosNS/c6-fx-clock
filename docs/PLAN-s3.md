@@ -108,7 +108,7 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
 | 5 ⏳ | **Táctil:** gestos para cambiar de esfera, encender y esferas interactivas | Deslizar cambia de esfera; las interactivas responden al dedo. Programado; falta que el dueño lo pruebe con el dedo |
 | 6 ⏳ | **Bluetooth y WiFi a la vez** (si cabe), y la app funcionando con la placa nueva | `pytest -m phase2`, `phase5` y la app pasan contra la S3. Las dos radios funcionan a la vez; faltan los tests (dongle desconectado) y la app |
 | 7 ⏳ | **Energía:** batería, sueño, encender al levantar la muñeca | Horas de batería medidas con un uso normal. Programado lo básico; falta medir y probar con el dueño |
-| 8 | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen |
+| 8 ⏳ | **Actualizaciones por placa:** manifiesto, `release.py` e instalador web | Un C6 y una S3 se actualizan cada uno con su imagen. Preparado en local; falta subir la rama y probarlo de verdad |
 | 9 | **Esferas a resolución completa**, una a una | Tantas como se quiera; la guía «Crear una esfera» explica las dos placas |
 
 ## Notas de las fases
@@ -224,6 +224,22 @@ Vienen todas encendidas de fábrica, así que la pantalla y los chips funcionan 
   - sueño ligero del procesador con la pantalla apagada, que con las dos radios encendidas hay que medir;
   - el nivel de batería en las esferas (con el rediseño vertical, fase 9);
   - el riesgo de quemado del AMOLED: desplazar el contenido unos píxeles de vez en cuando.
+
+### Fase 8 (7 de noviembre de 2026; preparada en local, sin publicar)
+
+- **Manifiesto** (`manifest.json` en Pages):
+  - Las claves de arriba (`version`, `url`, `size`, `sha256`) siguen siendo las del C6, sin tocar: los C6 instalados no notan nada.
+  - La S3 tiene las suyas en `boards.s3amoled`. Cada placa tiene `BOARD_ID` (`c6lcd`, `s3amoled`), que también va en el estado (`board`) y en el mensaje `info` del Bluetooth.
+  - `update.c` coge la entrada de su placa. Si no hay ninguna para ella, termina como «al día» y nunca intenta instalar la imagen de otra placa, que además ESP-IDF rechazaría por ser de otro chip.
+- **Límite de 1023 bytes:** los relojes hasta la 3.0.0 leen como mucho 1023 bytes de manifiesto. `release.py` lo escribe compacto y se para si pasa de 1000. Con las dos placas y la app ocupa unos 624 bytes, así que quedan unos 376 para las notas. El firmware nuevo lee hasta 4 KB.
+- **`tools/build_webflasher.py`:** hace las imágenes de cada placa compilada (`--board` para una sola): `c6-fx-clock(-ota).bin` (mismos nombres que antes) y `s3-fx-clock(-ota).bin`. Lee de cada tabla de particiones dónde van `otadata` y la app. Se ejecuta con el `python` del sistema, que trae esptool.
+- **Instalador web:** un solo `manifest.json` con una imagen por familia de chip (ESP32-C6 y ESP32-S3). ESP Web Tools instala la del chip que se conecta, y la página lo explica.
+- **`tools/release.py`:** compila las dos placas, añade `boards.s3amoled` y copia las imágenes de la S3 a Pages, al instalador y a la release, que pasa a llamarse «FX Clock X.Y.Z». Probado con `--dry-run --no-build --no-app`: 432 bytes de manifiesto.
+- **Página de control y app:** ofrecen la versión de la entrada de su placa. La app guarda la placa del reloj emparejado (`clockBoard`, del mensaje `info`); un reloj con firmware antiguo no manda placa y cuenta como C6. Hay tests unitarios nuevos en `ProtocolTest`. La app compila y pasa sus tests, pero está sin instalar en el móvil.
+- **Pendiente (con el dueño, al subir la rama):**
+  - probar la actualización de verdad en las dos placas: la S3 necesita la WiFi de casa y el C6 estar conectado;
+  - `tests/update` con un manifiesto que tenga `boards`;
+  - publicar la versión siguiente con `release.py`, que necesita permiso expreso.
 
 ## Cómo trabajar
 

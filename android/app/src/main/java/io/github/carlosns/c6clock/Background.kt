@@ -45,6 +45,10 @@ class Store(context: Context) {
     var clockVersion: String
         get() = p.getString("clockVersion", "") ?: ""
         set(v) = p.edit().putString("clockVersion", v).apply()
+    /** Board of the paired clock, which picks its image in the update manifest. */
+    var clockBoard: String
+        get() = p.getString("clockBoard", "") ?: ""
+        set(v) = p.edit().putString("clockBoard", v).apply()
     /** Newest firmware already announced, so each version is notified once. */
     var notifiedVersion: String
         get() = p.getString("notified", "") ?: ""
@@ -89,9 +93,14 @@ object Firmware {
         return 0
     }
 
-    /** The newer version on offer for a clock running [running], or null. */
-    fun newer(manifest: JSONObject, running: String): String? =
-        manifest.optString("version").takeIf { it.isNotEmpty() && running.isNotEmpty() && compare(it, running) > 0 }
+    /** This board's image in the manifest: the top level for the C6 (as always, also for an empty board
+     *  id from older firmware), boards.<id> for the others; null if there is none for it. */
+    fun entry(manifest: JSONObject, board: String): JSONObject? =
+        if (board.isEmpty() || board == "c6lcd") manifest else manifest.optJSONObject("boards")?.optJSONObject(board)
+
+    /** The newer version on offer for a [board] clock running [running], or null. */
+    fun newer(manifest: JSONObject, running: String, board: String = ""): String? =
+        entry(manifest, board)?.optString("version")?.takeIf { it.isNotEmpty() && running.isNotEmpty() && compare(it, running) > 0 }
 
     /** The manifest's "app" block when it is newer than the installed [versionCode] and complete, or null. */
     fun newerApp(manifest: JSONObject, versionCode: Long): JSONObject? = manifest.optJSONObject("app")?.takeIf {
@@ -116,6 +125,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             val r = SyncSession(link, Net::weatherCommand).run()
             store.lastSyncMs = System.currentTimeMillis()
             store.clockVersion = r.version
+            store.clockBoard = r.board
             store.lastResult = "ok" + if (r.weatherSent) "" else " (sin tiempo: no hay internet)"
             Log.i(TAG, "sync ok: ${r.version}, ${r.place}, #${r.syncCount}")
         } catch (e: Exception) {
@@ -132,7 +142,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     private suspend fun checkUpdates(store: Store) {
         val manifest = runCatching { withContext(Dispatchers.IO) { Net.getJson(Firmware.manifestUrl) } }.getOrNull() ?: return
         val running = store.clockVersion
-        Firmware.newer(manifest, running)?.takeIf { it != store.notifiedVersion }?.let {
+        Firmware.newer(manifest, running, store.clockBoard)?.takeIf { it != store.notifiedVersion }?.let {
             store.notifiedVersion = it
             Notify.newFirmware(applicationContext, it, running)
         }
