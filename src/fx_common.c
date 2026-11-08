@@ -8,7 +8,7 @@
 #include "gfx.h"
 
 const fx_t fx_list[FX_COUNT] = {
-    {.name = "PLASMA", .landscape = false, .enter = plasma_enter, .render = plasma_render,
+    {.name = "PLASMA", .native = true, .enter = plasma_enter, .render = plasma_render,
      .label = "Plasma", .group = FX_G_EFFECTS, .hint = "Arrastra para remover el plasma",
      .desc = "Plasma de colores en movimiento continuo, con la hora en grande sobre un panel translúcido."},
     {.name = "CUBO 3D", .landscape = false, .enter = cube_enter, .render = cube_render,

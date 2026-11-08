@@ -285,24 +285,35 @@ static void quick_event(const ui_event_t *e)
 static bool s_to_face;
 static int s_lcx, s_lcy;
 
+// Where a touch lands on the face: native faces use panel pixels, old ones their enlarged canvas
+static bool face_point(int x, int y, int *cx, int *cy)
+{
+    if (fx_list[g_app.fx].native) {
+        *cx = x;
+        *cy = y;
+        return true;
+    }
+    return lcd_panel_to_canvas(x, y, cx, cy);
+}
+static int face_w(void) { return fx_list[g_app.fx].native ? FW : fx_list[g_app.fx].landscape ? LAND_W : LCD_W; }
+static int face_h(void) { return fx_list[g_app.fx].native ? FH : fx_list[g_app.fx].landscape ? LAND_H : LCD_H; }
+
 static void face_event(const ui_event_t *e)
 {
     int cx, cy;
     switch (e->type) {
     case EV_DOWN: {
-        bool inside = lcd_panel_to_canvas(e->x, e->y, &cx, &cy);
+        bool inside = face_point(e->x, e->y, &cx, &cy);
         s_to_face = fx_list[g_app.fx].hint && inside && !e->edge;
         s_lcx = cx;
         s_lcy = cy;
-        int cw = fx_list[g_app.fx].landscape ? LAND_W : LCD_W, ch = fx_list[g_app.fx].landscape ? LAND_H : LCD_H;
-        if (s_to_face) app_drag(cx * 1000 / cw, cy * 1000 / ch, 0, 0);
+        if (s_to_face) app_drag(cx * 1000 / face_w(), cy * 1000 / face_h(), 0, 0);
         break;
     }
     case EV_MOVE:
         if (s_to_face) {
-            lcd_panel_to_canvas(e->x, e->y, &cx, &cy);
-            int cw = fx_list[g_app.fx].landscape ? LAND_W : LCD_W, ch = fx_list[g_app.fx].landscape ? LAND_H : LCD_H;
-            app_drag(cx * 1000 / cw, cy * 1000 / ch, cx - s_lcx, cy - s_lcy);
+            face_point(e->x, e->y, &cx, &cy);
+            app_drag(cx * 1000 / face_w(), cy * 1000 / face_h(), cx - s_lcx, cy - s_lcy);
             s_lcx = cx;
             s_lcy = cy;
         }

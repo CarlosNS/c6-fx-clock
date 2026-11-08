@@ -17,7 +17,6 @@
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_heap_caps.h"
-#include "esp_lcd_panel_io.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -30,8 +29,6 @@
 // 0x32 writes pixel data on 4 lines.
 #define LCD_HOST SPI2_HOST
 #define LCD_PCLK (80 * 1000 * 1000)
-#define CMD(c) ((0x02u << 24) | ((uint32_t)(c) << 8))
-#define PIXELS(c) ((0x32u << 24) | ((uint32_t)(c) << 8))
 #define PW BOARD_PANEL_W
 #define PH BOARD_PANEL_H
 #define FB_BYTES (LCD_W * LCD_H * sizeof(uint16_t))
@@ -45,7 +42,6 @@
 #define BIT_POWER 4
 
 static const char *TAG = "co5300";
-static esp_lcd_panel_io_handle_t s_io;
 static SemaphoreHandle_t s_idle;     // given when the sender has finished the last frame
 static TaskHandle_t s_sender;
 // Frames come in three kinds: the 172x320 canvas (portrait or landscape, enlarged while sending) or
@@ -156,33 +152,78 @@ static void build_strip(uint16_t *dst, const uint16_t *fb, int y0, int n, bool l
     }
 }
 
-static void set_window(int y, int h)
+// ---------------------------------------------------------------- QSPI transport
+//
+// Driven straight through spi_master: every command is opcode 0x02 + 24-bit address (0x00, cmd, 0x00)
+// + parameters on one line; pixels are opcode 0x32 + address 0x002C00 + data on four lines.
+// A frame is ONE pixel write over the whole window: the bus is held and CS stays low from the header
+// to the last strip, and the strips are queued back to back. (esp_lcd's panel IO, used before, mixed
+// polled window commands with queued strips and now and then never came back: the watch froze.)
+
+static spi_device_handle_t s_dev;
+static spi_transaction_ext_t s_tr[2];
+
+static void panel_cmd(uint8_t cmd, const uint8_t *data, int len)
 {
-    int x0 = BOARD_LCD_X_GAP, x1 = x0 + PW - 1, y1 = y + h - 1;
-    uint8_t col[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF};
-    uint8_t row[4] = {y >> 8, y & 0xFF, y1 >> 8, y1 & 0xFF};
-    // tx_param first waits for the strip still on the wire, so the next strip can be built meanwhile
-    esp_lcd_panel_io_tx_param(s_io, CMD(0x2A), col, 4);
-    esp_lcd_panel_io_tx_param(s_io, CMD(0x2B), row, 4);
+    spi_transaction_t t = {
+        .cmd = 0x02,
+        .addr = (uint32_t)cmd << 8,
+        .length = len * 8,
+    };
+    if (len <= 4) {
+        t.flags = SPI_TRANS_USE_TXDATA;
+        for (int i = 0; i < len; i++) t.tx_data[i] = data[i];
+    } else {
+        t.tx_buffer = data;
+    }
+    spi_device_polling_transmit(s_dev, &t);
 }
 
 static void send_frame(const uint16_t *fb, int kind)
 {
     int64_t t0 = esp_timer_get_time();
-    for (int y = 0, k = 0; y < PH; y += STRIP_LINES, k ^= 1) {
-        int n = PH - y < STRIP_LINES ? PH - y : STRIP_LINES;
-        // The strip sent two rounds ago has finished: set_window of the last round waited for it
+    const int x0 = BOARD_LCD_X_GAP, x1 = x0 + PW - 1;
+    uint8_t col[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF};
+    uint8_t row[4] = {0, 0, (PH - 1) >> 8, (PH - 1) & 0xFF};
+    spi_device_acquire_bus(s_dev, portMAX_DELAY);
+    panel_cmd(0x2A, col, 4);
+    panel_cmd(0x2B, row, 4);
+    int inflight = 0, strips = (PH + STRIP_LINES - 1) / STRIP_LINES;
+    for (int i = 0, y = 0; i < strips; i++, y += STRIP_LINES) {
+        int k = i & 1, n = PH - y < STRIP_LINES ? PH - y : STRIP_LINES;
+        // Buffer k was used two strips ago: wait for that strip before filling it again
+        if (inflight == 2) {
+            spi_transaction_t *done;
+            STAGE_LCD(4);
+            spi_device_get_trans_result(s_dev, &done, portMAX_DELAY);
+            inflight--;
+        }
         STAGE_LCD(3);
         if (kind == KIND_NATIVE) memcpy(s_strip[k], fb + y * PW, (size_t)n * PW * 2);
         else build_strip(s_strip[k], fb, y, n, kind == KIND_CANVAS_LAND);
-        STAGE_LCD(4);
-        set_window(y, n);
+        spi_transaction_ext_t *t = &s_tr[k];
+        memset(t, 0, sizeof(*t));
+        t->base.length = n * PW * 16;
+        t->base.tx_buffer = s_strip[k];
+        t->base.flags = SPI_TRANS_MODE_QIO | (i < strips - 1 ? SPI_TRANS_CS_KEEP_ACTIVE : 0);
+        if (i == 0) {  // the header opens the pixel write
+            t->base.cmd = 0x32;
+            t->base.addr = 0x2C << 8;
+        } else {       // the rest continue it: no header
+            t->base.flags |= SPI_TRANS_VARIABLE_CMD | SPI_TRANS_VARIABLE_ADDR;
+            t->command_bits = 0;
+            t->address_bits = 0;
+        }
         STAGE_LCD(5);
-        esp_lcd_panel_io_tx_color(s_io, PIXELS(0x2C), s_strip[k], (size_t)n * PW * 2);
+        spi_device_queue_trans(s_dev, &t->base, portMAX_DELAY);
+        inflight++;
     }
-    // A parameter write with no command and no data just waits for the last strip
     STAGE_LCD(6);
-    esp_lcd_panel_io_tx_param(s_io, -1, NULL, 0);
+    while (inflight--) {
+        spi_transaction_t *done;
+        spi_device_get_trans_result(s_dev, &done, portMAX_DELAY);
+    }
+    spi_device_release_bus(s_dev);
     s_send_us = (int)(esp_timer_get_time() - t0);
 }
 
@@ -190,12 +231,12 @@ static void send_frame(const uint16_t *fb, int kind)
 static void set_panel_sleep(bool sleep)
 {
     if (sleep) {
-        esp_lcd_panel_io_tx_param(s_io, CMD(0x28), NULL, 0);
-        esp_lcd_panel_io_tx_param(s_io, CMD(0x10), NULL, 0);
+        panel_cmd(0x28, NULL, 0);
+        panel_cmd(0x10, NULL, 0);
     } else {
-        esp_lcd_panel_io_tx_param(s_io, CMD(0x11), NULL, 0);
+        panel_cmd(0x11, NULL, 0);
         vTaskDelay(pdMS_TO_TICKS(120));
-        esp_lcd_panel_io_tx_param(s_io, CMD(0x29), NULL, 0);
+        panel_cmd(0x29, NULL, 0);
     }
 }
 
@@ -220,7 +261,7 @@ static void sender_task(void *arg)
         uint8_t v = s_brightness;
         STAGE_LCD(7);
         if ((bits & BIT_BRIGHTNESS) && v != applied) {
-            esp_lcd_panel_io_tx_param(s_io, CMD(0x51), &v, 1);
+            panel_cmd(0x51, &v, 1);
             applied = v;
         }
         if (!asleep && s_want_sleep) {
@@ -245,18 +286,16 @@ void lcd_init(int buffers)
         .flags = SPICOMMON_BUSFLAG_QUAD,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &bus, SPI_DMA_CH_AUTO));
-
-    esp_lcd_panel_io_spi_config_t io_cfg = {
-        .cs_gpio_num = BOARD_LCD_CS,
-        .dc_gpio_num = -1,
-        .spi_mode = 0,
-        .pclk_hz = LCD_PCLK,
-        .trans_queue_depth = 4,
-        .lcd_cmd_bits = 32,
-        .lcd_param_bits = 8,
-        .flags = {.quad_mode = 1},
+    spi_device_interface_config_t dev = {
+        .command_bits = 8,
+        .address_bits = 24,
+        .mode = 0,
+        .clock_speed_hz = LCD_PCLK,
+        .spics_io_num = BOARD_LCD_CS,
+        .queue_size = 2,
+        .flags = SPI_DEVICE_HALFDUPLEX,
     };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)LCD_HOST, &io_cfg, &s_io));
+    ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &dev, &s_dev));
 
     gpio_config_t rst = {.pin_bit_mask = 1ULL << BOARD_LCD_RST, .mode = GPIO_MODE_OUTPUT};
     gpio_config(&rst);
@@ -266,7 +305,7 @@ void lcd_init(int buffers)
     vTaskDelay(pdMS_TO_TICKS(150));
     for (size_t i = 0; i < sizeof(s_init) / sizeof(s_init[0]); i++) {
         const init_cmd_t *c = &s_init[i];
-        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(s_io, CMD(c->cmd), c->len ? c->data : NULL, c->len));
+        panel_cmd(c->cmd, c->data, c->len);
         if (c->delay_ms) vTaskDelay(pdMS_TO_TICKS(c->delay_ms));
     }
 

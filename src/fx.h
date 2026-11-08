@@ -27,7 +27,14 @@ typedef struct {
     // Retired face: its code is gone but its number stays taken (clocks save the chosen number), so
     // the list never shifts. The clock skips it and the catalogue sends it with group -1.
     bool retired;
+    // Drawn for Marea's screen: the whole 410x502 panel (FW x FH), corners rounded (BOARD_LCD_CORNER_R).
+    // Faces without it still draw on the old 172x320 canvas, enlarged x1.5.
+    bool native;
 } fx_t;
+
+// Size of a native face
+#define FW LCD_PW
+#define FH LCD_PH
 
 #define FX_COUNT 24
 extern const fx_t fx_list[FX_COUNT];

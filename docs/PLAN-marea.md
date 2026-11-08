@@ -60,11 +60,11 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 | # | Fase | Estado |
 |---|---|---|
 | 1 | Quitar el C6, renombrar a Marea | ✅ |
-| 2 | Base gráfica: modo nativo, fuentes, paneles y componentes | En curso |
-| 3 | Vistas, gestos, barra de estado, ajustes rápidos y lanzador | En curso (sin compilar) |
-| 4 | Apps: cronómetro, linterna, ajustes, selector de esferas, información del sistema | |
-| 5 | Audio (ES8311), alarmas y podómetro | |
-| 6 | Esferas a pantalla completa, una a una | |
+| 2 | Base gráfica: modo nativo, fuentes, paneles y componentes | ✅ |
+| 3 | Vistas, gestos, barra de estado, ajustes rápidos y lanzador | ✅ (falta probarlo con el dedo) |
+| 4 | Apps: cronómetro, linterna, ajustes, selector de esferas, información del sistema | ✅ |
+| 5 | Audio (ES8311), alarmas y podómetro | ✅ (audio y pasos sin probar en la muñeca) |
+| 6 | Esferas a pantalla completa, una a una | En curso |
 | 7 | Sincronización: enlace permanente, llamadas y música (firmware y app) | |
 | 8 | Archivos de la microSD y modo USB | |
 | 9 | README, wiki y CHANGELOG | |
@@ -90,3 +90,19 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
   5. la orden `ui <petición>` en `control.c`, que llama a `sys_request()`;
   6. compilar, flashear y revisar cada pantalla con `GET /screenshot` (el reloj está en 192.168.1.157).
 - Avisar a THIRD-PARTY-NOTICES de las fuentes OFL cuando entren en el firmware.
+
+### Sistema y apps (8 de noviembre de 2026)
+
+- **Funcionando y revisado con capturas** (`GET /screenshot` tras `ui <vista>`):
+  - el lanzador (rejilla de 2 columnas que se desplaza);
+  - los ajustes rápidos (brillo, Bluetooth, silencio, siempre encendida, linterna y batería);
+  - las apps Esferas, Ajustes, Alarmas, Pasos, Cronómetro, Música, Linterna y Archivos.
+- **Sin probar todavía con el dedo ni de oído:** los gestos reales sobre el panel, el audio del ES8311 (la secuencia viene del driver de Espressif), el detector de pasos en la muñeca y la microSD (no consta que haya una tarjeta metida).
+- **El bloqueo del reloj, resuelto:**
+  - con el rastro de `hang.h`, el bucle estaba esperando un fotograma y la tarea de envío, dentro de la orden de ventana de `esp_lcd`, esperando una transferencia que nunca acababa;
+  - pasaba en cuanto una esfera enviaba fotogramas nativos seguidos;
+  - ahora `lcd_co5300.c` usa `spi_master` directamente: una escritura de píxeles por fotograma con el CS activo, y los trozos encolados sin órdenes en medio;
+  - probado: 60 s de Plasma nativa y 30 s de Cubo 3D sin bloqueos.
+- **Rendimiento:** Plasma nativa tarda 36 ms en dibujarse (26 fps): 12 ms de cálculo, 13 ms escribiendo la PSRAM y 10 ms los dígitos de 176 px. Para animaciones a pantalla completa más fluidas habría que dibujar por franjas directamente en RAM interna (pendiente).
+- **Fuentes:** `font_round_xxl` y `font_seg_xxl` (176 px), generadas con `tools/gen_fonts.py`.
+- **Esferas nativas:** `fx_t.native`. Por ahora solo Plasma; las demás siguen en el lienzo ampliado.

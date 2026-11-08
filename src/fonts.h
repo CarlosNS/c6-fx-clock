@@ -14,6 +14,6 @@ typedef struct {
     font_glyph_t glyphs[12];
 } font_t;
 
-extern const font_t font_round_xl, font_round_m, font_round_s;
-extern const font_t font_seg_xl, font_seg_m, font_seg_s;
+extern const font_t font_round_xxl, font_round_xl, font_round_m, font_round_s;  // xxl: 176 px, for full-screen faces
+extern const font_t font_seg_xxl, font_seg_xl, font_seg_m, font_seg_s;
 extern const font_t font_nib_m, font_nib_s;  // calligraphic serif digits (JRPG menus)

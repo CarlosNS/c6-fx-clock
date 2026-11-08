@@ -59,6 +59,8 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
 - **La caché de datos de 64 KB del S3 cuelga la placa al arrancar:** no la actives.
 - **Vigilante:** si el bucle principal pasa 8 s sin avanzar, el reloj se reinicia y al arrancar dice en qué paso estaba (`hang.h`).
+- **Pantalla sin esp_lcd:** `lcd_co5300.c` habla con el panel directamente por `spi_master`. Cada fotograma es una sola escritura de píxeles con el bus tomado y el CS activo de principio a fin. El `esp_lcd_panel_io` de antes, que mezclaba órdenes por sondeo con transferencias encoladas, a veces se quedaba esperando para siempre: ese era el bloqueo del reloj.
+- **La PSRAM es lo lento:** escribir un fotograma completo de 410×502 cuesta unos 13 ms mientras la tarea de envío lo lee. Una esfera animada a pantalla completa ronda los 25–30 fps; las de fondo quieto van sobradas.
 - **El táctil a veces no responde a una lectura:** el driver conserva el último estado; los errores de `i2c.master` están silenciados.
 - **Manifiesto de actualizaciones:** la entrada de Marea es `boards.s3amoled`. Las claves de arriba son de los relojes C6 (2.1.0) y **nunca** se tocan. Los C6 solo leen 1023 bytes: `release.py` lo comprueba.
 - **`project(c6-fx-demo)` no se renombra:** `ota.c` exige que la imagen nueva tenga el mismo nombre de proyecto que la instalada.
