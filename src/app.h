@@ -24,6 +24,8 @@ typedef struct {
     volatile int lang;         // 0 = Spanish, 1 = English
     volatile int dnd;          // do not disturb: alarms and calls show silently
     volatile int wifi_on;      // the watch's own Wi-Fi (off by default: the phone brings everything)
+    volatile int sd_state;     // microSD for the status bar: SD_NONE, SD_OK, SD_BAD (app_files.c sd_check)
+    volatile bool usb_data;    // the USB cable goes to a computer (data), not just a charger
     volatile int volume;       // speaker volume 0..100 (alarms, sounds)
     volatile int step_goal;    // daily steps goal
 
@@ -55,7 +57,11 @@ typedef struct {
 extern app_state_t g_app;
 
 // Turns the screen on (or keeps it on) for wake_secs
+enum { SD_NONE, SD_OK, SD_BAD };  // g_app.sd_state
+
 void app_wake(void);
+// Checks the microSD in the background (app_files.c) and updates g_app.sd_state
+void sd_check(void);
 // Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
 void power_off_now(bool really);
 // Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it

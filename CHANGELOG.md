@@ -18,6 +18,10 @@
   - **Apagado seguro:** aviso al 10 %; por debajo de 3,30 V guarda los ajustes y se apaga. Se enciende con PWR.
   - Al enchufarlo, el ordenador vuelve a reconocer su USB aunque estuviera dormido.
 - La velocidad de las animaciones pasa a ser del 75 % por defecto.
+- **Iconos nuevos en la barra de estado:** la microSD (coral con «!» si no se puede leer) y el USB cuando el cable va a un ordenador.
+- **microSD en exFAT:** el reloj lee tarjetas FAT32 y exFAT y formatea en exFAT. Una tarjeta ilegible se puede formatear desde Archivos.
+- Arreglado: con una app abierta, la esfera se reiniciaba 30 veces por segundo por detrás (gasto de batería inútil).
+- Arreglado: la página ofrecía versiones más viejas que la instalada; la app comparaba mal las betas.
 - **Actualizaciones sin WiFi en el reloj (3.0.0-beta.6, app 0.5.0):** el móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, que la instala mientras sigue funcionando, con una pantalla de progreso. Funciona en cualquier sitio con los datos del móvil. Los relojes anteriores siguen actualizándose por su WiFi. Desde el PC: `tools/ble_ota.py`.
 - Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.

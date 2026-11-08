@@ -413,6 +413,7 @@ void app_main(void)
         weather_init();
     }
     if (use_ble) ble_start();
+    sd_check();  // the microSD icon in the status bar
     tunnel_enter();  // builds its lookup tables once
     ESP_LOGI(TAG, "Free heap after start: %u (internal RAM %u, largest block %u)",
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
@@ -497,6 +498,13 @@ void app_main(void)
                     else if (!first || esp_reset_reason() != ESP_RST_USB) usb_console_reconnect();
                 }
                 usb_seen = b.usb;
+                // A computer sends a start-of-frame every millisecond; a charger never does
+                static uint32_t last_sof;
+                uint32_t sof = USB_SERIAL_JTAG.fram_num.sof_frame_index;
+                bool data = b.usb && sof != last_sof;
+                last_sof = sof;
+                if (data != g_app.usb_data) sys_dirty();
+                g_app.usb_data = data;
                 battery_guard(&b);
             }
             if (pct != g_app.bat_pct || chg != g_app.bat_chg || full != g_app.bat_full || linked != g_app.phone_linked)
@@ -523,7 +531,9 @@ void app_main(void)
         }
         // A retired face (saved on the clock, or asked for by number) shows the next one instead
         if (fx_list[g_app.fx].retired) g_app.fx = fx_next(g_app.fx);
-        if (g_app.fx != cur) {
+        // Only while the face is on screen: an app marks it to start again (cur = -1), and entering it
+        // here on every pass re-initialised the face 30 times a second behind every app
+        if (g_app.fx != cur && sys_view() == VIEW_FACE) {
             cur = g_app.fx;
             STAGE_MAIN(5);
             if (fx_list[cur].res == FX_COMPAT) lcd_set_landscape(fx_list[cur].landscape);
@@ -568,6 +578,11 @@ void app_main(void)
         if (panel_asleep) {
             STAGE_MAIN(9);
             light_sleep_allow(false);
+            static uint32_t sd_t;
+            if (now - sd_t > 30000) {  // a card may have gone in or out while the screen was off
+                sd_t = now;
+                sd_check();
+            }
             lcd_sleep(false);
             panel_asleep = false;
             if (use_wifi) net_power(true);

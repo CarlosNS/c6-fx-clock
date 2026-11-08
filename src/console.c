@@ -25,10 +25,13 @@ static void run_line(char *line)
 {
     // The "wifi" command takes the network on separate lines; on the console it is typed as
     // "wifi <ssid> <password>" (so no spaces in the network name)
+    // "wifi 0" / "wifi 1" (one word) is the on/off setting, as over Bluetooth
     if (strncmp(line, "wifi ", 5) == 0) {
         char *pass = strchr(line + 5, ' ');
-        if (pass) *pass = '\n';
-        line[4] = '\n';
+        if (pass) {
+            *pass = '\n';
+            line[4] = '\n';
+        }
     }
     ESP_LOGI(TAG, "> %s", strncmp(line, "wifi\n", 5) == 0 ? "wifi ***" : line);
     if (strcmp(line, "status") == 0) {  // for the tests: the state as JSON, whatever link is in use
@@ -49,6 +52,11 @@ static void run_line(char *line)
         static char buf[192 * 32 + 64];
         batlog_csv(buf, sizeof(buf));
         printf("%s\nbatlog end\n", buf);
+        return;
+    }
+    if (strcmp(line, "sdinfo") == 0) {
+        void sd_info(void);
+        sd_info();
         return;
     }
     if (strcmp(line, "batoff test") == 0) {  // the empty-battery screen, without powering off

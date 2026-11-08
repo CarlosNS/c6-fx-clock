@@ -54,6 +54,8 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 Arriba en los menús y las apps:
 
 - a la izquierda, el símbolo de **Bluetooth**: verde con el móvil conectado, apagado sin él;
+- a su lado, una **tarjeta** si hay microSD: crema si se lee bien, coral con **!** si responde pero no se puede leer (sin formato o con uno que el reloj no entiende). Sin tarjeta no sale nada;
+- y el **tridente USB** en verde cuando el cable va a un ordenador (lleva datos). Con un cargador no aparece; el rayo de la batería dice que carga;
 - en el centro, la **hora**;
 - a la derecha, la **batería** con su porcentaje y un **rayo** mientras está enchufado (ver [La batería](#la-batería)).
 
@@ -154,13 +156,14 @@ Pone la pantalla entera en blanco al máximo brillo. **Un toque** la cambia a un
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-files.png" alt="Archivos" width="200">
 
-La tarjeta **microSD** de la ranura del reloj.
+La tarjeta **microSD** de la ranura del reloj, en **FAT32 o exFAT**.
 
 - **Navegar:** toca una carpeta para entrar y **..** para subir. Cada archivo muestra su tamaño.
 - **Borrar:** mantén el dedo sobre un archivo o una carpeta vacía; toca otra vez para confirmar.
-- **Formatear:** botón de abajo a la derecha; pide **dos** confirmaciones y **borra toda la tarjeta**.
+- **Formatear:** botón de abajo a la derecha; pide **dos** confirmaciones y **borra toda la tarjeta**. Formatea en **exFAT**, que leen Windows, macOS, Linux y los móviles.
 - Abajo se ve el espacio libre.
 - Sin tarjeta, la app lo dice: métela y vuelve a abrirla.
+- Si la tarjeta **no se puede leer** (nueva sin formato, o en NTFS o ext4), la app dice *No se puede leer* y ofrece **Formatear (exFAT)**, también con dos confirmaciones.
 
 **Modo USB** (botón **USB**, abajo a la izquierda, y **¿Reiniciar?** para confirmar): el reloj se reinicia como un **disco USB**. Conéctalo al ordenador con un cable de datos y la microSD aparece como una unidad más para copiar archivos. Se vuelve al reloj normal:
 
