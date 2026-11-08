@@ -63,7 +63,7 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "AGUJERO NEGRO", .res = FX_WIDE, .enter = blackhole_enter, .render = blackhole_render,
      .label = "Agujero negro", .group = FX_G_NATURE,
      .desc = "Disco de acreción con efecto Doppler y lente gravitatoria; las estrellas del fondo se curvan alrededor."},
-    {.name = "GOL", .landscape = true, .enter = goal_enter, .render = goal_render,
+    {.name = "GOL", .res = FX_WIDE, .enter = goal_enter, .render = goal_render,
      .label = "Gol", .group = FX_G_GAMES,
      .desc = "Jugada de fútbol en 16 bits: regate, salto sobre una entrada, gol por la escuadra y celebración. La hora, en el marcador."},
     // 20: retired (Cuento, removed for good on 2026-11-07). The number stays taken.

@@ -1,11 +1,15 @@
-// "Gol" (landscape): a 16-bit football sequence on loop. Number 10 in a navy/white/red kit
+// "Gol" (full screen, wide canvas, portrait): a 16-bit football sequence on loop. Number 10 in a navy/white/red kit
 // dribbles in, hops over a sliding tackle, sends the keeper the wrong way into the top corner,
 // celebrates with arms up and ends in the crossed-arms pose. The stadium scoreboard shows the time.
 // Players are a 2D skeleton (joint angles per pose) rasterized at half resolution into a part
 // buffer, then shaded and outlined like hand-made pixel art, so every pose blends smoothly.
+// The 320x172 scene is drawn into its own buffer, then set in the middle of the tall screen with
+// more stands and the scoreboard above and more pitch below.
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "esp_heap_caps.h"
+#include "lcd.h"
 #include "fx.h"
 #include "gfx.h"
 
@@ -14,6 +18,10 @@
 #define CYCLE 12000
 #define PITCH_TOP 66
 #define RUN_Y 146  // ground line of the dribble
+#define OY 96      // where the scene sits on the screen, and how much it is cropped on the left
+#define OX 40
+
+static uint16_t *s_scene;  // the 320x172 scene (PSRAM)
 
 // ---------------------------------------------------------------- rig
 
@@ -271,9 +279,6 @@ static void stands(uint16_t *fb, uint32_t t, int cheer)
         uint16_t c = rgb565(14 + y / 4, 16 + y / 4, 34 + y / 3), *row = fb + y * W;
         for (int x = 0; x < W; x++) row[x] = c;
     }
-    // Floodlight glow at the top corners
-    gfx_glow(fb, 18, -6, 70, rgb565(200, 220, 255), 6);
-    gfx_glow(fb, W - 18, -6, 70, rgb565(200, 220, 255), 6);
     static const uint8_t shirts[6][3] = {{40, 70, 180}, {235, 235, 245}, {210, 45, 55}, {40, 70, 180}, {60, 60, 80}, {245, 200, 60}};
     static const uint8_t skins[3][3] = {{120, 78, 52}, {220, 170, 130}, {176, 124, 86}};
     for (int tier = 0; tier < 9; tier++) {
@@ -397,18 +402,9 @@ static void ball_draw(uint16_t *fb, int x, int ground, int height, uint32_t spin
     fb[(y - 2) * W + x - 1] = rgb565(255, 255, 255);
 }
 
-static void fade(uint16_t *fb, int a)  // 0..16 toward black
-{
-    if (a <= 0) return;
-    if (a >= 16) {
-        memset(fb, 0, W * H * 2);
-        return;
-    }
-    for (int i = 0; i < W * H; i++) fb[i] = gfx_blend(fb[i], 0, a);
-}
-
 void goal_enter(void)
 {
+    if (!s_scene) s_scene = heap_caps_calloc(1, LAND_W * LAND_H * 2, MALLOC_CAP_SPIRAM);
     static const uint8_t star[6][3] = {{120, 78, 52}, {34, 56, 140}, {236, 238, 246}, {205, 38, 50}, {250, 150, 40}, {30, 22, 22}};
     static const uint8_t keeper[6][3] = {{228, 178, 140}, {40, 170, 96}, {40, 40, 52}, {40, 170, 96}, {30, 30, 34}, {110, 66, 36}};
     static const uint8_t def[6][3] = {{196, 140, 100}, {196, 40, 46}, {30, 30, 40}, {196, 40, 46}, {240, 240, 240}, {60, 40, 30}};
@@ -428,6 +424,15 @@ static inline int ramp(int ms, int a, int b) { return clampi((ms - a) * 256 / (b
 void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
 {
     (void)dt;
+    if (!s_scene) {
+        gfx_fill(fb, 0);
+        return;
+    }
+    // The scene is drawn at its own size into its own buffer
+    uint16_t *out = fb;
+    fb = s_scene;
+    g_lcd_w = LAND_W;
+    g_lcd_h = LAND_H;
     int ms = (int)(t % CYCLE);
     bool cheer = ms >= T_HIT && ms < 9500;
     stands(fb, t, cheer);
@@ -555,8 +560,8 @@ void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
         const char *txt = "GOOOL!";
         int tw = gfx_text_width(txt, sc), y = 74 + (u < 160 ? 0 : (sin_q14[(u * 2) & 1023] * 3 >> 14));
         uint16_t c = (u / 120) & 1 ? rgb565(255, 236, 80) : rgb565(255, 255, 255);
-        gfx_text_ol(fb, 118 - tw / 2 + 4, y + 4, txt, rgb565(10, 20, 70), rgb565(10, 20, 70), sc, 2);
-        gfx_text_ol(fb, 118 - tw / 2, y, txt, c, rgb565(170, 30, 40), sc, 2);
+        gfx_text_ol(fb, OX + WW / 2 - tw / 2 + 4, y + 4, txt, rgb565(10, 20, 70), rgb565(10, 20, 70), sc, 2);
+        gfx_text_ol(fb, OX + WW / 2 - tw / 2, y, txt, c, rgb565(170, 30, 40), sc, 2);
     }
 
     // Draw back to front by ground line
@@ -611,37 +616,98 @@ void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
         gfx_text_ol(fb, s_x - tw / 2, s_g - 66, tag, rgb565(255, 255, 255), rgb565(22, 16, 28), 1, 1);
     }
 
-    // Confetti in the tricolour
+    // ---- Compose on the whole screen (wide canvas, portrait): taller stands and the scoreboard
+    // above the scene, more pitch below it
+    g_lcd_w = WW;
+    g_lcd_h = WH;
+    fb = out;
+    // Upper stands: the far rows, darker towards the top, under two floodlights
+    for (int y = 0; y < OY; y++) {
+        int k = y * 12 / OY;
+        uint16_t c = rgb565(8 + k, 9 + k, 22 + k), *row = fb + y * WW;
+        for (int x = 0; x < WW; x++) row[x] = c;
+    }
+    static const uint8_t shirts[6][3] = {{40, 70, 180}, {235, 235, 245}, {210, 45, 55}, {40, 70, 180}, {60, 60, 80}, {245, 200, 60}};
+    for (int tier = 1; tier <= 20; tier++) {
+        int ty = OY + 4 - tier * 5, shade = 150 - tier * 4;
+        if (ty < 0) break;
+        gfx_fill_rect(fb, 0, ty + 4, WW, 1, rgb565(20 + 20 - tier, 22 + 20 - tier, 46 + 20 - tier));
+        for (int i = 0; i < 70; i++) {
+            uint32_t h = fx_hash(i, tier * 57 + 3);
+            int x = i * 4 + (int)(h & 1) - (tier & 1) * 2;
+            int jump = cheer ? ((sin_u8[(uint8_t)(t / 3 + h)] > 128) ? -2 : 0) : ((h >> 3) % 23 == (t / 300) % 23 ? -1 : 0);
+            const uint8_t *sc = shirts[(h >> 6) % 6];
+            if ((unsigned)x >= WW - 3 || ty + 1 + jump < 0) continue;
+            uint16_t body = rgb565(sc[0] * shade >> 8, sc[1] * shade >> 8, sc[2] * shade >> 8);
+            gfx_fill_rect(fb, x, ty + 2 + jump, 3, 2, body);
+            fb[(ty + 1 + jump) * WW + x + 1] = rgb565(180 * shade >> 8, 130 * shade >> 8, 100 * shade >> 8);
+        }
+    }
+    for (int k = 0; k < 2; k++) {  // floodlights
+        int fx = k ? WW - 52 : 52;
+        gfx_glow(fb, fx, 16, 84, rgb565(200, 220, 255), 6);
+        gfx_fill_rect(fb, fx - 14, 10, 28, 9, rgb565(40, 44, 60));
+        for (int j = 0; j < 4; j++) gfx_fill_rect(fb, fx - 12 + j * 7, 12, 5, 5, rgb565(240, 246, 255));
+    }
+    if (cheer)  // camera flashes in the upper rows too
+        for (int i = 0; i < 5; i++) {
+            uint32_t h = fx_hash(t / 90, i * 29 + 5);
+            int x = 30 + (int)(h % (WW - 60)), y = 30 + (int)((h >> 10) % (OY - 30));
+            gfx_glow(fb, x, y, 6, rgb565(255, 255, 255), 12);
+            fb[y * WW + x] = rgb565(255, 255, 255);
+        }
+
+    // The scene, cropped on the left (the dribble enters from off screen anyway)
+    for (int y = 0; y < LAND_H; y++) memcpy(fb + (OY + y) * WW, s_scene + y * LAND_W + OX, WW * 2);
+
+    // Near pitch below the scene: the same stripes and light, continued
+    for (int y = OY + LAND_H; y < WH; y++) {
+        int sy = y - OY, depth = (sy - PITCH_TOP) * 256 / (LAND_H - PITCH_TOP);
+        int k = 150 + (depth * 106 >> 8);
+        k = k > 290 ? 290 : k;
+        int r0 = 52 * k >> 8, g0 = 140 * k >> 8, b0 = 60 * k >> 8, r1 = 62 * k >> 8, g1 = 158 * k >> 8, b1 = 70 * k >> 8;
+        uint16_t c0 = rgb565(r0, g0 > 255 ? 255 : g0, b0), c1 = rgb565(r1, g1 > 255 ? 255 : g1, b1);
+        int off = (sy - PITCH_TOP) * 94 >> 8;
+        uint16_t *row = fb + y * WW;
+        for (int x = 0; x < WW; x++) row[x] = ((x + OX + off) / 24) & 1 ? c1 : c0;
+        int gx = goal_x(sy) - OX;  // the goal line runs on to the near edge
+        if ((unsigned)gx < WW) row[gx] = rgb565(214, 232, 214);
+    }
+
+    // Confetti in the tricolour, over the whole screen
     if (ms > T_HIT + 150) {
         uint16_t cols[4] = {rgb565(50, 90, 230), rgb565(255, 255, 255), rgb565(230, 50, 60), rgb565(255, 210, 60)};
         int el = ms - T_HIT - 150;
-        for (int i = 0; i < 56; i++) {
+        for (int i = 0; i < 90; i++) {
             uint32_t h = fx_hash(i, 99);
             int start = (int)(h % 1400);
             if (el < start) continue;
             int u = el - start;
-            int x = (int)((h >> 8) % W) + (sin_q14[(u / 2 + i * 97) & 1023] * 6 >> 14);
-            int y = -6 + u * (20 + (int)((h >> 20) % 18)) / 1000;
-            if (y >= H) continue;
+            int x = (int)((h >> 8) % WW) + (sin_q14[(u / 2 + i * 97) & 1023] * 6 >> 14);
+            int y = -6 + u * (34 + (int)((h >> 20) % 30)) / 1000;
+            if (y >= WH) continue;
             bool edge = ((u / 90 + i) & 1);
             gfx_fill_rect(fb, x, y, edge ? 1 : 2, 2, cols[(h >> 4) & 3]);
         }
     }
 
     // Fade the loop in and out (the clock stays)
-    fade(fb, ms < 250 ? 16 - ms * 16 / 250 : ms > T_FADE ? (ms - T_FADE) * 17 / (CYCLE - T_FADE) : 0);
+    int fa = ms < 250 ? 16 - ms * 16 / 250 : ms > T_FADE ? (ms - T_FADE) * 17 / (CYCLE - T_FADE) : 0;
+    if (fa >= 16) memset(fb, 0, WW * WH * 2);
+    else if (fa > 0)
+        for (int i = 0; i < WW * WH; i++) fb[i] = gfx_blend(fb[i], 0, fa);
 
-    // Stadium scoreboard with the time
-    int sbw = 172, sbx = (W - sbw) / 2;
-    gfx_darken_rect(fb, sbx, 2, sbw, 52, 6, 3);
-    gfx_fill_rect(fb, sbx + 6, 3, sbw - 12, 1, rgb565(90, 200, 255));
+    // Stadium scoreboard with the time, over the upper stands
+    int sbw = 190, sbx = (WW - sbw) / 2;
+    gfx_darken_rect(fb, sbx, 26, sbw, 62, 6, 3);
+    gfx_fill_rect(fb, sbx + 6, 27, sbw - 12, 1, rgb565(90, 200, 255));
     const uint16_t amber[4] = {rgb565(255, 250, 220), rgb565(255, 228, 140), rgb565(255, 190, 70), rgb565(230, 130, 40)};
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
-    pix_digits_draw(fb, (W - pix_digits_width("00:00", 4)) / 2, 7, hhmm, 4, amber, rgb565(40, 16, 10));
+    pix_digits_draw(fb, (WW - pix_digits_width("00:00", 5)) / 2, 34, hhmm, 5, amber, rgb565(40, 16, 10));
     if (g_app.show_secs && g_now.valid) {
-        int bw = 120, bx2 = (W - bw) / 2;
-        gfx_fill_rect(fb, bx2, 50, bw, 2, rgb565(40, 40, 60));
-        gfx_fill_rect(fb, bx2, 50, (int)(bw * g_now.minute_ms / 60000), 2, amber[1]);
+        int bw = 140, bx2 = (WW - bw) / 2;
+        gfx_fill_rect(fb, bx2, 80, bw, 2, rgb565(40, 40, 60));
+        gfx_fill_rect(fb, bx2, 80, (int)(bw * g_now.minute_ms / 60000), 2, amber[1]);
     }
 }
