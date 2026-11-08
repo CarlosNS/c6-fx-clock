@@ -176,13 +176,18 @@ static void panel_cmd(uint8_t cmd, const uint8_t *data, int len)
         .addr = (uint32_t)cmd << 8,
         .length = len * 8,
     };
-    if (len <= 4) {
+    // A command with no data (sleep in / out, display on / off) must not ask for a data phase: the
+    // driver rejects it, and the panel would never wake from sleep
+    if (len == 0) {
+        t.tx_buffer = NULL;
+    } else if (len <= 4) {
         t.flags = SPI_TRANS_USE_TXDATA;
         for (int i = 0; i < len; i++) t.tx_data[i] = data[i];
     } else {
         t.tx_buffer = data;
     }
-    spi_device_polling_transmit(s_dev, &t);
+    esp_err_t err = spi_device_polling_transmit(s_dev, &t);
+    if (err != ESP_OK) ESP_LOGE(TAG, "command 0x%02X failed: %s", cmd, esp_err_to_name(err));
 }
 
 static void send_frame(const uint16_t *fb, int kind)
