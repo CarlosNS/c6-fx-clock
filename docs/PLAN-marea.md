@@ -25,9 +25,10 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 
 ## Arquitectura
 
-- **Pantalla en dos modos** (`lcd_co5300.c`):
-  - lienzo de 172×320 ampliado, para las esferas que aún no se han rehecho;
-  - **nativo de 410×502**, para el sistema, las apps y las esferas nuevas.
+- **Pantalla en tres modos** (`lcd_co5300.c`):
+  - **nativo de 410×502**, para el sistema, las apps y Plasma;
+  - **lienzo ancho de 274×336**, toda la pantalla a 2/3 de resolución (×1,5 al enviar), para las esferas animadas: dibujarlo cuesta la mitad y llegan a 30 fps;
+  - el lienzo antiguo de 172×320, que ya no usa ninguna esfera (queda para compatibilidad).
 
   Cada uno tiene dos búferes en PSRAM. El envío sigue en el núcleo 1.
 - **Vistas:** esfera, ajustes rápidos, lanzador y app activa. Cada vista dibuja y recibe gestos. Una vista que no cambia no se vuelve a dibujar ni a enviar, y así ahorra batería.
@@ -64,7 +65,7 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 | 3 | Vistas, gestos, barra de estado, ajustes rápidos y lanzador | ✅ (falta probarlo con el dedo) |
 | 4 | Apps: cronómetro, linterna, ajustes, selector de esferas, información del sistema | ✅ |
 | 5 | Audio (ES8311), alarmas y podómetro | ✅ (audio y pasos sin probar en la muñeca) |
-| 6 | Esferas a pantalla completa, una a una | En curso |
+| 6 | Esferas a pantalla completa, una a una | ✅ |
 | 7 | Sincronización: enlace permanente, llamadas y música (firmware y app) | |
 | 8 | Archivos de la microSD y modo USB | |
 | 9 | README, wiki y CHANGELOG | |
@@ -105,4 +106,17 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
   - probado: 60 s de Plasma nativa y 30 s de Cubo 3D sin bloqueos.
 - **Rendimiento:** Plasma nativa tarda 36 ms en dibujarse (26 fps): 12 ms de cálculo, 13 ms escribiendo la PSRAM y 10 ms los dígitos de 176 px. Para animaciones a pantalla completa más fluidas habría que dibujar por franjas directamente en RAM interna (pendiente).
 - **Fuentes:** `font_round_xxl` y `font_seg_xxl` (176 px), generadas con `tools/gen_fonts.py`.
-- **Esferas nativas:** `fx_t.native`. Por ahora solo Plasma; las demás siguen en el lienzo ampliado.
+- **Esferas nativas:** `fx_t.res` (`FX_COMPAT`, `FX_WIDE`, `FX_NATIVE`).
+
+### Esferas a pantalla completa (8 de noviembre de 2026)
+
+- **Todas las esferas ocupan ya toda la pantalla y van a 30 fps:** Plasma en nativo; las demás en el lienzo ancho (`WW`×`WH`, esquinas de radio `WIDE_CORNER_R` 80).
+- **Las apaisadas pasan a verticales:** Vida (hora en dos filas), HUD, Aventura, Estrellada, WiFi (hora en dos filas), Earthrise, Sakura, Synthwave, Agujero negro y Gol.
+- **Cambios de diseño:**
+  - Clásico: la caja es la pantalla y su bisel sigue las esquinas; firma MAREA;
+  - Feria: guirnaldas del alumbrado hacia los lados;
+  - RPG: arena a toda pantalla con la ventana del grupo translúcida;
+  - Agujero negro: halo con tramado;
+  - Gol: la escena de 320×172 se dibuja en su búfer y se compone con grada, marcador y césped;
+  - Túnel: sin panel, las cifras en el fondo oscuro.
+- **Arreglo:** `gfx_fill` limpiaba solo el tamaño del lienzo antiguo.
