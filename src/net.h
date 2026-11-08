@@ -5,6 +5,10 @@
 
 // Wi-Fi: the board's own access point plus, optionally, the home network (station)
 void net_start(void);
+// Wi-Fi power save follows the screen: light with it on, deep (one beacon a second) with it off
+void net_power(bool screen_on);
+// The watch's own access point is up (only without a reachable home network)
+bool net_ap_on(void);
 // Joins a new home network; the Wi-Fi driver stores it in NVS so it survives reboots
 void net_set_sta(const char *ssid, const char *pass);
 // Whether a home network is stored (any mode, Wi-Fi need not be running); copies its name

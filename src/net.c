@@ -86,6 +86,61 @@ static uint8_t s_bad_bssid[6];
 static volatile bool s_avoid;  // the next scan chooses the node to join
 static bool s_pinned;          // the STA config names one node (bssid_set)
 
+// The watch's own access point ("Marea") is only for when it cannot reach a home network: with an AP
+// up the radio can never sleep, which emptied the battery in a few hours. It comes up when no network
+// is saved, or when the saved one gives no address for AP_FALLBACK_US, and goes away once the home
+// network answers and nobody is connected to the AP.
+#define AP_FALLBACK_US (60 * 1000000LL)
+static bool s_has_sta, s_ap_on;
+static esp_timer_handle_t s_ap_timer;
+
+static void ap_enable(bool on)
+{
+    if (on == s_ap_on) return;
+    s_ap_on = on;
+    esp_wifi_set_mode(on ? (s_has_sta ? WIFI_MODE_APSTA : WIFI_MODE_AP) : WIFI_MODE_STA);
+    if (on) {
+        wifi_config_t ap = {
+            .ap = {
+                .ssid = AP_SSID,
+                .ssid_len = strlen(AP_SSID),
+                .password = AP_PASS,
+                .channel = 1,
+                .max_connection = 4,
+                .authmode = WIFI_AUTH_WPA2_PSK,
+            },
+        };
+        esp_wifi_set_config(WIFI_IF_AP, &ap);
+        strlcpy(g_app.ap_ip, "192.168.4.1", sizeof(g_app.ap_ip));
+    } else {
+        g_app.ap_ip[0] = 0;
+    }
+    ESP_LOGI(TAG, "Own AP '%s' %s", AP_SSID, on ? "up at http://192.168.4.1" : "off");
+}
+
+static void ap_fallback(void *arg)
+{
+    if (!g_app.sta_ip[0]) ap_enable(true);
+}
+
+// Drop the AP once the home network works, unless someone is using it
+static void ap_maybe_off(void)
+{
+    if (!s_ap_on || !s_has_sta || !g_app.sta_ip[0]) return;
+    wifi_sta_list_t list;
+    if (esp_wifi_ap_get_sta_list(&list) == ESP_OK && list.num > 0) return;
+    ap_enable(false);
+}
+
+bool net_ap_on(void) { return s_ap_on; }
+
+void net_power(bool screen_on)
+{
+    // Screen on: light modem sleep (the page and the phone stay quick). Off: the radio sleeps and
+    // wakes for every third beacon (listen interval 3)
+    if (s_sta_netif) esp_wifi_set_ps(screen_on ? WIFI_PS_MIN_MODEM : WIFI_PS_MAX_MODEM);
+}
+
 static void connect_to(const uint8_t *bssid)
 {
     wifi_config_t sta;
@@ -130,6 +185,7 @@ static void sta_prefs(wifi_config_t *sta)
 {
     sta->sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     sta->sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    sta->sta.listen_interval = 3;  // used by WIFI_PS_MAX_MODEM (screen off): a beacon every 0.3 s
 }
 
 // DHCP watchdog: some mesh nodes associate but never hand out an address. If that lasts too long,
@@ -181,6 +237,9 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         s_assoc_since = 0;
         snprintf(g_app.sta_ip, sizeof(g_app.sta_ip), IPSTR, IP2STR(&e->ip_info.ip));
         ESP_LOGI(TAG, "Connected to %s, open http://%s", g_app.sta_ssid, g_app.sta_ip);
+        ap_maybe_off();
+    } else if (base == WIFI_EVENT && id == WIFI_EVENT_AP_STADISCONNECTED) {
+        ap_maybe_off();  // whoever set the network up through the AP has left
     }
 }
 
@@ -210,30 +269,24 @@ void net_start(void)
         }
     }
     bool use_sta = sta.sta.ssid[0] != 0;
+    s_has_sta = use_sta;
     sta_prefs(&sta);
     strlcpy(g_app.sta_ssid, (char *)sta.sta.ssid, sizeof(g_app.sta_ssid));
 
-    wifi_config_t ap = {
-        .ap = {
-            .ssid = AP_SSID,
-            .ssid_len = strlen(AP_SSID),
-            .password = AP_PASS,
-            .channel = 1,
-            .max_connection = 4,
-            .authmode = WIFI_AUTH_WPA2_PSK,
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(use_sta ? WIFI_MODE_APSTA : WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap));
-    if (use_sta) ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta));
+    if (use_sta) {
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta));
+    } else {
+        ap_enable(true);  // nothing to join: the own AP is the only way in
+    }
     ESP_ERROR_CHECK(esp_wifi_start());
-    esp_wifi_set_ps(WIFI_PS_NONE);  // modem sleep adds hundreds of ms of latency to the touch control
-    strlcpy(g_app.ap_ip, "192.168.4.1", sizeof(g_app.ap_ip));
+    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);  // net_power() switches to the deeper sleep with the screen off
     static esp_timer_handle_t wd;
     const esp_timer_create_args_t wd_args = {.callback = dhcp_watchdog, .name = "dhcp_wd"};
     if (esp_timer_create(&wd_args, &wd) == ESP_OK) esp_timer_start_periodic(wd, 5 * 1000000);
-    ESP_LOGI(TAG, "AP '%s' up at http://%s%s%s", AP_SSID, g_app.ap_ip, use_sta ? ", joining " : "",
-             use_sta ? g_app.sta_ssid : "");
+    const esp_timer_create_args_t ap_args = {.callback = ap_fallback, .name = "ap_fallback"};
+    if (use_sta && esp_timer_create(&ap_args, &s_ap_timer) == ESP_OK) esp_timer_start_once(s_ap_timer, AP_FALLBACK_US);
+    ESP_LOGI(TAG, "Wi-Fi started%s%s", use_sta ? ", joining " : ", own AP only", use_sta ? g_app.sta_ssid : "");
 }
 
 void net_set_sta(const char *ssid, const char *pass)
@@ -251,7 +304,8 @@ void net_set_sta(const char *ssid, const char *pass)
     strlcpy(g_app.sta_ssid, ssid, sizeof(g_app.sta_ssid));
     g_app.sta_ip[0] = 0;
     s_pinned = false;
-    esp_wifi_set_mode(WIFI_MODE_APSTA);
+    s_has_sta = true;
+    esp_wifi_set_mode(s_ap_on ? WIFI_MODE_APSTA : WIFI_MODE_STA);  // keep the AP if the network is set through it
     esp_wifi_disconnect();
     esp_wifi_set_config(WIFI_IF_STA, &sta);
     esp_wifi_connect();

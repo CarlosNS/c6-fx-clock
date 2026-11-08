@@ -26,6 +26,9 @@
 #include "settings.h"
 #include "net.h"
 #include "update.h"
+#include "apps.h"
+#include "esp_pm.h"
+#include "batlog.h"
 #include "usbdisk.h"
 #include "web.h"
 #include "weather.h"
@@ -106,35 +109,38 @@ static void toast(const char *msg)
 
 // ---- Screen helpers ----
 
-static void text_centered(uint16_t *fb, int y, const char *s, uint16_t color, int scale)
+// Boot screen, in the system's style: the name, how to reach the watch (Bluetooth name for the app;
+// the own Wi-Fi only when it is up) and its address on the home network
+static void draw_splash(uint32_t t)
 {
-    gfx_text(fb, (g_lcd_w - gfx_text_width(s, scale)) / 2, y, s, color, scale);
-}
-
-static void draw_splash(uint16_t *fb, uint32_t t)
-{
-    for (int y = 0; y < LCD_H; y++) {
-        uint16_t c = hsv565((uint8_t)(170 + y / 6 + t / 30), 200, 40 + y / 8);
-        for (int x = 0; x < LCD_W; x++) fb[y * LCD_W + x] = c;
-    }
-    uint16_t white = rgb565(255, 255, 255), dim = rgb565(170, 180, 210);
-    uint16_t accent = hsv565((uint8_t)(t / 8), 160, 255);
-    text_centered(fb, 56, "MAREA", accent, 4);
-    // Both radios at once: the app over Bluetooth and the web page over Wi-Fi, no modes to switch
-    text_centered(fb, 116, "WIFI Y BLUETOOTH", accent, 1);
-    text_centered(fb, 140, "En la app del reloj, busca:", dim, 1);
-    text_centered(fb, 156, ble_name()[0] ? ble_name() : "...", white, 2);
-    text_centered(fb, 190, "o conecta tu movil a:", dim, 1);
-    text_centered(fb, 206, AP_SSID, white, 2);
-    text_centered(fb, 228, "clave: " AP_PASS, dim, 1);
-    text_centered(fb, 248, "y abre", dim, 1);
-    text_centered(fb, 262, g_app.ap_ip, white, 2);
+    ui_begin(lcd_native_fb());
+    ui_background(false);
+    ui_veil(120, UI_H, 2);
+    ui_print_c(&ui_jersey, 7, UI_W / 2, 70, "Marea", MS_ORO, true);
+    int dots = (int)(t / 400) % 4;
+    char wait[8] = "";
+    for (int i = 0; i < dots; i++) wait[i] = '.';
+    int rows = (g_app.sta_ip[0] || g_app.sta_ssid[0] ? 1 : 0) + (g_app.ap_ip[0] ? 1 : 0);
+    ui_panel(40, 196, UI_W - 80, 104 + rows * 64, MS_PANEL, MS_LINEA, 3, true);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 210, TR("En la app Marea, busca:", "In the Marea app, look for:"), MS_GRIS, false);
+    ui_print_c(&ui_jersey, 3, UI_W / 2, 238, ble_name()[0] ? ble_name() : wait, MS_CREMA, false);
+    int y = 292;
     if (g_app.sta_ip[0]) {
-        text_centered(fb, 288, "o en tu red WiFi:", dim, 1);
-        text_centered(fb, 302, g_app.sta_ip, white, 1);
+        ui_print_c(&ui_vt, 1, UI_W / 2, y, TR("En tu WiFi:", "On your Wi-Fi:"), MS_GRIS, false);
+        ui_print_c(&ui_vt, 2, UI_W / 2, y + 22, g_app.sta_ip, MS_VERDE, false);
+        y += 64;
     } else if (g_app.sta_ssid[0]) {
-        text_centered(fb, 288, "conectando a tu WiFi...", dim, 1);
+        char b[48];
+        snprintf(b, sizeof(b), TR("conectando a %s%s", "joining %s%s"), g_app.sta_ssid, wait);
+        ui_print_c(&ui_vt, 1, UI_W / 2, y + 10, b, MS_GRIS, false);
+        y += 64;
     }
+    if (g_app.ap_ip[0]) {
+        ui_print_c(&ui_vt, 1, UI_W / 2, y, TR("o su WiFi " AP_SSID ", clave " AP_PASS, "or its Wi-Fi " AP_SSID ", key " AP_PASS),
+                   MS_GRIS, false);
+        ui_print_c(&ui_vt, 2, UI_W / 2, y + 22, g_app.ap_ip, MS_CREMA, false);
+    }
+    lcd_flush_native();
 }
 
 static void draw_overlay(uint16_t *fb, int fx)
@@ -271,6 +277,7 @@ void app_main(void)
         nvs_flash_init();
     }
     settings_load();
+    batlog_init();
     boot_mode_t mode = boot_mode_init();
     // Wi-Fi and Bluetooth run together in every mode but UPDATE (a one-shot boot that only fetches
     // an update)
@@ -282,6 +289,11 @@ void app_main(void)
         esp_bt_mem_release(ESP_BT_MODE_BTDM);
         ESP_LOGI(TAG, "Bluetooth memory released: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT) - before);
     }
+
+    // Frequency scaling: the CPU drops to 80 MHz whenever nothing needs it (light sleep: later, it
+    // would cut the USB console)
+    esp_pm_config_t pm = {.max_freq_mhz = 240, .min_freq_mhz = 80, .light_sleep_enable = false};
+    if (esp_pm_configure(&pm) != ESP_OK) ESP_LOGW(TAG, "power management not available");
 
     // The screen first, so the framebuffers get the big contiguous blocks of RAM. Update mode keeps
     // one buffer to leave room for HTTPS.
@@ -304,10 +316,8 @@ void app_main(void)
 
     update_boot_check();
     net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)
-    strcpy(g_app.ap_ip, "192.168.4.1");
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot
-    draw_splash(lcd_fb(), 0);
-    lcd_flush();
+    draw_splash(0);
     lcd_set_brightness(g_app.brightness);
 
     if (use_wifi) {
@@ -334,9 +344,8 @@ void app_main(void)
         console_poll();
         clock_update();
         esp_task_wdt_reset();
-        draw_splash(lcd_fb(), now - start);
-        lcd_flush();
-        vTaskDelay(pdMS_TO_TICKS(33));
+        draw_splash(now - start);
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 
     int cur = -1, frames = 0, cur_bri = -1, render_max = 0, fade = 1000;
@@ -443,7 +452,9 @@ void app_main(void)
             if (!panel_asleep) {
                 lcd_sleep(true);
                 panel_asleep = true;
+                if (use_wifi) net_power(false);
             }
+            batlog_tick(now, false, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
             if (have_imu) poll_raise(now, az);
             if (g_app.dirty) {
                 g_app.dirty = false;
@@ -460,8 +471,10 @@ void app_main(void)
             STAGE_MAIN(9);
             lcd_sleep(false);
             panel_asleep = false;
+            if (use_wifi) net_power(true);
             sys_dirty();
         }
+        batlog_tick(now, true, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
         if (sys_view() != VIEW_FACE) {  // the system screens and apps: native, drawn only when they change
             uint16_t *nfb = lcd_native_fb();
             ui_begin(nfb);

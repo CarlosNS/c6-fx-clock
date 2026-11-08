@@ -1,6 +1,7 @@
 // HTTP transport: the control page, its WebSocket, the status / catalogue JSON, screenshots and
 // OTA uploads. All decisions live in control.c / ota.c so other transports can reuse them.
 #include "web.h"
+#include "batlog.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +51,15 @@ static esp_err_t status_get(httpd_req_t *req)
 static void emit_chunk(const char *piece, void *ctx) { httpd_resp_send_chunk((httpd_req_t *)ctx, piece, HTTPD_RESP_USE_STRLEN); }
 
 // GET /faces -> the face catalogue (control.c, app_faces_json), streamed in pieces
+// Battery log (batlog.c) as CSV
+static esp_err_t batlog_get(httpd_req_t *req)
+{
+    static char buf[192 * 32 + 64];
+    size_t n = batlog_csv(buf, sizeof(buf));
+    httpd_resp_set_type(req, "text/csv");
+    return httpd_resp_send(req, buf, n);
+}
+
 static esp_err_t faces_get(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "application/json; charset=utf-8");
@@ -198,6 +208,7 @@ void web_start(void)
         {.uri = "/transport.js", .method = HTTP_GET, .handler = transport_get},
         {.uri = "/status", .method = HTTP_GET, .handler = status_get},
         {.uri = "/faces", .method = HTTP_GET, .handler = faces_get},
+        {.uri = "/batlog", .method = HTTP_GET, .handler = batlog_get},
         {.uri = "/screenshot", .method = HTTP_GET, .handler = screenshot_get},
         {.uri = "/ota", .method = HTTP_POST, .handler = ota_post},
         {.uri = "/ws", .method = HTTP_GET, .handler = ws_handler, .is_websocket = true},

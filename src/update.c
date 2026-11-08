@@ -1,4 +1,6 @@
 #include "update.h"
+#include "apps.h"
+#include "ui.h"
 #include "board.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,18 +113,25 @@ bool update_request(const char *url, const char **msg)
 
 // ---- UPDATE mode ----
 
+// Full screen in the Marea Solsticial style: night sea background, gold title, a panel with the step
+// and, while downloading, a progress bar. line1 is the title, line2 the step.
 static void screen(const char *line1, const char *line2, int percent)
 {
-    uint16_t *fb = lcd_fb();
-    gfx_fill(fb, rgb565(10, 12, 20));
-    gfx_text(fb, (g_lcd_w - gfx_text_width(line1, 2)) / 2, 120, line1, rgb565(255, 255, 255), 2);
-    gfx_text(fb, (g_lcd_w - gfx_text_width(line2, 1)) / 2, 150, line2, rgb565(170, 180, 210), 1);
+    ui_begin(lcd_native_fb());
+    ui_background(false);
+    ui_veil(90, UI_H, 2);
+    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, line1, MS_ORO, true);
+    ui_panel(48, 196, UI_W - 96, percent >= 0 ? 150 : 110, MS_PANEL, MS_LINEA, 3, true);
+    int sc = ui_fit(&ui_vt, 2, 1, UI_W - 130, line2);
+    ui_print_c(&ui_vt, sc, UI_W / 2, 220 + (2 - sc) * 8, line2, MS_CREMA, false);
     if (percent >= 0) {
-        int w = g_lcd_w - 40;
-        gfx_fill_rect(fb, 20, 175, w, 8, rgb565(40, 46, 70));
-        gfx_fill_rect(fb, 20, 175, w * percent / 100, 8, rgb565(124, 92, 255));
+        char pct[16];
+        snprintf(pct, sizeof(pct), "%d %%", percent);
+        ui_bar(78, 282, UI_W - 156, 18, percent * 10, MS_ORO);
+        ui_print_c(&ui_jersey, 2, UI_W / 2, 306, pct, MS_ORO2, false);
     }
-    lcd_flush();
+    ui_print_c(&ui_vt, 1, UI_W / 2, 400, TR("no apagues el reloj", "do not switch the watch off"), MS_GRIS, false);
+    lcd_flush_native();
 }
 
 static void finish(const char *state, const char *to, const char *line2)
@@ -130,7 +139,8 @@ static void finish(const char *state, const char *to, const char *line2)
     put_str("upd_st", state);
     if (to) put_str("upd_to", to);
     ESP_LOGI(TAG, "Result: %s%s%s", state, to ? " -> " : "", to ? to : "");
-    screen(strcmp(state, "updated") == 0 ? "ACTUALIZADO" : strcmp(state, "up_to_date") == 0 ? "AL DIA" : "SIN CAMBIOS",
+    screen(strcmp(state, "updated") == 0 ? TR("Actualizado", "Updated") : strcmp(state, "up_to_date") == 0 ? TR("Al día", "Up to date")
+                                                                                                         : TR("Sin cambios", "No change"),
            line2, -1);
     vTaskDelay(pdMS_TO_TICKS(2500));
     boot_mode_switch(boot_mode_return());  // a new image boots in "pending verify" (rollback protected)
@@ -180,7 +190,7 @@ void update_run(void)
     if (!url[0]) finish("bad_manifest", NULL, "no hay manifiesto");
     put_str("upd_st", "running");
 
-    screen("ACTUALIZAR", "conectando al WiFi", -1);
+    screen(TR("Actualizar", "Update"), TR("conectando al WiFi", "connecting to Wi-Fi"), -1);
     net_start();
     for (int t = 0; !g_app.sta_ip[0]; t += 250) {
         if (t >= WIFI_LIMIT_MS) finish("no_wifi", NULL, "sin WiFi");
@@ -188,7 +198,7 @@ void update_run(void)
     }
 
     // Manifest
-    screen("ACTUALIZAR", "buscando version nueva", -1);
+    screen(TR("Actualizar", "Update"), TR("buscando versión nueva", "looking for a new version"), -1);
     ESP_LOGI(TAG, "Manifest %s", url);
     int status = 0;
     int64_t len = 0;
@@ -227,7 +237,7 @@ void update_run(void)
     // Image: streamed into the other slot, hashed on the way
     char line[72];
     snprintf(line, sizeof(line), "%s -> %s", running, version);
-    screen("ACTUALIZANDO", line, 0);
+    screen(TR("Actualizando", "Updating"), line, 0);
     c = open_url(img_url, &status, &len);
     if (!c) finish("no_internet", version, "sin internet");
     if (status != 200) {
@@ -266,7 +276,7 @@ void update_run(void)
         int pct = (int)(got * 100 / size);
         if (pct != last_pct) {
             last_pct = pct;
-            screen("ACTUALIZANDO", line, pct);
+            screen(TR("Actualizando", "Updating"), line, pct);
         }
     }
     close_url(c);
