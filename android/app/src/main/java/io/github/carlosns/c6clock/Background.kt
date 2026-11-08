@@ -83,11 +83,36 @@ object Firmware {
     @Volatile var manifestUrl = MANIFEST
 
     /** -1, 0 or 1, comparing "major.minor.patch" numerically ("2.10.0" is newer than "2.9.1"). */
+    /**
+     * Semantic versions: "3.0.0-beta.6" < "3.0.0-beta.10" < "3.0.0" < "3.0.1". A pre-release comes
+     * before its release, its parts compare as numbers when they are numbers, and "+build" is ignored.
+     * The same rules live in src/index.html (verCmp).
+     */
     fun compare(a: String, b: String): Int {
-        val x = a.split('.').map { it.toIntOrNull() ?: 0 }
-        val y = b.split('.').map { it.toIntOrNull() ?: 0 }
-        for (i in 0 until maxOf(x.size, y.size)) {
-            val d = x.getOrElse(i) { 0 }.compareTo(y.getOrElse(i) { 0 })
+        fun split(v: String): Pair<List<Int>, List<String>?> {
+            val core = v.substringBefore('+')
+            val main = core.substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
+            val pre = if ('-' in core) core.substringAfter('-').split('.') else null
+            return main to pre
+        }
+        val (am, ap) = split(a)
+        val (bm, bp) = split(b)
+        for (i in 0 until maxOf(am.size, bm.size)) {
+            val d = am.getOrElse(i) { 0 }.compareTo(bm.getOrElse(i) { 0 })
+            if (d != 0) return d
+        }
+        if (ap == null || bp == null) return (if (ap == null) 1 else 0) - (if (bp == null) 1 else 0)
+        for (i in 0 until maxOf(ap.size, bp.size)) {
+            val x = ap.getOrNull(i) ?: return -1
+            val y = bp.getOrNull(i) ?: return 1
+            val xi = x.toIntOrNull()
+            val yi = y.toIntOrNull()
+            val d = when {
+                xi != null && yi != null -> xi.compareTo(yi)
+                xi != null -> -1  // numbers sort before words
+                yi != null -> 1
+                else -> x.compareTo(y)
+            }
             if (d != 0) return d
         }
         return 0

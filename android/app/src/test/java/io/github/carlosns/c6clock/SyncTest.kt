@@ -31,6 +31,15 @@ class SyncTest {
         }
     }
 
+    @Test fun versionsCompareSemantically() {
+        val order = listOf("2.1.0", "3.0.0-beta.1", "3.0.0-beta.5", "3.0.0-beta.6", "3.0.0-beta.10", "3.0.0", "3.0.1", "3.1.0")
+        for (i in order.indices) for (j in order.indices)
+            assertEquals("${order[i]} vs ${order[j]}", i.compareTo(j).coerceIn(-1, 1), Firmware.compare(order[i], order[j]).coerceIn(-1, 1))
+        assertEquals(0, Firmware.compare("3.0.0-beta.6+ble5", "3.0.0-beta.6"))  // build metadata does not count
+        assertEquals(null, Firmware.newer(JSONObject("""{"boards":{"s3amoled":{"version":"3.0.0-beta.5"}}}"""), "3.0.0-beta.6", "s3amoled"))
+        assertEquals("3.0.0", Firmware.newer(JSONObject("""{"boards":{"s3amoled":{"version":"3.0.0"}}}"""), "3.0.0-beta.6", "s3amoled"))
+    }
+
     @Test fun sendsTimeWeatherAndSyncDoneInOrder() = runTest {
         val clock = FakeClock()
         var asked: Pair<Double, Double>? = null
