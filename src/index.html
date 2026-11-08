@@ -110,6 +110,11 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
     <div class="slider" style="padding-top:0"><div class="top">Color de la esfera <span class="swatch" id="chuesw"></span></div><input type="range" id="chue" class="hue" min="0" max="359"></div>
     <button class="btn" id="chuereset" style="margin-top:6px">Volver al verde original</button>
   </div>
+  <div class="own hide" id="ownox" data-opts="ox">
+    <div class="lbl">Ajustes de esta esfera</div>
+    <div class="slider" style="padding-top:0"><div class="top">Color del acento</div><input type="range" id="ohue" class="hue" min="0" max="359"></div>
+    <button class="btn" id="ohuereset" style="margin-top:6px">Volver al ámbar</button>
+  </div>
   <div class="own hide" id="ownwx" data-opts="wx">
     <div class="lbl">Ajustes de esta esfera</div>
     <div class="stack">
@@ -242,6 +247,8 @@ bind('spd','spd',v=>v+'%');bind('bri','bri',v=>v+'%');bind('auto','auto');bind('
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
 const swatch=h=>$('chuesw').style.background=`linear-gradient(135deg,hsl(${h} 62% 9%),hsl(${h} 62% 30%),hsl(${h} 62% 12%))`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
+$('ohue').oninput=()=>{lastUser=Date.now();send('ohue '+$('ohue').value)};
+$('ohuereset').onclick=()=>{lastUser=Date.now();$('ohue').value=28;send('ohue 28')};
 $('chuereset').onclick=()=>{lastUser=Date.now();$('chue').value=146;swatch(146);send('chue 146')};
 function night(){lastUser=Date.now();$('nbrv').textContent=$('nbr').value+'%';send(`night ${$('non').checked?1:0} ${$('nst').value} ${$('nen').value} ${$('nbr').value}`);vis()}
 ['non','nst','nen','nbr'].forEach(id=>$(id).oninput=night);
@@ -290,7 +297,7 @@ function show(s){
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+'%'}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
-  for(const k of['wks','nst','nen','chue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
+  for(const k of['wks','nst','nen','chue','ohue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
   if(s.chue!==undefined)swatch($('chue').value);
   vis()}
  $('moderow').classList.toggle('hide',BOARD==='s3amoled');$('wifionly').classList.toggle('hide',L.kind!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';

@@ -19,6 +19,7 @@ typedef struct {
     volatile int wake_secs;    // how long the screen stays on after the button / web (3..600 s)
     volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (max 31 faces)
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
+    volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
     volatile int raise_wake;   // raising the wrist turns the screen on
     volatile int lang;         // 0 = Spanish, 1 = English
     volatile int dnd;          // do not disturb: alarms and calls show silently

@@ -1,6 +1,6 @@
 # Marea
 
-Reloj de pulsera con **21 esferas animadas a pantalla completa** y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
+Reloj de pulsera con **22 esferas a pantalla completa** y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
@@ -30,6 +30,8 @@ El sistema sigue el estilo **Marea Solsticial**: pixel art nocturno junto al mar
 | **BOOT** 10 s | Olvida los móviles emparejados | |
 
 La pantalla se enciende con BOOT, con un toque o al levantar la muñeca, y se apaga sola (de 5 s a 10 min, o siempre encendida). Con ella apagada no se dibuja nada y el panel queda en reposo, pero el reloj sigue conectado al móvil y contando pasos.
+
+**Manual:** [Manual del reloj](https://github.com/CarlosNS/c6-fx-clock/wiki/Manual-del-reloj) en la wiki.
 
 **Apps:** Esferas, Alarmas (suenan por el altavoz y se posponen al agitar la muñeca), Pasos (podómetro con objetivo diario), Cronómetro, Música (lo que suena en el móvil, con sus controles), Linterna, Archivos (la microSD, con modo USB) y Ajustes. Llamadas: cuando el móvil suena, el reloj muestra quién llama y permite rechazarla o silenciarla. Textos en español o inglés.
 
@@ -70,6 +72,7 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 21 | Tiempo | esfera analógica con segundero de barrido; debajo, icono animado, temperatura, máx/mín y estado del cielo de la ciudad elegida |
 | 22 | Clásico | reloj de vestir Art Déco: la pantalla es la caja, esfera sunburst con reflejos que se mueven (el color se elige en la app), índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 |
 | 23 | Feria de Sevilla | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año): portada de bombillas, farolillos, toldo y traje de lunares; durante la Feria, fuegos artificiales |
+| 24 | Ónix | analógica minimalista para AMOLED: negro puro con los píxeles apagados, índices finos, agujas cálidas y una estela de luz como segundero; el color del acento se elige en la app y el dibujo se desplaza un poco cada minuto para cuidar la pantalla |
 
 Los números 10, 16 y 20 están **retirados** (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar.
 

@@ -1,13 +1,13 @@
 ![Algunas esferas del reloj](https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/esferas.png)
 
-**Marea** es un reloj de pulsera con **21 esferas animadas a pantalla completa** y apps propias, para la placa **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Se queda conectado al móvil por Bluetooth mientras está cerca, recibe la hora, el tiempo, la música y las llamadas, se controla también desde el navegador por WiFi y se actualiza solo por internet.
+**Marea** es un reloj de pulsera con **22 esferas a pantalla completa** y apps propias, para la placa **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Se queda conectado al móvil por Bluetooth mientras está cerca, recibe la hora, el tiempo, la música y las llamadas, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ## Empieza aquí
 
 | Quiero… | Página |
 |---|---|
 | Instalarlo en una placa nueva | [[Instalación]] |
-| Saber cómo se maneja: gestos, botón, apps | [[Uso del reloj]] |
+| Aprender a usarlo: gestos, botón y todas las apps | [[Manual del reloj]] |
 | Usar la app del móvil | [[App Android]] |
 | Controlarlo desde el navegador | [[Página de control]] |
 | Ver todas las esferas | [[Esferas]] |

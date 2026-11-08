@@ -70,6 +70,7 @@ app_state_t g_app = {
     .night_bri = 10,
     .wake_secs = 10,
     .classic_hue = 146,  // deep green
+    .onix_hue = 28,      // amber
     .raise_wake = 1,
     .volume = 70,
     .bri_override = -1,

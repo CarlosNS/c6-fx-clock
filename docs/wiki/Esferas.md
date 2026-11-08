@@ -1,4 +1,4 @@
-El reloj trae **21 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla.
+El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla.
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT**, en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican en la tarjeta *Esfera actual* de la app (ver [[Página de control]]).
@@ -143,6 +143,12 @@ El reloj trae **21 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx23.png" alt="Esfera Feria de Sevilla: cuenta atrás" width="205"> <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx23-feria.png" alt="Esfera Feria de Sevilla durante la Feria" width="205">
 
 *Número 23* — Cuenta atrás hasta el alumbrado de la Feria de Abril de Sevilla: portada de bombillas que parpadean con guirnaldas del alumbrado a los lados, farolillos que se mecen, toldo de caseta y, abajo, la hora sobre un traje de lunares. Muestra los días, horas, minutos y segundos que faltan (sin segundos si se desactivan). La fecha se calcula sola cada año: el alumbrado es a la medianoche del lunes al martes, 16 días después del Domingo de Resurrección (13 de abril de 2027). Desde la víspera y durante la Feria hay fuegos artificiales, y de martes a domingo pone «¡Es Feria!» y el día en que va; pasada la Feria, cuenta hacia la del año siguiente. Necesita la hora puesta (la da la app).
+
+### Ónix
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx24.png" alt="Esfera Ónix" width="205">
+
+*Número 24* — Analógica minimalista hecha para la pantalla AMOLED: fondo negro puro, con esos píxeles apagados, minutería de puntos tenues, índices finos, agujas en blanco cálido y, como segundero, una estela de luz que recorre la minutería. Las agujas se mueven sin saltos. Todo el dibujo se desplaza 2 píxeles cada minuto para no marcar la pantalla. El **color del acento** (estela y centro) se elige en la app; sin segundos, la estela desaparece.
 
 ## ¿Una esfera nueva?
 

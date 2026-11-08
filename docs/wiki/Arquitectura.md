@@ -72,7 +72,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `shot` (captura de pa
 
 | Clave | Rango | Significado |
 |---|---|---|
-| `fx` | 0–23 | Esfera |
+| `fx` | 0–24 | Esfera |
 | `auto` | 0/1 | Cambio automático cada 30 s |
 | `fxoff` | 0–2³¹−1 | Esferas que el cambio automático se salta: máscara de bits, el bit *n* es la esfera *n* (máximo 31 esferas) |
 | `spd` | 10–300 | Velocidad de las animaciones (%) |
@@ -88,6 +88,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `shot` (captura de pa
 | `vol` | 0–100 | Volumen del altavoz |
 | `goal` | 1000–50000 | Objetivo diario de pasos |
 | `chue` | 0–359 | Color de la esfera Clásico (tono) |
+| `ohue` | 0–359 | Color del acento de la esfera Ónix (tono) |
 | `ovl` | 0/1 | Información de depuración en pantalla |
 
 Añadir un ajuste es **una línea** en la tabla de `settings.c`: se guarda en NVS, se controla por orden y aparece en el JSON de estado sin tocar nada más.

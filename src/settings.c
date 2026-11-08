@@ -35,6 +35,7 @@ static const setting_t SETTINGS[] = {
     {"aon", &g_app.always_on, 0, 1, true, NULL},
     {"wks", &g_app.wake_secs, 3, 600, true, on_wake},
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
+    {"ohue", &g_app.onix_hue, 0, 359, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
     {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb

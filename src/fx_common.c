@@ -77,6 +77,9 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "FERIA DE SEVILLA", .res = FX_WIDE, .enter = feria_enter, .render = feria_render,
      .label = "Feria de Sevilla", .group = FX_G_CLOCKS,
      .desc = "Cuenta atrás hasta el alumbrado de la Feria de Abril de Sevilla, con portada de bombillas, farolillos y lunares; durante la Feria, fuegos artificiales."},
+    {.name = "ONIX", .res = FX_NATIVE, .opts = "ox", .enter = onix_enter, .render = onix_render,
+     .label = "Ónix", .group = FX_G_CLOCKS,
+     .desc = "Analógica minimalista para AMOLED: negro puro con los píxeles apagados, índices finos, agujas cálidas y una estela de luz que recorre la minutería marcando los segundos. Se desplaza un poco cada minuto para cuidar la pantalla."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

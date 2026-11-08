@@ -2,7 +2,7 @@
 
 **Usar el reloj**
 - [[Instalación]]
-- [[Uso del reloj]]
+- [[Manual del reloj]]
 - [[App Android]]
 - [[Página de control]]
 - [[Esferas]]
