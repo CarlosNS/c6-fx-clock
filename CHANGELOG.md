@@ -11,6 +11,13 @@
 - **Modo USB:** el botón USB de Archivos reinicia el reloj como disco USB con la microSD; se vuelve con BOOT, expulsando el disco o desconectando el cable.
 - **Alarma con amanecer:** mientras suena, el sol sale del mar en pixel art y el cielo pasa de la noche al oro; al posponer se hunde y al parar termina de salir.
 - Arreglado: la pantalla no se encendía tras el primer apagado (3.0.0-beta.3).
+- **Batería (3.0.0-beta.6):** el reloj gastaba alrededor de un 1 % por minuto incluso sin usarlo. Ahora:
+  - El **WiFi viene apagado** (casilla *WiFi* en los ajustes rápidos y en la app). Antes, fuera de casa, buscaba la red sin parar.
+  - Con la pantalla apagada y sin cable, el procesador **duerme**, con el Bluetooth en bajo consumo.
+  - La pantalla ya no se enciende cada vez que el móvil se conecta o cambia la canción.
+  - **Apagado seguro:** aviso al 10 %; por debajo de 3,30 V guarda los ajustes y se apaga. Se enciende con PWR.
+  - Al enchufarlo, el ordenador vuelve a reconocer su USB aunque estuviera dormido.
+- La velocidad de las animaciones pasa a ser del 75 % por defecto.
 - **Actualizaciones sin WiFi en el reloj (3.0.0-beta.6, app 0.5.0):** el móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, que la instala mientras sigue funcionando, con una pantalla de progreso. Funciona en cualquier sitio con los datos del móvil. Los relojes anteriores siguen actualizándose por su WiFi. Desde el PC: `tools/ble_ota.py`.
 - Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.

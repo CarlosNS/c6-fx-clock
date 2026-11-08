@@ -11,6 +11,8 @@ void ble_start(void);
 bool ble_connected(void);
 // Sends a JSON message to the connected phone; false without a link
 bool ble_send_json(const char *json);
+// Asks the connected device for the fastest connection interval (firmware transfer, bleota.c)
+void ble_fast_link(void);
 // Forgets every paired phone (the next connection must pair again with the on-screen code)
 void ble_forget_all(void);
 // Advertised name ("Marea XXXX"); empty until the stack is up

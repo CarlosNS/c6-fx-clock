@@ -67,6 +67,25 @@ static uint32_t s_sync_count;
 static int64_t s_sync_last;  // epoch seconds
 
 static volatile bool s_running;  // host stack up (BLE boot mode)
+static bool s_gatt_changed;      // first boot of this firmware: paired devices get a "Service Changed"
+static ble_addr_t s_gatt_told[4];  // ...each one once
+static int s_gatt_told_n;
+
+// First boot of a firmware version: each paired device is told once that the services changed
+static void gatt_version_check(void)
+{
+    const char *ver = esp_app_get_description()->version;
+    char saved[32] = "";
+    size_t n = sizeof(saved);
+    nvs_handle_t h;
+    if (nvs_open("clock", NVS_READWRITE, &h) != ESP_OK) return;
+    if (nvs_get_str(h, "gatt_ver", saved, &n) != ESP_OK || strcmp(saved, ver) != 0) {
+        s_gatt_changed = true;
+        nvs_set_str(h, "gatt_ver", ver);
+        nvs_commit(h);
+    }
+    nvs_close(h);
+}
 
 bool ble_connected(void) { return s_conn != BLE_HS_CONN_HANDLE_NONE; }
 
@@ -111,6 +130,17 @@ static void send_msg(const char *json, size_t len)
 }
 
 static void send_str(const char *json) { send_msg(json, strlen(json)); }
+
+void ble_fast_link(void)
+{
+    // 7.5-15 ms, no latency: what a firmware transfer needs (the phone or PC may refuse; then it
+    // stays at its own pace). The link goes back to normal when it is next opened.
+    uint16_t conn = s_conn;
+    if (conn == BLE_HS_CONN_HANDLE_NONE) return;
+    struct ble_gap_upd_params p = {.itvl_min = 6, .itvl_max = 12, .latency = 0, .supervision_timeout = 400};
+    int rc = ble_gap_update_params(conn, &p);
+    ESP_LOGI(TAG, "Asked for a fast link (%d)", rc);
+}
 
 bool ble_send_json(const char *json)
 {
@@ -431,6 +461,19 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         break;
     case BLE_GAP_EVENT_ENC_CHANGE:
         g_app.pairing_code = -1;
+        // A new firmware may have new characteristics, and phones / PCs keep a cached copy of a paired
+        // watch's services: tell them to read them again ("Service Changed"). A device that connects
+        // only after a later reboot misses it; the app then refreshes its cache itself (ClockBle.kt)
+        if (s_gatt_changed && link_secure(ev->enc_change.conn_handle)) {
+            struct ble_gap_conn_desc d;
+            bool told = ble_gap_conn_find(ev->enc_change.conn_handle, &d) != 0;  // no peer: nothing to do
+            for (int i = 0; i < s_gatt_told_n && !told; i++) told = ble_addr_cmp(&s_gatt_told[i], &d.peer_id_addr) == 0;
+            if (!told && s_gatt_told_n < 4) {  // once per paired device (it cancels what that link was doing)
+                s_gatt_told[s_gatt_told_n++] = d.peer_id_addr;
+                ble_svc_gatt_changed(0x0001, 0xFFFF);
+                ESP_LOGI(TAG, "Service Changed sent (new firmware)");
+            }
+        }
         ESP_LOGI(TAG, "Encryption %s (status %d)", link_secure(ev->enc_change.conn_handle) ? "on, paired" : "failed",
                  ev->enc_change.status);
         break;
@@ -513,6 +556,7 @@ static void host_task(void *arg)
 void ble_start(void)
 {
     s_queue = xQueueCreate(QUEUE_LEN, sizeof(cmd_t));
+    gatt_version_check();
     const esp_timer_create_args_t t = {.callback = slow_down, .name = "ble_adv"};
     esp_timer_create(&t, &s_adv_timer);
     const esp_timer_create_args_t q = {.callback = quiet_tick, .name = "ble_quiet"};

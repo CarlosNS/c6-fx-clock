@@ -45,6 +45,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
     private var ota: BluetoothGattCharacteristic? = null  // firmware packets (clocks from 3.0.0-beta.6)
     @Volatile var mtu = 23
         private set
+    private var refreshed = false  // service cache already thrown away on this connection
     /** The clock takes its firmware over Bluetooth (ClockUpdate). */
     val canOta get() = ota != null
     private val ops = Mutex()
@@ -57,6 +58,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, state: Int) {
             Log.i(TAG, "connection state $state (status $status)")
             if (state == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
+                refreshed = false
                 g.requestMtu(Protocol.MTU)
             } else {
                 val was = ready
@@ -76,11 +78,26 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             g.discoverServices()
         }
 
+        override fun onServiceChanged(g: BluetoothGatt) {
+            // The watch got a new firmware and says its services changed (Android 12+)
+            Log.i(TAG, "services changed, discovering again")
+            g.discoverServices()
+        }
+
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             val svc = g.getService(Protocol.SERVICE)
             val evt = svc?.getCharacteristic(Protocol.EVT)
+            // Android keeps a cached copy of a paired device's services: after a firmware update it may
+            // miss new characteristics. Once per connection, throw the cache away and look again.
+            if (svc != null && svc.getCharacteristic(Protocol.OTA) == null && !refreshed) {
+                refreshed = true
+                val ok = runCatching { g.javaClass.getMethod("refresh").invoke(g) as Boolean }.getOrDefault(false)
+                Log.i(TAG, "no firmware characteristic: refreshing the service cache ($ok)")
+                if (ok && g.discoverServices()) return
+            }
             cmd = svc?.getCharacteristic(Protocol.CMD)
             ota = svc?.getCharacteristic(Protocol.OTA)
+            if (ready) return  // a second discovery on a working link: only the references change
             val cccd = evt?.getDescriptor(Protocol.CCCD)
             if (evt == null || cccd == null || cmd == null) {
                 Log.w(TAG, "not a Marea clock")

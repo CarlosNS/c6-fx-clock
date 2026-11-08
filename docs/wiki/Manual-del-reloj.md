@@ -66,7 +66,7 @@ Desliza desde el borde de arriba en la esfera.
 | Control | Qué hace |
 |---|---|
 | **Brillo** | Arrastra la barra con el dedo |
-| **Bluetooth** | Dice si el móvil está conectado |
+| **WiFi** | Enciende o apaga el WiFi del reloj. Viene **apagado**: el móvil trae la hora, el tiempo y las actualizaciones por Bluetooth. Encendido dice *buscando*, *conectado* o *red propia* |
 | **Silencio** | *No molestar*: ni las alarmas ni las llamadas suenan (las alarmas se siguen mostrando) |
 | **Siempre** | Pantalla siempre encendida (gasta más batería) |
 | **Linterna** | Abre la [linterna](#linterna) |
@@ -205,13 +205,15 @@ Otros ajustes, como el formato de 24 horas, la velocidad de las animaciones, la 
 
 - El porcentaje se ve en la barra de estado y en los ajustes rápidos.
 - Con el cable USB conectado aparece un **rayo** sobre el icono: *cargando* mientras sube y *cargada* al llegar al máximo.
-- Al 15 % o menos, el icono se pone en rojo coral.
-- Para que dure más: brillo bajo, pantalla que se apaga pronto, sin *Siempre encendida* y esferas oscuras.
+- Al 15 % o menos, el icono se pone en rojo coral. Al 10 % el reloj enciende la pantalla y avisa: **BATERÍA BAJA**.
+- **Apagado seguro:** si la batería baja de 3,30 V durante 9 segundos seguidos (sin cable), el reloj muestra *Batería agotada*, guarda los ajustes y se apaga del todo, antes de que un apagón a mitad de una escritura pueda estropear algo. Para volver a usarlo, cárgalo y pulsa el botón **PWR**. La hora la conserva el reloj de hardware.
+- Con la pantalla apagada y sin cable, el procesador **duerme** entre comprobación y comprobación (botón, toque y muñeca, 20 veces por segundo) y el Bluetooth sigue conectado en modo de bajo consumo.
+- Para que dure más: WiFi apagado (como viene), brillo bajo, pantalla que se apaga pronto, sin *Siempre encendida* y esferas oscuras.
 
 ## Conexiones
 
 - **Bluetooth:** la [[App Android]] se queda conectada mientras el reloj está cerca y vuelve a conectar sola. El reloj se anuncia como **Marea XXXX** y recuerda hasta 3 móviles.
-- **WiFi:** funciona a la vez que el Bluetooth. Se usa para las [[Actualizaciones]], para traer el tiempo y para la [[Página de control]] en `http://<IP del reloj>` (la IP sale en *Ajustes → Conexiones*). Sin red guardada, el reloj crea la suya, **Marea** (clave `mareamarea`, página en `http://192.168.4.1`).
-- **Actualizaciones:** desde la app o la página, *Actualizaciones → Buscar actualización*. El reloj se reinicia, descarga la versión nueva por su WiFi y vuelve solo.
+- **WiFi:** viene **apagado** para ahorrar batería; se enciende en los ajustes rápidos o en la app (*Conexión → WiFi del reloj*). Solo hace falta para la [[Página de control]] desde un navegador, en `http://<IP del reloj>` (la IP sale en *Ajustes → Conexiones*). Si no encuentra tu red, lo vuelve a intentar con pausas cada vez más largas, hasta una por minuto. Sin red guardada, o si la tuya no responde en un minuto, crea la suya, **Marea** (clave `mareamarea`, página en `http://192.168.4.1`).
+- **Actualizaciones:** desde la app, *Actualizaciones → Buscar actualización*. El móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, sin WiFi (ver [[Actualizaciones]]).
 
 ¿Algo no funciona? [[Solución de problemas]].

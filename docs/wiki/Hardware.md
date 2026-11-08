@@ -36,7 +36,7 @@ El panel de 410 columnas empieza en la columna 22 de la memoria del controlador 
 
 ### Memoria
 
-Lo que se agota es la **RAM interna**: quedan unos 70 KB con WiFi y Bluetooth en marcha. Los fotogramas, los búferes de WiFi, NimBLE y TLS, y los búferes grandes de las esferas van a la PSRAM. La caché de datos de 64 KB del S3 cuelga la placa al arrancar: no se activa.
+Lo que se agota es la **RAM interna**: quedan unos 60 KB al arrancar. Los fotogramas, los búferes de WiFi, NimBLE y TLS, y las tablas grandes de las esferas van a la PSRAM: las globales, con `EXT_RAM_BSS_ATTR`. Solo se quedan en la RAM interna las que se leen en cada píxel, como las del Túnel. La caché de datos de 64 KB del S3 cuelga la placa al arrancar: no se activa.
 
 ### Particiones (32 MB)
 

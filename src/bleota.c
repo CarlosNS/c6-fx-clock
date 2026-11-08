@@ -217,6 +217,7 @@ static void begin(const char *args)
         return send_err("sin memoria");
     }
     ESP_LOGI(TAG, "Receiving %s (%u bytes)", ver, size);
+    ble_fast_link();
     sys_alert(&app_ota);
     char extra[32];
     snprintf(extra, sizeof(extra), ",\"win\":%d", WINDOW);

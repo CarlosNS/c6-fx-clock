@@ -73,6 +73,8 @@ class ClockLink:
         self.address = address
 
         async def go():
+            # Windows caches the services of a paired device; a firmware with new characteristics
+            # announces it with "Service Changed" (src/ble.c) and Windows reads them again
             self._client = BleakClient(address, timeout=self.timeout)
             await self._client.connect()
             if pair:
