@@ -59,7 +59,7 @@ Una por mensaje (lista completa en `src/control.h`):
 | `wifi` + `\n<ssid>\n<contraseña>` | Guarda y usa una red WiFi |
 | `music <suena 0/1> <volumen>\|<título>\|<artista>`, `music off` | Lo que suena en el móvil |
 | `call ring\|<quién>`, `call end` | Llamada entrante y su final |
-| `ui home\|quick\|launcher\|app N\|tap X Y\|swipe dir [borde]\|long X Y` | Maneja el sistema a distancia (tests y capturas) |
+| `ui home\|quick\|launcher\|app N|ring|tap X Y\|tap X Y\|swipe dir [borde]\|long X Y` | Maneja el sistema a distancia (tests y capturas) |
 | `drag <x> <y> <dx> <dy>` / `up` | Panel táctil de las esferas interactivas |
 | `dbgtime <h> <m>` | Previsualiza otra hora del día (`-1 0` = hora real) |
 | `mode ble\|update\|usb` | Reinicia en ese modo |
