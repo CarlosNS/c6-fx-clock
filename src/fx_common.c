@@ -32,10 +32,10 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "RPG", .res = FX_WIDE, .enter = rpg_enter, .render = rpg_render,
      .label = "RPG", .group = FX_G_GAMES,
      .desc = "Batalla estilo JRPG clásico: las barras de turno marcan los segundos y cada minuto se lanza un hechizo con la hora como daño."},
-    {.name = "ESTRELLADA", .landscape = true, .enter = starry_enter, .render = starry_render,
+    {.name = "ESTRELLADA", .res = FX_WIDE, .enter = starry_enter, .render = starry_render,
      .label = "Estrellada", .group = FX_G_ART,
      .desc = "La noche estrellada (Van Gogh, 1889) animada: cielo de pinceladas en remolino, halos que laten y ciprés al viento."},
-    {.name = "WIFI", .landscape = true, .enter = wifimon_enter, .render = wifimon_render,
+    {.name = "WIFI", .res = FX_WIDE, .enter = wifimon_enter, .render = wifimon_render,
      .label = "WiFi", .group = FX_G_CLOCKS,
      .desc = "La hora en grande sobre un espectro tenue de las redes WiFi de alrededor, que se escanean en segundo plano."},
     // 10: retired (El grito, removed for good on 2026-11-07). The number stays taken.

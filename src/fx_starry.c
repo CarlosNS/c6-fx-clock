@@ -1,4 +1,4 @@
-// "Estrellada" (landscape): after Van Gogh's The Starry Night (1889, public domain).
+// "Estrellada" (full screen, wide canvas, portrait): after Van Gogh's The Starry Night (1889, public domain).
 // The sky is a field of brush-stroke bands bent by a turning vortex and slow domain warping;
 // stars and the crescent moon pulse inside concentric halos, the cypress sways like a flame
 // and the village windows flicker.
@@ -8,17 +8,18 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LAND_W
-#define H LAND_H
+#define W WW
+#define H WH
 #define SW (W / 2)  // sky computed at half resolution
 #define SH (H / 2)
+#define CYP_X 52  // the cypress, tall on the left
 
 static const uint8_t sky_pal[8][3] = {
     {16, 30, 84}, {28, 52, 128}, {44, 82, 170}, {78, 120, 196},
     {130, 170, 214}, {196, 214, 210}, {92, 132, 200}, {34, 64, 146},
 };
 static const struct { int16_t x, y, r; } stars[] = {
-    {40, 22, 6}, {108, 14, 7}, {150, 46, 5}, {196, 30, 6}, {232, 58, 5}, {258, 22, 7}, {182, 70, 4}, {84, 64, 5},
+    {112, 30, 6}, {62, 70, 5}, {244, 118, 5}, {150, 98, 4}, {108, 120, 4}, {176, 26, 5}, {250, 190, 5}, {232, 228, 4},
 };
 
 void starry_enter(void) {}
@@ -39,7 +40,7 @@ void starry_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // ---- Sky: warped stroke bands with a vortex near the center-left
     int ph1 = t / 9, ph2 = t / 13;
-    int vx = 74, vy = 30;
+    int vx = 84, vy = 44;
     for (int sy = 0; sy < SH; sy++) {
         int warp_x = (sin_q14[(sy * 23 + ph1) & 1023] * 5) >> 14;
         uint16_t *r0 = fb + (sy * 2) * W, *r1 = r0 + W;
@@ -63,7 +64,7 @@ void starry_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // ---- Stars and moon in their halos
     for (unsigned i = 0; i < sizeof(stars) / sizeof(stars[0]); i++) halo(fb, stars[i].x, stars[i].y, stars[i].r, t, i);
-    int mx = 292, my = 26;
+    int mx = 214, my = 64;
     int mp = sin_u8[(uint8_t)(t / 16)] >> 6;
     gfx_ring(fb, mx, my, 18 + mp, 22 + mp, rgb565(190, 170, 90));
     gfx_ring(fb, mx, my, 13, 18 + mp, rgb565(232, 196, 92));
@@ -72,7 +73,7 @@ void starry_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // ---- Rolling hills with banded strokes
     for (int x = 0; x < W; x++) {
-        int h1 = 112 + ((sin_q14[(x * 3 + 100) & 1023] * 8) >> 14) + ((sin_q14[(x * 7) & 1023] * 3) >> 14);
+        int h1 = 240 + ((sin_q14[(x * 3 + 100) & 1023] * 10) >> 14) + ((sin_q14[(x * 7) & 1023] * 3) >> 14);
         for (int y = h1; y < H; y++) {
             int band = ((y - h1) + ((sin_q14[(x * 9 + y * 20) & 1023] * 2) >> 14)) / 3;
             static const uint8_t hp[4][3] = {{40, 62, 110}, {28, 46, 92}, {52, 82, 120}, {22, 36, 70}};
@@ -84,44 +85,44 @@ void starry_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // ---- Village: houses with flickering windows and a church spire
     for (int i = 0; i < 16; i++) {
         uint32_t h = fx_hash(i, 5);
-        int hx = 96 + i * 13 + (int)(h % 5), hw = 9 + (int)(h % 4), hh = 7 + (int)((h >> 8) % 5);
-        int base = 150 + (int)((h >> 12) % 6);
+        int hx = 82 + i * 12 + (int)(h % 5), hw = 9 + (int)(h % 4), hh = 7 + (int)((h >> 8) % 5);
+        int base = 286 + (int)((h >> 12) % 6);
         uint16_t wall = (h & 1) ? rgb565(60, 72, 96) : rgb565(78, 84, 104);
         gfx_fill_rect(fb, hx, base - hh, hw, hh, wall);
         gfx_tri(fb, hx - 1, base - hh, hx + hw, base - hh, hx + hw / 2, base - hh - 5, rgb565(36, 46, 80));
         bool lit = sin_u8[(uint8_t)(t / 30 + i * 53)] > 70;
         gfx_fill_rect(fb, hx + 2, base - hh + 2, 2, 2, lit ? rgb565(255, 220, 90) : rgb565(150, 120, 60));
     }
-    gfx_fill_rect(fb, 186, 128, 7, 22, rgb565(60, 70, 98));
-    gfx_tri(fb, 184, 128, 195, 128, 189, 96, rgb565(46, 56, 90));
+    gfx_fill_rect(fb, 196, 264, 7, 24, rgb565(60, 70, 98));
+    gfx_tri(fb, 194, 264, 205, 264, 199, 230, rgb565(46, 56, 90));
 
     // ---- Cypress: a dark flame that sways from the base up
     int16_t poly[2 * 48];
     int n = 0;
     for (int k = 0; k <= 22; k++) {  // right edge, bottom to top
-        int y = H - k * 7;
-        int w = 18 - k * 16 / 22 + (sin_u8[(uint8_t)(k * 37 + t / 8)] >> 6);
+        int y = H - k * 11;
+        int w = 22 - k * 19 / 22 + (sin_u8[(uint8_t)(k * 37 + t / 8)] >> 6);
         int sway = (sin_q14[(t / 4 + k * 30) & 1023] * k / 3) >> 14;
-        poly[n * 2] = 40 + sway + w;
+        poly[n * 2] = CYP_X + sway + w;
         poly[n * 2 + 1] = y;
         n++;
     }
     for (int k = 22; k >= 0; k--) {  // left edge, top to bottom
-        int y = H - k * 7;
-        int w = 18 - k * 16 / 22 + (sin_u8[(uint8_t)(k * 53 + t / 7)] >> 6);
+        int y = H - k * 11;
+        int w = 22 - k * 19 / 22 + (sin_u8[(uint8_t)(k * 53 + t / 7)] >> 6);
         int sway = (sin_q14[(t / 4 + k * 30) & 1023] * k / 3) >> 14;
-        poly[n * 2] = 40 + sway - w;
+        poly[n * 2] = CYP_X + sway - w;
         poly[n * 2 + 1] = y;
         n++;
     }
     gfx_poly(fb, poly, n, rgb565(18, 30, 24));
     for (int s = 0; s < 6; s++) {  // inner strokes
         uint16_t c = s & 1 ? rgb565(54, 70, 40) : rgb565(36, 52, 36);
-        int px = 40 + (s - 3) * 4, py = H;
+        int px = CYP_X + (s - 3) * 5, py = H;
         for (int k = 1; k < 20; k++) {
-            int y = H - k * 7;
+            int y = H - k * 11;
             int sway = (sin_q14[(t / 4 + k * 30) & 1023] * k / 3) >> 14;
-            int x = 40 + sway + (s - 3) * (18 - k * 16 / 22) / 4 + ((sin_q14[(k * 90 + s * 200) & 1023] * 2) >> 14);
+            int x = CYP_X + sway + (s - 3) * (22 - k * 19 / 22) / 4 + ((sin_q14[(k * 90 + s * 200) & 1023] * 2) >> 14);
             gfx_line(fb, px, py, x, y, c);
             px = x;
             py = y;
@@ -129,9 +130,9 @@ void starry_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
 
     // ---- Clock: warm yellow over the night blues
-    clock_row_grad(fb, &font_round_m, 182, 92, -4, rgb565(255, 244, 170), rgb565(240, 176, 60), rgb565(14, 22, 60), 2);
+    clock_row_grad(fb, &font_round_m, 164, 140, -4, rgb565(255, 244, 170), rgb565(240, 176, 60), rgb565(14, 22, 60), 2);
     char date[24];
     clock_date_str(date);
-    ui_text(fb, &ui_s, 182 - ui_width(&ui_s, date) / 2, 156, date, rgb565(255, 236, 160), rgb565(14, 22, 60),
+    ui_text(fb, &ui_s, 164 - ui_width(&ui_s, date) / 2, 204, date, rgb565(255, 236, 160), rgb565(14, 22, 60),
             FONT_FILL | FONT_OUTLINE);
 }
