@@ -29,7 +29,7 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "AVENTURA", .landscape = true, .enter = quest_enter, .render = quest_render,
      .label = "Aventura", .group = FX_G_GAMES,
      .desc = "Viaje en pixel art con parallax y un lago con reflejos. El cielo, el sol, la luna y los faroles siguen la hora real."},
-    {.name = "RPG", .landscape = false, .enter = rpg_enter, .render = rpg_render,
+    {.name = "RPG", .res = FX_WIDE, .enter = rpg_enter, .render = rpg_render,
      .label = "RPG", .group = FX_G_GAMES,
      .desc = "Batalla estilo JRPG clásico: las barras de turno marcan los segundos y cada minuto se lanza un hechizo con la hora como daño."},
     {.name = "ESTRELLADA", .landscape = true, .enter = starry_enter, .render = starry_render,
@@ -74,7 +74,7 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "CLASICO", .res = FX_WIDE, .enter = classic_enter, .render = classic_render,
      .label = "Clásico", .group = FX_G_CLOCKS, .opts = "cl",
      .desc = "Reloj de vestir rectangular de estilo Art Déco: caja de metal pulido, esfera sunburst del color que elijas con reflejos que se mueven, agujas doradas, fecha a las 3 y pequeño segundero a las 6 que late 8 veces por segundo."},
-    {.name = "FERIA DE SEVILLA", .landscape = false, .enter = feria_enter, .render = feria_render,
+    {.name = "FERIA DE SEVILLA", .res = FX_WIDE, .enter = feria_enter, .render = feria_render,
      .label = "Feria de Sevilla", .group = FX_G_CLOCKS,
      .desc = "Cuenta atrás hasta el alumbrado de la Feria de Abril de Sevilla, con portada de bombillas, farolillos y lunares; durante la Feria, fuegos artificiales."},
 };

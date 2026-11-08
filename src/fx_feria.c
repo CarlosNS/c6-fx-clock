@@ -10,8 +10,11 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LCD_W  // 172 x 320
-#define H LCD_H
+#define W WW  // 274 x 336, the whole screen (wide canvas)
+#define H WH
+// The old 172 x 320 layout, centred: 51 px more on each side, 8 more above
+#define X(v) ((v) + 51)
+#define Y(v) ((v) + 8)
 
 // ---- Calendario (enteros, sin mktime) -------------------------------------------------------
 
@@ -110,29 +113,35 @@ static void bulb_line(uint16_t *fb, int x0, int y0, int x1, int y1, int n, uint3
 static void portada(uint16_t *fb, uint32_t t)
 {
     uint16_t body = rgb565(30, 22, 52);
-    gfx_fill_rect(fb, 22, 52, 128, 44, body);
-    gfx_fill_rect(fb, 22, 26, 26, 70, body);
-    gfx_fill_rect(fb, 124, 26, 26, 70, body);
-    gfx_tri(fb, 20, 26, 50, 26, 35, 6, body);
-    gfx_tri(fb, 122, 26, 152, 26, 137, 6, body);
+    gfx_fill_rect(fb, X(22), Y(52), 128, 44, body);
+    gfx_fill_rect(fb, X(22), Y(26), 26, 70, body);
+    gfx_fill_rect(fb, X(124), Y(26), 26, 70, body);
+    gfx_tri(fb, X(20), Y(26), X(50), Y(26), X(35), Y(6), body);
+    gfx_tri(fb, X(122), Y(26), X(152), Y(26), X(137), Y(6), body);
     // el arco: hueco oscuro con un semicírculo arriba
-    gfx_circle(fb, 86, 66, 22, rgb565(10, 8, 24));
-    gfx_fill_rect(fb, 64, 66, 44, 30, rgb565(10, 8, 24));
+    gfx_circle(fb, X(86), Y(66), 22, rgb565(10, 8, 24));
+    gfx_fill_rect(fb, X(64), Y(66), 44, 30, rgb565(10, 8, 24));
 
-    bulb_line(fb, 22, 96, 22, 28, 9, t, 100);
-    bulb_line(fb, 48, 96, 48, 28, 9, t, 200);
-    bulb_line(fb, 124, 96, 124, 28, 9, t, 300);
-    bulb_line(fb, 150, 96, 150, 28, 9, t, 400);
-    bulb_line(fb, 22, 28, 35, 8, 4, t, 500);
-    bulb_line(fb, 35, 8, 48, 28, 4, t, 600);
-    bulb_line(fb, 124, 28, 137, 8, 4, t, 700);
-    bulb_line(fb, 137, 8, 150, 28, 4, t, 800);
-    bulb_line(fb, 48, 52, 124, 52, 12, t, 900);
-    bulb_line(fb, 64, 96, 64, 66, 4, t, 1000);
-    bulb_line(fb, 108, 96, 108, 66, 4, t, 1100);
+    // guirnaldas del alumbrado, de las torres hacia los lados de la pantalla
+    for (int k = 0; k < 3; k++) {
+        bulb_line(fb, X(22), Y(40 + k * 22), 6, Y(100 + k * 18), 6, t, 1400 + k * 10);
+        bulb_line(fb, X(150), Y(40 + k * 22), W - 7, Y(100 + k * 18), 6, t, 1500 + k * 10);
+    }
+
+    bulb_line(fb, X(22), Y(96), X(22), Y(28), 9, t, 100);
+    bulb_line(fb, X(48), Y(96), X(48), Y(28), 9, t, 200);
+    bulb_line(fb, X(124), Y(96), X(124), Y(28), 9, t, 300);
+    bulb_line(fb, X(150), Y(96), X(150), Y(28), 9, t, 400);
+    bulb_line(fb, X(22), Y(28), X(35), Y(8), 4, t, 500);
+    bulb_line(fb, X(35), Y(8), X(48), Y(28), 4, t, 600);
+    bulb_line(fb, X(124), Y(28), X(137), Y(8), 4, t, 700);
+    bulb_line(fb, X(137), Y(8), X(150), Y(28), 4, t, 800);
+    bulb_line(fb, X(48), Y(52), X(124), Y(52), 12, t, 900);
+    bulb_line(fb, X(64), Y(96), X(64), Y(66), 4, t, 1000);
+    bulb_line(fb, X(108), Y(96), X(108), Y(66), 4, t, 1100);
     for (int i = 0; i <= 12; i++) {  // semicírculo del arco
         int a = i * 512 / 12;
-        bulb(fb, 86 + (sin_q14[(a + 256) & 1023] * 22 >> 14), 66 - (sin_q14[a & 1023] * 22 >> 14), t, 1200 + i);
+        bulb(fb, X(86) + (sin_q14[(a + 256) & 1023] * 22 >> 14), Y(66) - (sin_q14[a & 1023] * 22 >> 14), t, 1200 + i);
     }
 }
 
@@ -147,8 +156,8 @@ static void farolillos(uint16_t *fb, int y0, int sag, uint32_t t, int shift)
         if (px >= 0) gfx_line(fb, px, py, x, y, cord);
         px = x; py = y;
     }
-    for (int i = 0; i < 6; i++) {
-        int x = 14 + i * 29 + shift;
+    for (int i = 0; i < 8; i++) {
+        int x = 18 + i * 34 + shift;
         int y = y0 + (sin_q14[(x * 512 / W) & 1023] * sag >> 14);
         int sway = sin_q14[(t / 9 + i * 170) & 1023] * 2 >> 14;
         const uint8_t *c = cols[(i + shift) & 3];
@@ -166,7 +175,7 @@ static void firework(uint16_t *fb, uint32_t t, int k, int x0, int ytop, int yspa
 {
     uint32_t period = 2600, lt = (t + k * 1100) % period, seq = (t + k * 1100) / period;
     uint32_t hs = hash(seq * 7 + k);
-    int cx = x0 + hs % 70, cy = ytop + (hs >> 8) % yspan;
+    int cx = x0 + hs % 80, cy = ytop + (hs >> 8) % yspan;
     int r = lt * 34 / 1400;
     if (lt > 1700) return;
     int fade = lt < 900 ? 255 : 255 - (lt - 900) * 255 / 800;
@@ -187,73 +196,73 @@ void feria_render(uint16_t *fb, uint32_t t, uint32_t dt)
     bool party = f.fair || (g_now.valid && f.days == 0);  // la Feria, y el último día antes
 
     // Cielo de noche
-    for (int y = 0; y < 250; y++) {
+    for (int y = 0; y < 258; y++) {
         uint16_t c = rgb565(6 + y / 14, 8 + y / 25, 38 + y / 5);
         uint16_t *row = fb + y * W;
         for (int x = 0; x < W; x++) row[x] = c;
     }
-    for (int i = 0; i < 18; i++) {  // estrellas
+    for (int i = 0; i < 28; i++) {  // estrellas
         uint32_t hs = hash(i + 77);
         int v = 120 + (sin_q14[(t / 6 + hs) & 1023] * 90 >> 14);
-        fb[(hs % 70) * W + (hs >> 8) % W] = rgb565(v, v, v);
+        fb[(10 + hs % 66) * W + 30 + (hs >> 8) % (W - 60)] = rgb565(v, v, v);
     }
     if (party)
-        for (int k = 0; k < 3; k++) firework(fb, t, k, k * 40, 4, 80);
+        for (int k = 0; k < 3; k++) firework(fb, t, k, 20 + k * 74, 12, 80);
 
     portada(fb, t);
 
     // Rótulo
     uint16_t gold = rgb565(255, 205, 70), ink = rgb565(60, 10, 10);
-    gfx_text_ol(fb, (W - gfx_text_width("FERIA DE ABRIL", 2)) / 2, 100, "FERIA DE ABRIL", gold, ink, 2, 1);
+    gfx_text_ol(fb, (W - gfx_text_width("FERIA DE ABRIL", 2)) / 2, Y(100), "FERIA DE ABRIL", gold, ink, 2, 1);
 
-    farolillos(fb, 120, 9, t, 0);
+    farolillos(fb, Y(120), 12, t, 0);
 
     // Cuenta atrás
     char buf[32];
     uint16_t white = rgb565(255, 255, 255), dark = rgb565(30, 8, 20);
     if (!g_now.valid) {
-        gfx_text_ol(fb, (W - gfx_text_width("SIN HORA", 2)) / 2, 180, "SIN HORA", white, dark, 2, 1);
+        gfx_text_ol(fb, (W - gfx_text_width("SIN HORA", 2)) / 2, Y(180), "SIN HORA", white, dark, 2, 1);
     } else if (f.fair) {
         const char *l1 = "ES FERIA!";
-        gfx_text_ol(fb, (W - gfx_text_width(l1, 3)) / 2, 160, l1, gold, ink, 3, 1);
+        gfx_text_ol(fb, (W - gfx_text_width(l1, 3)) / 2, Y(160), l1, gold, ink, 3, 1);
         static const char *const dias[] = {"", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
         const char *d = dias[f.fair_day > 6 ? 6 : f.fair_day];
-        gfx_text_ol(fb, (W - gfx_text_width(d, 2)) / 2, 200, d, white, dark, 2, 1);
+        gfx_text_ol(fb, (W - gfx_text_width(d, 2)) / 2, Y(200), d, white, dark, 2, 1);
         sprintf(buf, "DIA %d DE 6", f.fair_day);
-        gfx_text_ol(fb, (W - gfx_text_width(buf, 1)) / 2, 226, buf, rgb565(255, 160, 140), dark, 1, 1);
+        gfx_text_ol(fb, (W - gfx_text_width(buf, 1)) / 2, Y(226), buf, rgb565(255, 160, 140), dark, 1, 1);
     } else {
-        gfx_text_ol(fb, (W - gfx_text_width("FALTAN", 2)) / 2, 152, "FALTAN", rgb565(255, 160, 140), dark, 2, 1);
+        gfx_text_ol(fb, (W - gfx_text_width("FALTAN", 2)) / 2, Y(152), "FALTAN", rgb565(255, 160, 140), dark, 2, 1);
         // los días en grande y "DIAS" a su derecha, apoyado en la misma línea
         sprintf(buf, "%d", f.days);
         const char *u = f.days == 1 ? "DIA" : "DIAS";
         int sp = -4, wd = font_width(&font_round_m, buf, sp), wu = gfx_text_width(u, 2);
         int x0 = (W - (wd + 6 + wu)) / 2;
-        font_draw(fb, &font_round_m, x0, 168, buf, sp, gold, ink, FONT_FILL | FONT_OUTLINE);
-        gfx_text_ol(fb, x0 + wd + 6, 190, u, white, dark, 2, 1);
+        font_draw(fb, &font_round_m, x0, Y(168), buf, sp, gold, ink, FONT_FILL | FONT_OUTLINE);
+        gfx_text_ol(fb, x0 + wd + 6, Y(190), u, white, dark, 2, 1);
         if (g_app.show_secs) sprintf(buf, "%02d:%02d:%02d", f.h, f.m, f.s);
         else sprintf(buf, "%02d:%02d", f.h, f.m);
-        gfx_text_ol(fb, (W - gfx_text_width(buf, 2)) / 2, 222, buf, rgb565(255, 235, 170), dark, 2, 1);
+        gfx_text_ol(fb, (W - gfx_text_width(buf, 2)) / 2, Y(228), buf, rgb565(255, 235, 170), dark, 2, 1);
     }
 
     // Caseta: toldo a rayas con festón
     for (int x = 0; x < W; x += 14) {
         bool red = (x / 14) & 1;
         uint16_t c = red ? rgb565(200, 30, 40) : rgb565(245, 240, 230);
-        gfx_fill_rect(fb, x, 250, 14, 10, c);
-        gfx_circle(fb, x + 7, 260, 7, c);
+        gfx_fill_rect(fb, x, 258, 14, 10, c);
+        gfx_circle(fb, x + 7, 268, 7, c);
     }
     // Traje de gitana: rojo con lunares blancos
     uint16_t red = rgb565(190, 20, 45), dot = rgb565(250, 245, 240);
-    gfx_fill_rect(fb, 0, 268, W, H - 268, red);
+    gfx_fill_rect(fb, 0, 276, W, H - 276, red);
     for (int row = 0; row < 4; row++)
-        for (int x = (row & 1) * 10 + 4; x < W; x += 20) gfx_circle(fb, x, 276 + row * 15, 3, dot);
+        for (int x = (row & 1) * 10 + 4; x < W; x += 20) gfx_circle(fb, x, 286 + row * 15, 3, dot);
     // Volante
-    for (int x = 0; x < W; x += 12) gfx_circle(fb, x + 6, 268, 6, rgb565(235, 70, 80));
+    for (int x = 0; x < W; x += 12) gfx_circle(fb, x + 6, 276, 6, rgb565(235, 70, 80));
 
     // Hora actual
     char date[24];
     clock_date_str(date);
-    gfx_text_ol(fb, (W - gfx_text_width(date, 1)) / 2, 273, date, white, red, 1, 1);
-    clock_draw_row(fb, &font_round_s, 286, -3, white, rgb565(90, 5, 25), FONT_FILL | FONT_OUTLINE);
+    gfx_text_ol(fb, (W - gfx_text_width(date, 1)) / 2, 282, date, white, red, 1, 1);
+    clock_draw_row(fb, &font_round_s, 294, -3, white, rgb565(90, 5, 25), FONT_FILL | FONT_OUTLINE);
     (void)dt;
 }

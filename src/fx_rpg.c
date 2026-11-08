@@ -12,12 +12,17 @@
 #include "gfx.h"
 #include "sprites.h"
 
-#define W LCD_W
-#define H LCD_H
-#define SCENE_H 240
-#define FOCAL 150.0f
-#define CX 86.0f
-#define CY 118.0f
+#define W WW  // the whole screen (wide canvas): the arena fills it, the menus float over it
+#define H WH
+#define SCENE_H WH
+#define FOCAL 180.0f
+#define CX 137.0f
+#define CY 134.0f
+// Party window: narrower than the screen so its corners stay clear of the rounded display corners
+#define PW_X 34
+#define PW_Y 242
+#define PW_W (W - 2 * PW_X)
+#define PW_H 74
 #define CAST_MS 3600
 
 typedef struct { float x, y, z; } v3;
@@ -82,14 +87,14 @@ static void sky(uint16_t *fb, int horizon, float yaw, uint32_t t)
         uint16_t c = rgb565(8 + (62 * f >> 8), 10 + (36 * f >> 8), 32 + (90 * f >> 8));
         gfx_fill_rect(fb, 0, y, W, 1, c);
     }
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 60; i++) {
         uint32_t h = hash(i, 3);
-        int x = (int)(h % 600) - (int)(yaw * 120), y = (h >> 10) % 90;
-        x = ((x % 600) + 600) % 600;
+        int x = (int)(h % 700) - (int)(yaw * 140), y = 6 + (h >> 10) % 110;
+        x = ((x % 700) + 700) % 700;
         if (x < W && y < horizon - 4 && sin_u8[(uint8_t)(t / 20 + i * 29)] > 100) fb[y * W + x] = rgb565(220, 225, 255);
     }
     // A ringed planet hanging in the sky
-    int px = (int)(CX + (-0.35f - yaw) * FOCAL), py = 34;
+    int px = (int)(CX + (0.5f - yaw) * FOCAL), py = 100;
     if (px > -40 && px < W + 40) {
         gfx_glow(fb, px, py, 34, rgb565(120, 90, 200), 6);
         for (int dy = -16; dy <= 16; dy++)
@@ -439,18 +444,18 @@ void rpg_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Calligraphic menu numerals: white-to-pale-blue gradient, navy outline, soft shadow
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
-    font_draw_grad(fb, &font_nib_m, (W - font_width(&font_nib_m, "00:00", -3)) / 2, 6, hhmm, -3, rgb565(255, 255, 255),
+    font_draw_grad(fb, &font_nib_m, (W - font_width(&font_nib_m, "00:00", -3)) / 2, 12, hhmm, -3, rgb565(255, 255, 255),
                    rgb565(165, 195, 255), rgb565(10, 14, 50), 2);
     char date[32];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
     else strcpy(date, "SIN HORA");
-    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 69, date, dim, ink, FONT_FILL | FONT_OUTLINE);
+    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 76, date, dim, ink, FONT_FILL | FONT_OUTLINE);
 
     if (s_casting && cp < 0.75f) {  // spell banner
         const char *sp = spells[s_spell];
         int bw = ui_width(&ui_m, sp) + 24, bx = (W - bw) / 2;
-        window(fb, bx, 210, bw, 24);
-        ui_text(fb, &ui_m, bx + 12, 214, sp, white, ink, FONT_FILL | FONT_OUTLINE);
+        window(fb, bx, PW_Y - 30, bw, 24);
+        ui_text(fb, &ui_m, bx + 12, PW_Y - 26, sp, white, ink, FONT_FILL | FONT_OUTLINE);
     }
     if (s_casting && cp > 0.5f) {  // damage number bouncing over the guardian, on top of everything
         float u = (cp - 0.5f) / 0.5f;
@@ -461,32 +466,32 @@ void rpg_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
 
     // Party window
-    window(fb, 4, 240, W - 8, 76);
+    window(fb, PW_X, PW_Y, PW_W, PW_H);
     for (int i = 0; i < 3; i++) {
-        int y = 246 + i * 23;
+        int y = PW_Y + 4 + i * 23, L = PW_X + 12;
         bool active = s_casting ? i == s_caster : (g_now.valid && (int)(g_now.minute_ms / 20000) == i);
-        if (active) gfx_tri(fb, 9, y + 3, 9, y + 11, 13, y + 7, rgb565(255, 230, 140));
-        ui_text(fb, &ui_m, 16, y, names[i], active ? rgb565(255, 240, 180) : white, ink, FONT_FILL | FONT_OUTLINE);
+        if (active) gfx_tri(fb, L - 7, y + 3, L - 7, y + 11, L - 3, y + 7, rgb565(255, 230, 140));
+        ui_text(fb, &ui_m, L, y, names[i], active ? rgb565(255, 240, 180) : white, ink, FONT_FILL | FONT_OUTLINE);
         int hp = 1800 + (int)(hash(i, g_now.day) % 900), hpmax = 2999;
         char hpb[16];
         snprintf(hpb, sizeof(hpb), "%d", hp);
-        ui_text(fb, &ui_s, 92 - ui_width(&ui_s, hpb), y + 3, hpb, white, ink, FONT_FILL | FONT_OUTLINE);
-        bar(fb, 16, y + 16, 76, 2, 76 * hp / hpmax, rgb565(60, 200, 120), rgb565(170, 255, 170));
-        bar(fb, 16, y + 19, 76, 1, 76 * (60 + (i * 13) % 40) / 100, rgb565(60, 120, 255), rgb565(150, 200, 255));
+        ui_text(fb, &ui_s, L + 76 - ui_width(&ui_s, hpb), y + 3, hpb, white, ink, FONT_FILL | FONT_OUTLINE);
+        bar(fb, L, y + 16, 76, 2, 76 * hp / hpmax, rgb565(60, 200, 120), rgb565(170, 255, 170));
+        bar(fb, L, y + 19, 76, 1, 76 * (60 + (i * 13) % 40) / 100, rgb565(60, 120, 255), rgb565(150, 200, 255));
         // ATB: each member's bar fills during its third of the minute
-        int bw = W - 8 - 100 - 8, fill = 0;
+        int ax = L + 84, bw = PW_X + PW_W - 8 - ax, fill = 0;
         if (g_now.valid) {
             int ms = g_app.show_secs ? (int)g_now.minute_ms - i * 20000 : 20000;
             fill = ms <= 0 ? 0 : ms >= 20000 ? bw : ms * bw / 20000;
         }
         bool full = fill >= bw;
-        bar(fb, 100, y + 7, bw, 6, fill, full ? rgb565(255, 190, 40) : rgb565(40, 90, 200),
+        bar(fb, ax, y + 7, bw, 6, fill, full ? rgb565(255, 190, 40) : rgb565(40, 90, 200),
             full ? rgb565(255, 250, 170) : rgb565(120, 210, 255));
         if (full) {  // shimmer
-            int sx = 100 + (int)((t / 6 + i * 20) % (bw + 30)) - 15;
+            int sx = ax + (int)((t / 6 + i * 20) % (bw + 30)) - 15;
             for (int k = 0; k < 6; k++)
-                if (sx + k >= 100 && sx + k < 100 + bw) gfx_fill_rect(fb, sx + k, y + 7, 1, 6, gfx_blend(rgb565(255, 220, 120), white, 16 - k * 2));
+                if (sx + k >= ax && sx + k < ax + bw) gfx_fill_rect(fb, sx + k, y + 7, 1, 6, gfx_blend(rgb565(255, 220, 120), white, 16 - k * 2));
         }
     }
-    if (!g_app.h24 && g_now.valid) ui_text(fb, &ui_s, W - 24, 52, g_now.h < 12 ? "AM" : "PM", dim, ink, FONT_FILL | FONT_OUTLINE);
+    if (!g_app.h24 && g_now.valid) ui_text(fb, &ui_s, W - 58, 60, g_now.h < 12 ? "AM" : "PM", dim, ink, FONT_FILL | FONT_OUTLINE);
 }
