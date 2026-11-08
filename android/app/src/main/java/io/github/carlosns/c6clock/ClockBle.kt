@@ -73,7 +73,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             cmd = svc?.getCharacteristic(Protocol.CMD)
             val cccd = evt?.getDescriptor(Protocol.CCCD)
             if (evt == null || cccd == null || cmd == null) {
-                Log.w(TAG, "not a C6 clock")
+                Log.w(TAG, "not a Marea clock")
                 setup.trySend(-2)
                 return
             }
@@ -122,7 +122,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             close()
             throw IllegalStateException(
                 when (status) {
-                    -2 -> "Ese dispositivo no es un reloj C6"
+                    -2 -> "Ese dispositivo no es un reloj Marea"
                     -3 -> "El reloj no responde"
                     else -> "No se pudo conectar ($status)"
                 },
@@ -160,6 +160,13 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                 answer.await()
             }
         }
+
+    /** Quick connection interval while someone looks at the page, low power the rest of the time. */
+    fun priority(high: Boolean) {
+        gatt?.requestConnectionPriority(
+            if (high) BluetoothGatt.CONNECTION_PRIORITY_BALANCED else BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER,
+        )
+    }
 
     fun close() {
         ready = false

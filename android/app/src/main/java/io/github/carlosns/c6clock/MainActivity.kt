@@ -37,11 +37,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -57,9 +55,10 @@ import java.util.concurrent.Executor
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
     private lateinit var store: Store
-    private var link: ClockBle? = null
-    private var keeper: Job? = null
     private var pageReady = false
+    private val link get() = Live.link?.takeIf { it.ready }
+    private val onClockMessage: (String) -> Unit = { s -> js("clockMessage", JSONObject.quote(s)) }
+    private val onClockState: (Boolean) -> Unit = { up -> js("clockState", up.toString()) }
 
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { connectIfPaired() }
     private val chooser = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
@@ -131,53 +130,35 @@ class MainActivity : ComponentActivity() {
         if (i?.getBooleanExtra("sync", false) == true) SyncWorker.runNow(this)
     }
 
+    // The link itself lives in LinkService and stays up with the app closed; on screen it only runs
+    // at a quicker interval and the page listens to it
     override fun onStart() {
         super.onStart()
+        Live.visible = true
+        Live.listen(onClockMessage, onClockState)
+        Live.link?.priority(true)
         connectIfPaired()
     }
 
-    // In the background the periodic sync connects by itself: the open link would only cost battery
     override fun onStop() {
         super.onStop()
-        disconnect()
+        Live.visible = false
+        Live.unlisten(onClockMessage, onClockState)
+        Live.link?.priority(false)
     }
 
-    /** Keeps the link up while the app is visible, retrying with growing pauses. */
+    /** Makes sure the permanent link is running (it connects and reconnects by itself). */
     private fun connectIfPaired() {
-        val address = store.address ?: return
-        // Only while visible: the page can finish loading (or pairing end) after the user has left
-        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
-        if (!pageReady || !Perms.canConnect(this) || keeper?.isActive == true) return
-        keeper = lifecycleScope.launch {
-            var wait = 1_000L
-            while (true) {
-                val l = link?.takeIf { it.ready } ?: ClockBle(this@MainActivity, address).also { l ->
-                    l.onMessage = { s -> runOnUiThread { js("clockMessage", JSONObject.quote(s)) } }
-                    l.onState = { up -> runOnUiThread { js("clockState", up.toString()) } }
-                }
-                try {
-                    l.connect()
-                    link = l
-                    Live.link = l
-                    wait = 1_000L
-                    while (l.ready) delay(1_000)
-                } catch (e: Exception) {
-                    Log.i(TAG, "connect: ${e.message}")
-                    l.close()
-                }
-                delay(wait)
-                wait = minOf(wait * 2, 15_000)
-            }
-        }
+        if (store.address == null || !pageReady || !Perms.canConnect(this)) return
+        js("clockState", (link != null).toString())
+        LinkService.start(this)
     }
 
-    private fun disconnect() {
-        keeper?.cancel()
-        keeper = null
-        link?.close()
-        link = null
-        Live.link = null
-        js("clockState", "false")
+    /** Lets the app read the music and call notifications (the system's own screen). */
+    private fun allowPhone() {
+        val cdm = getSystemService(CompanionDeviceManager::class.java)
+        runCatching { cdm.requestNotificationAccess(android.content.ComponentName(this, PhoneWatch::class.java)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
     }
 
     /** Calls window.fn(arg) in the page; from any thread (the WebView only accepts the main one). */
@@ -226,9 +207,9 @@ class MainActivity : ComponentActivity() {
                 store.address = address
                 SyncWorker.schedule(this@MainActivity)
                 Presence.observe(this@MainActivity, address)
-                disconnect()
+                LinkService.stop(this@MainActivity)  // a link to another clock, if any
+                delay(500)
                 connectIfPaired()
-                SyncWorker.runNow(this@MainActivity)
             } catch (e: Exception) {
                 js("clockPickFailed", JSONObject.quote(e.message ?: "No se pudo emparejar"))
             }
@@ -263,7 +244,8 @@ class MainActivity : ComponentActivity() {
         val address = store.address ?: return
         lifecycleScope.launch {
             runCatching { link?.send("unpair") }  // the clock forgets this phone too
-            disconnect()
+            LinkService.stop(this@MainActivity)
+            Live.link?.close()
             SyncWorker.cancel(this@MainActivity)
             Presence.stop(this@MainActivity, address)
             store.address = null
@@ -341,11 +323,20 @@ class MainActivity : ComponentActivity() {
             .put("lastSync", store.lastSyncMs)
             .put("lastResult", store.lastResult)
             .put("every", SyncWorker.PERIOD_MIN)
+            .put("permanent", LinkService.running)
+            .put("phone", Phone.hasAccess(this@MainActivity))
             .put("background", getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
             .toString()
-        @JavascriptInterface fun syncNow() = SyncWorker.runNow(this@MainActivity)
+        @JavascriptInterface fun syncNow() {
+            val l = link ?: return SyncWorker.runNow(this@MainActivity)
+            lifecycleScope.launch {  // the open link syncs at once; without it, the worker connects
+                runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }
+                    .onFailure { store.lastResult = "falló: ${it.message}" }
+            }
+        }
         @JavascriptInterface fun forget() = runOnUiThread { this@MainActivity.forget() }
         @JavascriptInterface fun allowBackground() = runOnUiThread { this@MainActivity.allowBackground() }
+        @JavascriptInterface fun allowPhone() = runOnUiThread { this@MainActivity.allowPhone() }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }
         @JavascriptInterface fun installApp() = runOnUiThread { this@MainActivity.installApp() }

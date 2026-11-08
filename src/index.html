@@ -176,6 +176,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
   <h3>Este móvil</h3>
   <div class="item"><div class="t">Sincronización<small id="appsync">--</small></div><button class="btn" id="appnow">Ahora</button></div>
   <div class="item"><div class="t">Funcionar en segundo plano<small id="appbg">--</small></div><button class="btn" id="appbgo">Permitir</button></div>
+  <div class="item"><div class="t">Música y llamadas en el reloj<small id="appph">--</small></div><button class="btn" id="appphgo">Permitir</button></div>
   <div class="item"><div class="t">Olvidar este reloj<small>Borra el emparejamiento en el móvil y en el reloj</small></div><button class="btn" id="appforget">Olvidar</button></div>
 </div>
 
@@ -350,10 +351,11 @@ L.start({onState:up=>{$('dot').classList.toggle('on',up);if(L.needsPick&&up)$('b
  onMessage:m=>{if(m.t==='status')show(m)}});
 // Android app: sync, background permission and forgetting the clock live in Kotlin
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
- $('appsync').textContent=(i.lastSync?`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`:'Todavía ninguna')+` · cada ${i.every} min`;
+ $('appsync').textContent=(i.lastSync?`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`:'Todavía ninguna')+(i.permanent?' · conexión permanente':` · cada ${i.every} min`);
+ $('appph').textContent=i.phone?'Permitido: el reloj muestra lo que suena y avisa de las llamadas':'Sin permitir: la app necesita leer las notificaciones de música y llamadas';$('appphgo').classList.toggle('hide',!!i.phone);
  $('appbg').textContent=i.background?'Permitido: la hora y el tiempo llegan aunque cierres la app':'Sin permitir: el sistema puede cortar la sincronización';$('appbgo').classList.toggle('hide',i.background)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent='Sincronizando…';setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appforget').onclick=()=>{if(ask('¿Olvidar este reloj?','El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','Olvidar'))ClockBridge.forget()};
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appforget').onclick=()=>{if(ask('¿Olvidar este reloj?','El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','Olvidar'))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
  window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();$('appupdst').classList.remove('hide');$('appupdgo').classList.toggle('hide',!o);

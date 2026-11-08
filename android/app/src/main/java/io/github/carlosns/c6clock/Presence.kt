@@ -47,13 +47,20 @@ class ClockPresence : CompanionDeviceService() {
 
     private fun disappeared(address: String) {
         val store = Store(applicationContext)
-        if (address.equals(store.address, true) && store.goneSinceMs == 0L)
-            store.goneSinceMs = System.currentTimeMillis()
+        if (!address.equals(store.address, true)) return
+        if (store.goneSinceMs == 0L) store.goneSinceMs = System.currentTimeMillis()
+        LinkService.away(applicationContext)
     }
 
     private fun appeared(address: String) {
         val store = Store(applicationContext)
         if (!address.equals(store.address, true)) return
+        // The permanent link: it connects, syncs and stays (it reconnects by itself after a drop).
+        // Only if the system refuses to start it, the one-off sync below
+        if (LinkService.start(applicationContext)) {
+            store.goneSinceMs = 0
+            return
+        }
         val now = System.currentTimeMillis()
         val ago = now - store.lastSyncMs
         val gone = if (store.goneSinceMs > 0) now - store.goneSinceMs else 0

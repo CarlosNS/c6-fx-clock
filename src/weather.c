@@ -146,8 +146,8 @@ void weather_set_location(float lat, float lon, const char *name)
 
 void weather_set_from_web(int temp10, int code, int hum, int wind, int hi10, int lo10, bool is_day)
 {
-    // The board's own data wins while it is fresh
-    if (g_wx.valid && !g_wx.from_web && now_ms() - g_wx.stamp < REFRESH_MS) return;
+    // Same source (Open-Meteo) fetched just now by the phone or the page: the newest data always wins,
+    // and the board then skips its own download until it gets stale (weather_task)
     g_wx.temp10 = temp10;
     g_wx.code = code;
     g_wx.hum = hum;

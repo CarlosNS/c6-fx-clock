@@ -118,16 +118,16 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val store = Store(applicationContext)
         val address = store.address ?: return Result.success()
         if (!Perms.canConnect(applicationContext)) return Result.success()
+        // The permanent link syncs on every connection and every 30 min: only look for updates
+        if (LinkService.running) {
+            checkUpdates(store)
+            return Result.success()
+        }
         val shared = Live.link?.takeIf { it.ready && it.address == address }
         val link = shared ?: ClockBle(applicationContext, address)
         try {
             if (shared == null) link.connect()
-            val r = SyncSession(link, Net::weatherCommand).run()
-            store.lastSyncMs = System.currentTimeMillis()
-            store.clockVersion = r.version
-            store.clockBoard = r.board
-            store.lastResult = "ok" + if (r.weatherSent) "" else " (sin tiempo: no hay internet)"
-            Log.i(TAG, "sync ok: ${r.version}, ${r.place}, #${r.syncCount}")
+            record(store, SyncSession(link, Net::weatherCommand).run())
         } catch (e: Exception) {
             Log.w(TAG, "sync failed: ${e.message}")
             store.lastResult = "falló: ${e.message}"
@@ -158,6 +158,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         private const val NOW = "sync-now"
         const val PERIOD_MIN = 30L
 
+        /** Remembers the outcome of a sync, for the page and the update check. */
+        fun record(store: Store, r: SyncResult) {
+            store.lastSyncMs = System.currentTimeMillis()
+            store.clockVersion = r.version
+            store.clockBoard = r.board
+            store.lastResult = "ok" + if (r.weatherSent) "" else " (sin tiempo: no hay internet)"
+            Log.i(TAG, "sync ok: ${r.version}, ${r.place}, #${r.syncCount}")
+        }
+
         fun schedule(context: Context) {
             val req = PeriodicWorkRequestBuilder<SyncWorker>(PERIOD_MIN, TimeUnit.MINUTES).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, req)
@@ -180,11 +189,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             WorkManager.getInstance(context).cancelUniqueWork(PERIODIC)
         }
     }
-}
-
-/** The link the open app is using, shared with the worker so there is never a second connection. */
-object Live {
-    @Volatile var link: ClockBle? = null
 }
 
 object Perms {

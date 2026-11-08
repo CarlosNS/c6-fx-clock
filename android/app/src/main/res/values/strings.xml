@@ -2,4 +2,8 @@
 <resources>
     <string name="app_name">Marea</string>
     <string name="channel_updates">Actualizaciones del reloj</string>
+    <string name="channel_link">Conexión con el reloj</string>
+    <string name="link_up">Marea conectado</string>
+    <string name="link_searching">Buscando el reloj…</string>
+    <string name="link_text">Hora, tiempo, música y llamadas en el reloj</string>
 </resources>
