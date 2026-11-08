@@ -110,6 +110,13 @@ static void send_msg(const char *json, size_t len)
 
 static void send_str(const char *json) { send_msg(json, strlen(json)); }
 
+bool ble_send_json(const char *json)
+{
+    if (!ble_connected()) return false;
+    send_str(json);
+    return true;
+}
+
 static void send_status(void)
 {
     char *buf = malloc(1100);

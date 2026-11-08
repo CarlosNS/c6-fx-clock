@@ -52,14 +52,14 @@ bool ui_visible(int x, int y);
 
 // ---- Text (UTF-8; y is the top of the line) ----
 int ui_line_h(const ui_font_t *f, int scale);
-int ui_text_w(const ui_font_t *f, int scale, const char *s);
-int ui_text(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
+int ui_print_w(const ui_font_t *f, int scale, const char *s);
+int ui_print(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
 // With a hard shadow `scale` px down-right (Jersey titles: 2 px per scale step looks like the guide)
-int ui_text_sh(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
+int ui_print_sh(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
 // Centred on cx; with shadow if `sh`
-void ui_text_c(const ui_font_t *f, int scale, int cx, int y, const char *s, uint16_t color, bool sh);
+void ui_print_c(const ui_font_t *f, int scale, int cx, int y, const char *s, uint16_t color, bool sh);
 // Right-aligned to x
-void ui_text_r(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
+void ui_print_r(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color);
 // Largest scale from max down to min at which s fits in max_w (min if none does)
 int ui_fit(const ui_font_t *f, int max_scale, int min_scale, int max_w, const char *s);
 
@@ -83,6 +83,8 @@ void ui_status_bar(void);
 // ---- Background ----
 // The illustrated night sea (or dusk, for settings and pairing), generated once into PSRAM and copied
 void ui_background(bool dusk);
+// Copies rows y0..y1-1 of the background (to clean a band, e.g. under the status bar of a scrolled list)
+void ui_background_band(bool dusk, int y0, int y1);
 
 // ---- Colour helpers ----
 uint16_t ui_rgb(uint8_t r, uint8_t g, uint8_t b);       // panel byte order

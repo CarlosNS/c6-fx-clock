@@ -1,4 +1,6 @@
 #include "control.h"
+#include "phone.h"
+#include "sys.h"
 #include "board.h"
 #include "pmu_axp2101.h"
 #include <stdio.h>
@@ -30,6 +32,11 @@ void app_command(const char *cmd)
     // Using the web page keeps the screen on (but not its automatic time / weather pushes)
     if (strncmp(cmd, "time ", 5) != 0 && strncmp(cmd, "wx ", 3) != 0) app_wake();
 
+    if (phone_command(cmd)) return;  // "music ..." / "call ..." from the phone app
+    if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"...
+        sys_request(cmd + 3);
+        return;
+    }
     if (sscanf(cmd, "drag %d %d %d %d", &a, &b, &c, &d) == 4) {
         app_drag(a, b, c, d);
         return;

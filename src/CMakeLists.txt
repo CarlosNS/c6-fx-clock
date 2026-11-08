@@ -4,6 +4,10 @@ set(srcs "main.c" "gfx.c" "fonts.c" "uifont.c" "sprites.c" "clock.c" "web.c" "ne
          "fx_starry.c" "fx_wifimon.c" "fx_earthrise.c" "fx_sakura.c"
          "fx_synth.c" "fx_sand.c" "fx_gears.c" "fx_rain.c" "fx_blackhole.c" "fx_goal.c" "fx_weather.c" "fx_classic.c" "fx_feria.c")
 
+# The watch system: Marea Solsticial toolkit, gestures, shell and apps
+list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "alarm.c" "audio.c" "phone.c"
+                 "app_faces.c" "app_settings.c" "app_stopwatch.c" "app_torch.c" "app_alarms.c" "app_steps.c"
+                 "app_music.c" "app_files.c")
 list(APPEND srcs "board.c" "lcd_co5300.c" "i2c_bus.c" "pmu_axp2101.c" "rtc_pcf85063.c" "touch_ft3168.c" "imu_qmi8658.c")
 
 idf_component_register(

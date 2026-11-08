@@ -12,7 +12,7 @@
 
 typedef enum { VIEW_FACE, VIEW_QUICK, VIEW_LAUNCHER, VIEW_APP } view_t;
 
-void sys_init(void);
+void sys_shell_init(void);
 view_t sys_view(void);
 // A gesture; waking: this touch turned the screen on (it does nothing else)
 void sys_event(const ui_event_t *e);
@@ -29,6 +29,12 @@ void sys_home(void);
 void sys_open_quick(void);
 void sys_open_launcher(void);
 void sys_open_app(int index);
+// Opens an app that is not in the launcher (or any app by pointer)
+struct app_s;
+void sys_open(const struct app_s *a);
+// An alert (alarm ringing, incoming call) takes the screen; sys_alert_done() goes back to where it was
+void sys_alert(const struct app_s *a);
+void sys_alert_done(void);
 int sys_app_count(void);
 
 // Requests from other tasks (console, web, Bluetooth), run by the main loop:

@@ -36,6 +36,10 @@ static const setting_t SETTINGS[] = {
     {"wks", &g_app.wake_secs, 3, 600, true, on_wake},
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
+    {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
+    {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb
+    {"vol", &g_app.volume, 0, 100, true, NULL},       // speaker volume
+    {"goal", &g_app.step_goal, 1000, 50000, true, NULL},  // daily steps goal
     {"ovl", &g_app.overlay, 0, 1, false, NULL},  // debug only
 };
 #define NSET (sizeof(SETTINGS) / sizeof(SETTINGS[0]))

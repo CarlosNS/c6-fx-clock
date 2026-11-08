@@ -9,6 +9,8 @@
 // "get status", "get faces", "sync done", "shot" (screenshot); everything else goes to app_command().
 void ble_start(void);
 bool ble_connected(void);
+// Sends a JSON message to the connected phone; false without a link
+bool ble_send_json(const char *json);
 // Forgets every paired phone (the next connection must pair again with the on-screen code)
 void ble_forget_all(void);
 // Advertised name ("Marea XXXX"); empty until the stack is up

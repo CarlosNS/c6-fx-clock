@@ -29,6 +29,13 @@
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
+#include "alarm.h"
+#include "audio.h"
+#include "input.h"
+#include "pmu_axp2101.h"
+#include "steps.h"
+#include "sys.h"
+#include "ui.h"
 #include "imu.h"
 #include "lcd_co5300.h"
 #include "control.h"
@@ -63,6 +70,9 @@ app_state_t g_app = {
     .wake_secs = 10,
     .classic_hue = 146,  // deep green
     .raise_wake = 1,
+    .volume = 70,
+    .bri_override = -1,
+    .step_goal = 10000,
     .dbg_h = -1,
     .pairing_code = -1,
 };
@@ -83,7 +93,7 @@ void app_wake(void)
 static bool screen_awake(uint32_t now)
 {
     // A pairing passkey stays visible until the pairing ends, however long typing it takes
-    return g_app.always_on || g_app.pairing_code >= 0 || (int32_t)(g_app.wake_until - now) > 0;
+    return g_app.always_on || g_app.pairing_code >= 0 || sys_keep_awake() || (int32_t)(g_app.wake_until - now) > 0;
 }
 
 static void toast(const char *msg)
@@ -218,66 +228,14 @@ static void poll_button(uint32_t now)
         app_wake();
         if (waking || forgot) return;
         uint32_t held = now - since;
-        if (held > LONG_PRESS_MS) {
+        if (alarm_ringing()) {
+            alarm_stop();
+        } else if (held > LONG_PRESS_MS && sys_view() == VIEW_FACE) {
             g_app.auto_cycle = !g_app.auto_cycle;
             g_app.dirty = true;
             toast(g_app.auto_cycle ? "AUTO: SI" : "AUTO: NO");
         } else if (held > 30) {
-            g_app.fx = fx_next(g_app.fx);
-            g_app.auto_cycle = 0;
-            g_app.dirty = true;
-        }
-    }
-}
-
-// Touch screen. Screen off: a touch only wakes it, like the button. Swiping left / right shows the
-// next / previous face. On interactive faces (those with a hint) the finger goes to the face, as on
-// the pad in the apps, unless the swipe starts outside the face or close to a side edge: those still
-// change face. Every touch keeps the screen on.
-#define TOUCH_EDGE 40       // px from the left and right edges that always mean "change face"
-#define SWIPE_MIN 60        // px of horizontal travel
-#define SWIPE_MS 800        // a slower movement is not a swipe
-
-static void poll_touch(uint32_t now)
-{
-    static bool down, waking, to_face;
-    static int x0, y0, lx, ly, lcx, lcy;  // start, last panel position, last canvas position
-    static uint32_t t0;
-    int x, y, cx, cy;
-    bool pressed = touch_read(&x, &y);
-    if (pressed && !down) {
-        down = true;
-        waking = !screen_awake(now);
-        app_wake();
-        x0 = lx = x;
-        y0 = ly = y;
-        t0 = now;
-        bool inside = lcd_panel_to_canvas(x, y, &cx, &cy);
-        to_face = !waking && fx_list[g_app.fx].hint && inside && x >= TOUCH_EDGE && x < BOARD_PANEL_W - TOUCH_EDGE;
-        lcx = cx;
-        lcy = cy;
-        if (to_face) app_drag(cx * 1000 / g_lcd_w, cy * 1000 / g_lcd_h, 0, 0);
-    } else if (pressed && down) {
-        app_wake();
-        if (to_face) {
-            lcd_panel_to_canvas(x, y, &cx, &cy);
-            app_drag(cx * 1000 / g_lcd_w, cy * 1000 / g_lcd_h, cx - lcx, cy - lcy);
-            lcx = cx;
-            lcy = cy;
-        }
-        lx = x;
-        ly = y;
-    } else if (!pressed && down) {
-        down = false;
-        if (to_face) {
-            app_drag_end();
-            return;
-        }
-        int dx = lx - x0, dy = ly - y0;
-        if (!waking && now - t0 < SWIPE_MS && abs(dx) >= SWIPE_MIN && abs(dx) > 2 * abs(dy)) {
-            g_app.fx = dx < 0 ? fx_next(g_app.fx) : fx_prev(g_app.fx);
-            g_app.auto_cycle = 0;
-            g_app.dirty = true;
+            sys_button_short();  // face: next face; elsewhere: back
         }
     }
 }
@@ -289,12 +247,11 @@ static void poll_touch(uint32_t now)
 #define RAISE_AWAY_MG 300
 #define RAISE_WINDOW_MS 1200
 
-static void poll_raise(uint32_t now)
+static void poll_raise(uint32_t now, int z)
 {
     static uint32_t away_t;
     static int up_count;
-    int x, y, z;
-    if (!g_app.raise_wake || !imu_read(&x, &y, &z)) return;
+    if (!g_app.raise_wake) return;
     if (z < RAISE_AWAY_MG) away_t = now ? now : 1;
     up_count = z > RAISE_UP_MG ? up_count + 1 : 0;
     if (up_count >= 3 && away_t && now - away_t < RAISE_WINDOW_MS) {
@@ -329,6 +286,10 @@ void app_main(void)
     lcd_init(mode == BOOT_UPDATE ? 1 : 2);
     fx_common_init();
     clock_init();
+    steps_init();
+    alarms_init();
+    audio_init();
+    sys_shell_init();
     gpio_config_t btn = {.pin_bit_mask = 1ULL << BOARD_PIN_BUTTON, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
     console_start();
@@ -378,7 +339,8 @@ void app_main(void)
     int cur = -1, frames = 0, cur_bri = -1, render_max = 0, fade = 1000;
     int64_t render_sum = 0;
     bool confirmed = false, panel_asleep = false;
-    uint32_t last = now_ms(), fx_since = last, fps_t = last, anim_t = 0, dirty_t = 0;
+    uint32_t last = now_ms(), fx_since = last, fps_t = last, anim_t = 0, dirty_t = 0, status_t = 0;
+    int last_min = -1;
     int64_t next_frame = esp_timer_get_time();
     for (;;) {
         uint32_t now = now_ms();
@@ -391,9 +353,47 @@ void app_main(void)
         STAGE_MAIN(2);
         poll_button(now);
         STAGE_MAIN(3);
-        poll_touch(now);
+        // Touch gestures; a touch on a sleeping screen only wakes it
+        input_poll(now);
+        ui_event_t ev;
+        while (input_next(&ev)) {
+            if (ev.type == EV_DOWN && !screen_awake(now)) {
+                app_wake();
+                input_swallow();
+                continue;
+            }
+            app_wake();
+            sys_event(&ev);
+        }
+        sys_poll_requests();
         STAGE_MAIN(4);
         console_poll();
+        // Accelerometer: steps always, raise-to-wake while the screen is off
+        int ax, ay, az;
+        bool have_imu = imu_read(&ax, &ay, &az);
+        if (have_imu) steps_feed(ax, ay, az, now);
+        // Once a minute: alarms, the steps day, the time in the status bar
+        if (g_now.valid && g_now.m != last_min) {
+            last_min = g_now.m;
+            alarms_minute();
+            steps_minute();
+            sys_dirty();
+        }
+        // Every few seconds: battery and phone link for the status bar
+        if (now - status_t > 3000) {
+            status_t = now;
+            pmu_battery_t b;
+            int pct = -1;
+            bool chg = false, linked = ble_connected();
+            if (pmu_battery(&b)) {
+                pct = b.present ? b.percent : -1;
+                chg = b.charging;
+            }
+            if (pct != g_app.bat_pct || chg != g_app.bat_chg || linked != g_app.phone_linked) sys_dirty();
+            g_app.bat_pct = pct;
+            g_app.bat_chg = chg;
+            g_app.phone_linked = linked;
+        }
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
             ota_confirm_app();
             confirmed = true;
@@ -423,6 +423,7 @@ void app_main(void)
 
         // Backlight: night dimming, then fade in/out with the wake state
         int bri = is_night() && g_app.night_bri < g_app.brightness ? g_app.night_bri : g_app.brightness;
+        if (g_app.bri_override >= 0) bri = g_app.bri_override;
         bool awake = screen_awake(now);
         fade += awake ? (int)dt * 1000 / FADE_IN_MS : -(int)dt * 1000 / FADE_OUT_MS;
         fade = fade < 0 ? 0 : fade > 1000 ? 1000 : fade;
@@ -437,7 +438,7 @@ void app_main(void)
                 lcd_sleep(true);
                 panel_asleep = true;
             }
-            poll_raise(now);
+            if (have_imu) poll_raise(now, az);
             if (g_app.dirty) {
                 g_app.dirty = false;
                 settings_save();
@@ -453,6 +454,18 @@ void app_main(void)
             STAGE_MAIN(9);
             lcd_sleep(false);
             panel_asleep = false;
+            sys_dirty();
+        }
+        if (sys_view() != VIEW_FACE) {  // the system screens and apps: native, drawn only when they change
+            uint16_t *nfb = lcd_native_fb();
+            ui_begin(nfb);
+            if (g_app.pairing_code >= 0) sys_dirty();
+            if (sys_draw(now)) {
+                if (g_app.pairing_code >= 0) draw_pairing(nfb, g_app.pairing_code, now);
+                lcd_flush_native();
+            }
+            cur = -1;  // coming back to the face starts it again
+            goto frame_end;
         }
         uint32_t sdt = dt * g_app.speed / 100;
         anim_t += sdt;
@@ -474,6 +487,7 @@ void app_main(void)
         lcd_flush();
         STAGE_MAIN(13);
 
+    frame_end:
         if (g_app.freeze_req) {  // a screenshot is reading the last frame
             g_app.frozen = true;
             while (g_app.freeze_req) vTaskDelay(pdMS_TO_TICKS(10));

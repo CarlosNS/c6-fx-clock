@@ -136,7 +136,7 @@ static const ui_glyph_t *glyph(const ui_font_t *f, uint32_t cp)
 
 int ui_line_h(const ui_font_t *f, int scale) { return (f->ascent + f->descent) * scale; }
 
-int ui_text_w(const ui_font_t *f, int scale, const char *s)
+int ui_print_w(const ui_font_t *f, int scale, const char *s)
 {
     int w = 0;
     while (*s) {
@@ -172,34 +172,34 @@ static int text_run(const ui_font_t *f, int scale, int x, int y, const char *s, 
     return x - x0;
 }
 
-int ui_text(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
+int ui_print(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
 {
     return text_run(f, scale, x, y, s, color, false);
 }
 
-int ui_text_sh(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
+int ui_print_sh(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
 {
     int off = scale < 2 ? 1 : scale;
     text_run(f, scale, x + off, y + off, s, 0, true);
     return text_run(f, scale, x, y, s, color, false);
 }
 
-void ui_text_c(const ui_font_t *f, int scale, int cx, int y, const char *s, uint16_t color, bool sh)
+void ui_print_c(const ui_font_t *f, int scale, int cx, int y, const char *s, uint16_t color, bool sh)
 {
-    int x = cx - ui_text_w(f, scale, s) / 2;
-    if (sh) ui_text_sh(f, scale, x, y, s, color);
-    else ui_text(f, scale, x, y, s, color);
+    int x = cx - ui_print_w(f, scale, s) / 2;
+    if (sh) ui_print_sh(f, scale, x, y, s, color);
+    else ui_print(f, scale, x, y, s, color);
 }
 
-void ui_text_r(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
+void ui_print_r(const ui_font_t *f, int scale, int x, int y, const char *s, uint16_t color)
 {
-    ui_text(f, scale, x - ui_text_w(f, scale, s), y, s, color);
+    ui_print(f, scale, x - ui_print_w(f, scale, s), y, s, color);
 }
 
 int ui_fit(const ui_font_t *f, int max_scale, int min_scale, int max_w, const char *s)
 {
     for (int k = max_scale; k > min_scale; k--)
-        if (ui_text_w(f, k, s) <= max_w) return k;
+        if (ui_print_w(f, k, s) <= max_w) return k;
     return min_scale;
 }
 
@@ -213,7 +213,7 @@ void ui_button(int x, int y, int w, int h, const char *label, int kind, bool pre
     ui_shade(x + d + sh, y + d + sh, w, h, 2);
     ui_rect(x + d, y + d, w, h, bg);
     int sc = ui_fit(&ui_jersey, 3, 2, w - 16, label);
-    ui_text_c(&ui_jersey, sc, x + d + w / 2, y + d + (h - ui_line_h(&ui_jersey, sc)) / 2 + sc, label, fg, false);
+    ui_print_c(&ui_jersey, sc, x + d + w / 2, y + d + (h - ui_line_h(&ui_jersey, sc)) / 2 + sc, label, fg, false);
 }
 
 void ui_bar(int x, int y, int w, int h, int permille, uint16_t color)
@@ -291,7 +291,7 @@ void ui_status_bar(void)
     char t[8];
     clock_hhmm(t, true);
     // The top edge is straight only between the rounded corners: keep everything inside x 70..340
-    ui_text_c(&ui_jersey, 3, UI_W / 2, 14, t, MS_CREMA, true);
+    ui_print_c(&ui_jersey, 3, UI_W / 2, 14, t, MS_CREMA, true);
     uint16_t bt = g_app.phone_linked ? MS_VERDE : MS_PILOTO_OFF;
     for (int j = 0; j < 9; j++)
         for (int i = 0; i < 7; i++)
@@ -357,7 +357,7 @@ static void build_scene(uint16_t *a, bool dusk)
         }
     }
     // Moon (full by night, a crescent at dusk) with a halo of dots; the sun half sunk at dusk
-    int mx = 150, my = dusk ? 42 : 48;
+    int mx = 172, my = dusk ? 86 : 92;  // lower right: titles sit at the top centre
     if (!dusk) {
         for (int k = 0; k < 64; k++) {
             float ang = k * 6.2831853f / 64;
@@ -451,4 +451,16 @@ void ui_background(bool dusk)
         heap_caps_free(art);
     }
     memcpy(s_fb, *bg, UI_W * UI_H * 2);
+}
+
+void ui_background_band(bool dusk, int y0, int y1)
+{
+    uint16_t *bg = s_bg[dusk ? 1 : 0];
+    if (y0 < 0) y0 = 0;
+    if (y1 > UI_H) y1 = UI_H;
+    if (!bg || y1 <= y0) {
+        ui_rect(0, y0, UI_W, y1 - y0, MS_NOCHE);
+        return;
+    }
+    memcpy(s_fb + y0 * UI_W, bg + y0 * UI_W, (size_t)(y1 - y0) * UI_W * 2);
 }

@@ -37,6 +37,10 @@ CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY=y
 # NimBLE logs two lines per notification at INFO: keep the serial console readable
 CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
 
+# microSD (app_files.c): long file names, kept on the heap
+CONFIG_FATFS_LFN_HEAP=y
+CONFIG_FATFS_MAX_LFN=255
+
 # ---- ESP32-S3 board ----
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 

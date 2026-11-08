@@ -10,13 +10,15 @@
 #include "lcd_co5300.h"
 #include "settings.h"
 #include "ui.h"
+#include "ui_icons.h"
 
 static const app_t *const s_apps[] = {&app_faces, &app_alarms, &app_steps, &app_stopwatch,
                                       &app_music, &app_torch, &app_files, &app_settings};
 #define NAPPS ((int)(sizeof(s_apps) / sizeof(s_apps[0])))
 
 static view_t s_view = VIEW_FACE;
-static int s_app = -1;
+static const app_t *s_cur;      // app on screen (VIEW_APP): from the launcher or an alert
+static view_t s_back = VIEW_FACE;  // where an alert returns to
 static bool s_force = true;     // the next native frame must be drawn whole
 static bool s_redraw;           // something on the current system view changed
 
@@ -26,7 +28,7 @@ void sys_dirty(void) { s_redraw = true; }
 
 static void set_view(view_t v)
 {
-    if (s_view == VIEW_APP && v != VIEW_APP && s_app >= 0 && s_apps[s_app]->close) s_apps[s_app]->close();
+    if (s_view == VIEW_APP && v != VIEW_APP && s_cur && s_cur->close) s_cur->close();
     s_view = v;
     s_force = true;
     app_wake();
@@ -41,20 +43,36 @@ void sys_open_launcher(void)
     set_view(VIEW_LAUNCHER);
 }
 
-void sys_open_app(int i)
+void sys_open(const app_t *a)
 {
-    if (i < 0 || i >= NAPPS) return;
-    if (s_view == VIEW_APP && s_app >= 0 && s_apps[s_app]->close) s_apps[s_app]->close();
-    s_app = i;
+    if (s_view == VIEW_APP && s_cur && s_cur->close) s_cur->close();
+    s_cur = a;
     s_view = VIEW_APP;
     s_force = true;
     app_wake();
-    if (s_apps[i]->open) s_apps[i]->open();
+    if (a->open) a->open();
+}
+
+void sys_open_app(int i)
+{
+    if (i >= 0 && i < NAPPS) sys_open(s_apps[i]);
+}
+
+void sys_alert(const app_t *a)
+{
+    if (s_cur == a && s_view == VIEW_APP) return;
+    s_back = s_view == VIEW_APP ? VIEW_LAUNCHER : s_view;
+    sys_open(a);
+}
+
+void sys_alert_done(void)
+{
+    set_view(s_back == VIEW_APP ? VIEW_FACE : s_back);
 }
 
 bool sys_keep_awake(void)
 {
-    return s_view == VIEW_APP && s_apps[s_app]->keep_on && s_apps[s_app]->keep_on();
+    return s_view == VIEW_APP && s_cur && s_cur->keep_on && s_cur->keep_on();
 }
 
 // ---------------------------------------------------------------- shared app helpers
@@ -64,7 +82,7 @@ void app_frame(const char *title, bool dusk)
     ui_background(dusk);
     ui_veil(60, UI_H, 3);
     ui_status_bar();
-    if (title) ui_text_c(&ui_jersey, 4, UI_W / 2, 66, title, MS_ORO, true);
+    if (title) ui_print_c(&ui_jersey, 4, UI_W / 2, 66, title, MS_ORO, true);
 }
 
 bool ui_scroll_event(ui_scroll_t *s, const ui_event_t *e)
@@ -124,14 +142,13 @@ static bool launcher_draw(void)
         ui_panel(x, y, L_TILE_W, L_TILE_H, p ? MS_PANEL2 : MS_PANEL, p ? MS_ORO : MS_LINEA, 4, true);
         ui_icon(s_apps[i]->icon, x + (L_TILE_W - 48) / 2, y + 18, 3);
         const char *name = TR(s_apps[i]->name_es, s_apps[i]->name_en);
-        int sc = ui_fit(&ui_jersey, 3, 2, L_TILE_W - 12, name);
-        ui_text_c(&ui_jersey, sc, x + L_TILE_W / 2, y + 80, name, p ? MS_ORO2 : MS_CREMA, false);
+        ui_print_c(&ui_jersey, 2, x + L_TILE_W / 2, y + 86, name, p ? MS_ORO2 : MS_CREMA, false);
     }
     // Clean band under the status bar, so tiles scroll away beneath it
     ui_background_band(false, 0, L_TOP - 14);
     ui_shade(0, 0, UI_W, L_TOP - 14, 1);
     ui_status_bar();
-    ui_text_c(&ui_jersey, 3, UI_W / 2, 66, "Marea", MS_ORO, true);
+    ui_print_c(&ui_jersey, 3, UI_W / 2, 66, "Marea", MS_ORO, true);
     return true;
 }
 
@@ -184,8 +201,8 @@ static void quick_tile_draw(int i, const char *label, const char *state, bool on
     bool p = s_quick_pressed == i;
     ui_panel(x, y, Q_TILE_W, Q_TILE_H, p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : MS_LINEA, 4, true);
     int sc = ui_fit(&ui_jersey, 3, 2, Q_TILE_W - 16, label);
-    ui_text_c(&ui_jersey, sc, x + Q_TILE_W / 2, y + 18, label, on ? MS_ORO2 : MS_CREMA, false);
-    ui_text_c(&ui_vt, 1, x + Q_TILE_W / 2, y + 66, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
+    ui_print_c(&ui_jersey, sc, x + Q_TILE_W / 2, y + 18, label, on ? MS_ORO2 : MS_CREMA, false);
+    ui_print_c(&ui_vt, 1, x + Q_TILE_W / 2, y + 66, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
 }
 
 static bool quick_draw(void)
@@ -195,15 +212,15 @@ static bool quick_draw(void)
     ui_veil(40, UI_H, 3);
     ui_status_bar();
     // Brightness
-    ui_text(&ui_vt, 2, Q_BAR_X, Q_BRI_Y - 6, TR("BRILLO", "BRIGHTNESS"), MS_GRIS);
+    ui_print(&ui_vt, 2, Q_BAR_X, Q_BRI_Y - 6, TR("BRILLO", "BRIGHTNESS"), MS_GRIS);
     snprintf(buf, sizeof(buf), "%d %%", g_app.brightness);
-    ui_text_r(&ui_jersey, 3, Q_BAR_X + Q_BAR_W, Q_BRI_Y - 4, buf, MS_CREMA);
+    ui_print_r(&ui_jersey, 3, Q_BAR_X + Q_BAR_W, Q_BRI_Y - 4, buf, MS_CREMA);
     ui_bar(Q_BAR_X, Q_BRI_Y + 46, Q_BAR_W, 22, g_app.brightness * 10, MS_ORO);
     // Tiles
     quick_tile_draw(0, "Bluetooth", g_app.phone_linked ? TR("conectado", "connected") : TR("sin móvil", "no phone"),
                     g_app.phone_linked, g_app.phone_linked);
-    quick_tile_draw(1, TR("No molestar", "Do not disturb"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
-    quick_tile_draw(2, TR("Siempre on", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
+    quick_tile_draw(1, TR("Silencio", "Silent"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
+    quick_tile_draw(2, TR("Siempre", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
     quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
     // Battery
     int by = Q_TILE_Y + 2 * (Q_TILE_H + 12) + 6;
@@ -212,7 +229,7 @@ static bool quick_draw(void)
         snprintf(buf, sizeof(buf), "%d %%%s", g_app.bat_pct, g_app.bat_chg ? TR(" · carga", " · charging") : "");
     else
         snprintf(buf, sizeof(buf), "%s", TR("sin batería", "no battery"));
-    ui_text(&ui_vt, 2, UI_W / 2 - 20, by, buf, g_app.bat_chg ? MS_VERDE : MS_CREMA);
+    ui_print(&ui_vt, 2, UI_W / 2 - 20, by, buf, g_app.bat_chg ? MS_VERDE : MS_CREMA);
     return true;
 }
 
@@ -325,7 +342,7 @@ void sys_event(const ui_event_t *e)
             sys_open_launcher();
             return;
         }
-        if (s_apps[s_app]->event) s_apps[s_app]->event(e);
+        if (s_cur->event) s_cur->event(e);
         break;
     }
 }
@@ -351,12 +368,12 @@ bool sys_draw(uint32_t now)
     switch (s_view) {
     case VIEW_QUICK: return redraw && quick_draw();
     case VIEW_LAUNCHER: return redraw && launcher_draw();
-    case VIEW_APP: return s_apps[s_app]->draw(now, redraw);
+    case VIEW_APP: return s_cur->draw(now, redraw);
     default: return false;
     }
 }
 
-void sys_init(void)
+void sys_shell_init(void)
 {
     s_view = VIEW_FACE;
 }

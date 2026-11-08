@@ -19,11 +19,16 @@ typedef struct {
     volatile int wake_secs;    // how long the screen stays on after the button / web (3..600 s)
     volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (max 31 faces)
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
-    volatile int raise_wake;   // boards with a motion sensor: raising the wrist turns the screen on
+    volatile int raise_wake;   // raising the wrist turns the screen on
+    volatile int lang;         // 0 = Spanish, 1 = English
+    volatile int dnd;          // do not disturb: alarms and calls show silently
+    volatile int volume;       // speaker volume 0..100 (alarms, sounds)
+    volatile int step_goal;    // daily steps goal
 
     // ---- Live state ----
     volatile bool touch;       // finger currently on the phone pad
     volatile int tx, ty;       // finger position on the pad, 0..1000
+    volatile int bri_override; // brightness forced by an app (flashlight), -1 = none
     volatile bool phone_linked;  // the phone app is connected over Bluetooth
     volatile int bat_pct;        // battery level 0..100, -1 unknown (refreshed every few seconds)
     volatile bool bat_chg;       // charging

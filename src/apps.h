@@ -12,7 +12,7 @@
 // Text in the language chosen in the settings (Spanish is the reference)
 #define TR(es, en) (g_app.lang ? (en) : (es))
 
-typedef struct {
+typedef struct app_s {
     const char *name_es, *name_en;
     const char *const *icon;          // 16 x 16 pixel art (ui_icon)
     void (*open)(void);
@@ -27,6 +27,8 @@ typedef struct {
 
 extern const app_t app_faces, app_settings, app_stopwatch, app_torch, app_alarms, app_steps, app_music,
     app_files;
+// Alerts (not in the launcher)
+extern const app_t app_alarm_ring, app_call;
 
 // Shared look of an app screen: background, status bar and a title in gold
 void app_frame(const char *title, bool dusk);
