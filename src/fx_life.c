@@ -1,5 +1,5 @@
-// Conway's Game of Life on an 80x43 torus (landscape), colored by cell age with fading trails.
-// The time is written with immortal cells: life grows around the digits, and when the minute
+// Conway's Game of Life on a 68x84 torus over the whole screen (wide canvas), colored by cell age with
+// fading trails. The time is written with immortal cells, hours above minutes: life grows around the digits, and when the minute
 // changes the old digits become mortal and dissolve into the simulation.
 // Touch the phone pad to draw live cells.
 #include <string.h>
@@ -9,10 +9,11 @@
 #include "gfx.h"
 
 #define CELL 4
-#define GW (LAND_W / CELL)
-#define GH (LAND_H / CELL)
+#define GW (WW / CELL)
+#define GH (WH / CELL)
+#define OX ((WW - GW * CELL) / 2)  // centres the grid
 #define GEN_MS 110
-#define DIGIT_SCALE 3  // cells per 5x7 font pixel
+#define DIGIT_SCALE 4  // cells per 5x7 font pixel
 
 enum { ALIVE = 1, NEXT = 2, IMMORTAL = 4 };
 
@@ -34,12 +35,6 @@ static void seed(void)
 
 static void stamp_char(int cx, int cy, char c)
 {
-    if (c == ':') {
-        for (int k = 0; k < 2; k++)
-            for (int yy = 0; yy < 2; yy++)
-                for (int xx = 0; xx < 2; xx++) st[cy + 5 + k * 9 + yy][cx + xx] |= IMMORTAL | ALIVE;
-        return;
-    }
     const uint8_t *g = gfx_glyph5x7(c);
     for (int col = 0; col < 5; col++)
         for (int row = 0; row < 7; row++)
@@ -54,16 +49,20 @@ static void write_time(const char *s)
 {
     for (int y = 0; y < GH; y++)
         for (int x = 0; x < GW; x++) st[y][x] &= ~IMMORTAL;
-    int dw = 5 * DIGIT_SCALE, w = 4 * dw + 4 * 3 + 2;  // 4 digits + 2-cell colon, 4 gaps of 3
-    int x = (GW - w) / 2, y = (GH - 7 * DIGIT_SCALE) / 2;
-    for (int i = 0; s[i]; i++) {
-        if (s[i] == ':') {
-            stamp_char(x, y, ':');
-            x += 2 + 3;
-        } else {
-            if (s[i] != ' ') stamp_char(x, y, s[i]);
-            x += dw + 3;
+    // "HH:MM": two digits per row, hours above minutes, and the colon as two dots between the rows
+    int dw = 5 * DIGIT_SCALE, dh = 7 * DIGIT_SCALE, gap = 4, vgap = 10;
+    int x0 = (GW - (2 * dw + gap)) / 2, y0 = (GH - (2 * dh + vgap)) / 2 - 4;
+    for (int i = 0; i < 5 && s[i]; i++) {
+        if (i == 2) {
+            if (s[i] == ':')
+                for (int k = 0; k < 2; k++)
+                    for (int yy = 0; yy < 3; yy++)
+                        for (int xx = 0; xx < 3; xx++)
+                            st[y0 + dh + vgap / 2 - 1 + yy][GW / 2 - 6 + k * 9 + xx] |= IMMORTAL | ALIVE;
+            continue;
         }
+        int col = i < 2 ? i : i - 3, row = i < 2 ? 0 : 1;
+        if (s[i] != ' ') stamp_char(x0 + col * (dw + gap), y0 + row * (dh + vgap), s[i]);
     }
     strcpy(shown, s);
 }
@@ -151,12 +150,12 @@ void life_render(uint16_t *fb, uint32_t t, uint32_t dt)
             } else {
                 continue;
             }
-            gfx_fill_rect(fb, x * CELL, y * CELL, CELL - 1, CELL - 1, c);
+            gfx_fill_rect(fb, OX + x * CELL, y * CELL, CELL - 1, CELL - 1, c);
         }
     }
 
     char date[24];
     clock_date_str(date);
-    gfx_text_ol(fb, 6, LAND_H - 12, date, rgb565(200, 210, 255), rgb565(0, 0, 0), 1, 1);
-    clock_draw_seconds_bar(fb, LAND_W - 86, LAND_H - 8, 80, 3, digit, rgb565(30, 30, 50));
+    gfx_text_ol(fb, (WW - gfx_text_width(date, 2)) / 2, WH - 46, date, rgb565(200, 210, 255), rgb565(0, 0, 0), 2, 1);
+    clock_draw_seconds_bar(fb, WW / 2 - 50, WH - 20, 100, 3, digit, rgb565(30, 30, 50));
 }

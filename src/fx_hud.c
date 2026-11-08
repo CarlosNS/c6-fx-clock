@@ -1,4 +1,4 @@
-// Sci-fi HUD (landscape): seconds ring with rotating arcs, 7-segment time over "ghost" segments,
+// Sci-fi HUD (full screen, wide canvas, portrait): time on top, telemetry, then the seconds ring with rotating arcs, 7-segment time over "ghost" segments,
 // live telemetry (chip temperature, Wi-Fi signal, uptime), sweep line, scanlines and a glitch
 // burst when the minute changes.
 #include <stdio.h>
@@ -11,10 +11,10 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LAND_W
-#define H LAND_H
-#define RCX (W - 80)  // seconds ring on the right; time and telemetry on the left
-#define RCY 88
+#define W WW
+#define H WH
+#define RCX (W / 2)  // seconds ring at the bottom; time and telemetry above it
+#define RCY 252
 
 static temperature_sensor_handle_t s_temp;
 static float s_temp_c;
@@ -109,19 +109,19 @@ void hud_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
 
     // Time panel
-    const int px = 6, pw = 156;
-    gfx_text(fb, px, 8, "SYS.TIME // CET", cyd, 1);
-    gfx_fill_rect(fb, px + 100, 10, 4, 4, (now / 500) & 1 ? orange : cydd);
+    const int pw = 156, px = (W - pw) / 2;
+    gfx_text(fb, px + 18, 24, "SYS.TIME // CET", cyd, 1);
+    gfx_fill_rect(fb, px + 118, 26, 4, 4, (now / 500) & 1 ? orange : cydd);
     int tw = font_width(&font_seg_m, "88:88", -4);
     int tx = px + (pw - tw) / 2;
-    font_draw(fb, &font_seg_m, tx, 24, "88:88", -4, cydd, bg, FONT_FILL);  // unlit segments
+    font_draw(fb, &font_seg_m, tx, 38, "88:88", -4, cydd, bg, FONT_FILL);  // unlit segments
     clock_hhmm(buf, !g_now.valid || g_now.ms < 500);
-    font_draw(fb, &font_seg_m, tx, 24, buf, -4, cy, bg, FONT_FILL | FONT_OUTLINE);
-    if (!g_app.h24 && g_now.valid) gfx_text(fb, px + 112, 8, g_now.h < 12 ? "AM" : "PM", orange, 1);
+    font_draw(fb, &font_seg_m, tx, 38, buf, -4, cy, bg, FONT_FILL | FONT_OUTLINE);
+    if (!g_app.h24 && g_now.valid) gfx_text(fb, px + 128, 24, g_now.h < 12 ? "AM" : "PM", orange, 1);
 
-    gfx_fill_rect(fb, px, 92, pw, 1, cyd);
-    gfx_fill_rect(fb, px, 90, 2, 5, cy);
-    gfx_fill_rect(fb, px + pw - 2, 90, 2, 5, cy);
+    gfx_fill_rect(fb, px, 106, pw, 1, cyd);
+    gfx_fill_rect(fb, px, 104, 2, 5, cy);
+    gfx_fill_rect(fb, px + pw - 2, 104, 2, 5, cy);
 
     static const char *labels[] = {"FECHA", "TEMP", "WIFI", "UPTIME"};
     char vals[4][24];
@@ -133,8 +133,8 @@ void hud_render(uint16_t *fb, uint32_t t, uint32_t dt)
     uint32_t up = now / 1000;
     snprintf(vals[3], 24, "%02lu:%02lu:%02lu", (unsigned long)(up / 3600), (unsigned long)(up / 60 % 60), (unsigned long)(up % 60));
     for (int i = 0; i < 4; i++) {
-        gfx_text(fb, px, 100 + i * 12, labels[i], cyd, 1);
-        gfx_text(fb, px + 54, 100 + i * 12, vals[i], i == 1 && s_temp_c > 60 ? orange : cy, 1);
+        gfx_text(fb, px + 8, 114 + i * 12, labels[i], cyd, 1);
+        gfx_text(fb, px + 62, 114 + i * 12, vals[i], i == 1 && s_temp_c > 60 ? orange : cy, 1);
     }
 
     // Signal-strength style bars driven by the Wi-Fi RSSI, with a little live jitter
@@ -142,18 +142,19 @@ void hud_render(uint16_t *fb, uint32_t t, uint32_t dt)
     for (int i = 0; i < 16; i++) {
         int h = 3 + (sin_u8[(uint8_t)(t / 9 + i * 23)] >> 5);
         uint16_t c = i < level ? (i > 12 ? orange : cy) : cydd;
-        gfx_fill_rect(fb, px + i * 9, H - 8 - h, 6, h, c);
+        gfx_fill_rect(fb, px + 6 + i * 9, 174 - h, 6, h, c);
     }
 
-    bracket(fb, 2, 2, 1, 1, cy);
-    bracket(fb, W - 4, 2, -1, 1, cy);
-    bracket(fb, 2, H - 4, 1, -1, cy);
-    bracket(fb, W - 4, H - 4, -1, -1, cy);
+    // Corner brackets, tucked inside the display's rounded corners
+    bracket(fb, 28, 28, 1, 1, cy);
+    bracket(fb, W - 30, 28, -1, 1, cy);
+    bracket(fb, 28, H - 30, 1, -1, cy);
+    bracket(fb, W - 30, H - 30, -1, -1, cy);
 
     // Glitch burst: shift random slices of the time panel sideways
     if ((int32_t)(s_glitch_until - now) > 0) {
         for (int k = 0; k < 10; k++) {
-            int y = 20 + fx_rand() % 70, hgt = 2 + fx_rand() % 6, sh = (int)(fx_rand() % 17) - 8;
+            int y = 36 + fx_rand() % 66, hgt = 2 + fx_rand() % 6, sh = (int)(fx_rand() % 17) - 8;
             for (int yy = y; yy < y + hgt && yy < H; yy++) {
                 uint16_t *row = fb + yy * W + px;
                 if (sh > 0) memmove(row + sh, row, (pw - sh) * 2);

@@ -35,7 +35,7 @@ static const uint8_t font5x7[95][5] = {
 
 void gfx_fill(uint16_t *fb, uint16_t color)
 {
-    for (int i = 0; i < LCD_W * LCD_H; i++) fb[i] = color;
+    for (int i = 0, n = W * H; i < n; i++) fb[i] = color;
 }
 
 void gfx_fill_rect(uint16_t *fb, int x, int y, int w, int h, uint16_t color)
