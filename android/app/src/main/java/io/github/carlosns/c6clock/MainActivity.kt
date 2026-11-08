@@ -156,9 +156,28 @@ class MainActivity : ComponentActivity() {
 
     /** Lets the app read the music and call notifications (the system's own screen). */
     private fun allowPhone() {
-        val cdm = getSystemService(CompanionDeviceManager::class.java)
-        runCatching { cdm.requestNotificationAccess(android.content.ComponentName(this, PhoneWatch::class.java)) }
-            .onFailure { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+        val ask: () -> Unit = {
+            val cdm = getSystemService(CompanionDeviceManager::class.java)
+            runCatching { cdm.requestNotificationAccess(android.content.ComponentName(this, PhoneWatch::class.java)) }
+                .onFailure { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+            Unit
+        }
+        // Android 13+ blocks notification access for apps installed outside a store ("restricted
+        // settings") until the user allows it in the app's own page: say how, and offer both screens
+        if (Build.VERSION.SDK_INT < 33) return ask()
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Música y llamadas en el reloj")
+            .setMessage(
+                "Android protege este permiso en las apps instaladas fuera de Google Play. Si al activarlo dice " +
+                    "«Se ha denegado el acceso», primero:\n\n1. Pulsa «Ajustes de Marea».\n2. Arriba a la derecha, " +
+                    "toca ⋮ → «Permitir ajustes restringidos» y confírmalo.\n3. Vuelve aquí y pulsa «Activar».",
+            )
+            .setPositiveButton("Activar") { _, _ -> ask() }
+            .setNeutralButton("Ajustes de Marea") { _, _ ->
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     /** Calls window.fn(arg) in the page; from any thread (the WebView only accepts the main one). */

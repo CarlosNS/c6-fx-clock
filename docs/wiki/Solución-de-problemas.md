@@ -18,7 +18,7 @@
 
 **La app se desconecta con la app cerrada, o desaparece el aviso «Marea conectado».** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. La tarjeta *Este móvil* dice cuándo fue la última sincronización.
 
-**El reloj no muestra la música o no avisa de las llamadas.** Hace falta el permiso de leer notificaciones: *Este móvil → Música y llamadas en el reloj → Permitir*. Si ya está dado y no va, quítalo y vuelve a darlo (algunos móviles lo desactivan al actualizar la app). Las llamadas no suenan con *No molestar*.
+**El reloj no muestra la música o no avisa de las llamadas.** Hace falta el permiso de leer notificaciones: *Este móvil → Música y llamadas en el reloj → Permitir*. Si Android responde «Se ha denegado el acceso», primero *Ajustes → Aplicaciones → Marea → ⋮ → Permitir ajustes restringidos* (ver [[App Android]]). Si ya está dado y no va, quítalo y vuelve a darlo (algunos móviles lo desactivan al actualizar la app). Las llamadas no suenan con *No molestar*.
 
 **La esfera Tiempo no tiene datos.** Necesita internet en el móvil o en el reloj (por WiFi). La ciudad se elige en los ajustes de la propia esfera.
 
