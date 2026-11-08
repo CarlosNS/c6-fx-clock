@@ -11,6 +11,7 @@
 - **Modo USB:** el botón USB de Archivos reinicia el reloj como disco USB con la microSD; se vuelve con BOOT, expulsando el disco o desconectando el cable.
 - **Alarma con amanecer:** mientras suena, el sol sale del mar en pixel art y el cielo pasa de la noche al oro; al posponer se hunde y al parar termina de salir.
 - Arreglado: la pantalla no se encendía tras el primer apagado (3.0.0-beta.3).
+- Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.
 - La barra de estado muestra el porcentaje de batería, y un rayo sobre el icono mientras está enchufado; los ajustes rápidos dicen «cargando» o «cargada».
 - El tiempo que manda el móvil siempre gana sobre la descarga propia del reloj (es el más reciente).

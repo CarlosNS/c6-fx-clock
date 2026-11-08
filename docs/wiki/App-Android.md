@@ -42,7 +42,7 @@ La tarjeta **Este móvil** enseña cuándo fue la última sincronización y si s
 En la tarjeta **Este móvil**, *Música y llamadas en el reloj → Permitir* abre la pantalla de Android para dejar que la app **lea las notificaciones**. Con eso:
 
 - **Música:** el reloj (app Música) muestra el título, el artista y si suena, de cualquier app de música o podcasts del móvil, y la controla: reproducir, pausa, pista anterior y siguiente, y volumen.
-- **Llamadas:** cuando suena el móvil, el reloj muestra quién llama y suena por su altavoz (no tiene motor de vibración), salvo con *No molestar*. Desde la muñeca se puede **rechazar** (pulsa el botón de rechazar de la propia llamada) o **silenciar** el timbre durante un minuto.
+- **Llamadas:** cuando suena el móvil, el reloj muestra quién llama y suena por su altavoz (la placa no tiene motor de vibración), salvo con *No molestar*. La pantalla se queda mientras dure el timbre y se quita al contestar, al colgar quien llama, al rechazar o silenciar, o si se corta el Bluetooth. Desde la muñeca se puede **rechazar** (pulsa el botón de rechazar de la propia llamada) o **silenciar** el timbre durante un minuto.
 
 **Si Android dice «Se ha denegado el acceso»** (o «ajuste restringido»): desde Android 13, las apps instaladas fuera de Google Play no pueden pedir este permiso hasta que lo autorizas en su ficha. Ve a *Ajustes → Aplicaciones → Marea*, toca **⋮** arriba a la derecha → **Permitir ajustes restringidos**, confírmalo y vuelve a pulsar *Permitir* en la app. Solo hace falta una vez; el botón de la app lo explica y abre esa ficha.
 

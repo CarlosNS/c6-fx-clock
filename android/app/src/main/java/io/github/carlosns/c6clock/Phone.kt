@@ -203,32 +203,65 @@ class PhoneWatch : NotificationListenerService() {
         }
     }
 
+    /** The ring ends on the clock: answered, rejected or the caller gave up. */
+    private fun endCall() {
+        main.removeCallbacks(endLater)
+        callKey = null
+        callNotification = null
+        Phone.callEnded()
+    }
+
+    // The dialer often replaces its notification while ringing (HyperOS removes and reposts it when the
+    // full-screen call UI comes up), so a removal only ends the call if nothing takes its place
+    private val endLater = Runnable { endCall() }
+
+    // Answering switches the phone's audio to call mode: the surest sign, with no phone permission
+    private var modeListener: AudioManager.OnModeChangedListener? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        if (Build.VERSION.SDK_INT >= 31) {
+            val l = AudioManager.OnModeChangedListener { mode ->
+                if (callKey != null && (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION)) endCall()
+            }
+            runCatching { getSystemService(AudioManager::class.java).addOnModeChangedListener(mainExecutor, l) }
+                .onSuccess { modeListener = l }
+        }
+    }
+
+    override fun onDestroy() {
+        modeListener?.let { l -> runCatching { getSystemService(AudioManager::class.java).removeOnModeChangedListener(l) } }
+        super.onDestroy()
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val n = sbn.notification ?: return
         if (n.category != Notification.CATEGORY_CALL) return
-        // CallStyle says what kind of call it is (Android 12+); older dialers: an incoming call
-        // notification is the one that can take the whole screen
+        // CallStyle says what kind of call it is (Android 12+). Dialers without it: a running call
+        // shows a chronometer; a ringing one can take the whole screen. Anything else (an update of
+        // the ringing notification without those marks) changes nothing.
         val type = n.extras.getInt(EXTRA_CALL_TYPE, -1)
-        val incoming = if (type >= 0) type == CALL_TYPE_INCOMING else n.fullScreenIntent != null
-        if (incoming) {
-            callKey = sbn.key
-            callNotification = n
-            val person = if (Build.VERSION.SDK_INT >= 33) n.extras.getParcelable(EXTRA_CALL_PERSON, android.app.Person::class.java)
-            else @Suppress("DEPRECATION") n.extras.getParcelable<android.app.Person>(EXTRA_CALL_PERSON)
-            val who = person?.name?.toString() ?: n.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
-            Phone.ring(who)
-        } else if (sbn.key == callKey) {  // answered: the same notification turns into an ongoing call
-            callKey = null
-            callNotification = null
-            Phone.callEnded()
+        val answered = type == CALL_TYPE_ONGOING || (type < 0 && n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
+        val incoming = type == CALL_TYPE_INCOMING || (type < 0 && !answered && n.fullScreenIntent != null)
+        val ours = sbn.key == callKey
+        when {
+            answered -> if (ours || callKey != null) endCall()
+            incoming || (callKey != null && type < 0 && !answered) -> {
+                main.removeCallbacks(endLater)
+                callKey = sbn.key
+                callNotification = n
+                val person = if (Build.VERSION.SDK_INT >= 33) n.extras.getParcelable(EXTRA_CALL_PERSON, android.app.Person::class.java)
+                else @Suppress("DEPRECATION") n.extras.getParcelable<android.app.Person>(EXTRA_CALL_PERSON)
+                val who = person?.name?.toString() ?: n.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+                Phone.ring(who)
+            }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         if (sbn.key != callKey) return
-        callKey = null
-        callNotification = null
-        Phone.callEnded()
+        main.removeCallbacks(endLater)
+        main.postDelayed(endLater, 1500)
     }
 
     private companion object {
@@ -236,6 +269,7 @@ class PhoneWatch : NotificationListenerService() {
         // Notification.EXTRA_CALL_TYPE / CALL_TYPE_INCOMING / EXTRA_CALL_PERSON (API 31), by value for older SDKs
         const val EXTRA_CALL_TYPE = "android.callType"
         const val CALL_TYPE_INCOMING = 1
+        const val CALL_TYPE_ONGOING = 2
         const val EXTRA_CALL_PERSON = "android.callPerson"
     }
 }

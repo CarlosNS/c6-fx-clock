@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -19,8 +19,8 @@ android {
         applicationId = "io.github.carlosns.c6clock"
         minSdk = 29
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.4.0"
+        versionCode = 15
+        versionName = "0.4.1"
     }
 
     signingConfigs {

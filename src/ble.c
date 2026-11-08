@@ -402,6 +402,12 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         s_conn = BLE_HS_CONN_HANDLE_NONE;
         s_subscribed = false;
         advertise(true);
+        {
+            // Without the phone there is no call to show: end a ringing one now (through the worker,
+            // like any command from the phone)
+            cmd_t c = {.text = "call end"};
+            xQueueSend(s_queue, &c, 0);
+        }
         break;
     case BLE_GAP_EVENT_SUBSCRIBE:
         if (ev->subscribe.attr_handle == s_evt_handle) s_subscribed = ev->subscribe.cur_notify;
