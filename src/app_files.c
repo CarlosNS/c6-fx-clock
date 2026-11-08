@@ -1,6 +1,7 @@
 // Files: the microSD card (SDMMC, 1 bit, mounted at /sd while the app is open). Folders and files with
 // their size; tap a folder to enter it, ".." to go up; long press a file to delete it (a second tap
-// confirms). The format button wipes the card after two confirmations.
+// confirms). The format button wipes the card after two confirmations; the USB button restarts the
+// watch as a USB drive for the computer (usbdisk.c) after one.
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <unistd.h>
 #include "apps.h"
 #include "board.h"
+#include "bootmode.h"
 #include "driver/sdmmc_host.h"
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
@@ -21,6 +23,7 @@
 #define ROW 62
 #define X0 40
 #define WID 330
+#define BAR 120  // bottom bar: free space, USB and format buttons
 
 static const char *TAG = "files";
 static sdmmc_card_t *s_card;
@@ -105,13 +108,14 @@ static bool draw(uint32_t now, bool force)
     if (!s_card) {
         ui_panel(48, 150, UI_W - 96, 170, MS_PANEL, MS_CORAL, 4, true);
         ui_print_c(&ui_jersey, 3, UI_W / 2, 176, TR("Sin tarjeta", "No card"), MS_CREMA, false);
-        ui_print_c(&ui_vt, 1, UI_W / 2, 236, TR("mete una microSD y vuelve a entrar", "insert a microSD and open again"), MS_GRIS, false);
+        ui_print_c(&ui_vt, 1, UI_W / 2, 236, TR("mete una microSD", "insert a microSD"), MS_GRIS, false);
+        ui_print_c(&ui_vt, 1, UI_W / 2, 266, TR("y vuelve a entrar", "and open again"), MS_GRIS, false);
     } else {
-        s_scroll.view_h = UI_H - TOP - 90;
+        s_scroll.view_h = UI_H - TOP - BAR;
         s_scroll.content_h = s_n * ROW;
         for (int i = 0; i < s_n; i++) {
             int y = TOP + i * ROW - s_scroll.offset;
-            if (y > UI_H - 90 || y + ROW < TOP - 20) continue;
+            if (y > UI_H - BAR || y + ROW < TOP - 20) continue;
             bool conf = i == s_confirm;
             ui_panel(X0, y, WID, ROW - 8, conf ? MS_PANEL2 : MS_PANEL, conf ? MS_CORAL : MS_LINEA, 4, false);
             ui_print(&ui_vt, 2, X0 + 16, y + 4, s_ent[i].name, s_ent[i].dir ? MS_ORO2 : MS_CREMA);
@@ -122,12 +126,14 @@ static bool draw(uint32_t now, bool force)
             }
         }
         if (!s_n) ui_print_c(&ui_vt, 2, UI_W / 2, TOP + 40, TR("vacía", "empty"), MS_GRIS, false);
-        // bottom: free space and the format button
+        // bottom: free space, the USB and format buttons
         uint64_t total = 0, free_b = 0;
         esp_vfs_fat_info(MOUNT, &total, &free_b);
         snprintf(buf, sizeof(buf), TR("libre %u MB de %u", "free %u MB of %u"), (unsigned)(free_b >> 20), (unsigned)(total >> 20));
-        ui_rect(0, UI_H - 90, UI_W, 90, MS_NOCHE);
-        ui_print(&ui_vt, 1, 70, UI_H - 76, s_msg[0] ? s_msg : buf, s_msg[0] ? MS_ORO2 : MS_GRIS);
+        ui_rect(0, UI_H - BAR, UI_W, BAR, MS_NOCHE);
+        ui_print_c(&ui_vt, 1, UI_W / 2, UI_H - BAR + 6, s_msg[0] ? s_msg : buf, s_msg[0] ? MS_ORO2 : MS_GRIS, false);
+        ui_button(UI_W / 2 - 150, UI_H - 82, 140, 50, s_confirm == -4 ? TR("¿Reiniciar?", "Restart?") : "USB",
+                  s_confirm == -4 ? UI_BTN_MAIN : UI_BTN_SECONDARY, false);
         const char *fl = s_confirm == -2 ? TR("¿Seguro?", "Sure?") : s_confirm == -3 ? TR("¡Se borra todo!", "Erase all!") : TR("Formatear", "Format");
         ui_button(UI_W / 2 + 10, UI_H - 82, 140, 50, fl, s_confirm <= -2 ? UI_BTN_DANGER : UI_BTN_SECONDARY, false);
     }
@@ -143,15 +149,24 @@ static bool draw(uint32_t now, bool force)
 static int hit(int y)
 {
     int i = (y - TOP + s_scroll.offset) / ROW;
-    return y >= TOP && y < UI_H - 90 && i >= 0 && i < s_n ? i : -1;
+    return y >= TOP && y < UI_H - BAR && i >= 0 && i < s_n ? i : -1;
 }
 
 static void event(const ui_event_t *e)
 {
     if (!s_card) return;
     ui_scroll_event(&s_scroll, e);
-    if (e->type == EV_TAP && e->y >= UI_H - 90) {
-        if (e->x < UI_W / 2) return;
+    if (e->type == EV_TAP && e->y >= UI_H - BAR) {
+        if (e->x < UI_W / 2) {  // USB drive mode: a restart, so one confirmation
+            if (s_confirm == -4) {
+                files_close();
+                boot_mode_switch(BOOT_USB);  // does not return
+            }
+            s_confirm = -4;
+            strcpy(s_msg, TR("el reloj se reinicia como disco USB", "the watch restarts as a USB drive"));
+            sys_dirty();
+            return;
+        }
         if (s_confirm == -3) {
             strcpy(s_msg, esp_vfs_fat_sdcard_format(MOUNT, s_card) == ESP_OK ? TR("tarjeta formateada", "card formatted")
                                                                             : TR("no se pudo formatear", "format failed"));

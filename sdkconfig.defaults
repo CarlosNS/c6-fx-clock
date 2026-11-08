@@ -62,3 +62,10 @@ CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
 
 # Not set: the 64 KB data cache (CONFIG_ESP32S3_DATA_CACHE_64KB, with 32 or 64 B lines) hangs this
 # board right after the bootloader hands over to the app (ESP-IDF 5.5.0, tried 2026-11-07)
+
+# USB disk mode (usbdisk.c): TinyUSB mass storage only, with the watch's own names
+CONFIG_TINYUSB_MSC_ENABLED=y
+CONFIG_TINYUSB_CDC_ENABLED=n
+CONFIG_TINYUSB_DESC_MANUFACTURER_STRING="Marea"
+CONFIG_TINYUSB_DESC_PRODUCT_STRING="Marea"
+CONFIG_TINYUSB_DESC_MSC_STRING="Marea microSD"

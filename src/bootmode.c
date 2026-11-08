@@ -8,13 +8,14 @@
 #include "ota.h"
 
 static const char *TAG = "bootmode";
-static const char *const NAMES[] = {"ble", "wifi", "update"};
+static const char *const NAMES[] = {"ble", "wifi", "update", "usb"};
+#define ONE_SHOT(m) ((m) == BOOT_UPDATE || (m) == BOOT_USB)
 static boot_mode_t s_mode = BOOT_DEFAULT, s_return = BOOT_DEFAULT;
 
 static int32_t nvs_get(nvs_handle_t h, const char *key, int32_t def)
 {
     int32_t v;
-    return nvs_get_i32(h, key, &v) == ESP_OK && v >= BOOT_BLE && v <= BOOT_UPDATE ? v : def;
+    return nvs_get_i32(h, key, &v) == ESP_OK && v >= BOOT_BLE && v <= BOOT_USB ? v : def;
 }
 
 static void nvs_put(const char *key, int32_t v)
@@ -34,8 +35,8 @@ boot_mode_t boot_mode_init(void)
         s_return = nvs_get(h, "bret", BOOT_DEFAULT);
         nvs_close(h);
     }
-    if (s_return == BOOT_UPDATE) s_return = BOOT_DEFAULT;
-    if (s_mode == BOOT_UPDATE) nvs_put("bmode", s_return);  // one-shot
+    if (ONE_SHOT(s_return)) s_return = BOOT_DEFAULT;
+    if (ONE_SHOT(s_mode)) nvs_put("bmode", s_return);  // one-shot
     ESP_LOGI(TAG, "Boot mode: %s", NAMES[s_mode]);
     return s_mode;
 }
@@ -45,19 +46,19 @@ boot_mode_t boot_mode_return(void) { return s_return; }
 
 const char *boot_mode_name(boot_mode_t m)
 {
-    return m >= BOOT_BLE && m <= BOOT_UPDATE ? NAMES[m] : "?";
+    return m >= BOOT_BLE && m <= BOOT_USB ? NAMES[m] : "?";
 }
 
 boot_mode_t boot_mode_from_name(const char *name)
 {
-    for (int i = 0; i <= BOOT_UPDATE; i++)
+    for (int i = 0; i <= BOOT_USB; i++)
         if (strcmp(name, NAMES[i]) == 0) return (boot_mode_t)i;
     return (boot_mode_t)-1;
 }
 
 void boot_mode_switch(boot_mode_t m)
 {
-    if (m == BOOT_UPDATE) nvs_put("bret", s_mode == BOOT_UPDATE ? s_return : s_mode);
+    if (ONE_SHOT(m)) nvs_put("bret", ONE_SHOT(s_mode) ? s_return : s_mode);
     nvs_put("bmode", m);
     // A switch is asked for by a working firmware: confirm it, or a version installed less than 30 s
     // ago would be rolled back by this very restart

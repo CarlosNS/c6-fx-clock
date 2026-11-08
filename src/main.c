@@ -26,6 +26,7 @@
 #include "settings.h"
 #include "net.h"
 #include "update.h"
+#include "usbdisk.h"
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
@@ -272,7 +273,7 @@ void app_main(void)
     boot_mode_t mode = boot_mode_init();
     // Wi-Fi and Bluetooth run together in every mode but UPDATE (a one-shot boot that only fetches
     // an update)
-    bool use_wifi = mode != BOOT_UPDATE, use_ble = mode != BOOT_UPDATE;
+    bool use_wifi = mode != BOOT_UPDATE && mode != BOOT_USB, use_ble = use_wifi;
     // Bluetooth is compiled in but not always used: then give its static RAM (~15 KB) back to the
     // heap. Irreversible until the next reboot, and changing mode always reboots.
     if (!use_ble) {
@@ -298,6 +299,7 @@ void app_main(void)
         lcd_set_brightness(g_app.brightness);
         update_run();  // does not return
     }
+    if (mode == BOOT_USB) usbdisk_run();  // does not return
 
     update_boot_check();
     net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)

@@ -1,0 +1,4 @@
+## Components from the ESP Component Registry (downloaded at build time)
+dependencies:
+  # TinyUSB: the microSD card as a USB drive (usbdisk.c, boot mode "usb")
+  espressif/esp_tinyusb: "~1.7.0"
