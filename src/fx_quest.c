@@ -1,4 +1,4 @@
-// "Aventura" (landscape): a travelling scene in the spirit of modern pixel-art RPGs.
+// "Aventura" (full screen, wide canvas, portrait): a travelling scene in the spirit of modern pixel-art RPGs.
 // Native resolution, layered parallax with atmospheric perspective (each layer fades into the
 // haze), a lake that reflects everything above it, and lighting that follows the real time of day:
 // sun and moon with glow, tinted clouds, lanterns that light up at dusk, fireflies at night.
@@ -11,13 +11,13 @@
 #include "gfx.h"
 #include "sprites.h"
 
-#define W LAND_W
-#define H LAND_H
-#define LAKE_TOP 108
-#define LAKE_BOT 135
-#define PATH_TOP 147
-#define PATH_BOT 162
-#define FEET_Y 160
+#define W WW
+#define H WH
+#define LAKE_TOP 196
+#define LAKE_BOT 230
+#define PATH_TOP 248
+#define PATH_BOT 266
+#define FEET_Y 263
 
 typedef struct { int r, g, b; } rgb_t;
 
@@ -268,14 +268,14 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     if (night > 60) {
         for (int i = 0; i < 70; i++) {
             uint32_t h = hash(i, 77);
-            int x = h % W, y = (h >> 9) % 80;
+            int x = h % W, y = (h >> 9) % 170;
             int tw = sin_u8[(uint8_t)(t / 18 + i * 41)];
             int a = (tw - 60) * night / 256 / 10;
             if (a > 0) fb[y * W + x] = gfx_blend(fb[y * W + x], (h & 7) == 0 ? rgb565(255, 210, 170) : rgb565(220, 230, 255), a > 16 ? 16 : a);
         }
         uint32_t cyc = t % 14000;
         if (cyc < 700) {
-            int sx = 60 + (int)(hash(t / 14000, 5) % 180) + cyc / 5, sy = 10 + (int)(hash(t / 14000, 6) % 30) + cyc / 12;
+            int sx = 50 + (int)(hash(t / 14000, 5) % 150) + cyc / 5, sy = 100 + (int)(hash(t / 14000, 6) % 40) + cyc / 12;
             for (int k = 0; k < 14; k++) {
                 int x = sx - k * 2, y = sy - k * 2 / 5;
                 if ((unsigned)x < W && (unsigned)y < LAKE_TOP) fb[y * W + x] = gfx_blend(fb[y * W + x], rgb565(255, 255, 255), 16 - k);
@@ -289,7 +289,7 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     if (sun_up) {
         float p = (hf - 6) / 14;
         body_x = 24 + (int)(p * (W - 48));
-        body_y = 100 - (int)(sinf(p * 3.14159f) * 80);
+        body_y = 188 - (int)(sinf(p * 3.14159f) * 80);
         gfx_glow(fb, body_x, body_y, 46, c565(mix((rgb_t){255, 230, 150}, s_hor, 80)), 10);
         gfx_circle(fb, body_x, body_y, 9, rgb565(255, 236, 170));
         gfx_circle(fb, body_x, body_y, 7, rgb565(255, 250, 225));
@@ -297,7 +297,7 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
         float mh = hf >= 19 ? hf - 19 : hf + 5;
         float p = mh / 12;
         body_x = 24 + (int)(p * (W - 48));
-        body_y = 100 - (int)(sinf(p * 3.14159f) * 76);
+        body_y = 188 - (int)(sinf(p * 3.14159f) * 76);
         gfx_glow(fb, body_x, body_y, 30, rgb565(170, 190, 255), 7);
         gfx_circle(fb, body_x, body_y, 7, rgb565(236, 236, 220));
         gfx_circle(fb, body_x - 2, body_y - 1, 2, rgb565(205, 205, 195));
@@ -307,17 +307,17 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     int sc_cloud = (int)(tt * 3 / 1000), sc_far = (int)(tt * 4 / 1000), sc_mid = (int)(tt * 9 / 1000),
         sc_trees = (int)(tt * 16 / 1000), sc_near = (int)(tt * 30 / 1000), sc_fore = (int)(tt * 46 / 1000);
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         int span = W + 120;
-        int x = ((i * 113 + 40 - sc_cloud) % span + span) % span - 60;
-        cloud(fb, x, 22 + (i % 2) * 22 + i * 3, 12 + (i % 3) * 3, i * 31 + 5);
+        int x = ((i * 97 + 40 - sc_cloud) % span + span) % span - 60;
+        cloud(fb, x, 104 + (i % 2) * 24 + i * 4, 13 + (i % 3) * 4, i * 31 + 5);
     }
 
     bool sun_left = body_x < W / 2;
-    mountains(fb, sc_far, 96, 44, 2, 16, 5, 90, (rgb_t){118, 128, 178}, 150, true, sun_left);
-    for (int y = 78; y < LAKE_TOP; y++) hline_blend(fb, y, c565(s_fog), (y - 78) / 3);  // haze
-    mountains(fb, sc_mid, 104, 26, 4, 10, 9, 400, (rgb_t){78, 110, 128}, 95, false, sun_left);
-    for (int y = 94; y < LAKE_TOP; y++) hline_blend(fb, y, c565(s_fog), (y - 94) / 2);
+    mountains(fb, sc_far, 184, 56, 2, 18, 5, 90, (rgb_t){118, 128, 178}, 150, true, sun_left);
+    for (int y = 164; y < LAKE_TOP; y++) hline_blend(fb, y, c565(s_fog), (y - 164) / 3);  // haze
+    mountains(fb, sc_mid, 192, 32, 4, 12, 9, 400, (rgb_t){78, 110, 128}, 95, false, sun_left);
+    for (int y = 180; y < LAKE_TOP; y++) hline_blend(fb, y, c565(s_fog), (y - 180) / 2);
     treeline(fb, sc_trees);
     lake(fb, t, body_x, sun_up);
     ground(fb, sc_near, t);
@@ -330,10 +330,10 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     uint16_t party_cmap[128];
     int pl = 256 - night / 3;
     sprite_build_cmap(party_cmap, pl);
-    shadow(fb, 168, FEET_Y, 9);
-    shadow(fb, 140, FEET_Y, 9);
-    sprite_draw(fb, step_a ? &spr_warrior_a : &spr_warrior_b, 160, FEET_Y - 23 - (step_a ? 0 : 1), 1, false, party_cmap);
-    sprite_draw(fb, step_m ? &spr_mage_a : &spr_mage_b, 132, FEET_Y - 21 - (step_m ? 0 : 1), 1, false, party_cmap);
+    shadow(fb, 158, FEET_Y, 9);
+    shadow(fb, 130, FEET_Y, 9);
+    sprite_draw(fb, step_a ? &spr_warrior_a : &spr_warrior_b, 150, FEET_Y - 23 - (step_a ? 0 : 1), 1, false, party_cmap);
+    sprite_draw(fb, step_m ? &spr_mage_a : &spr_mage_b, 122, FEET_Y - 21 - (step_m ? 0 : 1), 1, false, party_cmap);
 
     // Foreground grass clumps, faster than the path
     uint16_t fg = shade(40, 92, 52, 0), fg_l = shade(70, 130, 70, 0);
@@ -342,7 +342,7 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
         if (h % 3) continue;
         int bx = i * 37 + (int)(h % 20) - sc_fore;
         for (int k = 0; k < 7; k++) {
-            int hgt = 8 + (int)((h >> (k * 3)) % 12);
+            int hgt = 12 + (int)((h >> (k * 3)) % 16);
             int sway = (sin_q14[(t / 3 + i * 90 + k * 40) & 1023] * 2) >> 14;
             gfx_line(fb, bx + k * 2, H, bx + k * 2 + sway + (k - 3), H - hgt, k & 1 ? fg : fg_l);
         }
@@ -350,10 +350,10 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // Fireflies at night, birds by day
     if (night > 90) {
-        for (int i = 0; i < 14; i++) {
+        for (int i = 0; i < 20; i++) {
             uint32_t h = hash(i, 51);
             int x = (int)(h % W) + ((sin_q14[(t / 7 + i * 73) & 1023] * 14) >> 14);
-            int y = 112 + (int)((h >> 9) % 50) + ((sin_q14[(t / 5 + i * 151) & 1023] * 8) >> 14);
+            int y = LAKE_BOT + 4 + (int)((h >> 9) % 76) + ((sin_q14[(t / 5 + i * 151) & 1023] * 8) >> 14);
             int a = sin_u8[(uint8_t)(t / 9 + i * 37)] * night / 256;
             if (a > 120) {
                 gfx_glow(fb, x, y, 5, rgb565(200, 255, 120), (a - 120) / 10);
@@ -363,7 +363,7 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     } else {
         uint16_t bird = shade(40, 40, 60, 60);
         for (int i = 0; i < 3; i++) {
-            int x = W - (int)((tt / 35 + i * 140) % (W + 200)) + 100, y = 30 + i * 9 + ((sin_q14[(t / 4 + i * 200) & 1023] * 3) >> 14);
+            int x = W - (int)((tt / 35 + i * 140) % (W + 200)) + 100, y = 116 + i * 9 + ((sin_q14[(t / 4 + i * 200) & 1023] * 3) >> 14);
             int flap = ((t / 150 + i) & 1) ? 2 : -1;
             gfx_line(fb, x - 3, y - flap, x, y, bird);
             gfx_line(fb, x, y, x + 3, y - flap, bird);
@@ -375,14 +375,14 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     const uint16_t gold[4] = {rgb565(255, 252, 236), rgb565(255, 236, 168), rgb565(255, 204, 104), rgb565(232, 150, 64)};
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
-    pix_digits_draw(fb, (W - pix_digits_width("00:00", 5)) / 2, 10, hhmm, 5, gold, rgb565(52, 26, 40));
+    pix_digits_draw(fb, (W - pix_digits_width("00:00", 5)) / 2, 30, hhmm, 5, gold, rgb565(52, 26, 40));
     char date[32];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
     else strcpy(date, "SIN HORA");
-    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 70, date, gold[0], rgb565(52, 26, 40), FONT_FILL | FONT_OUTLINE);
+    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 72, date, gold[0], rgb565(52, 26, 40), FONT_FILL | FONT_OUTLINE);
     if (g_app.show_secs && g_now.valid) {
         int bw = 120, bx = (W - bw) / 2;
-        gfx_fill_rect(fb, bx - 1, 89, bw + 2, 4, rgb565(52, 26, 40));
-        gfx_fill_rect(fb, bx, 90, (int)(bw * g_now.minute_ms / 60000), 2, gold[1]);
+        gfx_fill_rect(fb, bx - 1, 93, bw + 2, 4, rgb565(52, 26, 40));
+        gfx_fill_rect(fb, bx, 94, (int)(bw * g_now.minute_ms / 60000), 2, gold[1]);
     }
 }

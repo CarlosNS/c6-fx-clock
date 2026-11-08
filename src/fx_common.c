@@ -26,7 +26,7 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "HUD", .res = FX_WIDE, .enter = hud_enter, .render = hud_render,
      .label = "HUD", .group = FX_G_GAMES,
      .desc = "Interfaz de ciencia ficción con anillo de segundos, temperatura del chip y señal WiFi en vivo; un glitch cada minuto."},
-    {.name = "AVENTURA", .landscape = true, .enter = quest_enter, .render = quest_render,
+    {.name = "AVENTURA", .res = FX_WIDE, .enter = quest_enter, .render = quest_render,
      .label = "Aventura", .group = FX_G_GAMES,
      .desc = "Viaje en pixel art con parallax y un lago con reflejos. El cielo, el sol, la luna y los faroles siguen la hora real."},
     {.name = "RPG", .res = FX_WIDE, .enter = rpg_enter, .render = rpg_render,
