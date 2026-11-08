@@ -20,3 +20,5 @@ void update_boot_check(void);
 // with every attempt, so the app can tell a new result from an old one. state is one of none,
 // running, interrupted, updated, up_to_date, no_wifi, no_internet, bad_manifest, bad_image, timeout.
 size_t update_result_json(char *buf, size_t size);
+// Stores an outcome (also for the Bluetooth update, bleota.c); new_attempt bumps "at"
+void update_record(const char *state, const char *from, const char *to, bool new_attempt);

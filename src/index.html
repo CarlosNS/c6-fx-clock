@@ -308,7 +308,7 @@ function ask(title,body,ok){return confirm(L.kind==='android'?JSON.stringify({ti
 const MANIFEST='https://carlosns.github.io/c6-fx-clock/manifest.json';
 const UPD_TXT={updated:'Actualizado',up_to_date:'Ya tenía la última versión',no_wifi:'No pudo conectarse a su red WiFi (revisa Conexión)',
  no_internet:'Su red no tenía internet',bad_manifest:'No pudo leer la información de la versión',bad_image:'La descarga no era válida; sigue con la versión anterior',
- timeout:'La descarga tardó demasiado; sigue con la versión anterior',interrupted:'Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior',running:'En curso'};
+ timeout:'La descarga tardó demasiado; sigue con la versión anterior',ble_lost:'Se cortó el Bluetooth a mitad; sigue con la versión anterior',cancelled:'Cancelada; sigue con la versión anterior',interrupted:'Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior',running:'En curso'};
 let mode='',updAt=null,updWaiting=false,offer=null,autoUpd=false;
 function updStatus(s){const u=s.upd;if(!u)return;
  if(u.state!=='none')$('updlast').textContent=`Último intento: ${UPD_TXT[u.state]||u.state}${u.state==='updated'?` (${u.from} → ${u.to})`:''}`;
@@ -325,6 +325,10 @@ async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classL
  catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
 $('updgo').onclick=()=>{if(!offer)return;
+ // The app passes the image over Bluetooth (watches from 3.0.0-beta.6): no Wi-Fi needed on the watch
+ if(L.kind==='android'&&ClockBridge.canUpdateClock&&ClockBridge.canUpdateClock()){
+  if(!ask(`¿Actualizar el reloj a la ${offer.version}?`,'El móvil descarga la versión nueva y se la pasa al reloj por Bluetooth. Tarda unos minutos: deja la app abierta y el reloj cerca. Al terminar, el reloj se reinicia solo. Si algo falla, seguirá con la versión que tiene ahora.','Actualizar'))return;
+  ClockBridge.updateClock(JSON.stringify(offer));updWaiting=true;offer=null;$('updgo').classList.add('hide');return}
  if(!ask(`¿Actualizar el reloj a la ${offer.version}?`,'El reloj se reiniciará, se conectará a tu WiFi y descargará la nueva versión. Tarda de 1 a 3 minutos. Si algo falla, seguirá con la versión que tiene ahora.','Actualizar'))return;
  if(send('update apply '+MANIFEST)){updWaiting=true;offer=null;$('updgo').classList.add('hide');$('updst').innerHTML='<b>Actualizando…</b> el reloj volverá solo en unos minutos.'}};
 // The clock's time ticks here between status messages (over Bluetooth they come every few seconds)
@@ -370,6 +374,7 @@ if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appn
   if(!o){$('appupdst').innerHTML=`App: tienes la última (<b>${v}</b>)`;return}
   $('appupdst').innerHTML=`App: disponible la <b>${o.version}</b> (tienes la ${v})`;$('appupdgo').textContent='Actualizar la app a la '+o.version};
  window.appUpdateState=t=>{$('appupdst').textContent=t};
+ window.clockUpdateState=t=>{$('updst').textContent=t};
  $('appupdgo').onclick=()=>ClockBridge.installApp();
  ClockBridge.checkApp()}
 loadFaces();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);

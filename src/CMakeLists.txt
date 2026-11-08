@@ -1,4 +1,4 @@
-set(srcs "main.c" "gfx.c" "fonts.c" "uifont.c" "sprites.c" "clock.c" "web.c" "net.c" "control.c" "settings.c" "ota.c" "bootmode.c" "console.c" "update.c" "ble.c" "weather.c"
+﻿set(srcs "main.c" "gfx.c" "fonts.c" "uifont.c" "sprites.c" "clock.c" "web.c" "net.c" "control.c" "settings.c" "ota.c" "bootmode.c" "console.c" "update.c" "ble.c" "weather.c"
          "fx_common.c" "fx_plasma.c" "fx_cube.c" "fx_tunnel.c" "fx_lava.c" "fx_life.c"
          "fx_hud.c" "fx_quest.c" "fx_rpg.c"
          "fx_starry.c" "fx_wifimon.c" "fx_earthrise.c" "fx_sakura.c"
@@ -7,7 +7,7 @@ set(srcs "main.c" "gfx.c" "fonts.c" "uifont.c" "sprites.c" "clock.c" "web.c" "ne
 # The watch system: Marea Solsticial toolkit, gestures, shell and apps
 list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "alarm.c" "audio.c" "phone.c"
                  "app_faces.c" "app_settings.c" "app_stopwatch.c" "app_torch.c" "app_alarms.c" "app_steps.c"
-                 "app_music.c" "app_files.c" "usbdisk.c" "batlog.c")
+                 "app_music.c" "app_files.c" "usbdisk.c" "batlog.c" "bleota.c")
 list(APPEND srcs "board.c" "lcd_co5300.c" "i2c_bus.c" "pmu_axp2101.c" "rtc_pcf85063.c" "touch_ft3168.c" "imu_qmi8658.c")
 
 idf_component_register(

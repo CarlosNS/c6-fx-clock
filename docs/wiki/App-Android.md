@@ -61,7 +61,7 @@ La conexión permanente es un servicio en primer plano, que Android respeta, per
 
 En la tarjeta **Actualizaciones** la app muestra las dos versiones:
 
-- **Reloj:** *Actualizar a la X* manda al reloj descargarla por su WiFi (ver [[Actualizaciones]]).
+- **Reloj:** *Actualizar a la X* descarga la versión en el móvil y se la pasa al reloj por Bluetooth, así que el reloj no necesita WiFi y funciona en cualquier sitio (relojes desde la 3.0.0-beta.6; los anteriores la descargan con su WiFi). Deja la app abierta unos minutos. Ver [[Actualizaciones]].
 - **App:** *Actualizar la app a la X* la descarga, comprueba su tamaño y su SHA-256 y abre el instalador de Android, que pide confirmación. La primera vez Android pide además permitir que Marea instale apps («Permitir de esta fuente»). Solo acepta versiones firmadas con la misma clave, y se conserva el emparejamiento.
 
 ## Privacidad

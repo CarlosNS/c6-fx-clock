@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "app.h"
+#include "bleota.h"
 #include "bootmode.h"
 #include "clock.h"
 #include "control.h"
@@ -257,6 +258,8 @@ static void worker(void *arg)
                     vTaskDelay(pdMS_TO_TICKS(200));  // let the ack go out before the reboot
                     boot_mode_switch(BOOT_UPDATE);
                 }
+            } else if (bleota_command(c)) {
+                // firmware from the phone: bleota.c answers by itself
             } else if (strncmp(c, "mode ", 5) == 0) {
                 send_ack("mode");
                 vTaskDelay(pdMS_TO_TICKS(200));  // let the ack go out before the reboot
@@ -300,6 +303,17 @@ static int clock_access(uint16_t conn, uint16_t attr, struct ble_gatt_access_ctx
     return 0;
 }
 
+// Firmware image packets (bleota.c), only from the paired phone
+static int ota_access(uint16_t conn, uint16_t attr, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    if (ctxt->op != BLE_GATT_ACCESS_OP_WRITE_CHR) return BLE_ATT_ERR_UNLIKELY;
+    static uint8_t buf[CMD_MAX + 8];
+    uint16_t n = 0;
+    if (OS_MBUF_PKTLEN(ctxt->om) > sizeof(buf)) return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
+    if (ble_hs_mbuf_to_flat(ctxt->om, buf, sizeof(buf), &n) != 0) return BLE_ATT_ERR_UNLIKELY;
+    return bleota_data(buf, n);
+}
+
 static int fw_rev_access(uint16_t conn, uint16_t attr, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     const char *v = esp_app_get_description()->version;
@@ -314,6 +328,9 @@ static const struct ble_gatt_svc_def SERVICES[] = {
           .access_cb = clock_access,
           .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP | BLE_GATT_CHR_F_WRITE_ENC | BLE_GATT_CHR_F_WRITE_AUTHEN},
          {.uuid = UUID_CLOCK(0x03), .access_cb = clock_access, .flags = BLE_GATT_CHR_F_NOTIFY, .val_handle = &s_evt_handle},
+         {.uuid = UUID_CLOCK(0x04),
+          .access_cb = ota_access,
+          .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP | BLE_GATT_CHR_F_WRITE_ENC | BLE_GATT_CHR_F_WRITE_AUTHEN},
          {0}}},
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = BLE_UUID16_DECLARE(0x180A),  // Device Information
@@ -402,6 +419,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         s_conn = BLE_HS_CONN_HANDLE_NONE;
         s_subscribed = false;
         advertise(true);
+        bleota_link_lost();
         {
             // Without the phone there is no call to show: end a ringing one now (through the worker,
             // like any command from the phone)

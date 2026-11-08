@@ -80,6 +80,14 @@ size_t update_result_json(char *buf, size_t size)
     return n > 0 && (size_t)n < size ? (size_t)n : 0;
 }
 
+void update_record(const char *state, const char *from, const char *to, bool new_attempt)
+{
+    if (new_attempt) next_attempt();
+    if (from) put_str("upd_from", from);
+    if (to) put_str("upd_to", to);
+    put_str("upd_st", state);
+}
+
 void update_boot_check(void)
 {
     char state[16];

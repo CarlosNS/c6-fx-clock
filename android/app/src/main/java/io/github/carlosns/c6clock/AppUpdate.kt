@@ -14,9 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
-import java.security.MessageDigest
 
 /**
  * The app updates itself from the same manifest as the firmware (its "app" block, written by
@@ -45,37 +42,7 @@ object AppUpdate {
     suspend fun install(c: Context, app: JSONObject, progress: (String) -> Unit) {
         val size = app.getLong("size")
         val file = File(c.cacheDir, "update.apk")
-        withContext(Dispatchers.IO) {
-            val conn = URL(app.getString("url")).openConnection() as HttpURLConnection
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 30_000
-            val sha = MessageDigest.getInstance("SHA-256")
-            var got = 0L
-            try {
-                check(conn.responseCode == 200) { "HTTP ${conn.responseCode}" }
-                conn.inputStream.use { input ->
-                    file.outputStream().use { out ->
-                        val buf = ByteArray(64 * 1024)
-                        var shown = -1L
-                        while (true) {
-                            val n = input.read(buf)
-                            if (n < 0) break
-                            check(got + n <= size) { "la descarga es más grande de lo anunciado" }
-                            out.write(buf, 0, n)
-                            sha.update(buf, 0, n)
-                            got += n
-                            val pct = got * 100 / size
-                            if (pct / 10 != shown) { shown = pct / 10; progress("Descargando… $pct %") }
-                        }
-                    }
-                }
-            } finally {
-                conn.disconnect()
-            }
-            check(got == size) { "descarga incompleta" }
-            val hex = sha.digest().joinToString("") { "%02x".format(it) }
-            check(hex.equals(app.getString("sha256"), true)) { "la descarga no coincide (SHA-256)" }
-        }
+        downloadChecked(app.getString("url"), size, app.getString("sha256"), file) { progress("Descargando… $it %") }
         progress("Instalando…")
         withContext(Dispatchers.IO) {
             val installer = c.packageManager.packageInstaller

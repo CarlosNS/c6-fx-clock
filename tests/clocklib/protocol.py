@@ -1,9 +1,10 @@
-"""Bluetooth protocol of the clock (docs/PLAN-bluetooth.md, section 3). Single source for the tests
+﻿"""Bluetooth protocol of the clock (docs/PLAN-bluetooth.md, section 3). Single source for the tests
 and the PC tools; the phone app implements the same rules in transport.js."""
 
 SERVICE_UUID = "7f1c0001-6c0c-4e0b-a1c6-0000c6c10c00"
 CMD_UUID = "7f1c0002-6c0c-4e0b-a1c6-0000c6c10c00"   # write, encrypted: one text command
 EVT_UUID = "7f1c0003-6c0c-4e0b-a1c6-0000c6c10c00"   # notify, encrypted: framed JSON messages
+OTA_UUID = "7f1c0004-6c0c-4e0b-a1c6-0000c6c10c00"   # write without response, encrypted: firmware packets (src/bleota.h)
 FW_REV_UUID = "00002a26-0000-1000-8000-00805f9b34fb"  # Device Information: firmware revision (public)
 
 LAST = 0x80

@@ -17,7 +17,9 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -40,6 +42,11 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
 
     private var gatt: BluetoothGatt? = null
     private var cmd: BluetoothGattCharacteristic? = null
+    private var ota: BluetoothGattCharacteristic? = null  // firmware packets (clocks from 3.0.0-beta.6)
+    @Volatile var mtu = 23
+        private set
+    /** The clock takes its firmware over Bluetooth (ClockUpdate). */
+    val canOta get() = ota != null
     private val ops = Mutex()
     private var pending: CompletableDeferred<Int>? = null  // status of the GATT operation in flight
     private val messages = MutableSharedFlow<JSONObject>(extraBufferCapacity = 32)
@@ -55,6 +62,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                 val was = ready
                 ready = false
                 cmd = null
+                ota = null
                 pending?.complete(-1)
                 setup.trySend(-1)
                 g.close()
@@ -64,6 +72,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         }
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) this@ClockBle.mtu = mtu
             g.discoverServices()
         }
 
@@ -71,6 +80,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             val svc = g.getService(Protocol.SERVICE)
             val evt = svc?.getCharacteristic(Protocol.EVT)
             cmd = svc?.getCharacteristic(Protocol.CMD)
+            ota = svc?.getCharacteristic(Protocol.OTA)
             val cccd = evt?.getDescriptor(Protocol.CCCD)
             if (evt == null || cccd == null || cmd == null) {
                 Log.w(TAG, "not a Marea clock")
@@ -133,23 +143,44 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
     }
 
     override suspend fun send(cmd: String) {
+        write(this.cmd, cmd.toByteArray(Charsets.UTF_8), BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+    }
+
+    /** One firmware packet, without response: Android still reports when it left, which paces us. */
+    suspend fun writeOta(data: ByteArray) {
+        write(ota, data, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+    }
+
+    private suspend fun write(c: BluetoothGattCharacteristic?, data: ByteArray, type: Int) {
         ops.withLock {
             val g = gatt ?: throw IllegalStateException("sin conexión")
-            val c = this.cmd ?: throw IllegalStateException("sin conexión")
-            val data = cmd.toByteArray(Charsets.UTF_8)
+            c ?: throw IllegalStateException("sin conexión")
             val done = CompletableDeferred<Int>().also { pending = it }
-            val type = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            val started = if (Build.VERSION.SDK_INT >= 33) {
-                g.writeCharacteristic(c, data, type) == BluetoothStatusCodes.SUCCESS
-            } else @Suppress("DEPRECATION") run {
-                c.writeType = type
-                c.value = data
-                g.writeCharacteristic(c)
+            // The stack may be busy for a moment (its queue is full): wait and try again
+            var tries = 0
+            while (true) {
+                val started = if (Build.VERSION.SDK_INT >= 33) {
+                    g.writeCharacteristic(c, data, type) == BluetoothStatusCodes.SUCCESS
+                } else @Suppress("DEPRECATION") run {
+                    c.writeType = type
+                    c.value = data
+                    g.writeCharacteristic(c)
+                }
+                if (started) break
+                if (++tries > 100 || gatt == null) throw IllegalStateException("no se pudo enviar")
+                delay(20)
             }
-            if (!started) throw IllegalStateException("no se pudo enviar")
             val status = withTimeout(5_000) { done.await() }
             if (status != BluetoothGatt.GATT_SUCCESS) throw IllegalStateException("envío rechazado ($status)")
         }
+    }
+
+    /** Every whole message from the clock (also given to [onMessage]). */
+    fun events(): SharedFlow<JSONObject> = messages
+
+    /** The fastest connection interval, for sending firmware. */
+    fun fast() {
+        gatt?.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
     }
 
     override suspend fun exchange(cmd: String, t: String, timeoutMs: Long, match: (JSONObject) -> Boolean): JSONObject =

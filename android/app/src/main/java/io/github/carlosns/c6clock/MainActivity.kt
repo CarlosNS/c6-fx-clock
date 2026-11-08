@@ -29,6 +29,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.view.WindowManager
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
@@ -323,6 +324,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // ---- the clock's firmware, through the phone (ClockUpdate): no Wi-Fi needed on the clock ----
+    private var updatingClock = false
+
+    private fun updateClock(entry: JSONObject) {
+        fun say(t: String) = js("clockUpdateState", JSONObject.quote(t))
+        val l = link ?: return say("El reloj no está conectado")
+        if (updatingClock) return
+        updatingClock = true
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)  // the transfer takes a few minutes
+        lifecycleScope.launch {
+            var file: java.io.File? = null
+            try {
+                say("Descargando la ${entry.getString("version")}…")
+                file = ClockUpdate.download(this@MainActivity, entry) { say("Descargando… $it %") }
+                say("Pasando al reloj…")
+                ClockUpdate.send(l, file, entry) { say("Pasando al reloj… $it %") }
+                say("Listo: el reloj se reinicia con la ${entry.getString("version")}")
+            } catch (e: Exception) {
+                say("No se pudo actualizar: ${e.message}. El reloj sigue con su versión.")
+            } finally {
+                file?.delete()
+                updatingClock = false
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+    }
+
     /** What the page may call. Runs on a WebView thread: work goes to the UI thread / lifecycle scope. */
     inner class Bridge {
         @JavascriptInterface fun ready() = runOnUiThread {
@@ -359,6 +387,11 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }
         @JavascriptInterface fun installApp() = runOnUiThread { this@MainActivity.installApp() }
+        @JavascriptInterface fun canUpdateClock() = Live.link?.takeIf { it.ready }?.canOta == true
+        @JavascriptInterface fun updateClock(entry: String) {
+            val e = runCatching { JSONObject(entry) }.getOrNull() ?: return
+            runOnUiThread { this@MainActivity.updateClock(e) }
+        }
     }
 
     companion object {

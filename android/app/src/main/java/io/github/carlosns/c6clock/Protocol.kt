@@ -10,6 +10,7 @@ object Protocol {
     val SERVICE: UUID = UUID.fromString("7f1c0001-6c0c-4e0b-a1c6-0000c6c10c00")
     val CMD: UUID = UUID.fromString("7f1c0002-6c0c-4e0b-a1c6-0000c6c10c00")
     val EVT: UUID = UUID.fromString("7f1c0003-6c0c-4e0b-a1c6-0000c6c10c00")
+    val OTA: UUID = UUID.fromString("7f1c0004-6c0c-4e0b-a1c6-0000c6c10c00")  // firmware packets (src/bleota.h)
     val CCCD: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     const val MTU = 247
 
