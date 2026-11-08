@@ -60,7 +60,7 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "LLUVIA", .res = FX_WIDE, .enter = rain_enter, .render = rain_render,
      .label = "Lluvia", .group = FX_G_NATURE,
      .desc = "Gotas que resbalan por el cristal sobre una ciudad desenfocada; la hora en neón que parpadea."},
-    {.name = "AGUJERO NEGRO", .landscape = true, .enter = blackhole_enter, .render = blackhole_render,
+    {.name = "AGUJERO NEGRO", .res = FX_WIDE, .enter = blackhole_enter, .render = blackhole_render,
      .label = "Agujero negro", .group = FX_G_NATURE,
      .desc = "Disco de acreción con efecto Doppler y lente gravitatoria; las estrellas del fondo se curvan alrededor."},
     {.name = "GOL", .landscape = true, .enter = goal_enter, .render = goal_render,
