@@ -427,6 +427,7 @@ void sys_poll_requests(void)
     if (strcmp(r, "home") == 0) sys_home();
     else if (strcmp(r, "quick") == 0) sys_open_quick();
     else if (strcmp(r, "launcher") == 0) sys_open_launcher();
+    else if (strcmp(r, "ring") == 0) sys_alert(&app_alarm_ring);  // preview of the alarm screen (no sound)
     else if (sscanf(r, "app %d", &a) == 1) sys_open_app(a);
     else if (sscanf(r, "tap %d %d", &a, &b) == 2) {
         synth(EV_DOWN, a, b, a, b, 0, 0);

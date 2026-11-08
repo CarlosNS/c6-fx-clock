@@ -100,6 +100,7 @@ Todas las esferas por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, 
   - las **flechas** sobre y bajo las cifras suben y bajan la hora y los minutos; **mantenerlas** salta de 6 en 6 horas o de 10 en 10 minutos;
   - los **siete días** (L M X J V S D) se marcan y desmarcan tocándolos; sin ninguno, la alarma suena **una vez** y se apaga sola;
   - **Listo** la guarda; **Borrar** la elimina.
+- **La animación:** mientras suena, el sol sale despacio del mar y el cielo pasa de la noche al oro; cuanto más alto está, más tiempo lleva sonando. Al posponer, el sol se hunde; al parar, termina de salir.
 - **Cuando suena:** la pantalla de la alarma **sustituye a lo que hubiera** (la esfera, un menú o una app), aunque la pantalla estuviera apagada: se enciende sola, enseña la hora y suena por el altavoz. Al pararla o posponerla, el reloj vuelve a donde estabas: a la esfera, o al lanzador si estabas en una app.
   - **Parar** (o BOOT) la apaga.
   - **Posponer**, o **agitar la muñeca**, la repite a los **5 minutos**.
