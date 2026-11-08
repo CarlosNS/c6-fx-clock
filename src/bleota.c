@@ -17,7 +17,6 @@
 #include "freertos/stream_buffer.h"
 #include "freertos/task.h"
 #include "host/ble_att.h"
-#include "mbedtls/sha256.h"
 #include "ota.h"
 #include "sys.h"
 #include "ui_icons.h"
@@ -54,6 +53,81 @@ static void send_err(const char *msg)
     send_state("err", extra);
 }
 
+// ---------------------------------------------------------------- SHA-256 in software
+// mbedtls' SHA here goes through the hardware engine with DMA, and with the display streaming frames
+// by DMA at the same time its context came out corrupted at the end of a transfer (abort in
+// sha_hal_read_digest). A plain software SHA-256 costs ~1 s over a whole image and shares nothing.
+
+typedef struct {
+    uint32_t h[8];
+    uint64_t len;
+    uint8_t buf[64];
+    size_t n;
+} sha256_t;
+
+static const uint32_t K[64] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+    0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+    0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
+    0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+
+#define ROR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
+
+static void sha_block(sha256_t *s, const uint8_t *p)
+{
+    uint32_t w[64], a = s->h[0], b = s->h[1], c = s->h[2], d = s->h[3], e = s->h[4], f = s->h[5], g = s->h[6], h = s->h[7];
+    for (int i = 0; i < 16; i++) w[i] = (uint32_t)p[4 * i] << 24 | p[4 * i + 1] << 16 | p[4 * i + 2] << 8 | p[4 * i + 3];
+    for (int i = 16; i < 64; i++) {
+        uint32_t s0 = ROR(w[i - 15], 7) ^ ROR(w[i - 15], 18) ^ (w[i - 15] >> 3);
+        uint32_t s1 = ROR(w[i - 2], 17) ^ ROR(w[i - 2], 19) ^ (w[i - 2] >> 10);
+        w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+    }
+    for (int i = 0; i < 64; i++) {
+        uint32_t t1 = h + (ROR(e, 6) ^ ROR(e, 11) ^ ROR(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i];
+        uint32_t t2 = (ROR(a, 2) ^ ROR(a, 13) ^ ROR(a, 22)) + ((a & b) ^ (a & c) ^ (b & c));
+        h = g, g = f, f = e, e = d + t1, d = c, c = b, b = a, a = t1 + t2;
+    }
+    s->h[0] += a, s->h[1] += b, s->h[2] += c, s->h[3] += d, s->h[4] += e, s->h[5] += f, s->h[6] += g, s->h[7] += h;
+}
+
+static void sha_init(sha256_t *s)
+{
+    static const uint32_t H0[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
+    memcpy(s->h, H0, sizeof(H0));
+    s->len = 0;
+    s->n = 0;
+}
+
+static void sha_update(sha256_t *s, const uint8_t *p, size_t len)
+{
+    s->len += len;
+    while (len) {
+        if (s->n == 0 && len >= 64) {
+            sha_block(s, p);
+            p += 64, len -= 64;
+            continue;
+        }
+        size_t k = 64 - s->n < len ? 64 - s->n : len;
+        memcpy(s->buf + s->n, p, k);
+        s->n += k, p += k, len -= k;
+        if (s->n == 64) sha_block(s, s->buf), s->n = 0;
+    }
+}
+
+static void sha_final(sha256_t *s, uint8_t out[32])
+{
+    uint64_t bits = s->len * 8;
+    uint8_t pad = 0x80, zero = 0, lenb[8];
+    sha_update(s, &pad, 1);
+    while (s->n != 56) sha_update(s, &zero, 1);
+    for (int i = 0; i < 8; i++) lenb[i] = (uint8_t)(bits >> (56 - 8 * i));
+    sha_update(s, lenb, 8);
+    for (int i = 0; i < 8; i++) out[4 * i] = s->h[i] >> 24, out[4 * i + 1] = s->h[i] >> 16, out[4 * i + 2] = s->h[i] >> 8, out[4 * i + 3] = s->h[i];
+}
+
 // ---------------------------------------------------------------- screen (an alert while it runs)
 
 static int s_shown_pct = -2;
@@ -84,9 +158,9 @@ static bool ota_draw(uint32_t now, bool force)
         ui_bar(78, 282, UI_W - 156, 18, pct * 10, MS_ORO);
         ui_print_c(&ui_jersey, 2, UI_W / 2, 306, p, MS_ORO2, false);
     } else {
-        ui_print_c(&ui_vt, 1, UI_W / 2, 296, TR("sigue la versión actual", "the current version stays"), MS_GRIS, false);
+        ui_print_c(&ui_vt, 1, UI_W / 2, 296, TR("sigue la versiÃ³n actual", "the current version stays"), MS_GRIS, false);
     }
-    ui_print_c(&ui_vt, 1, UI_W / 2, 380, TR("por Bluetooth desde el móvil", "over Bluetooth from the phone"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 380, TR("por Bluetooth desde el mÃ³vil", "over Bluetooth from the phone"), MS_GRIS, false);
     if (st == ST_RECV) ui_print_c(&ui_vt, 1, UI_W / 2, 404, TR("no apagues el reloj", "do not switch the watch off"), MS_GRIS, false);
     return true;
 }
@@ -114,9 +188,8 @@ static void fail(const char *state, const char *why)
 static void writer(void *arg)
 {
     uint8_t *stage = heap_caps_malloc(STAGE, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    mbedtls_sha256_context sha;
-    mbedtls_sha256_init(&sha);
-    mbedtls_sha256_starts(&sha, 0);
+    sha256_t sha;
+    sha_init(&sha);
     size_t fill = 0, last_ack = 0;
     int64_t last_data = esp_timer_get_time();
     const char *msg = NULL;
@@ -124,7 +197,7 @@ static void writer(void *arg)
     if (!ok) fail("bad_image", "sin memoria");
     while (ok && s_written < s_size) {
         if (s_cancel) {
-            fail(s_cancel == 2 ? "ble_lost" : "cancelled", s_cancel == 2 ? "se cortó el Bluetooth" : "cancelada en el móvil");
+            fail(s_cancel == 2 ? "ble_lost" : "cancelled", s_cancel == 2 ? "se cortÃ³ el Bluetooth" : "cancelada en el mÃ³vil");
             ok = false;
             break;
         }
@@ -134,7 +207,7 @@ static void writer(void *arg)
         int64_t now = esp_timer_get_time();
         if (!n) {
             if (now - last_data > IDLE_LIMIT_US) {
-                fail("timeout", "el móvil dejó de enviar");
+                fail("timeout", "el mÃ³vil dejÃ³ de enviar");
                 ok = false;
             }
             continue;
@@ -142,7 +215,7 @@ static void writer(void *arg)
         last_data = now;
         fill += n;
         if (fill < STAGE && s_written + fill < s_size) continue;
-        mbedtls_sha256_update(&sha, stage, fill);
+        sha_update(&sha, stage, fill);
         if (ota_write(stage, fill, &msg) != ESP_OK) {  // ota.c aborts on error
             fail("bad_image", msg ? msg : "error al escribir");
             ok = false;
@@ -161,9 +234,9 @@ static void writer(void *arg)
     if (ok) {
         uint8_t digest[32];
         char hex[65];
-        mbedtls_sha256_finish(&sha, digest);
+        sha_final(&sha, digest);
         for (int i = 0; i < 32; i++) sprintf(hex + 2 * i, "%02x", digest[i]);
-        if (strcasecmp(hex, s_sha) != 0) fail("bad_image", "la imagen llegó dañada");
+        if (strcasecmp(hex, s_sha) != 0) fail("bad_image", "la imagen llegÃ³ daÃ±ada");
         else if (ota_finish(&msg) != ESP_OK) fail("bad_image", msg ? msg : "no se pudo activar");
         else {
             ESP_LOGI(TAG, "Image verified, rebooting into %s", s_version);
@@ -175,7 +248,6 @@ static void writer(void *arg)
             esp_restart();
         }
     }
-    mbedtls_sha256_free(&sha);
     free(stage);
     vStreamBufferDeleteWithCaps(s_sb);
     s_sb = NULL;
@@ -189,10 +261,10 @@ static void begin(const char *args)
 {
     unsigned size = 0;
     char sha[65] = "", ver[32] = "";
-    if (s_state != ST_IDLE) return send_err("ya hay una actualización en curso");
-    if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no válida");
-    if (size < 1024 || size > ota_max_size()) return send_err("tamaño no válido");
-    if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versión");
+    if (s_state != ST_IDLE) return send_err("ya hay una actualizaciÃ³n en curso");
+    if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no vÃ¡lida");
+    if (size < 1024 || size > ota_max_size()) return send_err("tamaÃ±o no vÃ¡lido");
+    if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versiÃ³n");
     s_sb = xStreamBufferCreateWithCaps(BUF_BYTES, 1, MALLOC_CAP_SPIRAM);
     if (!s_sb) return send_err("sin memoria");
     if (ota_begin(size) != ESP_OK) {
@@ -208,7 +280,8 @@ static void begin(const char *args)
     strlcpy(s_from, esp_app_get_description()->version, sizeof(s_from));
     update_record("running", s_from, s_version, true);
     s_state = ST_RECV;
-    if (xTaskCreate(writer, "bleota", 4096, NULL, 5, NULL) != pdPASS) {
+    // 8 KB: esp_ota_end() verifies the whole image and needs a deep stack (4 KB overflowed at the end)
+    if (xTaskCreate(writer, "bleota", 8192, NULL, 5, NULL) != pdPASS) {
         ota_abort();
         vStreamBufferDeleteWithCaps(s_sb);
         s_sb = NULL;
