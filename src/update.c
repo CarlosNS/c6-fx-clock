@@ -199,6 +199,7 @@ void update_run(void)
     put_str("upd_st", "running");
 
     screen(TR("Actualizar", "Update"), TR("conectando al WiFi", "connecting to Wi-Fi"), -1);
+    g_app.wifi_on = 1;  // this boot exists to use the Wi-Fi (not saved: the setting stays as it was)
     net_start();
     for (int t = 0; !g_app.sta_ip[0]; t += 250) {
         if (t >= WIFI_LIMIT_MS) finish("no_wifi", NULL, "sin WiFi");

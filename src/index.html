@@ -157,6 +157,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 <div class="card">
   <h3>Conexión</h3>
   <div class="stack">
+    <div class="item hide" id="wifirow"><div class="t">WiFi del reloj<small>Apagado gasta mucha menos batería: la hora, el tiempo y las actualizaciones llegan por el móvil</small></div><input type="checkbox" class="sw" id="wifi"></div>
     <div class="status" id="wst">--</div>
     <input type="text" id="wssid" placeholder="Nombre de la red WiFi" autocomplete="off">
     <input type="password" id="wpass" placeholder="Contraseña">
@@ -243,7 +244,7 @@ function setFx(i){cur=i;btns.forEach((b,j)=>b&&b.classList.toggle('on',j===i));c
 
 for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).padStart(2,'0')+':00',h));
 function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
-bind('spd','spd',v=>v+'%');bind('bri','bri',v=>v+'%');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wks','wks');bind('secs','secs');
+bind('spd','spd',v=>v+'%');bind('bri','bri',v=>v+'%');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('secs','secs');
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
 const swatch=h=>$('chuesw').style.background=`linear-gradient(135deg,hsl(${h} 62% 9%),hsl(${h} 62% 30%),hsl(${h} 62% 12%))`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
@@ -289,6 +290,7 @@ function show(s){
  // Marea (S3) has Wi-Fi and Bluetooth at once: its Wi-Fi is always the real one, there are no modes
  mode=BOARD==='s3amoled'?'wifi':s.mode;$('wgo').textContent=mode==='wifi'?'Conectar el reloj a esta red':'Guardar esta red para las actualizaciones';
  $('wst').innerHTML=mode!=='wifi'?(s.ssid?`Red guardada: <b>${s.ssid}</b>. El reloj solo la usa para actualizarse.`:'Sin red guardada: hace falta para que el reloj se actualice.')
+  :s.wifi===0?(s.ssid?`WiFi apagado. Red guardada: <b>${s.ssid}</b>`:'WiFi apagado')
   :s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi Marea');
  updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
@@ -297,6 +299,7 @@ function show(s){
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+'%'}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
+  if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}
   for(const k of['wks','nst','nen','chue','ohue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
   if(s.chue!==undefined)swatch($('chue').value);
   vis()}

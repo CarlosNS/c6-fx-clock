@@ -1,10 +1,15 @@
 // "Sakura" (full screen, wide canvas, portrait): a cherry tree in bloom by a still pond. Petals drift down, fluttering as
 // they turn (edge-on they almost vanish), and leave ripples where they touch the water.
 #include <stdio.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "control.h"
+#include "esp_attr.h"
 #include "fx.h"
+#include "esp_attr.h"
 #include "gfx.h"
+#include "esp_attr.h"
 
 #define W WW
 #define H WH
@@ -15,7 +20,7 @@
 typedef struct { float x, y, vy, phase, spin, drift; uint8_t tone; } petal_t;
 typedef struct { int16_t x, y; uint32_t t0; } ripple_t;
 
-static petal_t pet[NPET];
+EXT_RAM_BSS_ATTR static petal_t pet[NPET];
 static ripple_t rip[NRIP];
 static int rip_next;
 

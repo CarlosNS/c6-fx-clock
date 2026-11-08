@@ -28,6 +28,9 @@
 #include "update.h"
 #include "apps.h"
 #include "esp_pm.h"
+#include "esp_sleep.h"
+#include "esp_system.h"
+#include "soc/usb_serial_jtag_struct.h"
 #include "batlog.h"
 #include "usbdisk.h"
 #include "web.h"
@@ -62,7 +65,7 @@ static const char *TAG = "main";
 app_state_t g_app = {
     .fx = 0,
     .auto_cycle = 0,
-    .speed = 100,
+    .speed = 75,  // a calmer pace by default (the owner's choice)
     .brightness = 80,
     .overlay = 0,
     .h24 = 1,
@@ -248,7 +251,7 @@ static void poll_button(uint32_t now)
     }
 }
 
-// Raise to wake, checked while the screen is off (about 25 times a second). The screen comes on when
+// Raise to wake, checked while the screen is off (20 times a second). The screen comes on when
 // it ends up facing up (z over 0.7 g for 3 samples in a row) after not facing up within the last
 // 1.2 s (z under 0.3 g): turning the wrist to look. A watch lying still on the table never triggers.
 #define RAISE_UP_MG 700
@@ -266,6 +269,90 @@ static void poll_raise(uint32_t now, int z)
         away_t = 0;
         app_wake();
     }
+}
+
+// ---------------------------------------------------------------- power
+
+// Light sleep: with the screen off and no USB cable, the chip sleeps between the loop's passes (the
+// accelerometer, button and touch are still read 20 times a second) and Bluetooth keeps its link
+// in modem sleep. On USB it stays awake so the serial console works; "sleeptest <s>" (console)
+// allows it anyway for a while, to measure it with "pm".
+volatile uint32_t g_sleep_test_until;
+static bool s_usb, s_ls_on;
+
+// Plugging the cable in while the chip sleeps: the computer tries to enumerate it, gets no answer and
+// gives up, and the serial console (and flashing through it) stays dead even across software resets.
+// Dropping the D+ pull-up for a moment looks like unplugging and plugging back, and the computer tries
+// again. Done at boot and whenever the cable appears.
+static void usb_console_reconnect(void)
+{
+    USB_SERIAL_JTAG.conf0.usb_pad_enable = 1;
+    USB_SERIAL_JTAG.conf0.pad_pull_override = 1;
+    USB_SERIAL_JTAG.conf0.dp_pullup = 0;
+    vTaskDelay(pdMS_TO_TICKS(50));
+    USB_SERIAL_JTAG.conf0.dp_pullup = 1;
+    USB_SERIAL_JTAG.conf0.pad_pull_override = 0;
+}
+
+static void light_sleep_allow(bool on)
+{
+    if (on == s_ls_on) return;
+    esp_pm_config_t pm = {.max_freq_mhz = 240, .min_freq_mhz = 80, .light_sleep_enable = on};
+    if (esp_pm_configure(&pm) != ESP_OK) return;
+    s_ls_on = on;
+    if (!on && s_usb) usb_console_reconnect();  // it may have slept with the cable in ("sleeptest")
+}
+
+// An empty battery: rather than letting the voltage collapse in the middle of a flash write, say so
+// and cut the power cleanly (settings saved). really = false only shows the screen (console test).
+#define BAT_OFF_MV 3300   // under this for 3 readings in a row (9 s), on battery: power off
+#define BAT_LOW_PCT 10    // a warning, once per discharge
+
+void power_off_now(bool really)
+{
+    ESP_LOGW(TAG, "Battery empty%s", really ? ": powering off" : " (test screen)");
+    esp_task_wdt_reset();
+    lcd_sleep(false);
+    ui_begin(lcd_native_fb());
+    ui_background(false);
+    ui_veil(90, UI_H, 2);
+    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, TR("BaterÃ­a agotada", "Battery empty"), MS_ORO, true);
+    ui_panel(48, 196, UI_W - 96, 150, MS_PANEL, MS_LINEA, 3, true);
+    ui_print_c(&ui_vt, 2, UI_W / 2, 222, TR("el reloj se apaga", "the watch switches off"), MS_CREMA, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 270, TR("cÃ¡rgalo y enciÃ©ndelo", "charge it and switch it on"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 294, TR("con el botÃ³n PWR", "with the PWR button"), MS_GRIS, false);
+    lcd_flush_native();
+    lcd_set_brightness(g_app.brightness);
+    settings_save();
+    vTaskDelay(pdMS_TO_TICKS(4000));
+    if (!really) {
+        sys_dirty();
+        return;
+    }
+    lcd_set_brightness(0);
+    lcd_sleep(true);
+    pmu_power_off();
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_deep_sleep_start();  // the PMU did not cut the power: at least stop everything
+}
+
+static void battery_guard(const pmu_battery_t *b)
+{
+    static int empty_count;
+    static bool warned;
+    if (!b->present || b->usb) {
+        empty_count = 0;
+        if (b->usb) warned = false;
+        return;
+    }
+    if (!warned && b->percent >= 0 && b->percent <= BAT_LOW_PCT) {
+        warned = true;
+        app_wake();
+        toast(TR("BATERIA BAJA", "LOW BATTERY"));
+    }
+    bool empty = b->mv > 0 ? b->mv < BAT_OFF_MV : b->percent == 0;
+    empty_count = empty ? empty_count + 1 : 0;
+    if (empty_count >= 3) power_off_now(true);
 }
 
 void app_main(void)
@@ -290,8 +377,8 @@ void app_main(void)
         ESP_LOGI(TAG, "Bluetooth memory released: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT) - before);
     }
 
-    // Frequency scaling: the CPU drops to 80 MHz whenever nothing needs it (light sleep: later, it
-    // would cut the USB console)
+    // Frequency scaling: the CPU drops to 80 MHz whenever nothing needs it; light sleep is switched on
+    // and off by the main loop (light_sleep_allow)
     esp_pm_config_t pm = {.max_freq_mhz = 240, .min_freq_mhz = 80, .light_sleep_enable = false};
     if (esp_pm_configure(&pm) != ESP_OK) ESP_LOGW(TAG, "power management not available");
 
@@ -401,6 +488,16 @@ void app_main(void)
                 pct = b.present ? b.percent : -1;
                 chg = b.charging || (b.usb && b.present);  // like a phone: plugged in shows the bolt
                 full = b.usb && b.present && !b.charging;
+                static bool usb_seen;
+                static int readings;
+                bool first = readings++ == 0;
+                s_usb = b.usb;
+                if (b.usb && !usb_seen) {  // cable plugged in, or on it at boot
+                    if (s_ls_on) light_sleep_allow(false);  // reconnects the console
+                    else if (!first || esp_reset_reason() != ESP_RST_USB) usb_console_reconnect();
+                }
+                usb_seen = b.usb;
+                battery_guard(&b);
             }
             if (pct != g_app.bat_pct || chg != g_app.bat_chg || full != g_app.bat_full || linked != g_app.phone_linked)
                 sys_dirty();
@@ -461,7 +558,8 @@ void app_main(void)
                 settings_save();
             }
             g_app.fps = 0;
-            vTaskDelay(pdMS_TO_TICKS(40));
+            light_sleep_allow(!s_usb || (int32_t)(g_sleep_test_until - now) > 0);
+            vTaskDelay(pdMS_TO_TICKS(50));
             last = now_ms();
             next_frame = esp_timer_get_time();
             continue;
@@ -469,6 +567,7 @@ void app_main(void)
 
         if (panel_asleep) {
             STAGE_MAIN(9);
+            light_sleep_allow(false);
             lcd_sleep(false);
             panel_asleep = false;
             if (use_wifi) net_power(true);

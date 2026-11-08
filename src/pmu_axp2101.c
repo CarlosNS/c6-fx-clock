@@ -61,6 +61,15 @@ bool pmu_log_status(void)
     return true;
 }
 
+void pmu_power_off(void)
+{
+    // REG 10h "PMU common configuration", bit 0: software power off. Everything but the RTC loses
+    // power; the PWR key (or plugging in) starts the watch again
+    int v = reg(0x10);
+    if (v < 0) v = 0;
+    i2c_reg_write(AXP_ADDR, 0x10, (uint8_t)(v | 0x01));
+}
+
 bool pmu_battery(pmu_battery_t *b)
 {
     int s1 = reg(REG_STATUS1), s2 = reg(REG_STATUS2);

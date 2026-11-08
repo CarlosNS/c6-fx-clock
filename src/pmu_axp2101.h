@@ -15,3 +15,5 @@ typedef struct {
 
 // Battery state; false if the chip does not answer
 bool pmu_battery(pmu_battery_t *b);
+// Cuts the power (software power off); does not return if it works
+void pmu_power_off(void);

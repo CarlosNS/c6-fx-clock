@@ -1,14 +1,25 @@
 #include "weather.h"
+#include "esp_attr.h"
 #include <stdio.h>
+#include "esp_attr.h"
 #include <stdlib.h>
+#include "esp_attr.h"
 #include <string.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "esp_http_client.h"
+#include "esp_attr.h"
 #include "esp_log.h"
+#include "esp_attr.h"
 #include "esp_timer.h"
+#include "esp_attr.h"
 #include "freertos/FreeRTOS.h"
+#include "esp_attr.h"
 #include "freertos/task.h"
+#include "esp_attr.h"
 #include "nvs.h"
+#include "esp_attr.h"
 
 #define REFRESH_MS (10 * 60 * 1000)
 #define RETRY_MS (60 * 1000)
@@ -17,7 +28,7 @@ static const char *TAG = "weather";
 volatile weather_t g_wx;
 weather_loc_t g_wx_loc = {"Sevilla", 37.3886f, -5.9823f};
 static TaskHandle_t s_task;
-static char s_body[1600];
+EXT_RAM_BSS_ATTR static char s_body[1600];
 static int s_len;
 
 static uint32_t now_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }

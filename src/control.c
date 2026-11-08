@@ -18,6 +18,7 @@
 #include "settings.h"
 #include "update.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "weather.h"
 
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -29,8 +30,12 @@ void app_command(const char *cmd)
 {
     int a, b, c, d, e, f, g;
     long long epoch;
-    // Using the web page keeps the screen on (but not its automatic time / weather pushes)
-    if (strncmp(cmd, "time ", 5) != 0 && strncmp(cmd, "wx ", 3) != 0) app_wake();
+    // Using the web page keeps the screen on, but not what the phone pushes by itself (time, weather,
+    // the song playing): with the permanent link that lit the screen many times a day for nothing.
+    // An incoming call opens its own alert, which wakes the screen.
+    if (strncmp(cmd, "time ", 5) != 0 && strncmp(cmd, "wx ", 3) != 0 && strncmp(cmd, "music ", 6) != 0 &&
+        strncmp(cmd, "call ", 5) != 0)
+        app_wake();
 
     if (phone_command(cmd)) return;  // "music ..." / "call ..." from the phone app
     if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"...
@@ -89,6 +94,14 @@ void app_command(const char *cmd)
         const char *msg = "";
         if (update_request(cmd + 13, &msg)) boot_mode_switch(BOOT_UPDATE);
         ESP_LOGW("control", "update refused: %s", msg);
+        return;
+    }
+    // Light sleep even on USB for a while (the serial console goes quiet and comes back after), to
+    // measure it: then "pm" (console) or "get pm" (Bluetooth)
+    if (sscanf(cmd, "sleeptest %d", &a) == 1) {
+        uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+        g_sleep_test_until = now + a * 1000;
+        g_app.wake_until = now;  // screen off now
         return;
     }
     char key[16], word[16];

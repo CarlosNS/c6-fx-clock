@@ -79,13 +79,18 @@ static void play_tone(int hz, int ms, int amp)
 
 static void task(void *arg)
 {
+    bool enabled = true;  // audio_init() leaves the channel enabled
     for (;;) {
         int mode = s_mode;
         if (!mode) {
             gpio_set_level(BOARD_PIN_AMP, 0);
+            // An enabled I2S channel holds a power lock that keeps the chip out of light sleep: only
+            // while a sound plays
+            if (enabled) i2s_channel_disable(s_tx), enabled = false;
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             continue;
         }
+        if (!enabled) i2s_channel_enable(s_tx), enabled = true;
         gpio_set_level(BOARD_PIN_AMP, 1);
         set_volume(g_app.volume);
         if (mode == 3) {

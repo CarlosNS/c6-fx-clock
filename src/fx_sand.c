@@ -2,11 +2,17 @@
 // exactly enough grains through for the top bulb to empty in one minute; when the minute
 // changes the hourglass turns over.
 #include <stdio.h>
+#include "esp_attr.h"
 #include <string.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "control.h"
+#include "esp_attr.h"
 #include "fx.h"
+#include "esp_attr.h"
 #include "gfx.h"
+#include "esp_attr.h"
 
 #define W WW
 #define H WH
@@ -18,7 +24,7 @@
 #define NECK (GH / 2)
 #define FLIP_MS 900
 
-static uint8_t g[GH][GW];        // 0 empty, 1..255 grain (shade)
+EXT_RAM_BSS_ATTR static uint8_t g[GH][GW];        // 0 empty, 1..255 grain (shade)
 static uint8_t s_half[GH];       // glass half-width in cells for each row
 static int s_total, s_passed, s_last_min = -1;
 static uint32_t s_flip_t;

@@ -93,6 +93,13 @@ static bool s_pinned;          // the STA config names one node (bssid_set)
 #define AP_FALLBACK_US (60 * 1000000LL)
 static bool s_has_sta, s_ap_on;
 static esp_timer_handle_t s_ap_timer;
+// The Wi-Fi radio only runs when the owner switches it on ("wifi" setting): the phone brings the time,
+// the weather and the updates, and a radio looking for a missing network all day was what emptied
+// the battery away from home. Lost networks are retried with growing pauses, never in a tight loop.
+static bool s_started;
+static volatile int64_t s_assoc_since;  // 0 = not associated, or already has an IP (DHCP watchdog)
+static esp_timer_handle_t s_retry_timer;
+static int s_retry_ms;
 
 static void ap_enable(bool on)
 {
@@ -120,7 +127,21 @@ static void ap_enable(bool on)
 
 static void ap_fallback(void *arg)
 {
-    if (!g_app.sta_ip[0]) ap_enable(true);
+    if (s_started && !g_app.sta_ip[0]) ap_enable(true);
+}
+
+static void retry_now(void *arg)
+{
+    if (s_started) esp_wifi_connect();
+}
+
+// 2 s, 4 s, 8 s... up to a minute between attempts while the network is missing
+static void retry_later(void)
+{
+    s_retry_ms = s_retry_ms ? s_retry_ms * 2 : 2000;
+    if (s_retry_ms > 60000) s_retry_ms = 60000;
+    esp_timer_stop(s_retry_timer);
+    esp_timer_start_once(s_retry_timer, s_retry_ms * 1000LL);
 }
 
 // Drop the AP once the home network works, unless someone is using it
@@ -138,7 +159,32 @@ void net_power(bool screen_on)
 {
     // Screen on: light modem sleep (the page and the phone stay quick). Off: the radio sleeps and
     // wakes for every third beacon (listen interval 3)
-    if (s_sta_netif) esp_wifi_set_ps(screen_on ? WIFI_PS_MIN_MODEM : WIFI_PS_MAX_MODEM);
+    if (s_started) esp_wifi_set_ps(screen_on ? WIFI_PS_MIN_MODEM : WIFI_PS_MAX_MODEM);
+}
+
+bool net_enabled(void) { return s_started; }
+
+void net_enable(bool on)
+{
+    if (!s_sta_netif || on == s_started) return;
+    s_started = on;
+    if (on) {
+        if (s_has_sta) esp_wifi_set_mode(WIFI_MODE_STA);
+        else ap_enable(true);  // nothing to join: the own AP is the only way in
+        s_retry_ms = 0;
+        esp_wifi_start();
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);  // net_power() switches to the deeper sleep with the screen off
+        if (s_has_sta) esp_timer_start_once(s_ap_timer, AP_FALLBACK_US);
+    } else {
+        esp_timer_stop(s_ap_timer);
+        esp_timer_stop(s_retry_timer);
+        esp_wifi_stop();
+        s_ap_on = false;
+        s_assoc_since = 0;
+        g_app.ap_ip[0] = 0;
+        g_app.sta_ip[0] = 0;
+    }
+    ESP_LOGI(TAG, "Wi-Fi %s%s%s", on ? "on" : "off", on && s_has_sta ? ", joining " : "", on && s_has_sta ? g_app.sta_ssid : "");
 }
 
 static void connect_to(const uint8_t *bssid)
@@ -191,7 +237,6 @@ static void sta_prefs(wifi_config_t *sta)
 // DHCP watchdog: some mesh nodes associate but never hand out an address. If that lasts too long,
 // drop the link; the disconnect handler reconnects (possibly through another node).
 #define DHCP_TIMEOUT_US (20 * 1000000LL)
-static volatile int64_t s_assoc_since;  // 0 = not associated, or already has an IP
 
 static void dhcp_watchdog(void *arg)
 {
@@ -223,9 +268,10 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         } else if (s_pinned) {
             connect_to(NULL);  // the chosen node went away: any node again
         } else {
-            esp_wifi_connect();
+            retry_later();
         }
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
+        s_retry_ms = 0;
         ip_event_got_ip_t *e = data;
         // Route internet traffic (DNS, NTP) through the home network, not the board's own AP
         esp_netif_set_default_netif(s_sta_netif);
@@ -276,17 +322,16 @@ void net_start(void)
     if (use_sta) {
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta));
-    } else {
-        ap_enable(true);  // nothing to join: the own AP is the only way in
     }
-    ESP_ERROR_CHECK(esp_wifi_start());
-    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);  // net_power() switches to the deeper sleep with the screen off
     static esp_timer_handle_t wd;
     const esp_timer_create_args_t wd_args = {.callback = dhcp_watchdog, .name = "dhcp_wd"};
     if (esp_timer_create(&wd_args, &wd) == ESP_OK) esp_timer_start_periodic(wd, 5 * 1000000);
     const esp_timer_create_args_t ap_args = {.callback = ap_fallback, .name = "ap_fallback"};
-    if (use_sta && esp_timer_create(&ap_args, &s_ap_timer) == ESP_OK) esp_timer_start_once(s_ap_timer, AP_FALLBACK_US);
-    ESP_LOGI(TAG, "Wi-Fi started%s%s", use_sta ? ", joining " : ", own AP only", use_sta ? g_app.sta_ssid : "");
+    esp_timer_create(&ap_args, &s_ap_timer);
+    const esp_timer_create_args_t retry_args = {.callback = retry_now, .name = "wifi_retry"};
+    esp_timer_create(&retry_args, &s_retry_timer);
+    if (g_app.wifi_on) net_enable(true);
+    else ESP_LOGI(TAG, "Wi-Fi off (switch it on in the quick settings or the app)");
 }
 
 void net_set_sta(const char *ssid, const char *pass)
@@ -308,6 +353,13 @@ void net_set_sta(const char *ssid, const char *pass)
     esp_wifi_set_mode(s_ap_on ? WIFI_MODE_APSTA : WIFI_MODE_STA);  // keep the AP if the network is set through it
     esp_wifi_disconnect();
     esp_wifi_set_config(WIFI_IF_STA, &sta);
-    esp_wifi_connect();
+    s_retry_ms = 0;
+    if (!s_started) {  // choosing a network means wanting the Wi-Fi
+        g_app.wifi_on = 1;
+        g_app.dirty = true;
+        net_enable(true);
+    } else {
+        esp_wifi_connect();
+    }
     ESP_LOGI(TAG, "Joining %s", ssid);
 }

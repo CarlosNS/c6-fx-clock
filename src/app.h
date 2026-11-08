@@ -23,6 +23,7 @@ typedef struct {
     volatile int raise_wake;   // raising the wrist turns the screen on
     volatile int lang;         // 0 = Spanish, 1 = English
     volatile int dnd;          // do not disturb: alarms and calls show silently
+    volatile int wifi_on;      // the watch's own Wi-Fi (off by default: the phone brings everything)
     volatile int volume;       // speaker volume 0..100 (alarms, sounds)
     volatile int step_goal;    // daily steps goal
 
@@ -55,3 +56,7 @@ extern app_state_t g_app;
 
 // Turns the screen on (or keeps it on) for wake_secs
 void app_wake(void);
+// Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
+void power_off_now(bool really);
+// Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it
+extern volatile uint32_t g_sleep_test_until;

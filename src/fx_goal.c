@@ -6,12 +6,19 @@
 // The 320x172 scene is drawn into its own buffer, then set in the middle of the tall screen with
 // more stands and the scoreboard above and more pitch below.
 #include <stdio.h>
+#include "esp_attr.h"
 #include <string.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "esp_heap_caps.h"
+#include "esp_attr.h"
 #include "lcd.h"
+#include "esp_attr.h"
 #include "fx.h"
+#include "esp_attr.h"
 #include "gfx.h"
+#include "esp_attr.h"
 
 #define W LAND_W
 #define H LAND_H
@@ -32,7 +39,7 @@ static uint16_t *s_scene;  // the 320x172 scene (PSRAM)
 enum { EMPTY, SKIN_F, SHIRT_F, SHORT_F, SOCK_F, BOOT_F, SHORT_N, SHIRT_N, SKIN_N, SOCK_N, BOOT_N, HEAD, HAIR, EYE, NPARTS };
 enum { KIT_STAR, KIT_KEEPER, KIT_DEF, NKITS };
 
-static uint8_t s_buf[BH][BW];
+EXT_RAM_BSS_ATTR static uint8_t s_buf[BH][BW];
 static uint16_t s_tone[NKITS][NPARTS][3];  // shade, base, light
 
 typedef struct { int tor, sh_n, el_n, sh_f, el_f, hip_n, kn_n, hip_f, kn_f; } pose_t;  // degrees

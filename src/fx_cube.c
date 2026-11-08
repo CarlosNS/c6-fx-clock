@@ -1,9 +1,14 @@
 // Flat-shaded 3D cube over a warp starfield, full screen (wide canvas). Drag to spin it.
 #include <math.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "control.h"
+#include "esp_attr.h"
 #include "fx.h"
+#include "esp_attr.h"
 #include "gfx.h"
+#include "esp_attr.h"
 
 #define N_STARS 140
 #define CUBE_DIST 4.3f
@@ -14,7 +19,7 @@
 
 typedef struct { float x, y, z; } vec3;
 
-static vec3 stars[N_STARS];
+EXT_RAM_BSS_ATTR static vec3 stars[N_STARS];
 static uint16_t bg[WH];
 static float ax, ay, az, vx, vy;
 

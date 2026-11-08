@@ -4,8 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "app.h"
+#include "batlog.h"
 #include "control.h"
 #include "esp_log.h"
+#include "esp_pm.h"
+#include "esp_timer.h"
 
 static const char *TAG = "console";
 static char s_line[160];
@@ -34,6 +38,21 @@ static void run_line(char *line)
             printf("status %s\n", buf);
             free(buf);
         }
+        return;
+    }
+    // Power measurements: which locks keep the chip awake and how long it spent in each mode
+    if (strcmp(line, "pm") == 0) {
+        esp_pm_dump_locks(stdout);
+        return;
+    }
+    if (strcmp(line, "batlog") == 0) {  // the battery log (batlog.c) without Wi-Fi
+        static char buf[192 * 32 + 64];
+        batlog_csv(buf, sizeof(buf));
+        printf("%s\nbatlog end\n", buf);
+        return;
+    }
+    if (strcmp(line, "batoff test") == 0) {  // the empty-battery screen, without powering off
+        power_off_now(false);
         return;
     }
     app_command(line);

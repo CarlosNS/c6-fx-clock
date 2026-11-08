@@ -3,10 +3,15 @@
 // changes the old digits become mortal and dissolve into the simulation.
 // Touch the phone pad to draw live cells.
 #include <string.h>
+#include "esp_attr.h"
 #include "app.h"
+#include "esp_attr.h"
 #include "control.h"
+#include "esp_attr.h"
 #include "fx.h"
+#include "esp_attr.h"
 #include "gfx.h"
+#include "esp_attr.h"
 
 #define CELL 4
 #define GW (WW / CELL)
@@ -17,7 +22,8 @@
 
 enum { ALIVE = 1, NEXT = 2, IMMORTAL = 4 };
 
-static uint8_t st[GH][GW], age[GH][GW], heat[GH][GW];
+// In PSRAM: internal RAM is scarce and these are touched once per cell per frame
+EXT_RAM_BSS_ATTR static uint8_t st[GH][GW], age[GH][GW], heat[GH][GW];
 static uint32_t acc;
 static int last_pop, stagnant, gens;
 static char shown[8];  // time currently written in immortal cells

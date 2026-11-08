@@ -5,6 +5,7 @@
 #include "app.h"
 #include "esp_log.h"
 #include "fx.h"
+#include "net.h"
 #include "nvs.h"
 
 static const char *TAG = "settings";
@@ -19,6 +20,7 @@ typedef struct {
 
 static void on_fx(void) { g_app.auto_cycle = 0; }  // choosing a face stops the auto rotation
 static void on_wake(void) { app_wake(); }          // show the new timeout straight away
+static void on_wifi(void) { net_enable(g_app.wifi_on); }
 
 static const setting_t SETTINGS[] = {
     {"fx", &g_app.fx, 0, FX_COUNT - 1, true, on_fx},
@@ -39,6 +41,7 @@ static const setting_t SETTINGS[] = {
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
     {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb
+    {"wifi", &g_app.wifi_on, 0, 1, true, on_wifi},    // the watch's own Wi-Fi radio
     {"vol", &g_app.volume, 0, 100, true, NULL},       // speaker volume
     {"goal", &g_app.step_goal, 1000, 50000, true, NULL},  // daily steps goal
     {"ovl", &g_app.overlay, 0, 1, false, NULL},  // debug only

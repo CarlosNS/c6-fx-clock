@@ -217,8 +217,10 @@ static bool quick_draw(void)
     ui_print_r(&ui_jersey, 3, Q_BAR_X + Q_BAR_W, Q_BRI_Y - 4, buf, MS_CREMA);
     ui_bar(Q_BAR_X, Q_BRI_Y + 46, Q_BAR_W, 22, g_app.brightness * 10, MS_ORO);
     // Tiles
-    quick_tile_draw(0, "Bluetooth", g_app.phone_linked ? TR("conectado", "connected") : TR("sin móvil", "no phone"),
-                    g_app.phone_linked, g_app.phone_linked);
+    // Wi-Fi: off by default (the phone brings everything); on, it says whether it reached the network
+    const char *wst = !g_app.wifi_on ? TR("apagado", "off") : g_app.sta_ip[0] ? TR("conectado", "connected")
+                                                         : g_app.ap_ip[0] ? TR("red propia", "own network") : TR("buscando", "searching");
+    quick_tile_draw(0, "WiFi", wst, g_app.wifi_on, g_app.wifi_on && g_app.sta_ip[0]);
     quick_tile_draw(1, TR("Silencio", "Silent"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
     quick_tile_draw(2, TR("Siempre", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
     quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
@@ -262,6 +264,7 @@ static void quick_event(const ui_event_t *e)
         break;
     case EV_TAP:
         switch (quick_tile(e->x, e->y)) {
+        case 0: settings_set("wifi", !g_app.wifi_on); break;
         case 1: settings_set("dnd", !g_app.dnd); break;
         case 2: settings_set("aon", !g_app.always_on); break;
         case 3: sys_open_app(5); return;  // flashlight

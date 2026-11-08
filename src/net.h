@@ -7,6 +7,10 @@
 void net_start(void);
 // Wi-Fi power save follows the screen: light with it on, deep (one beacon a second) with it off
 void net_power(bool screen_on);
+// Switches the radio on or off ("wifi" setting; net_start() follows g_app.wifi_on). Off by default:
+// the phone brings everything over Bluetooth
+void net_enable(bool on);
+bool net_enabled(void);
 // The watch's own access point is up (only without a reachable home network)
 bool net_ap_on(void);
 // Joins a new home network; the Wi-Fi driver stores it in NVS so it survives reboots

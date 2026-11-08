@@ -12,6 +12,7 @@
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_pm.h"
 #include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -208,6 +209,30 @@ static void send_shot(void)
     ESP_LOGI(TAG, "Screenshot %dx%d sent in %lld ms", w, h, (esp_timer_get_time() - t0) / 1000);
 }
 
+// Power statistics (esp_pm_dump_locks: locks held, time per power mode) as {"t":"pm","txt":"..."}
+static void send_pm(void)
+{
+    char *txt = malloc(2048), *msg = malloc(2600);
+    if (!txt || !msg) goto out;
+    FILE *f = fmemopen(txt, 2048, "w");
+    if (!f) goto out;
+    esp_pm_dump_locks(f);
+    fputc(0, f);
+    fclose(f);
+    txt[2047] = 0;
+    size_t n = snprintf(msg, 2600, "{\"t\":\"pm\",\"txt\":\"");
+    for (const char *p = txt; *p && n < 2590; p++) {
+        if (*p == '\n') msg[n++] = '\\', msg[n++] = 'n';
+        else if (*p == '"' || *p == '\\') msg[n++] = '\\', msg[n++] = *p;
+        else if ((unsigned char)*p >= 32) msg[n++] = *p;
+    }
+    n += snprintf(msg + n, 2600 - n, "\"}");
+    send_msg(msg, n);
+out:
+    free(txt);
+    free(msg);
+}
+
 // ---------------------------------------------------------------- worker
 
 // Settings fingerprint, to notice changes made from anywhere (button, Bluetooth, console)
@@ -242,6 +267,8 @@ static void worker(void *arg)
                 s_sync_last = tv.tv_sec;
                 s_sync_count++;
                 send_ack("sync");
+            } else if (strcmp(c, "get pm") == 0) {
+                send_pm();
             } else if (strcmp(c, "shot") == 0) {
                 send_shot();
             } else if (strcmp(c, "unpair") == 0) {
@@ -385,8 +412,8 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         if (ev->connect.status == 0) {
             s_conn = ev->connect.conn_handle;
             esp_timer_stop(s_adv_timer);
+            // No app_wake(): the phone reconnects by itself all day; pairing wakes the screen for the code
             ESP_LOGI(TAG, "Connected, heap %u", (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
-            app_wake();
         } else {
             advertise(true);
         }

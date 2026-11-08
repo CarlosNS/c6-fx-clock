@@ -72,3 +72,21 @@ CONFIG_TINYUSB_DESC_MSC_STRING="Marea microSD"
 
 # Battery: CPU frequency scaling (main.c, esp_pm_configure)
 CONFIG_PM_ENABLE=y
+# Light sleep with the screen off (main.c light_sleep_allow): tickless idle, and Bluetooth in modem
+# sleep so the link survives it. No 32 kHz crystal on the ESP32-S3 side: the controller keeps the main
+# crystal powered during light sleep (a little more current, but the timing stays exact)
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+CONFIG_FREERTOS_IDLE_TIME_BEFORE_SLEEP=3
+CONFIG_BT_CTRL_MODEM_SLEEP=y
+CONFIG_BT_CTRL_MODEM_SLEEP_MODE_1=y
+CONFIG_BT_CTRL_LPCLK_SEL_MAIN_XTAL=y
+CONFIG_BT_CTRL_MAIN_XTAL_PU_DURING_LIGHT_SLEEP=y
+# Time spent in each power mode, for the "pm" console command
+CONFIG_PM_PROFILING=y
+# ...but without the options that put the sleep code and the CPU retention buffers in internal RAM:
+# together they took ~60 KB of it, and internal RAM is what this firmware runs short of
+CONFIG_PM_SLP_IRAM_OPT=n
+CONFIG_PM_RTOS_IDLE_OPT=n
+CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n
+# Big static arrays marked EXT_RAM_BSS_ATTR (face grids, buffers) live in PSRAM
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
