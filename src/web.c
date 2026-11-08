@@ -81,8 +81,8 @@ static esp_err_t screenshot_get(httpd_req_t *req)
 
     g_app.freeze_req = true;
     for (int i = 0; i < 100 && !g_app.frozen; i++) vTaskDelay(pdMS_TO_TICKS(5));
-    int w = g_lcd_w, hh = g_lcd_h;
-    const uint16_t *fb = lcd_last_frame();
+    int w, hh;
+    const uint16_t *fb = lcd_last_frame(&w, &hh);
 
     uint8_t hdr[66] = {'B', 'M'};
     uint32_t data = w * hh * 2;
@@ -102,7 +102,7 @@ static esp_err_t screenshot_get(httpd_req_t *req)
 #undef PUT32
     httpd_resp_set_type(req, "image/bmp");
     esp_err_t err = httpd_resp_send_chunk(req, (const char *)hdr, sizeof(hdr));
-    uint16_t row[LAND_W];
+    static uint16_t row[LCD_PW];  // static: keeps the server task stack small
     for (int y = 0; y < hh && err == ESP_OK; y++) {
         for (int x = 0; x < w; x++) {
             uint16_t p = fb[y * w + x];

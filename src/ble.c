@@ -173,14 +173,14 @@ static void send_ack(const char *cmd)
 // rows all come from the same frame.
 static void send_shot(void)
 {
-    static uint16_t row[LAND_W];
-    static char b64[LAND_W * 2 * 4 / 3 + 8], msg[LAND_W * 2 * 4 / 3 + 64];
+    static uint16_t row[LCD_PW];
+    static char b64[LCD_PW * 2 * 4 / 3 + 8], msg[LCD_PW * 2 * 4 / 3 + 64];
     app_wake();                       // a sleeping screen renders nothing
     vTaskDelay(pdMS_TO_TICKS(400));   // let a few frames through
     g_app.freeze_req = true;
     for (int i = 0; i < 100 && !g_app.frozen; i++) vTaskDelay(pdMS_TO_TICKS(5));
-    int w = g_lcd_w, h = g_lcd_h;
-    const uint16_t *fb = lcd_last_frame();
+    int w, h;
+    const uint16_t *fb = lcd_last_frame(&w, &h);
     snprintf(msg, sizeof(msg), "{\"t\":\"shot\",\"w\":%d,\"h\":%d,\"fmt\":\"rgb565le\"}", w, h);
     send_str(msg);
     int64_t t0 = esp_timer_get_time();

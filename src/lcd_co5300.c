@@ -48,11 +48,16 @@ static const char *TAG = "co5300";
 static esp_lcd_panel_io_handle_t s_io;
 static SemaphoreHandle_t s_idle;     // given when the sender has finished the last frame
 static TaskHandle_t s_sender;
-static uint16_t *s_buf[2], *s_strip[2];
-static int s_idx;
+// Frames come in three kinds: the 172x320 canvas (portrait or landscape, enlarged while sending) or
+// a native 410x502 frame, copied as is
+enum { KIND_CANVAS, KIND_CANVAS_LAND, KIND_NATIVE };
+static uint16_t *s_buf[2], *s_native[2], *s_strip[2];
+static int s_idx, s_nidx;
+static bool s_land;                  // the canvas is in landscape
 static uint16_t *s_last;
+static int s_last_kind;
 static const uint16_t *s_sending;
-static bool s_send_landscape;
+static int s_send_kind;
 static volatile uint8_t s_brightness;
 static volatile bool s_want_sleep;
 static volatile int s_send_us;
@@ -161,14 +166,15 @@ static void set_window(int y, int h)
     esp_lcd_panel_io_tx_param(s_io, CMD(0x2B), row, 4);
 }
 
-static void send_frame(const uint16_t *fb, bool landscape)
+static void send_frame(const uint16_t *fb, int kind)
 {
     int64_t t0 = esp_timer_get_time();
     for (int y = 0, k = 0; y < PH; y += STRIP_LINES, k ^= 1) {
         int n = PH - y < STRIP_LINES ? PH - y : STRIP_LINES;
         // The strip sent two rounds ago has finished: set_window of the last round waited for it
         STAGE_LCD(3);
-        build_strip(s_strip[k], fb, y, n, landscape);
+        if (kind == KIND_NATIVE) memcpy(s_strip[k], fb + y * PW, (size_t)n * PW * 2);
+        else build_strip(s_strip[k], fb, y, n, kind == KIND_CANVAS_LAND);
         STAGE_LCD(4);
         set_window(y, n);
         STAGE_LCD(5);
@@ -207,7 +213,7 @@ static void sender_task(void *arg)
             asleep = false;
         }
         if (bits & BIT_FRAME) {
-            send_frame(s_sending, s_send_landscape);
+            send_frame(s_sending, s_send_kind);
             xSemaphoreGive(s_idle);
         }
         // After the frame: the panel lights up only once the first frame is on it
@@ -264,9 +270,13 @@ void lcd_init(int buffers)
         if (c->delay_ms) vTaskDelay(pdMS_TO_TICKS(c->delay_ms));
     }
 
-    for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) s_buf[i] = heap_caps_calloc(1, FB_BYTES, MALLOC_CAP_SPIRAM);
+    for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) {
+        s_buf[i] = heap_caps_calloc(1, FB_BYTES, MALLOC_CAP_SPIRAM);
+        s_native[i] = heap_caps_calloc(1, PW * PH * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+    }
+    if (!s_native[1]) s_native[1] = s_native[0];
     for (int i = 0; i < 2; i++) s_strip[i] = heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    assert(s_buf[0] && s_strip[0] && s_strip[1]);
+    assert(s_buf[0] && s_native[0] && s_strip[0] && s_strip[1]);
 
     s_idle = xSemaphoreCreateBinary();
     xSemaphoreGive(s_idle);
@@ -292,28 +302,54 @@ void lcd_sleep(bool sleep)
 
 void lcd_set_landscape(bool landscape)
 {
-    if (landscape == (g_lcd_w == LAND_W)) return;
-    xSemaphoreTake(s_idle, portMAX_DELAY);  // the frame in flight keeps the old geometry
-    g_lcd_w = landscape ? LAND_W : LCD_W;
-    g_lcd_h = landscape ? LAND_H : LCD_H;
-    xSemaphoreGive(s_idle);
+    // Each frame records its own kind when flushed, so nothing in flight changes here
+    s_land = landscape;
+    if (g_lcd_w != PW) {
+        g_lcd_w = landscape ? LAND_W : LCD_W;
+        g_lcd_h = landscape ? LAND_H : LCD_H;
+    }
 }
 
 uint16_t *lcd_fb(void)
 {
+    g_lcd_w = s_land ? LAND_W : LCD_W;
+    g_lcd_h = s_land ? LAND_H : LCD_H;
     return s_buf[s_idx];
 }
 
-const uint16_t *lcd_last_frame(void)
+uint16_t *lcd_native_fb(void)
 {
+    g_lcd_w = PW;
+    g_lcd_h = PH;
+    return s_native[s_nidx];
+}
+
+const uint16_t *lcd_last_frame(int *w, int *h)
+{
+    if (w) *w = s_last_kind == KIND_NATIVE ? PW : s_last_kind == KIND_CANVAS_LAND ? LAND_W : LCD_W;
+    if (h) *h = s_last_kind == KIND_NATIVE ? PH : s_last_kind == KIND_CANVAS_LAND ? LAND_H : LCD_H;
     return s_last;
+}
+
+void lcd_flush_native(void)
+{
+    xSemaphoreTake(s_idle, portMAX_DELAY);
+    s_sending = s_last = s_native[s_nidx];
+    s_send_kind = s_last_kind = KIND_NATIVE;
+    xTaskNotify(s_sender, BIT_FRAME, eSetBits);
+    if (s_native[1] != s_native[0]) {
+        s_nidx ^= 1;
+    } else {
+        xSemaphoreTake(s_idle, portMAX_DELAY);
+        xSemaphoreGive(s_idle);
+    }
 }
 
 void lcd_flush(void)
 {
     xSemaphoreTake(s_idle, portMAX_DELAY);  // the previous frame has been sent
     s_sending = s_last = s_buf[s_idx];
-    s_send_landscape = g_lcd_w == LAND_W;
+    s_send_kind = s_last_kind = s_land ? KIND_CANVAS_LAND : KIND_CANVAS;
     xTaskNotify(s_sender, BIT_FRAME, eSetBits);
     if (s_buf[1]) {
         s_idx ^= 1;
@@ -331,12 +367,13 @@ int lcd_send_us(void)
 
 bool lcd_panel_to_canvas(int px, int py, int *cx, int *cy)
 {
-    bool land = g_lcd_w == LAND_W;
+    bool land = s_land;
     int num = land ? 5 : 3, den = land ? 4 : 2;     // the enlargement used by build_tables()
-    int ox = (PW - g_lcd_w * num / den) / 2, oy = (PH - g_lcd_h * num / den) / 2;
+    int cw = land ? LAND_W : LCD_W, ch = land ? LAND_H : LCD_H;
+    int ox = (PW - cw * num / den) / 2, oy = (PH - ch * num / den) / 2;
     int x = px - ox, y = py - oy;
     // floor division, so points left of / above the canvas stay negative
     *cx = (x >= 0 ? x * den : x * den - (num - 1)) / num;
     *cy = (y >= 0 ? y * den : y * den - (num - 1)) / num;
-    return *cx >= 0 && *cy >= 0 && *cx < g_lcd_w && *cy < g_lcd_h;
+    return *cx >= 0 && *cy >= 0 && *cx < cw && *cy < ch;
 }

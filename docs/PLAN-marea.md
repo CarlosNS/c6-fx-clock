@@ -60,8 +60,8 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 | # | Fase | Estado |
 |---|---|---|
 | 1 | Quitar el C6, renombrar a Marea | ✅ |
-| 2 | Base gráfica: modo nativo, fuentes, paneles y componentes | |
-| 3 | Vistas, gestos, barra de estado, ajustes rápidos y lanzador | |
+| 2 | Base gráfica: modo nativo, fuentes, paneles y componentes | En curso |
+| 3 | Vistas, gestos, barra de estado, ajustes rápidos y lanzador | En curso (sin compilar) |
 | 4 | Apps: cronómetro, linterna, ajustes, selector de esferas, información del sistema | |
 | 5 | Audio (ES8311), alarmas y podómetro | |
 | 6 | Esferas a pantalla completa, una a una | |
@@ -70,3 +70,23 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 | 9 | README, wiki y CHANGELOG | |
 
 ## Notas de las fases
+
+### Estado al parar (8 de noviembre de 2026, madrugada)
+
+- **Hecho y compilando:**
+  - el modo nativo de 410×502 en `lcd_co5300.c` (`lcd_native_fb()`, `lcd_flush_native()`);
+  - las capturas, que ya saben el tamaño del último fotograma (`lcd_last_frame(&w, &h)`);
+  - las fuentes Jersey 10 y VT323 en mapas de bits: `tools/make_fonts.py` genera `src/ui_fonts.c`, con las TTF y sus licencias OFL en `tools/fonts/`.
+- **Escrito pero fuera de `src/CMakeLists.txt`, todavía sin compilar:**
+  - `ui.c`/`ui.h`: paleta, paneles, texto con sombra, controles y el fondo ilustrado de noche y atardecer;
+  - `input.c`/`input.h`: gestos;
+  - `sys.c`/`sys.h`: vistas, lanzador, ajustes rápidos, gestos sobre la esfera y la orden remota `ui …`;
+  - `apps.h`: interfaz de las apps.
+- **Para seguir:**
+  1. declarar e implementar `ui_background_band()` en `ui.c`;
+  2. añadir a `app.h` (y a `settings.c`) los ajustes `lang` y `dnd`;
+  3. escribir las apps que `sys.c` ya enlaza (`app_faces`, `app_alarms`, `app_steps`, `app_stopwatch`, `app_music`, `app_torch`, `app_files`, `app_settings`), al principio aunque sea como pantallas sencillas;
+  4. sustituir `poll_touch()` de `main.c` por `input_poll()` + `sys_event()`, dibujar con `sys_draw()` cuando la vista no sea la esfera, y refrescar `g_app.bat_pct`, `bat_chg` y `phone_linked` cada pocos segundos;
+  5. la orden `ui <petición>` en `control.c`, que llama a `sys_request()`;
+  6. compilar, flashear y revisar cada pantalla con `GET /screenshot` (el reloj está en 192.168.1.157).
+- Avisar a THIRD-PARTY-NOTICES de las fuentes OFL cuando entren en el firmware.

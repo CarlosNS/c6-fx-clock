@@ -24,6 +24,9 @@ typedef struct {
     // ---- Live state ----
     volatile bool touch;       // finger currently on the phone pad
     volatile int tx, ty;       // finger position on the pad, 0..1000
+    volatile bool phone_linked;  // the phone app is connected over Bluetooth
+    volatile int bat_pct;        // battery level 0..100, -1 unknown (refreshed every few seconds)
+    volatile bool bat_chg;       // charging
     volatile int fps;
     volatile int render_us;    // average render time of the last second (excluding the LCD wait)
     volatile int render_max_us;
