@@ -22,7 +22,7 @@
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
 | `src/board.h`, `src/board.c` | Pines y arranque de la placa: bus I2C, AXP2101, táctil, acelerómetro |
-| `src/lcd_co5300.c` | Pantalla: QSPI a 80 MHz, búferes en PSRAM, envío en el núcleo 1. Las esferas antiguas dibujan en un lienzo de 172×320 que se amplía al enviar |
+| `src/lcd_co5300.c` | Pantalla: QSPI a 80 MHz, búferes en PSRAM, envío en el núcleo 1. Lienzos: nativo 410×502 (sistema, Plasma), ancho 274×336 ×1,5 (las demás esferas) y el antiguo 172×320 (ya sin uso) |
 | `src/pmu_axp2101.c`, `src/rtc_pcf85063.c`, `src/touch_ft3168.c`, `src/imu_qmi8658.c`, `src/i2c_bus.c` | Batería, reloj de hardware, táctil, acelerómetro y bus I2C |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
@@ -30,7 +30,9 @@
 | `src/index.html`, `src/transport.js` | Página de control, embebida en el firmware y también dentro de la app |
 | `android/` | App Kotlin «Marea» (paquete `io.github.carlosns.c6clock`, que no cambia para que se actualice sobre la instalada) |
 | `tests/` | pytest por fases (`tests/README.md`), con `clocklib/` como código compartido |
-| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py` |
+| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py` |
+| `src/sys.c`, `src/ui.c`, `src/app_*.c` | Sistema (vistas, gestos, lanzador), estilo Marea Solsticial y apps |
+| `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
 
 ## Compilar, flashear y probar (Windows)
 
@@ -71,5 +73,5 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 ## Estado (noviembre de 2026)
 
 - **En el reloj del dueño:** `3.0.0-beta.1`, instalada por la actualización real desde GitHub (solo `boards.s3amoled` en Pages).
-- **Trabajo en curso:** ver [docs/PLAN-marea.md](docs/PLAN-marea.md).
+- **En `main` (sin publicar):** el sistema Marea con apps, todas las esferas a pantalla completa, modo USB y la app 0.4.0 con conexión permanente, música y llamadas. Falta probar en el móvil y con el dedo; ver «Pendiente» al final de [docs/PLAN-marea.md](docs/PLAN-marea.md).
 - **Copia del firmware de fábrica:** `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`.

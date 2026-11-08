@@ -66,9 +66,9 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 | 4 | Apps: cronómetro, linterna, ajustes, selector de esferas, información del sistema | ✅ |
 | 5 | Audio (ES8311), alarmas y podómetro | ✅ (audio y pasos sin probar en la muñeca) |
 | 6 | Esferas a pantalla completa, una a una | ✅ |
-| 7 | Sincronización: enlace permanente, llamadas y música (firmware y app) | |
-| 8 | Archivos de la microSD y modo USB | |
-| 9 | README, wiki y CHANGELOG | |
+| 7 | Sincronización: enlace permanente, llamadas y música (firmware y app) | ✅ (app sin probar en el móvil) |
+| 8 | Archivos de la microSD y modo USB | ✅ (sin tarjeta para probar el disco) |
+| 9 | README, wiki y CHANGELOG | ✅ (wiki sin publicar) |
 
 ## Notas de las fases
 
@@ -120,3 +120,15 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
   - Gol: la escena de 320×172 se dibuja en su búfer y se compone con grada, marcador y césped;
   - Túnel: sin panel, las cifras en el fondo oscuro.
 - **Arreglo:** `gfx_fill` limpiaba solo el tamaño del lienzo antiguo.
+
+### Sincronización, modo USB y documentación (8 de noviembre de 2026)
+
+- **App 0.4.0** (`versionCode` 14), compilada pero **sin instalar ni probar** en el móvil:
+  - `LinkService`: servicio en primer plano de tipo *connectedDevice* que mantiene el enlace; lo arrancan `ClockPresence` (reloj a la vista) y la app al abrirse; reconecta con esperas de 2 s a 1 min; sincroniza al conectar y cada 30 min; prioridad de conexión baja salvo con la app en pantalla;
+  - `Phone` + `PhoneWatch` (lector de notificaciones): música por MediaSession, llamadas por la notificación de categoría `call` (rechazar pulsa su acción; silenciar baja el timbre 1 min);
+  - la página muestra «Música y llamadas en el reloj»; `SyncWorker` ya no conecta si el servicio está vivo.
+- **Firmware:** el tiempo del móvil siempre gana (`weather_set_from_web`); el test `ble/test_sync.py` pasa.
+- **Modo USB** (`usbdisk.c`, `mode usb`, botón USB de Archivos): TinyUSB MSC con la microSD; sale con BOOT, al expulsar o al desconectar el cable. Probado solo sin tarjeta (vuelve solo a los 4 s).
+- **Rendimiento:** todas las esferas a 30 fps (`pytest tests/wifi -k 30fps` pasa). Plasma prepara sus cifras una vez por minuto; Clásico calcula la esfera de dos en dos píxeles. `gen_fonts.py` estampa el trazo redondo (las cifras grandes tenían espinas).
+- **Documentación:** README, CHANGELOG, THIRD-PARTY-NOTICES, `new_face.py` (lienzo ancho o `--native`) y toda la wiki en `docs/wiki/` (sin publicar: `tools/publish_wiki.py` necesita permiso).
+- **Pendiente de probar con el dueño:** instalar la app 0.4.0 (adb o release), música y llamadas reales, gestos con el dedo, audio, pasos en la muñeca, alarmas, y el modo USB con una tarjeta metida.
