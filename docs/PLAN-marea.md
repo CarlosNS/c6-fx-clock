@@ -132,3 +132,12 @@ Resumen de la guía del dueño, aplicado a la pantalla de 410×502. Las esferas 
 - **Rendimiento:** todas las esferas a 30 fps (`pytest tests/wifi -k 30fps` pasa). Plasma prepara sus cifras una vez por minuto; Clásico calcula la esfera de dos en dos píxeles. `gen_fonts.py` estampa el trazo redondo (las cifras grandes tenían espinas).
 - **Documentación:** README, CHANGELOG, THIRD-PARTY-NOTICES, `new_face.py` (lienzo ancho o `--native`) y toda la wiki en `docs/wiki/` (sin publicar: `tools/publish_wiki.py` necesita permiso).
 - **Pendiente de probar con el dueño:** instalar la app 0.4.0 (adb o release), música y llamadas reales, gestos con el dedo, audio, pasos en la muñeca, alarmas, y el modo USB con una tarjeta metida.
+
+### Siguiente: batería (pedido del dueño, 8 de noviembre de 2026)
+
+El dueño vio bajar la batería del 100 % al 39 % en una mañana (con muchas pruebas con la pantalla encendida, pero aun así es demasiado). Encontrado:
+
+- `net.c` pone `esp_wifi_set_ps(WIFI_PS_NONE)` (herencia del C6, para la latencia del panel táctil de la página): la radio WiFi nunca duerme.
+- Sin `CONFIG_PM_ENABLE`: ni bajada de frecuencia ni sueño ligero; con la pantalla apagada la CPU sigue a 240 MHz.
+
+Plan: 1) medir (registro de porcentaje y voltaje por estado: pantalla apagada con WiFi+BLE, apagada solo BLE, encendida); 2) WiFi bajo demanda (apagado con el móvil conectado; interruptor en ajustes rápidos y al abrir la página; las actualizaciones siguen con su arranque propio, que enciende el WiFi solo para descargar); 3) gestión de energía (DFS y sueño ligero) y bucle lento con la pantalla apagada; 4) decidir con el dueño qué hacer con la esfera WiFi.
