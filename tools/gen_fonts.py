@@ -30,13 +30,17 @@ def ell(cx, cy, rx, ry, a0, a1, n=48):
 
 
 def stroke(d, pts, closed=False):
+    # A round pen stamped densely along the path: PIL's wide lines leave thin spikes at the joints
+    # between segments, which show on the big sizes
     sp = [(x * S, y * S) for x, y in pts]
     if closed:
         sp.append(sp[0])
-    d.line(sp, fill=255, width=W * S, joint="curve")
     r = W * S / 2
-    for x, y in (sp[0], sp[-1]):
-        d.ellipse([x - r, y - r, x + r, y + r], fill=255)
+    for (x0, y0), (x1, y1) in zip(sp, sp[1:] or sp):
+        n = max(1, int(math.hypot(x1 - x0, y1 - y0) / (S / 2)))
+        for i in range(n + 1):
+            x, y = x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n
+            d.ellipse([x - r, y - r, x + r, y + r], fill=255)
 
 
 def dot(d, cx, cy, r):

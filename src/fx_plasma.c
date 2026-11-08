@@ -1,9 +1,12 @@
 // Classic demoscene plasma: four interfering sine fields mapped through a cycling palette, over the
 // whole screen. The time stacks big in the middle on a frosted panel; dragging stirs the plasma.
 // The field is smooth, so it is worked out on 2x2 blocks; the panel uses a darker copy of the palette
-// in the same pass instead of darkening the pixels afterwards.
+// in the same pass instead of darkening the pixels afterwards. The 176 px digits only change once a
+// minute: they are rendered once into runs per row and laid over each plasma row before it is copied
+// to the screen, instead of being drawn over the whole frame every time.
 #include <string.h>
 #include "app.h"
+#include "esp_heap_caps.h"
 #include "control.h"
 #include "fx.h"
 #include "gfx.h"
@@ -21,6 +24,60 @@ static uint8_t ax[BW], cx[BW], ex[BW];
 static uint8_t by[BH], cy[BH];
 static int16_t s_inset[PH_];   // panel row inset from its sides (rounded corners)
 static int s_shift;
+
+// Digits: rows DY0..DY0+DROWS-1 of the screen. Each item covers `len` pixels from x with one alpha
+// (0..16): x in bits 0-9, len in 10-19, alpha in 20-24. s_row[r]..s_row[r+1] are row r's items.
+#define DY0 80
+#define DROWS 368
+#define MAX_ITEMS 24000
+static uint16_t *s_tmp;      // PSRAM: the digits rendered on black, once a minute
+static uint32_t *s_items;    // PSRAM
+static uint16_t s_row[DROWS + 1];
+static char s_cached[8];
+
+static void build_digits(const char *hhmm)
+{
+    if (!s_tmp) s_tmp = heap_caps_malloc(FW * DROWS * 2, MALLOC_CAP_SPIRAM);
+    if (!s_items) s_items = heap_caps_malloc(MAX_ITEMS * 4, MALLOC_CAP_SPIRAM);
+    if (!s_tmp || !s_items) return;
+    memset(s_tmp, 0, FW * DROWS * 2);
+    int oh = g_lcd_h;
+    g_lcd_h = DROWS;  // draw on the band (same width as the screen, so the same stride)
+    clock_draw_stacked(s_tmp, &font_round_xxl, 0, 8, rgb565(255, 255, 255), 0, FONT_FILL);
+    g_lcd_h = oh;
+    int n = 0;
+    for (int r = 0; r < DROWS; r++) {
+        s_row[r] = n;
+        const uint16_t *src = s_tmp + r * FW;
+        for (int x = 0; x < FW && n < MAX_ITEMS;) {
+            int g = (__builtin_bswap16(src[x]) >> 5) & 63, a = (g * 16 + 31) / 63;
+            if (!a) { x++; continue; }
+            int x0 = x;
+            while (x < FW && x - x0 < 1023) {
+                int g2 = (__builtin_bswap16(src[x]) >> 5) & 63;
+                if ((g2 * 16 + 31) / 63 != a) break;
+                x++;
+            }
+            s_items[n++] = (uint32_t)x0 | (uint32_t)(x - x0) << 10 | (uint32_t)a << 20;
+        }
+    }
+    s_row[DROWS] = n;
+    strcpy(s_cached, hhmm);
+}
+
+static void lay_digits(uint16_t *row, int r)
+{
+    const uint16_t white = rgb565(255, 255, 255);
+    for (int i = s_row[r]; i < s_row[r + 1]; i++) {
+        uint32_t it = s_items[i];
+        int x = it & 1023, len = (it >> 10) & 1023, a = it >> 20;
+        if (a >= 16) {
+            for (int k = 0; k < len; k++) row[x + k] = white;
+        } else {
+            for (int k = 0; k < len; k++) row[x + k] = gfx_blend(row[x + k], white, a);
+        }
+    }
+}
 
 void plasma_enter(void)
 {
@@ -63,9 +120,15 @@ void plasma_render(uint16_t *fb, uint32_t t, uint32_t dt)
         by[y] = sin_u8[(uint8_t)(v - p2)];
         cy[y] = sin_u8[(uint8_t)(v * 2 / 3 + p3 * 2)] >> 1;
     }
+    char hhmm[8];
+    clock_hhmm(hhmm, true);
+    if (strcmp(hhmm, s_cached) != 0) build_digits(hhmm);
+    bool digits = s_cached[0] != 0;
+
     // One row of 2x2 blocks is worked out into internal RAM (two equal pixels per 32-bit word), then
     // copied to both screen rows: PSRAM is written in bursts instead of pixel by pixel
     static uint32_t line[BW];
+    static uint16_t row[FW];
     for (int by_i = 0; by_i < FH / 2; by_i++) {
         uint8_t b = by[by_i], c = cy[by_i], d = by_i * 4 / 5 + p3;
         int y = by_i * 2, py = y - PY, l = FW, rgt = -1;
@@ -79,8 +142,16 @@ void plasma_render(uint16_t *fb, uint32_t t, uint32_t dt)
             uint32_t col = (x >= l && x <= rgt) ? dark[v >> 2] : pal[v >> 2];
             line[x2] = col | col << 16;
         }
-        memcpy(fb + y * FW, line, FW * 2);
-        memcpy(fb + (y + 1) * FW, line, FW * 2);
+        for (int k = 0; k < 2; k++) {
+            int r = y + k - DY0;
+            if (digits && r >= 0 && r < DROWS && s_row[r] != s_row[r + 1]) {
+                memcpy(row, line, FW * 2);
+                lay_digits(row, r);
+                memcpy(fb + (y + k) * FW, row, FW * 2);
+            } else {
+                memcpy(fb + (y + k) * FW, line, FW * 2);
+            }
+        }
     }
 
     // Date on the straight part of the top edge, the time big on the panel, seconds below
@@ -88,6 +159,5 @@ void plasma_render(uint16_t *fb, uint32_t t, uint32_t dt)
     clock_date_str(date);
     uint16_t white = rgb565(255, 255, 255), ink = rgb565(10, 8, 30);
     gfx_text_ol(fb, (FW - gfx_text_width(date, 3)) / 2, 30, date, white, ink, 3, 1);
-    clock_draw_stacked(fb, &font_round_xxl, 80, 8, white, ink, FONT_FILL);  // the dark panel is contrast enough
-    clock_draw_seconds_bar(fb, 92, 466, FW - 184, 5, white, rgb565(70, 70, 90));
+    if (!digits) clock_draw_stacked(fb, &font_round_xxl, DY0, 8, white, ink, FONT_FILL);  // no PSRAM: draw them    clock_draw_seconds_bar(fb, 92, 466, FW - 184, 5, white, rgb565(70, 70, 90));
 }

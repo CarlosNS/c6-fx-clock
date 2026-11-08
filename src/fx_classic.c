@@ -134,11 +134,16 @@ static void dial(uint16_t *fb, int light)
         uint16_t *row = fb + y * W;
         int dy = y - CY, dy2 = dy * dy;
         int x0 = (xl + 15) >> 4, x1 = xr >> 4;
-        for (int x = x0; x < x1; x++) {
+        // The light and the shading are smooth: worked out every other pixel, the grooves' grain
+        // alternates between the pair so it stays fine
+        int base = 22 - (dy2 >> 12);
+        for (int x = x0; x < x1; x += 2) {
             int dx = x - CX, a = angle(dx, dy);
             int shine = sin_q14[(2 * (a - light) + 256) & 1023];  // cos(2 (a - light))
-            int lvl = 22 + (shine * 13 >> 14) - ((dx * dx + dy2) >> 12) + ((a * 37 >> 2) & 3);
-            row[x] = s_dial[lvl < 0 ? 0 : lvl > 63 ? 63 : lvl];
+            int lvl = base + (shine * 13 >> 14) - ((dx * dx) >> 12);
+            int g = (a * 37 >> 2) & 3, l0 = lvl + g, l1 = lvl + (3 - g);
+            row[x] = s_dial[l0 < 0 ? 0 : l0 > 63 ? 63 : l0];
+            if (x + 1 < x1) row[x + 1] = s_dial[l1 < 0 ? 0 : l1 > 63 ? 63 : l1];
         }
         // Soft edges against the bezel
         if (xl & 15) row[xl >> 4] = gfx_blend(row[xl >> 4], s_dial[10], 16 - (xl & 15));
@@ -272,12 +277,15 @@ void classic_render(uint16_t *fb, uint32_t t, uint32_t dt)
             for (int x = CASE_X1 - 1; x < W; x++) row[x] = bg;
         }
     }
-    // Corners of the case's bounding box (outside the rounded corners)
+    // Outside the case's rounded corners: only the thin sliver up to the case edge (the rest is
+    // beyond the display's own corners)
     for (int y = CASE_Y0; y < CASE_Y0 + CASE_R; y++)
         for (int k = 0; k < 2; k++) {
-            int yy = k ? CASE_Y1 - 1 - (y - CASE_Y0) : y;
-            for (int x = CASE_X0; x < CASE_X0 + CASE_R; x++) fb[yy * W + x] = bg;
-            for (int x = CASE_X1 - CASE_R; x < CASE_X1; x++) fb[yy * W + x] = bg;
+            int yy = k ? CASE_Y1 - 1 - (y - CASE_Y0) : y, xl, xr;
+            if (!rr_span(yy, CASE_X0, CASE_Y0, CASE_X1, CASE_Y1, CASE_R, &xl, &xr)) continue;
+            int a = (xl + 15) >> 4, b = xr >> 4;
+            for (int x = a - 3 < 0 ? 0 : a - 3; x < a; x++) fb[yy * W + x] = bg;
+            for (int x = b; x < b + 3 && x < W; x++) fb[yy * W + x] = bg;
         }
 
     // The case: dark outer edge, polished bevel, brushed gunmetal body
