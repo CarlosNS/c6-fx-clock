@@ -1,4 +1,4 @@
-// "Sakura" (landscape): a cherry tree in bloom by a still pond. Petals drift down, fluttering as
+// "Sakura" (full screen, wide canvas, portrait): a cherry tree in bloom by a still pond. Petals drift down, fluttering as
 // they turn (edge-on they almost vanish), and leave ripples where they touch the water.
 #include <stdio.h>
 #include "app.h"
@@ -6,10 +6,10 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LAND_W
-#define H LAND_H
-#define WATER 136
-#define NPET 56
+#define W WW
+#define H WH
+#define WATER 250
+#define NPET 72
 #define NRIP 8
 
 typedef struct { float x, y, vy, phase, spin, drift; uint8_t tone; } petal_t;
@@ -21,10 +21,10 @@ static int rip_next;
 
 // Tree: trunk and branches as (x0, y0, x1, y1, width)
 static const int16_t branches[][5] = {
-    {24, 172, 40, 120, 12}, {40, 120, 58, 80, 9},  {58, 80, 96, 52, 6},   {96, 52, 150, 34, 4},
-    {150, 34, 200, 30, 3},  {58, 80, 52, 40, 5},   {52, 40, 70, 12, 3},   {96, 52, 122, 70, 3},
-    {122, 70, 168, 74, 2},  {40, 120, 14, 92, 5},  {14, 92, 4, 60, 3},    {150, 34, 176, 12, 2},
-    {200, 30, 236, 40, 2},  {70, 12, 104, 4, 2},
+    {26, 336, 40, 262, 14}, {40, 262, 56, 207, 10}, {56, 207, 90, 168, 7},  {90, 168, 138, 143, 5},
+    {138, 143, 184, 137, 3}, {56, 207, 50, 151, 5},  {50, 151, 66, 112, 3},  {90, 168, 114, 193, 3},
+    {114, 193, 156, 199, 2}, {40, 262, 16, 224, 5},  {16, 224, 8, 179, 3},   {138, 143, 162, 112, 2},
+    {184, 137, 218, 151, 2}, {66, 112, 98, 101, 2},  {162, 112, 196, 104, 2}, {8, 179, 22, 140, 2},
 };
 #define NBR (sizeof(branches) / sizeof(branches[0]))
 
@@ -32,8 +32,8 @@ static void spawn(petal_t *p, bool anywhere)
 {
     uint32_t h = fx_rand();
     // Petals leave from the blossoms (along the upper branches) or drift in from the top
-    p->x = 20 + (float)(h % 240);
-    p->y = anywhere ? (float)((h >> 9) % WATER) : 10 + (float)((h >> 9) % 60);
+    p->x = 10 + (float)(h % 230);
+    p->y = anywhere ? (float)((h >> 9) % WATER) : 100 + (float)((h >> 9) % 100);
     p->vy = 10 + (float)((h >> 16) % 12);
     p->phase = (float)((h >> 4) % 628) / 100;
     p->spin = 2 + (float)((h >> 20) % 30) / 10;
@@ -63,8 +63,8 @@ void sakura_render(uint16_t *fb, uint32_t t, uint32_t dt)
         int f = y * 256 / WATER;
         gfx_fill_rect(fb, 0, y, W, 1, rgb565(188 + f * 66 / 256, 214 + f * 14 / 256, 240 - f * 8 / 256));
     }
-    gfx_glow(fb, 262, 46, 40, rgb565(255, 250, 230), 9);
-    gfx_circle(fb, 262, 46, 12, rgb565(255, 252, 240));
+    gfx_glow(fb, 222, 196, 44, rgb565(255, 250, 230), 9);
+    gfx_circle(fb, 222, 196, 13, rgb565(255, 252, 240));
     for (int layer = 0; layer < 2; layer++) {
         uint16_t c = layer ? rgb565(178, 164, 204) : rgb565(206, 192, 222);
         for (int x = 0; x < W; x++) {
@@ -138,7 +138,7 @@ void sakura_render(uint16_t *fb, uint32_t t, uint32_t dt)
         } else {
             gfx_fill_rect(fb, x, y, 1, 2, rgb565(c[0] * 4 / 5, c[1] * 4 / 5, c[2] * 4 / 5));
         }
-        if (y >= WATER + 2 + (i % 20)) {  // lands on the pond
+        if (y >= WATER + 2 + (i % 56)) {  // lands on the pond
             rip[rip_next].x = x;
             rip[rip_next].y = y;
             rip[rip_next].t0 = t ? t : 1;
@@ -148,9 +148,9 @@ void sakura_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
 
     // Time: calligraphic numerals, white blushing to pink
-    clock_row_grad(fb, &font_nib_m, 238, 74, -3, rgb565(255, 255, 255), rgb565(255, 196, 220), rgb565(96, 40, 70), 2);
+    clock_row_grad(fb, &font_nib_m, W / 2, 20, -3, rgb565(255, 255, 255), rgb565(255, 196, 220), rgb565(96, 40, 70), 2);
     char date[24];
     clock_date_str(date);
-    ui_text(fb, &ui_m, 238 - ui_width(&ui_m, date) / 2, 140, date, rgb565(255, 255, 255), rgb565(96, 40, 70),
+    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 84, date, rgb565(255, 255, 255), rgb565(96, 40, 70),
             FONT_FILL | FONT_OUTLINE);
 }

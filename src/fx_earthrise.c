@@ -1,4 +1,4 @@
-// "Earthrise" (landscape): after the Apollo 8 photograph (William Anders, 24 Dec 1968, NASA,
+// "Earthrise" (full screen, wide canvas, portrait): after the Apollo 8 photograph (William Anders, 24 Dec 1968, NASA,
 // public domain). The half-lit Earth rises slowly over the cratered lunar horizon; continents
 // and clouds rotate at different speeds over a lit sphere with a thin blue atmosphere.
 #include <math.h>
@@ -9,9 +9,10 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LAND_W
-#define H LAND_H
-#define ER 30                // Earth radius in pixels
+#define W WW
+#define H WH
+#define HZ 238                // lunar horizon at the centre
+#define ER 37                // Earth radius in pixels
 #define ED (ER * 2 + 1)
 #define TW 64                // texture size (longitude x latitude)
 #define TH 32
@@ -71,14 +72,14 @@ void earthrise_render(uint16_t *fb, uint32_t t, uint32_t dt)
     int dx_, dy_;
     app_take_drag(&dx_, &dy_);
     gfx_fill(fb, rgb565(0, 0, 2));
-    for (int i = 0; i < 40; i++) {  // faint stars
+    for (int i = 0; i < 70; i++) {  // faint stars
         uint32_t h = fx_hash(i, 3);
-        int x = h % W, y = (h >> 9) % 110;
+        int x = h % W, y = (h >> 9) % 230;
         fb[y * W + x] = (h >> 20) & 1 ? rgb565(70, 70, 80) : rgb565(40, 40, 50);
     }
 
     // Earth slowly rising and setting again over two minutes
-    int ex = 214, ey = 66 + (sin_q14[(t / 120) & 1023] * 14 >> 14);
+    int ex = 170, ey = 200 + (sin_q14[(t / 120) & 1023] * 20 >> 14);
     int rot = t / 70, crot = t / 45;
     gfx_glow(fb, ex, ey, ER + 8, rgb565(60, 120, 255), 5);
     for (int y = -ER; y <= ER; y++) {
@@ -112,7 +113,7 @@ void earthrise_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Lunar horizon: grey, curved, low sun from the left casting long crater shadows
     int scroll = t / 90;
     for (int x = 0; x < W; x++) {
-        int hy = 112 + (x - 120) * (x - 120) / 1400 + (sin_q14[(x * 7 + scroll * 3) & 1023] * 2 >> 14);
+        int hy = HZ + (x - 120) * (x - 120) / 1800 + (sin_q14[(x * 7 + scroll * 3) & 1023] * 2 >> 14);
         for (int y = hy; y < H; y++) {
             int k = (y - hy) * 4;
             int g = 150 - (k > 90 ? 90 : k) + (int)(fx_hash((x + scroll) >> 1, y >> 1) & 15);
@@ -120,11 +121,11 @@ void earthrise_render(uint16_t *fb, uint32_t t, uint32_t dt)
         }
         fb[hy * W + x] = rgb565(210, 206, 196);
     }
-    for (int i = 0; i < 24; i++) {  // craters drifting past
+    for (int i = 0; i < 30; i++) {  // craters drifting past
         uint32_t h = fx_hash(i, 17);
-        int cx = (int)((h % 600) + 600 - scroll % 600) % 600 - 100, cy = 130 + (int)((h >> 10) % 40);
-        int r = 3 + (int)((h >> 20) % 9);
-        int hy = 112 + (cx - 120) * (cx - 120) / 1400;
+        int cx = (int)((h % 600) + 600 - scroll % 600) % 600 - 100, cy = HZ + 18 + (int)((h >> 10) % 70);
+        int r = 3 + (int)((h >> 20) % 9) + (cy - HZ) / 12;  // nearer craters look bigger
+        int hy = HZ + (cx - 120) * (cx - 120) / 1800;
         if (cx < -20 || cx > W + 20 || cy - r / 2 < hy + 2) continue;
         for (int yy = -r / 2; yy <= r / 2; yy++) {
             int w = r * (r / 2 * r / 2 - yy * yy + 1) / (r / 2 * r / 2 + 1);
@@ -136,10 +137,12 @@ void earthrise_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Mission-style clock
     char buf[8];
     clock_hhmm(buf, !g_now.valid || g_now.ms < 500);
-    font_draw(fb, &font_seg_m, 10, 10, "88:88", -2, rgb565(22, 22, 26), 0, FONT_FILL);
-    font_draw(fb, &font_seg_m, 10, 10, buf, -2, rgb565(220, 222, 226), rgb565(0, 0, 0), FONT_FILL | FONT_OUTLINE);
+    int cx = (W - font_width(&font_seg_m, "88:88", -2)) / 2;
+    font_draw(fb, &font_seg_m, cx, 28, "88:88", -2, rgb565(22, 22, 26), 0, FONT_FILL);
+    font_draw(fb, &font_seg_m, cx, 28, buf, -2, rgb565(220, 222, 226), rgb565(0, 0, 0), FONT_FILL | FONT_OUTLINE);
     char date[32];
     clock_date_str(date);
-    ui_text(fb, &ui_s, 12, 76, date, rgb565(170, 172, 180), 0, FONT_FILL);
-    ui_text(fb, &ui_s, 12, 90, "EARTHRISE - APOLO 8, 1968", rgb565(90, 92, 100), 0, FONT_FILL);
+    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 94, date, rgb565(170, 172, 180), 0, FONT_FILL);
+    const char *cap = "EARTHRISE - APOLO 8, 1968";
+    ui_text(fb, &ui_s, (W - ui_width(&ui_s, cap)) / 2, H - 40, cap, rgb565(110, 108, 104), 0, FONT_FILL);
 }

@@ -1,4 +1,4 @@
-// "Synthwave" (landscape): a retro-futuristic sunset. Striped sun sinking behind neon-edged
+// "Synthwave" (full screen, wide canvas, portrait): a retro-futuristic sunset. Striped sun sinking behind neon-edged
 // mountains, a scrolling perspective grid, palm silhouettes and chrome time digits.
 #include <stdio.h>
 #include "app.h"
@@ -6,19 +6,21 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LAND_W
-#define H LAND_H
-#define HORIZON 104
+#define W WW
+#define H WH
+#define HORIZON 200
 
 void synth_enter(void) {}
 
 static void palm(uint16_t *fb, int x, int base, int h, int dir, uint32_t t)
 {
     uint16_t c = rgb565(14, 0, 26);
-    int tx = x + dir * 10, ty = base - h;
-    for (int k = 0; k < h; k += 2) {  // slightly curved trunk
-        int cx = x + dir * 10 * k * k / (h * h);
-        gfx_fill_rect(fb, cx - 2 + k / 40, base - k, 4 - k / 30, 2, c);
+    int sc = h * 16 / 96;  // fronds and trunk scale with the height (16 = the original palm)
+    int tx = x + dir * 10 * sc / 16, ty = base - h;
+    for (int k = 0; k < h; k += 2) {  // slightly curved, tapering trunk
+        int cx = x + dir * 10 * sc / 16 * k * k / (h * h);
+        int tw = (6 - k * 3 / h) * sc / 16;
+        gfx_fill_rect(fb, cx - tw / 2, base - k, tw < 2 ? 2 : tw, 2, c);
     }
     int sway = (sin_q14[(t / 6 + x * 7) & 1023] * 3) >> 14;
     // Fronds arch up and droop at the tips, with leaflets hanging from them
@@ -26,15 +28,18 @@ static void palm(uint16_t *fb, int x, int base, int h, int dir, uint32_t t)
     for (int f = 0; f < 7; f++) {
         int px = tx, py = ty;
         for (int s = 1; s <= 8; s++) {
-            int fx = tx + fr[f][0] * s / 8 + sway * s / 8;
-            int fy = ty + fr[f][1] * s / 8 - (s * (8 - s)) / 3 + (s * s) / 6;  // arch, then droop
-            for (int w = 0; w < 2; w++) gfx_line(fb, px, py + w, fx, fy + w, c);
-            if (s > 2) gfx_line(fb, fx, fy, fx + (fr[f][0] > 0 ? -1 : 1), fy + 4 + s / 2, c);  // leaflet
+            int fx = tx + (fr[f][0] * s / 8 + sway * s / 8) * sc / 16;
+            int fy = ty + (fr[f][1] * s / 8 - (s * (8 - s)) / 3 + (s * s) / 6) * sc / 16;  // arch, then droop
+            for (int w = 0; w < 3; w++) gfx_line(fb, px, py + w, fx, fy + w, c);
+            if (s > 2) {  // leaflets
+                gfx_line(fb, fx, fy, fx + (fr[f][0] > 0 ? -1 : 1), fy + (4 + s / 2) * sc / 16, c);
+                gfx_line(fb, fx + 1, fy, fx + 1 + (fr[f][0] > 0 ? -1 : 1), fy + (4 + s / 2) * sc / 16, c);
+            }
             px = fx;
             py = fy;
         }
     }
-    gfx_circle(fb, tx, ty + 2, 3, c);  // coconuts
+    gfx_circle(fb, tx, ty + 2, 3 * sc / 16, c);  // coconuts
 }
 
 void synth_render(uint16_t *fb, uint32_t t, uint32_t dt)
@@ -50,14 +55,14 @@ void synth_render(uint16_t *fb, uint32_t t, uint32_t dt)
         int b = f < 160 ? 50 + f * 90 / 160 : 140 - (f - 160) * 80 / 96;
         gfx_fill_rect(fb, 0, y, W, 1, rgb565(r, g, b));
     }
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 60; i++) {
         uint32_t h = fx_hash(i, 2);
-        int x = h % W, y = (h >> 9) % 60;
+        int x = h % W, y = (h >> 9) % 130;
         if (sin_u8[(uint8_t)(t / 14 + i * 33)] > 120) fb[y * W + x] = rgb565(255, 220, 255);
     }
 
     // Sun with scan-line cuts that slide downwards
-    int sx = W / 2, sy = 86, sr = 46;
+    int sx = W / 2, sy = 176, sr = 62;
     gfx_glow(fb, sx, sy, sr + 22, rgb565(255, 80, 160), 6);
     int slide = (t / 60) % 12;
     for (int y = -sr; y <= sr; y++) {
@@ -76,9 +81,9 @@ void synth_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Mountains: dark with neon edges, one range each side
     for (int x = 0; x < W; x++) {
         int d = x < W / 2 ? x : W - 1 - x;
-        int h = HORIZON - 4 - ((sin_q14[(d * 9 + 100) & 1023] * 16) >> 14) - (d < 110 ? (110 - d) / 3 : 0) -
-                ((abs(sin_q14[(d * 23) & 1023]) * 6) >> 14);
-        if (d > 120) h = HORIZON - ((d > 140 ? 0 : 140 - d) / 5);
+        int h = HORIZON - 6 - ((sin_q14[(d * 9 + 100) & 1023] * 20) >> 14) - (d < 100 ? (100 - d) / 2 : 0) -
+                ((abs(sin_q14[(d * 23) & 1023]) * 8) >> 14);
+        if (d > 104) h = HORIZON - ((d > 126 ? 0 : 126 - d) / 4);
         for (int y = h; y < HORIZON; y++) fb[y * W + x] = rgb565(30, 4, 54);
         if (h < HORIZON) fb[h * W + x] = rgb565(80, 240, 255);
     }
@@ -90,7 +95,7 @@ void synth_render(uint16_t *fb, uint32_t t, uint32_t dt)
     for (int k = 1; k < 40; k++) {
         int z = k * 16 - phase;
         if (z <= 2) continue;
-        int y = HORIZON + 1100 / z;
+        int y = HORIZON + 2200 / z;
         if (y <= HORIZON || y >= H) continue;
         gfx_fill_rect(fb, 0, y, W, 1, grid);
         if (y + 1 < H) gfx_fill_rect(fb, 0, y + 1, W, 1, grid_glow);
@@ -101,14 +106,14 @@ void synth_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
     gfx_fill_rect(fb, 0, HORIZON, W, 1, rgb565(255, 200, 255));
 
-    palm(fb, 28, H, 96, 1, t);
-    palm(fb, 292, H, 104, -1, t);
-    palm(fb, 58, H, 64, 1, t + 400);
+    palm(fb, 30, H, 150, 1, t);
+    palm(fb, 246, H, 162, -1, t);
+    palm(fb, 62, H, 100, 1, t + 400);
 
     // Chrome time with a neon glow
-    clock_row_grad(fb, &font_round_m, W / 2, 6, -4, rgb565(220, 250, 255), rgb565(255, 70, 190), rgb565(30, 0, 50), 3);
+    clock_row_grad(fb, &font_round_m, W / 2, 24, -4, rgb565(220, 250, 255), rgb565(255, 70, 190), rgb565(30, 0, 50), 3);
     char date[24];
     clock_date_str(date);
-    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 70, date, rgb565(120, 240, 255), rgb565(30, 0, 50),
+    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 88, date, rgb565(120, 240, 255), rgb565(30, 0, 50),
             FONT_FILL | FONT_OUTLINE);
 }
