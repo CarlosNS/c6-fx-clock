@@ -386,14 +386,17 @@ void app_main(void)
             status_t = now;
             pmu_battery_t b;
             int pct = -1;
-            bool chg = false, linked = ble_connected();
+            bool chg = false, full = false, linked = ble_connected();
             if (pmu_battery(&b)) {
                 pct = b.present ? b.percent : -1;
-                chg = b.charging;
+                chg = b.charging || (b.usb && b.present);  // like a phone: plugged in shows the bolt
+                full = b.usb && b.present && !b.charging;
             }
-            if (pct != g_app.bat_pct || chg != g_app.bat_chg || linked != g_app.phone_linked) sys_dirty();
+            if (pct != g_app.bat_pct || chg != g_app.bat_chg || full != g_app.bat_full || linked != g_app.phone_linked)
+                sys_dirty();
             g_app.bat_pct = pct;
             g_app.bat_chg = chg;
+            g_app.bat_full = full;
             g_app.phone_linked = linked;
         }
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware

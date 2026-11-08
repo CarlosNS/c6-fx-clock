@@ -49,7 +49,7 @@ static void info_memory(char *b, size_t n)
 static void info_battery(char *b, size_t n)
 {
     if (g_app.bat_pct < 0) snprintf(b, n, "%s", TR("sin batería", "no battery"));
-    else snprintf(b, n, "%d %%%s", g_app.bat_pct, g_app.bat_chg ? TR(" · cargando", " · charging") : "");
+    else snprintf(b, n, "%d %%%s", g_app.bat_pct, g_app.bat_full ? TR(" · cargada", " · full") : g_app.bat_chg ? TR(" · cargando", " · charging") : "");
 }
 static void info_uptime(char *b, size_t n)
 {

@@ -31,7 +31,8 @@ typedef struct {
     volatile int bri_override; // brightness forced by an app (flashlight), -1 = none
     volatile bool phone_linked;  // the phone app is connected over Bluetooth
     volatile int bat_pct;        // battery level 0..100, -1 unknown (refreshed every few seconds)
-    volatile bool bat_chg;       // charging
+    volatile bool bat_chg;       // plugged in: charging, or full on USB (the bolt shows)
+    volatile bool bat_full;      // plugged in and no longer charging
     volatile int fps;
     volatile int render_us;    // average render time of the last second (excluding the LCD wait)
     volatile int render_max_us;

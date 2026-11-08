@@ -224,12 +224,16 @@ static bool quick_draw(void)
     quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
     // Battery
     int by = Q_TILE_Y + 2 * (Q_TILE_H + 12) + 6;
-    ui_battery(UI_W / 2 - 90, by + 4, 60, 30, g_app.bat_pct, g_app.bat_chg);
     if (g_app.bat_pct >= 0)
-        snprintf(buf, sizeof(buf), "%d %%%s", g_app.bat_pct, g_app.bat_chg ? TR(" · carga", " · charging") : "");
+        snprintf(buf, sizeof(buf), "%d %%%s", g_app.bat_pct,
+                 g_app.bat_full ? TR(" · cargada", " · full") : g_app.bat_chg ? TR(" · cargando", " · charging") : "");
     else
         snprintf(buf, sizeof(buf), "%s", TR("sin batería", "no battery"));
-    ui_print(&ui_vt, 2, UI_W / 2 - 20, by, buf, g_app.bat_chg ? MS_VERDE : MS_CREMA);
+    // Icon and text centred together; the bottom edge is straight only between the rounded corners
+    int sc = 60 + 14 + ui_print_w(&ui_vt, 2, buf) <= 290 ? 2 : 1;
+    int tw = ui_print_w(&ui_vt, sc, buf), bx = (UI_W - (60 + 14 + tw)) / 2;
+    ui_battery(bx, by + 4, 60, 30, g_app.bat_pct, g_app.bat_chg);
+    ui_print(&ui_vt, sc, bx + 74, by + (sc == 2 ? 0 : 8), buf, g_app.bat_chg ? MS_VERDE : MS_CREMA);
     return true;
 }
 

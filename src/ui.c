@@ -231,6 +231,9 @@ void ui_switch(int x, int y, bool on)
     ui_rect(on ? x + 36 : x + 6, y + 6, 22, 20, on ? MS_VERDE : MS_GRIS);
 }
 
+// Lightning bolt over the battery while charging, 5 x 7 pixel-art cells
+static const char *const BOLT[7] = {"...##", "..##.", ".##..", "#####", "..##.", ".##..", "##..."};
+
 void ui_battery(int x, int y, int w, int h, int percent, bool charging)
 {
     int t = h >= 20 ? 3 : 2;
@@ -240,6 +243,26 @@ void ui_battery(int x, int y, int w, int h, int percent, bool charging)
     uint16_t c = charging ? MS_VERDE : percent <= 15 ? MS_CORAL : MS_ORO;
     int inner = w - t * 2 - t * 4;
     ui_rect(x + t * 2, y + t * 2, inner * (percent > 100 ? 100 : percent) / 100, h - t * 4, c);
+    if (!charging) return;
+    // The bolt, centred on the body, with a night outline so it reads over the fill and the frame
+    int p = h / 8 < 1 ? 1 : h / 8, bx = x + (w - t * 2 - 5 * p) / 2, by = y + (h - 7 * p) / 2;
+    for (int pass = 0; pass < 2; pass++)
+        for (int j = 0; j < 7; j++)
+            for (int i = 0; i < 5; i++) {
+                if (BOLT[j][i] != '#') continue;
+                if (pass) ui_rect(bx + i * p, by + j * p, p, p, MS_CREMA);
+                else ui_rect(bx + i * p - 1, by + j * p - 1, p + 2, p + 2, MS_NOCHE);
+            }
+}
+
+// Battery with its percentage, as the status bar shows it: the number goes to the right of the icon
+void ui_battery_pct(int x, int y, int percent, bool charging)
+{
+    ui_battery(x, y, 30, 16, percent, charging);
+    if (percent < 0) return;
+    char b[8];
+    snprintf(b, sizeof(b), "%d%%", percent > 100 ? 100 : percent);
+    ui_print(&ui_vt, 1, x + 34, y - 5, b, charging ? MS_VERDE : percent <= 15 ? MS_CORAL : MS_CREMA);
 }
 
 void ui_dots(int cx, int y, int n, int cur)
@@ -296,7 +319,7 @@ void ui_status_bar(void)
     for (int j = 0; j < 9; j++)
         for (int i = 0; i < 7; i++)
             if (BT_RUNE[j][i] == '#') ui_rect(92 + i * 3, 26 + j * 3, 3, 3, bt);
-    ui_battery(292, 30, 30, 16, g_app.bat_pct, g_app.bat_chg);
+    ui_battery_pct(274, 30, g_app.bat_pct, g_app.bat_chg);
 }
 
 // ---------------------------------------------------------------- background

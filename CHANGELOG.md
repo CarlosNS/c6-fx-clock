@@ -9,6 +9,7 @@
 - **Todas las esferas a pantalla completa**, siguiendo las esquinas redondeadas y a 30 fps. Las que eran horizontales (Vida, HUD, Aventura, Estrellada, WiFi, Earthrise, Sakura, Synthwave, Agujero negro y Gol) pasan a verticales. Clásico usa la pantalla como caja; Feria, RPG, Túnel y Agujero negro cambian su composición.
 - **App 0.4.0: conexión permanente.** Mientras el reloj está cerca, la app se queda conectada y vuelve a conectar sola; sincroniza la hora y el tiempo al conectar y cada 30 minutos. Con permiso para leer notificaciones, el reloj muestra y controla la música del móvil y avisa de las llamadas.
 - **Modo USB:** el botón USB de Archivos reinicia el reloj como disco USB con la microSD; se vuelve con BOOT, expulsando el disco o desconectando el cable.
+- La barra de estado muestra el porcentaje de batería, y un rayo sobre el icono mientras está enchufado; los ajustes rápidos dicen «cargando» o «cargada».
 - El tiempo que manda el móvil siempre gana sobre la descarga propia del reloj (es el más reciente).
 - La hora se guarda en el reloj de hardware (PCF85063) y se conserva con el reloj apagado. WiFi y Bluetooth funcionan a la vez, sin modos que cambiar. La pantalla se enciende al levantar la muñeca.
 - Red del punto de acceso: **Marea** (clave `mareamarea`); Bluetooth: **Marea XXXX**.

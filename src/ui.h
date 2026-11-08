@@ -73,6 +73,8 @@ void ui_bar(int x, int y, int w, int h, int permille, uint16_t color);
 void ui_switch(int x, int y, bool on);
 // Battery: outline in cream, terminal on the right, fill gold (green while charging, coral when low)
 void ui_battery(int x, int y, int w, int h, int percent, bool charging);
+// The status bar's battery: 30 x 16 icon and the percentage to its right (about 80 px in all)
+void ui_battery_pct(int x, int y, int percent, bool charging);
 // Page indicator: n small squares centred on cx, the current one filled gold
 void ui_dots(int cx, int y, int n, int cur);
 // 16 x 16 pixel-art icon (rows of palette letters, see ui.c) drawn at `scale`
