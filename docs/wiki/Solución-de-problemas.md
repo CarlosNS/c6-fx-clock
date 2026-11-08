@@ -1,7 +1,6 @@
 ## Emparejar y conectar
 
 **La app no encuentra el reloj.**
-- Comprueba que está en **modo Bluetooth**: la pantalla de bienvenida lo dice al encenderlo (BOOT 2 s ahí para cambiar).
 - Mientras otro dispositivo está conectado (otro móvil, un PC, Chrome por Web Bluetooth), el reloj **deja de anunciarse**. Cierra esa conexión.
 - Acércate: el alcance práctico es de unos pocos metros a través de paredes.
 
@@ -15,18 +14,20 @@
 
 ## La hora y el tiempo
 
-**El reloj no tiene la hora al enchufarlo.** La placa no tiene pila de reloj. En modo Bluetooth el móvil se la pone en menos de un minuto al detectarlo (Android 12+) o, como mucho, en la siguiente sincronización de 30 minutos; abrir la app lo hace al momento. En modo WiFi la toma de internet al conectarse.
+**El reloj no tiene la hora.** Su reloj de hardware la guarda mientras quede algo de batería. Si se agotó del todo, la recupera en cuanto se conecta el móvil (al abrir la app o al acercarlo, con Android 12+) o internet por WiFi.
 
-**Deja de sincronizar con la app cerrada.** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. La tarjeta *Este móvil* dice cuándo fue la última sincronización.
+**La app se desconecta con la app cerrada, o desaparece el aviso «Marea conectado».** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. La tarjeta *Este móvil* dice cuándo fue la última sincronización.
 
-**La esfera Tiempo no tiene datos.** Necesita internet en el móvil (modo Bluetooth) o en el reloj (modo WiFi). La ciudad se elige en los ajustes de la propia esfera.
+**El reloj no muestra la música o no avisa de las llamadas.** Hace falta el permiso de leer notificaciones: *Este móvil → Música y llamadas en el reloj → Permitir*. Si ya está dado y no va, quítalo y vuelve a darlo (algunos móviles lo desactivan al actualizar la app). Las llamadas no suenan con *No molestar*.
+
+**La esfera Tiempo no tiene datos.** Necesita internet en el móvil o en el reloj (por WiFi). La ciudad se elige en los ajustes de la propia esfera.
 
 ## WiFi
 
 **No se conecta a mi red.**
-- El ESP32-C6 solo usa **2,4 GHz** (y WiFi 6 en esa banda): una red solo de 5 GHz no sirve.
+- El reloj solo usa **2,4 GHz**: una red solo de 5 GHz no sirve.
 - Revisa nombre y contraseña en *Conexión*; distingue mayúsculas.
-- Si todo falla, su propia red `C6-FX-Demo` (clave `esp32c6fx`, página en `192.168.4.1`) siempre está disponible en modo WiFi.
+- Mientras no tiene ninguna red, el reloj crea la suya, `Marea` (clave `mareamarea`, página en `192.168.4.1`).
 
 **En una red mallada (varios puntos de acceso) conecta pero no tiene IP.** Algunos nodos aceptan la conexión y no dan dirección. El reloj lo detecta a los 20 s y se pasa al siguiente nodo más fuerte de la misma red; dale un minuto.
 
@@ -34,19 +35,19 @@
 
 ## Actualizaciones
 
-**«No pudo conectarse a su red WiFi».** Guarda la red en *Conexión* (también en modo Bluetooth). Ver la tabla completa de resultados en [[Actualizaciones]].
+**«No pudo conectarse a su red WiFi».** Guarda la red en *Conexión*. Ver la tabla completa de resultados en [[Actualizaciones]].
 
-**La app no se actualiza.** La primera vez Android pide permitir que C6 Clock instale apps («Permitir de esta fuente»): actívalo, vuelve y pulsa otra vez. Si dice que la firma no coincide, la app instalada se compiló con otra clave: desinstálala e instala la de las releases (habrá que emparejar de nuevo).
+**La app no se actualiza.** La primera vez Android pide permitir que Marea instale apps («Permitir de esta fuente»): actívalo, vuelve y pulsa otra vez. Si dice que la firma no coincide, la app instalada se compiló con otra clave: desinstálala e instala la de las releases (habrá que emparejar de nuevo).
 
 **Instalar el APK desde el PC con `adb` falla con `INSTALL_FAILED_USER_RESTRICTED`.** En Xiaomi hay que activar *Opciones de desarrollador → Instalar vía USB* y aceptar el aviso en el móvil antes de 10 segundos.
 
 ## USB
 
-**El ordenador no ve la placa.** Usa un cable de datos (muchos solo cargan). En Windows aparece como «Dispositivo serie USB» (COMx) sin instalar drivers.
+**El ordenador no ve la placa.** Usa un cable de datos (muchos solo cargan). En Windows aparece como «Dispositivo serie USB» (COMx) sin instalar drivers. Si el reloj está en **modo USB** (pantalla *MODO USB*), el ordenador ve un disco en vez del puerto serie: pulsa BOOT para volver.
 
 **El instalador no conecta.** Usa Chrome o Edge (no Firefox ni Safari). Si sigue sin conectar, mantén **BOOT**, pulsa y suelta **RESET**, suelta BOOT, y vuelve a intentarlo: la placa entra en modo de descarga.
 
-**Abrir el monitor serie reinicia el reloj.** Es normal en esta placa: el puerto USB controla el reinicio.
+**El modo USB no muestra el disco.** Mete una microSD antes de entrar (sin tarjeta el reloj vuelve solo) y usa un cable de datos. Las tarjetas se ven con el formato que tengan; si el ordenador no la reconoce, formatéala en FAT32 o exFAT desde la app Archivos o desde el ordenador.
 
 ## Nada de lo anterior
 

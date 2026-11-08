@@ -1,17 +1,19 @@
 ## Firmware
 
-Con [PlatformIO](https://platformio.org/) (ESP-IDF 5.5; el entorno es `c6lcd`):
+Con [PlatformIO](https://platformio.org/) (ESP-IDF 5.5; un solo entorno, `s3amoled`):
 
 ```
 pio run                          # compilar
 pio run -t upload                # compilar y grabar por USB
-pio device monitor               # consola serie (reinicia la placa al abrirla)
-python tools/build_webflasher.py # genera webflasher/c6-fx-clock.bin (USB) y c6-fx-clock-ota.bin (OTA)
+python tools/bootlog.py          # reinicia el reloj y muestra su arranque (abrir el puerto no lo reinicia)
+python tools/build_webflasher.py # genera webflasher/marea.bin (USB) y marea-ota.bin (OTA)
 ```
 
 La versión está en `CMakeLists.txt` (`PROJECT_VER`). Los archivos que se incrustan en el firmware (`index.html`, `transport.js`) se declaran en `platformio.ini` **y** en `src/CMakeLists.txt`.
 
-**Consola serie:** cualquier comando (ver [[Arquitectura]]) escrito como una línea por el puerto serie funciona en todos los modos, p. ej. `mode wifi`, `fx 7` o `status`. Muy útil cuando no hay WiFi ni Bluetooth.
+**Consola serie:** cualquier orden (ver [[Arquitectura]]) escrita como una línea por el puerto serie funciona, p. ej. `fx 7`, `ui launcher` o `status`. Muy útil cuando no hay WiFi ni Bluetooth.
+
+**Configuración:** si cambias `sdkconfig.defaults`, borra `sdkconfig.s3amoled` para que se regenere (compilación en limpio, unos 5 minutos). `esp_tinyusb` se descarga del registro de componentes de Espressif (`src/idf_component.yml`; `dependencies.lock` fija la versión).
 
 ## App Android
 

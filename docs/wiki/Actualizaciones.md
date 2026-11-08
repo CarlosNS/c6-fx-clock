@@ -13,7 +13,7 @@ Hay tres formas de actualizar el reloj. La normal es la primera.
 3. El reloj se reinicia en **modo actualización**, se conecta a tu WiFi, descarga la imagen (máximo 5 minutos), comprueba que es de este proyecto, su tamaño y su **SHA-256**, la instala y vuelve **solo** al modo en que estaba. Tarda de 1 a 3 minutos y la pantalla enseña el progreso.
 4. Al volver, la tarjeta dice cómo fue.
 
-Funciona igual en modo Bluetooth: el móvil solo da la orden y el reloj descarga por su cuenta. Por eso conviene guardar tu red en *Conexión* aunque uses la app.
+El móvil solo da la orden y el reloj descarga por su cuenta con su WiFi. Por eso hace falta guardar tu red en *Conexión* aunque uses la app.
 
 Las versiones se publican en GitHub Pages: el manifiesto <https://carlosns.github.io/c6-fx-clock/manifest.json> dice cuál es la última, dónde está y su huella. La app también se actualiza desde ese mismo manifiesto (ver [[App Android]]).
 
@@ -32,9 +32,9 @@ Las versiones se publican en GitHub Pages: el manifiesto <https://carlosns.githu
 
 En todos los casos de error **el reloj sigue con la versión que tenía**.
 
-## Subiendo un archivo (modo WiFi)
+## Subiendo un archivo (por WiFi)
 
-*Avanzado → Actualizar por WiFi (OTA)*: elige `c6-fx-clock-ota.bin` (de las releases o de `webflasher/` si lo compilas tú) y pulsa *Actualizar firmware*. Tarda unos 7 segundos. Solo acepta firmware de este proyecto.
+*Avanzado → Actualizar por WiFi (OTA)*: elige `marea-ota.bin` (de las releases o de `webflasher/` si lo compilas tú) y pulsa *Actualizar firmware*. Tarda unos 7 segundos. Solo acepta firmware de este proyecto.
 
 ## Por qué es seguro
 

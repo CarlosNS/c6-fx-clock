@@ -1,6 +1,6 @@
-Guía para crear una esfera nueva y enviarla al proyecto. Una esfera es un fichero C que dibuja la pantalla entera 30 veces por segundo, hora incluida. No hace falta saber nada del resto del firmware: Bluetooth, WiFi, ajustes y app ya funcionan solos con cualquier esfera nueva.
+Guía para crear una esfera nueva y enviarla al proyecto. Una esfera es un fichero C que dibuja la pantalla entera 30 veces por segundo, hora incluida. No hace falta saber nada del resto del firmware: Bluetooth, WiFi, ajustes, gestos y app ya funcionan solos con cualquier esfera nueva.
 
-**Índice:** [En 5 minutos](#en-5-minutos) · [Cómo funciona](#cómo-funciona-una-esfera) · [La pantalla](#la-pantalla) · [El tiempo](#el-tiempo-animación-y-hora) · [Dibujar la hora](#dibujar-la-hora) · [Herramientas de dibujo](#herramientas-de-dibujo) · [Rendimiento](#rendimiento-30-fps-sin-fpu) · [Memoria](#memoria) · [Interactiva](#esfera-interactiva) · [Ajustes propios](#ajustes-propios) · [El catálogo](#el-catálogo) · [Probarla](#probarla) · [Normas](#normas) · [Enviarla](#enviarla)
+**Índice:** [En 5 minutos](#en-5-minutos) · [Cómo funciona](#cómo-funciona-una-esfera) · [La pantalla](#la-pantalla) · [El tiempo](#el-tiempo-animación-y-hora) · [Dibujar la hora](#dibujar-la-hora) · [Herramientas de dibujo](#herramientas-de-dibujo) · [Rendimiento](#rendimiento-30-fps) · [Memoria](#memoria) · [Interactiva](#esfera-interactiva) · [Ajustes propios](#ajustes-propios) · [El catálogo](#el-catálogo) · [Probarla](#probarla) · [Normas](#normas) · [Enviarla](#enviarla)
 
 ## En 5 minutos
 
@@ -8,14 +8,10 @@ Necesitas el entorno para compilar el firmware ([[Compilar y contribuir]]) y, pa
 
 ```bash
 python tools/new_face.py burbujas "Burbujas"
-pio run -e c6lcd -t upload
+pio run -t upload
 ```
 
-El primer comando crea `src/fx_burbujas.c` con una esfera que ya funciona y la da de alta en el firmware. El segundo la compila y la graba en el reloj. Elígela en la app (sale la última de su grupo) y empieza a cambiar el dibujo.
-
-| Vertical (por defecto) | Horizontal (`--landscape`) |
-|---|---|
-| <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/plantilla-v.png" alt="Plantilla vertical" width="172"> | <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/plantilla-h.png" alt="Plantilla horizontal" width="320"> |
+El primer comando crea `src/fx_burbujas.c` con una esfera que ya funciona y la da de alta en el firmware. El segundo la compila y la graba en el reloj. Elígela en el reloj (deslizando o en la app Esferas), en la app del móvil (sale la última de su grupo) o con la orden `fx N`, y empieza a cambiar el dibujo.
 
 La plantilla pinta un degradado que cambia de color, una bola de luz que se mueve (y que puedes empujar con el dedo desde la app) y la fecha, la hora y la barra de segundos.
 
@@ -25,7 +21,7 @@ Opciones de `tools/new_face.py`:
 |---|---|
 | `id` | Nombre interno: minúsculas, números y `_` (`burbujas`). Da nombre al fichero y a las funciones |
 | `label` | Nombre en la app (`"Burbujas"`), con tildes si quieres |
-| `--landscape` | Horizontal, 320×172, en vez de vertical, 172×320 |
+| `--native` | A resolución nativa, 410×502, en vez del lienzo ancho de 274×336 ([cuál elegir](#la-pantalla)) |
 | `--group` | Sección de la app: `effects` (Efectos, por defecto), `games` (Videojuegos), `art` (Arte), `nature` (Naturaleza y espacio), `clocks` (Relojes y útiles) |
 | `--desc` | Una frase para la app: qué se ve |
 | `--hint` | Qué hace el dedo en el panel táctil de la app; si la pones, la app muestra el panel ([interactiva](#esfera-interactiva)) |
@@ -52,12 +48,19 @@ void burbujas_render(uint16_t *fb, uint32_t t, uint32_t dt);      // cada fotogr
 
 ## La pantalla
 
-| | Vertical | Horizontal |
-|---|---|---|
-| Tamaño | `LCD_W` × `LCD_H` = 172 × 320 | `LAND_W` × `LAND_H` = 320 × 172 |
-| En `fx_list` | `.landscape = false` | `.landscape = true` |
+La pantalla es una AMOLED de 410×502 con las **esquinas redondeadas** (radio de unos 120 píxeles) y los 2 píxeles de cada borde que pueden no verse. Una esfera dibuja siempre la pantalla entera, en uno de estos dos lienzos:
 
-El reloj gira la pantalla solo al cambiar de esfera. La plantilla define `W` y `H` al principio, así el mismo código sirve para las dos orientaciones.
+| | Lienzo ancho (por defecto) | Nativo (`--native`) |
+|---|---|---|
+| Tamaño | `WW` × `WH` = 274 × 336 | `FW` × `FH` = 410 × 502 |
+| Al enviarlo | se amplía ×1,5 y se suaviza | tal cual |
+| Radio de las esquinas | `WIDE_CORNER_R` = 80 | `BOARD_LCD_CORNER_R` = 120 |
+| En `fx_list` | `.res = FX_WIDE` | `.res = FX_NATIVE` |
+| Para | esferas animadas en toda la pantalla: cuesta la mitad de dibujar | esferas con detalle fino que se mueven poco (Plasma lo usa con bloques de 2×2) |
+
+La plantilla define `W` y `H` al principio con las medidas de su lienzo. Hay un tercer lienzo, el antiguo de 172×320 (`FX_COMPAT`), que ya no usa ninguna esfera.
+
+- **Esquinas:** no pongas texto ni nada importante en ellas. Una regla práctica en el lienzo ancho: en las 40 filas de arriba y de abajo, deja unos 30 píxeles a cada lado; en el centro, la anchura entera es visible. Un fondo que llegue a las esquinas queda bien, porque el panel las recorta.
 
 - **Píxeles:** `fb[y * W + x]`, de arriba a la izquierda hacia la derecha y hacia abajo.
 - **Color:** RGB565 con los bytes ya invertidos para el bus SPI. Crea siempre los colores con `rgb565(r, g, b)` (0–255) o `hsv565(h, s, v)` (los tres 0–255; `h` da la vuelta al llegar a 256). No escribas valores a mano como `0xF800`: saldrían otros colores.
@@ -80,7 +83,7 @@ Hay dos relojes distintos, y conviene no mezclarlos:
 
 - Para la hora en pantalla usa `clock_display_hour()`, que respeta el ajuste de 12/24 h, en vez de `g_now.h`.
 - Si dibujas segundos, respeta `g_app.show_secs` (ajuste *Mostrar segundos*). `clock_draw_seconds_bar` ya lo hace.
-- Para efectos que dependen de la hora del día (cielo, sol, luna), la orden `dbgtime 21 30` finge esa hora y `dbgtime -1 -1` vuelve a la real ([cómo mandar órdenes](#probarla)).
+- Para efectos que dependen de la hora del día (cielo, sol, luna), la orden `dbgtime 21 30` finge esa hora y `dbgtime -1 0` vuelve a la real ([cómo mandar órdenes](#probarla)).
 
 ## Dibujar la hora
 
@@ -99,11 +102,13 @@ Cada esfera dibuja su propia hora, como mejor le quede. Ayudantes de `src/fx.h`:
 
 Fuentes de dígitos grandes con antialias (`src/fonts.h`, generadas por `tools/gen_fonts.py`):
 
-| Estilo | Grande (104 px) | Mediana (60 px) | Pequeña (34 px) |
-|---|---|---|---|
-| Redonda | `font_round_xl` | `font_round_m` | `font_round_s` |
-| 7 segmentos | `font_seg_xl` | `font_seg_m` | `font_seg_s` |
-| Caligráfica | | `font_nib_m` | `font_nib_s` |
+| Estilo | Enorme (176 px) | Grande (104 px) | Mediana (60 px) | Pequeña (34 px) |
+|---|---|---|---|---|
+| Redonda | `font_round_xxl` | `font_round_xl` | `font_round_m` | `font_round_s` |
+| 7 segmentos | `font_seg_xxl` | `font_seg_xl` | `font_seg_m` | `font_seg_s` |
+| Caligráfica | | | `font_nib_m` | `font_nib_s` |
+
+Las enormes son para las esferas nativas (en el lienzo ancho, la grande ya ocupa casi la mitad de la pantalla).
 
 Para otros textos:
 
@@ -138,13 +143,16 @@ Para cálculos:
 | `fx_rand()` | Número aleatorio (cambia en cada llamada) |
 | `gfx_isqrt32` | Raíz cuadrada entera |
 
-Las esferas existentes son el mejor manual. Por tamaño: `fx_plasma.c` (50 líneas, un efecto por píxel), `fx_tunnel.c` (tablas precalculadas), `fx_synth.c` (escena con perspectiva), `fx_weather.c` (esfera analógica y datos del móvil) y `fx_classic.c` (reloj realista con ajuste de color).
+Las esferas existentes son el mejor manual: `fx_plasma.c` (nativa, un efecto por píxel), `fx_tunnel.c` (tablas precalculadas), `fx_synth.c` (escena con perspectiva), `fx_weather.c` (esfera analógica y datos del móvil), `fx_classic.c` (reloj realista que sigue las esquinas de la pantalla) y `fx_goal.c` (una escena dibujada en su propio búfer y compuesta en la pantalla).
 
-## Rendimiento: 30 fps sin FPU
+## Rendimiento: 30 fps
 
-El ESP32-C6 es un RISC-V a 160 MHz **sin unidad de coma flotante**: cada operación con `float` se emula y es decenas de veces más lenta que con enteros. Hay 33 ms por fotograma, pero la esfera no debería pasar de unos 20 ms de media, porque Bluetooth y WiFi también necesitan tiempo. La plantilla tarda unos 5 ms.
+El ESP32-S3 tiene dos núcleos a 240 MHz con coma flotante. La esfera se dibuja en un núcleo mientras el otro envía el fotograma anterior a la pantalla. Hay 33 ms por fotograma, y la esfera no debería pasar de unos 25 ms de media.
 
-- **Nada de `float` dentro de bucles por píxel.** Usa enteros y coma fija (`valor << 8`, multiplicar y desplazar). Unos pocos `float` por fotograma no importan.
+**Lo que más cuesta es escribir la memoria:** los fotogramas viven en la PSRAM, que se escribe a unos 30 MB/s mientras la pantalla lee a la vez. Solo rellenar el lienzo ancho cuesta unos 6 ms, y el nativo unos 13 ms. Por eso el lienzo ancho es el de por defecto.
+
+- **Escribe cada píxel una vez.** Mejor calcular el color final y escribirlo que pintar el fondo y luego encima varias capas. Escribir filas enteras seguidas (o con `memcpy`) es más rápido que saltar por la pantalla.
+- **`float` sí, pero con cuidado:** la FPU suma y multiplica rápido, pero `sinf`, `sqrtf`, `atan2f` y las divisiones siguen siendo caras dentro de un bucle por píxel. Las divisiones de 64 bits, todavía más: una sola por píxel puede costar 10 fps.
 - **Saca del bucle lo que no cambia:** lo que depende solo de `y`, calcúlalo una vez por fila; lo que depende solo de `x`, en una tabla por fotograma (como `fx_plasma.c`).
 - **Tablas en vez de funciones caras:** `sin_q14` en vez de `sinf`, tablas de distancia o ángulo creadas en `enter()`, paletas de 256 colores en vez de `hsv565` por píxel.
 - **Evita divisiones dentro de los bucles:** usa desplazamientos (`>> 8`) o multiplica por un inverso calculado antes.
@@ -153,13 +161,14 @@ El ESP32-C6 es un RISC-V a 160 MHz **sin unidad de coma flotante**: cada operaci
 Para medir:
 - **`ovl 1`** pinta en la pantalla el nombre de la esfera y los fps; `ovl 0` lo quita.
 - **`status`** (por Bluetooth, `get status`) devuelve `fps`, `rus` (tiempo medio de dibujo en µs) y `rmax` (el peor del último segundo).
-- **Test de todas las esferas:** con el reloj en WiFi, `pytest tests/wifi -k 30fps` pasa por todas y falla si alguna baja de 30 fps.
+- **Test de todas las esferas:** `pytest tests/wifi -k 30fps` pasa por todas y falla si alguna baja de 30 fps.
 
 ## Memoria
 
-El reloj tiene poca RAM libre: unos 55 KB en modo Bluetooth y 35 KB en WiFi, compartidos con todo lo demás.
+El reloj tiene 8 MB de PSRAM, pero poca RAM interna libre: unos 70 KB con WiFi y Bluetooth a la vez, compartidos con todo lo demás.
 
-- Las tablas `static` de tu fichero ocupan RAM siempre, aunque la esfera no esté puesta. Un búfer de 172×320 a 16 bits son 110 KB: no cabe.
+- Las tablas `static` de tu fichero ocupan RAM interna siempre, aunque la esfera no esté puesta: pocos KB, como mucho.
+- **Búferes grandes, en la PSRAM**, reservados una sola vez en `enter()` con `heap_caps_calloc(1, tamaño, MALLOC_CAP_SPIRAM)` y guardados en una variable `static` (así no se reservan otra vez al volver a la esfera). Ejemplo: `fx_goal.c`.
 - Para tablas grandes usa **`fx_scratch`**, 21 600 bytes compartidos entre esferas, porque solo una funciona a la vez. Resérvalo en `enter()` con un número propio (por convenio, el número de tu esfera), y rehaz las tablas solo si otra lo ha usado entretanto:
 
   ```c
@@ -183,6 +192,8 @@ app_take_drag(&dx, &dy);   // movimiento acumulado desde el fotograma anterior (
 ```
 
 También tienes `g_app.touch` (si el dedo está en el panel ahora mismo) y `g_app.tx`, `g_app.ty` (su posición, de 0 a 1000). Ejemplos: `fx_lava.c` (la bola sigue al dedo) y `fx_life.c` (dibujar células).
+
+**En el propio reloj** pasa lo mismo con la pantalla táctil: en una esfera interactiva, el dedo llega a la esfera como si fuera el panel de la app. Los gestos que empiezan en un borde siguen siendo del sistema (ajustes rápidos, lanzador), así que el dedo no se queda atrapado.
 
 ## Ajustes propios
 
@@ -219,7 +230,7 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 | Campo | Ejemplo | Para qué |
 |---|---|---|
 | `.name` | `"BURBUJAS"` | Nombre corto en ASCII para el registro y la información de depuración |
-| `.landscape` | `false` | Orientación |
+| `.res` | `FX_WIDE` | Lienzo: `FX_WIDE` (274×336) o `FX_NATIVE` (410×502) |
 | `.enter`, `.render` | `burbujas_enter`, … | Las dos funciones |
 | `.label` | `"Burbujas"` | Nombre en la app |
 | `.group` | `FX_G_EFFECTS` | Sección: `FX_G_EFFECTS`, `FX_G_GAMES`, `FX_G_ART`, `FX_G_NATURE`, `FX_G_CLOCKS` |
@@ -233,15 +244,16 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 
 ## Probarla
 
-1. **Grábala:** `pio run -e c6lcd -t upload`. Si el reloj está en modo Bluetooth y emparejado, tarda un minuto en volver a anunciarse (espera la hora del móvil).
-2. **Elígela:** en la app, o con la orden `fx N` (N = su número; el script lo dice).
+1. **Grábala:** `pio run -t upload`.
+2. **Elígela:** deslizando en el reloj, en la app, o con la orden `fx N` (N = su número; el script lo dice).
 3. **Órdenes:** cualquier orden (`fx 23`, `ovl 1`, `dbgtime 6 30`, `status`) se puede mandar:
-   - por el **puerto serie**, como una línea de texto (115200 baudios; abrir el puerto reinicia el reloj);
+   - por el **puerto serie**, como una línea de texto (115200 baudios; abrirlo no reinicia el reloj);
    - por **Bluetooth** desde el PC: `python tools/ble_console.py --cmd "fx 23"` (o sin `--cmd`, para escribirlas una a una);
-   - en modo **WiFi**, desde la página de control.
-4. **Captura:** `python tools/ble_shot.py --fx N --out fxNN.png` por Bluetooth. En modo WiFi también vale `http://<ip-del-reloj>/screenshot?fx=N&h=21&m=30`, que admite una hora fingida.
+   - desde la **página de control** del reloj por WiFi.
+4. **Captura:** `http://<ip-del-reloj>/screenshot?fx=N&h=21&m=30` (admite una hora fingida) o `python tools/ble_shot.py --fx N --out fxNN.png` por Bluetooth. La captura es el lienzo de la esfera, sin las esquinas recortadas: comprueba que nada importante caiga en ellas.
 5. **Comprueba:**
-   - que va a 30 fps (`ovl 1`) con un `rus` medio por debajo de 20 000;
+   - que va a 30 fps (`ovl 1`) con un `rus` medio por debajo de 25 000;
+   - que nada importante cae en las esquinas redondeadas;
    - que se lee bien a distintas horas (`dbgtime`), en 12 y 24 h, con y sin segundos, y sin hora (`--:--` justo al encender);
    - que sigue bien al quitarla y volver a ponerla (`enter()` reinicia lo que debe);
    - si es interactiva, el panel táctil de la app.
