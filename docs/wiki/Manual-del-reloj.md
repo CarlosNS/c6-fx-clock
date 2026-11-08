@@ -7,7 +7,8 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 ## Lo básico
 
 - La **esfera** es la pantalla principal: muestra la hora, cada una a su manera (hay 22, ver [[Esferas]]).
-- Desde la esfera se llega a todo con el dedo: **ajustes rápidos** arriba, **lanzador** de apps abajo y **otras esferas** a los lados.
+- **Para ir al menú principal** (el **lanzador**, con todas las apps), desliza el dedo **desde el borde de abajo de la pantalla hacia arriba** estando en la esfera. Empieza el gesto justo en el borde inferior, en su parte recta, no en una esquina.
+- Desde la esfera también se llega a los **ajustes rápidos** (deslizando desde el borde de arriba hacia abajo) y a **otras esferas** (deslizando a los lados).
 - Para **volver**, desliza desde el borde izquierdo hacia la derecha o pulsa **BOOT**.
 - El reloj tiene dos botones en el lateral: **BOOT**, el que se usa, y **RESET**, que reinicia la placa.
 - Los textos están en español o en inglés (*Ajustes → Idioma*).
@@ -75,7 +76,7 @@ Para cerrarlos: desliza hacia arriba, BOOT o desliza desde el borde izquierdo.
 
 ## El lanzador
 
-Desliza desde el borde de abajo en la esfera. Muestra las apps en dos columnas; arrastra para ver las de abajo y toca una para abrirla.
+Es el **menú principal**. Para abrirlo, desliza desde el borde de abajo hacia arriba estando en la esfera. Muestra las apps en dos columnas; arrastra para ver las de abajo y toca una para abrirla. Para volver a la esfera: BOOT o deslizar desde el borde izquierdo.
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-launcher.png" alt="Lanzador" width="200">
 
@@ -99,7 +100,7 @@ Todas las esferas por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, 
   - las **flechas** sobre y bajo las cifras suben y bajan la hora y los minutos; **mantenerlas** salta de 6 en 6 horas o de 10 en 10 minutos;
   - los **siete días** (L M X J V S D) se marcan y desmarcan tocándolos; sin ninguno, la alarma suena **una vez** y se apaga sola;
   - **Listo** la guarda; **Borrar** la elimina.
-- **Cuando suena:** el reloj enciende la pantalla, enseña la hora y suena por el altavoz.
+- **Cuando suena:** la pantalla de la alarma **sustituye a lo que hubiera** (la esfera, un menú o una app), aunque la pantalla estuviera apagada: se enciende sola, enseña la hora y suena por el altavoz. Al pararla o posponerla, el reloj vuelve a donde estabas: a la esfera, o al lanzador si estabas en una app.
   - **Parar** (o BOOT) la apaga.
   - **Posponer**, o **agitar la muñeca**, la repite a los **5 minutos**.
   - Si nadie la atiende en 2 minutos, se pospone sola.
