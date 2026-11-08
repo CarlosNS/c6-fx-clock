@@ -414,7 +414,7 @@ void app_main(void)
         if (g_app.fx != cur) {
             cur = g_app.fx;
             STAGE_MAIN(5);
-            if (!fx_list[cur].native) lcd_set_landscape(fx_list[cur].landscape);
+            if (fx_list[cur].res == FX_COMPAT) lcd_set_landscape(fx_list[cur].landscape);
             STAGE_MAIN(6);
             fx_list[cur].enter();
             fx_since = now;
@@ -469,8 +469,8 @@ void app_main(void)
         }
         uint32_t sdt = dt * g_app.speed / 100;
         anim_t += sdt;
-        bool native = fx_list[cur].native;
-        uint16_t *fb = native ? lcd_native_fb() : lcd_fb();
+        int res = fx_list[cur].res;
+        uint16_t *fb = res == FX_NATIVE ? lcd_native_fb() : res == FX_WIDE ? lcd_wide_fb() : lcd_fb();
         int64_t r0 = esp_timer_get_time();
         STAGE_MAIN(10);
         fx_list[cur].render(fb, anim_t, sdt);
@@ -485,7 +485,8 @@ void app_main(void)
         int code = g_app.pairing_code;
         if (code >= 0) draw_pairing(fb, code, now);
         STAGE_MAIN(12);
-        if (native) lcd_flush_native();
+        if (res == FX_NATIVE) lcd_flush_native();
+        else if (res == FX_WIDE) lcd_flush_wide();
         else lcd_flush();
         STAGE_MAIN(13);
 

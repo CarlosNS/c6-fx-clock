@@ -8,16 +8,16 @@
 #include "gfx.h"
 
 const fx_t fx_list[FX_COUNT] = {
-    {.name = "PLASMA", .native = true, .enter = plasma_enter, .render = plasma_render,
+    {.name = "PLASMA", .res = FX_NATIVE, .enter = plasma_enter, .render = plasma_render,
      .label = "Plasma", .group = FX_G_EFFECTS, .hint = "Arrastra para remover el plasma",
      .desc = "Plasma de colores en movimiento continuo, con la hora en grande sobre un panel translúcido."},
     {.name = "CUBO 3D", .landscape = false, .enter = cube_enter, .render = cube_render,
      .label = "Cubo 3D", .group = FX_G_EFFECTS, .hint = "Arrastra para girar el cubo",
      .desc = "Cubo 3D iluminado que flota y da una vuelta rápida cada minuto. La hora, debajo."},
-    {.name = "TUNEL", .landscape = false, .enter = tunnel_enter, .render = tunnel_render,
+    {.name = "TUNEL", .res = FX_WIDE, .enter = tunnel_enter, .render = tunnel_render,
      .label = "Túnel", .group = FX_G_EFFECTS, .hint = "Horizontal: gira · vertical: avanza",
      .desc = "Viaje por un túnel infinito. La hora en 7 segmentos del color complementario al túnel."},
-    {.name = "LAVA", .landscape = false, .enter = lava_enter, .render = lava_render,
+    {.name = "LAVA", .res = FX_WIDE, .enter = lava_enter, .render = lava_render,
      .label = "Lava", .group = FX_G_EFFECTS, .hint = "La bola grande sigue a tu dedo",
      .desc = "Lámpara de lava con bolas que se funden entre sí; los dígitos, oscuros con borde luminoso."},
     {.name = "VIDA", .landscape = true, .enter = life_enter, .render = life_render,

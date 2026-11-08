@@ -27,14 +27,18 @@ typedef struct {
     // Retired face: its code is gone but its number stays taken (clocks save the chosen number), so
     // the list never shifts. The clock skips it and the catalogue sends it with group -1.
     bool retired;
-    // Drawn for Marea's screen: the whole 410x502 panel (FW x FH), corners rounded (BOARD_LCD_CORNER_R).
-    // Faces without it still draw on the old 172x320 canvas, enlarged x1.5.
-    bool native;
+    // What it draws on: FX_COMPAT the old 172x320 canvas in a box (faces not redone yet), FX_WIDE the
+    // whole screen at 274x336 (WW x WH, enlarged x1.5), FX_NATIVE the whole 410x502 panel (FW x FH).
+    // The screen corners are rounded (BOARD_LCD_CORNER_R; WIDE_CORNER_R on the wide canvas).
+    uint8_t res;
 } fx_t;
 
-// Size of a native face
+enum { FX_COMPAT, FX_WIDE, FX_NATIVE };
 #define FW LCD_PW
 #define FH LCD_PH
+#define WW LCD_WW
+#define WH LCD_WH
+#define WIDE_CORNER_R 80
 
 #define FX_COUNT 24
 extern const fx_t fx_list[FX_COUNT];

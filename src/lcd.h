@@ -14,6 +14,10 @@
 // The whole panel, for the system screens, the apps and the faces drawn for this watch
 #define LCD_PW BOARD_PANEL_W
 #define LCD_PH BOARD_PANEL_H
+// Wide canvas: the whole screen at 2/3 of its resolution (274 x 336, enlarged x1.5 and smoothed while
+// sending). Cheaper to draw than the native frame, for animated faces
+#define LCD_WW 274
+#define LCD_WH 336
 
 // Current orientation's size, used by the gfx primitives
 extern int g_lcd_w, g_lcd_h;
@@ -31,6 +35,9 @@ void lcd_init(int buffers);
 uint16_t *lcd_fb(void);
 // Sends the canvas frame (enlarged and centred) and switches to the other buffer
 void lcd_flush(void);
+// Wide canvas framebuffer, LCD_WW x LCD_WH; sets g_lcd_w/h to it
+uint16_t *lcd_wide_fb(void);
+void lcd_flush_wide(void);
 // Native framebuffer, LCD_PW x LCD_PH; sets g_lcd_w/h to the whole panel, so gfx draws full screen
 uint16_t *lcd_native_fb(void);
 // Sends the native frame as is and switches to the other native buffer

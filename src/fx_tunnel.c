@@ -1,4 +1,5 @@
-// Endless textured tunnel using precomputed distance/angle lookup tables (rendered at half resolution).
+// Endless textured tunnel using precomputed distance/angle lookup tables (rendered at half resolution),
+// over the whole screen (wide canvas).
 // The tables only cover one quadrant: the other three are mirror images (distance is symmetric,
 // the angle just changes sign), which keeps them at 10 KB instead of 41 KB.
 #include <math.h>
@@ -7,8 +8,8 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define TW (LCD_W / 2)
-#define TH (LCD_H / 2)
+#define TW 138          // half of the 274 px canvas, rounded up to an even number
+#define TH (WH / 2)
 #define QW (TW / 2)
 #define QH (TH / 2)
 #define SHADES 16
@@ -28,7 +29,7 @@ void tunnel_enter(void)
             float r = sqrtf(dx * dx + dy * dy);
             dist_t[y][x] = (uint8_t)((int)(1600.0f / r) & 255);
             ang_t[y][x] = (uint8_t)((int)(256.0f * atan2f(dy, dx) / 3.14159265f) & 255);  // 2 texture turns per circle
-            int s = (int)(r * SHADES / 62.0f);
+            int s = (int)(r * SHADES / 76.0f);
             shade_t[y][x] = s >= SHADES ? SHADES - 1 : s;
         }
     }
@@ -58,7 +59,7 @@ void tunnel_render(uint16_t *fb, uint32_t t, uint32_t dt)
     uint8_t uoff = t / 30 + s_rot;   // twist
     uint8_t voff = t / 6 + s_fwd;    // forward motion
     for (int y = 0; y < TH; y++) {
-        uint16_t *r0 = fb + (y * 2) * LCD_W, *r1 = r0 + LCD_W;
+        uint16_t *r0 = fb + (y * 2) * WW, *r1 = r0 + WW;
         bool fy = y < QH;
         int qy = fy ? QH - 1 - y : y - QH;
         const uint8_t *dr = dist_t[qy], *ar = ang_t[qy], *sr = shade_t[qy];
@@ -68,7 +69,8 @@ void tunnel_render(uint16_t *fb, uint32_t t, uint32_t dt)
             if (flip_x[x] != fy) a = -a;  // mirrored in exactly one axis: angle changes sign
             uint8_t u = a + uoff, v = dr[qx] + voff;
             uint16_t c = pal[sr[qx]][(uint8_t)(u ^ v)];
-            r0[x * 2] = r0[x * 2 + 1] = r1[x * 2] = r1[x * 2 + 1] = c;
+            r0[x * 2] = r1[x * 2] = c;
+            if (x * 2 + 1 < WW) r0[x * 2 + 1] = r1[x * 2 + 1] = c;
         }
     }
 
@@ -76,8 +78,8 @@ void tunnel_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char date[24];
     clock_date_str(date);
     uint16_t ink = rgb565(0, 0, 0), digit = hsv565(hue + 128, 90, 255);
-    gfx_darken_rect(fb, 14, 50, LCD_W - 28, 240, 12, 2);
-    gfx_text_ol(fb, (LCD_W - gfx_text_width(date, 2)) / 2, 18, date, rgb565(255, 255, 255), ink, 2, 1);
-    clock_draw_stacked(fb, &font_seg_xl, 62, 12, digit, ink, FONT_FILL | FONT_OUTLINE);
-    clock_draw_seconds_bar(fb, 28, 280, LCD_W - 56, 3, digit, rgb565(40, 40, 50));
+    gfx_darken_rect(fb, 46, 46, WW - 92, 250, 14, 2);
+    gfx_text_ol(fb, (WW - gfx_text_width(date, 2)) / 2, 18, date, rgb565(255, 255, 255), ink, 2, 1);
+    clock_draw_stacked(fb, &font_seg_xl, 60, 12, digit, ink, FONT_FILL | FONT_OUTLINE);
+    clock_draw_seconds_bar(fb, 70, 308, WW - 140, 3, digit, rgb565(40, 40, 50));
 }

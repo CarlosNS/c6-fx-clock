@@ -1,18 +1,18 @@
-// Lava lamp metaballs (rendered at half resolution). Constant cost per frame: every pixel sums
+// Lava lamp metaballs (rendered at half resolution), over the whole screen (wide canvas). Constant cost per frame: every pixel sums
 // a fixed number of 1/d^2 falloffs from a lookup table. Ball 0 follows the finger on the phone pad.
 #include "app.h"
 #include "control.h"
 #include "fx.h"
 #include "gfx.h"
 
-#define BW (LCD_W / 2)
-#define BH (LCD_H / 2)
+#define BW (WW / 2)
+#define BH (WH / 2)
 #define NB 6
 #define INV_SHIFT 4
-#define INV_N 2048  // covers d^2 up to (BW^2 + BH^2) >> INV_SHIFT
+#define INV_N 3072  // covers d^2 up to (BW^2 + BH^2) >> INV_SHIFT
 
 static const struct { uint8_t r; uint8_t sx, sy; uint16_t ph; } balls[NB] = {
-    {22, 7, 5, 0}, {17, 5, 8, 300}, {19, 9, 4, 600}, {14, 4, 9, 150}, {16, 6, 6, 800}, {12, 11, 7, 450},
+    {27, 7, 5, 0}, {21, 5, 8, 300}, {23, 9, 4, 600}, {17, 4, 9, 150}, {20, 6, 6, 800}, {15, 11, 7, 450},
 };
 
 static uint16_t inv_t[INV_N];
@@ -64,7 +64,7 @@ void lava_render(uint16_t *fb, uint32_t t, uint32_t dt)
     for (int y = 0; y < BH; y++) {
         int dy2[NB];
         for (int i = 0; i < NB; i++) dy2[i] = (y - by[i]) * (y - by[i]);
-        uint16_t *r0 = fb + (y * 2) * LCD_W, *r1 = r0 + LCD_W;
+        uint16_t *r0 = fb + (y * 2) * WW, *r1 = r0 + WW;
         for (int x = 0; x < BW; x++) {
             int sum = 0;
             for (int i = 0; i < NB; i++) {
@@ -82,7 +82,7 @@ void lava_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char date[24];
     clock_date_str(date);
     uint16_t rim = hsv565(hue + 10, 60, 255), hole = rgb565(12, 6, 22);
-    gfx_text_ol(fb, (LCD_W - gfx_text_width(date, 2)) / 2, 18, date, rim, hole, 2, 1);
-    clock_draw_stacked(fb, &font_round_xl, 58, 14, hole, rim, FONT_FILL | FONT_OUTLINE);
-    clock_draw_seconds_bar(fb, 26, 296, LCD_W - 52, 3, rim, hole);
+    gfx_text_ol(fb, (WW - gfx_text_width(date, 2)) / 2, 18, date, rim, hole, 2, 1);
+    clock_draw_stacked(fb, &font_round_xl, 56, 14, hole, rim, FONT_FILL | FONT_OUTLINE);
+    clock_draw_seconds_bar(fb, 70, 308, WW - 140, 3, rim, hole);
 }

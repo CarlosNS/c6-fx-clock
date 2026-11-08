@@ -288,15 +288,20 @@ static int s_lcx, s_lcy;
 // Where a touch lands on the face: native faces use panel pixels, old ones their enlarged canvas
 static bool face_point(int x, int y, int *cx, int *cy)
 {
-    if (fx_list[g_app.fx].native) {
+    if (fx_list[g_app.fx].res == FX_NATIVE) {
         *cx = x;
         *cy = y;
         return true;
     }
+    if (fx_list[g_app.fx].res == FX_WIDE) {
+        *cx = x * 2 / 3;
+        *cy = y * 2 / 3;
+        return true;
+    }
     return lcd_panel_to_canvas(x, y, cx, cy);
 }
-static int face_w(void) { return fx_list[g_app.fx].native ? FW : fx_list[g_app.fx].landscape ? LAND_W : LCD_W; }
-static int face_h(void) { return fx_list[g_app.fx].native ? FH : fx_list[g_app.fx].landscape ? LAND_H : LCD_H; }
+static int face_w(void) { int r = fx_list[g_app.fx].res; return r == FX_NATIVE ? FW : r == FX_WIDE ? WW : fx_list[g_app.fx].landscape ? LAND_W : LCD_W; }
+static int face_h(void) { int r = fx_list[g_app.fx].res; return r == FX_NATIVE ? FH : r == FX_WIDE ? WH : fx_list[g_app.fx].landscape ? LAND_H : LCD_H; }
 
 static void face_event(const ui_event_t *e)
 {

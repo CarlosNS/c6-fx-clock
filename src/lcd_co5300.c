@@ -46,8 +46,9 @@ static SemaphoreHandle_t s_idle;     // given when the sender has finished the l
 static TaskHandle_t s_sender;
 // Frames come in three kinds: the 172x320 canvas (portrait or landscape, enlarged while sending) or
 // a native 410x502 frame, copied as is
-enum { KIND_CANVAS, KIND_CANVAS_LAND, KIND_NATIVE };
-static uint16_t *s_buf[2], *s_native[2], *s_strip[2];
+enum { KIND_CANVAS, KIND_CANVAS_LAND, KIND_WIDE, KIND_NATIVE };
+static uint16_t *s_buf[2], *s_wide[2], *s_native[2], *s_strip[2];
+static int s_widx;
 static int s_idx, s_nidx;
 static bool s_land;                  // the canvas is in landscape
 static uint16_t *s_last;
@@ -61,7 +62,8 @@ int g_lcd_w = LCD_W, g_lcd_h = LCD_H;
 
 // Panel column / row -> canvas pixels to show there: a and b equal = that pixel, different = their
 // average, -1 = black border. [0] portrait, [1] landscape.
-static int16_t s_col_a[2][PW], s_col_b[2][PW], s_row_a[2][PH], s_row_b[2][PH];
+// [0] portrait canvas, [1] landscape canvas, [2] wide canvas
+static int16_t s_col_a[3][PW], s_col_b[3][PW], s_row_a[3][PH], s_row_b[3][PH];
 
 typedef struct {
     uint8_t cmd;
@@ -116,6 +118,9 @@ static void build_tables(void)
     int lw = LAND_W * 5 / 4, lh = LAND_H * 5 / 4;
     build_axis(s_col_a[1], s_col_b[1], PW, (PW - lw) / 2, LAND_W, 5, 4, x125);
     build_axis(s_row_a[1], s_row_b[1], PH, (PH - lh) / 2, LAND_H, 5, 4, x125);
+    // Wide canvas: 274 x 336 x1.5 = 411 x 504, a pixel wider and two taller than the panel (centred)
+    build_axis(s_col_a[2], s_col_b[2], PW, (PW - LCD_WW * 3 / 2) / 2, LCD_WW, 3, 2, x15);
+    build_axis(s_row_a[2], s_row_b[2], PH, (PH - LCD_WH * 3 / 2) / 2, LCD_WH, 3, 2, x15);
 }
 
 // Average of two byte-swapped RGB565 pixels
@@ -126,9 +131,10 @@ static inline uint16_t avg565(uint16_t p, uint16_t q)
 }
 
 // Panel rows y0..y0+n-1 into a strip
-static void build_strip(uint16_t *dst, const uint16_t *fb, int y0, int n, bool landscape)
+static void build_strip(uint16_t *dst, const uint16_t *fb, int y0, int n, int kind)
 {
-    int o = landscape ? 1 : 0, cw = landscape ? LAND_W : LCD_W;
+    int o = kind == KIND_WIDE ? 2 : kind == KIND_CANVAS_LAND ? 1 : 0;
+    int cw = kind == KIND_WIDE ? LCD_WW : kind == KIND_CANVAS_LAND ? LAND_W : LCD_W;
     const int16_t *ca = s_col_a[o], *cb = s_col_b[o];
     uint16_t mix[LAND_W > LCD_W ? LAND_W : LCD_W];
     for (int j = 0; j < n; j++, dst += PW) {
@@ -200,7 +206,7 @@ static void send_frame(const uint16_t *fb, int kind)
         }
         STAGE_LCD(3);
         if (kind == KIND_NATIVE) memcpy(s_strip[k], fb + y * PW, (size_t)n * PW * 2);
-        else build_strip(s_strip[k], fb, y, n, kind == KIND_CANVAS_LAND);
+        else build_strip(s_strip[k], fb, y, n, kind);
         spi_transaction_ext_t *t = &s_tr[k];
         memset(t, 0, sizeof(*t));
         t->base.length = n * PW * 16;
@@ -312,10 +318,12 @@ void lcd_init(int buffers)
     for (int i = 0; i < (buffers > 1 ? 2 : 1); i++) {
         s_buf[i] = heap_caps_calloc(1, FB_BYTES, MALLOC_CAP_SPIRAM);
         s_native[i] = heap_caps_calloc(1, PW * PH * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+        s_wide[i] = heap_caps_calloc(1, LCD_WW * LCD_WH * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
     }
     if (!s_native[1]) s_native[1] = s_native[0];
+    if (!s_wide[1]) s_wide[1] = s_wide[0];
     for (int i = 0; i < 2; i++) s_strip[i] = heap_caps_malloc(STRIP_BYTES, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    assert(s_buf[0] && s_native[0] && s_strip[0] && s_strip[1]);
+    assert(s_buf[0] && s_native[0] && s_wide[0] && s_strip[0] && s_strip[1]);
 
     s_idle = xSemaphoreCreateBinary();
     xSemaphoreGive(s_idle);
@@ -356,6 +364,27 @@ uint16_t *lcd_fb(void)
     return s_buf[s_idx];
 }
 
+uint16_t *lcd_wide_fb(void)
+{
+    g_lcd_w = LCD_WW;
+    g_lcd_h = LCD_WH;
+    return s_wide[s_widx];
+}
+
+void lcd_flush_wide(void)
+{
+    xSemaphoreTake(s_idle, portMAX_DELAY);
+    s_sending = s_last = s_wide[s_widx];
+    s_send_kind = s_last_kind = KIND_WIDE;
+    xTaskNotify(s_sender, BIT_FRAME, eSetBits);
+    if (s_wide[1] != s_wide[0]) {
+        s_widx ^= 1;
+    } else {
+        xSemaphoreTake(s_idle, portMAX_DELAY);
+        xSemaphoreGive(s_idle);
+    }
+}
+
 uint16_t *lcd_native_fb(void)
 {
     g_lcd_w = PW;
@@ -365,8 +394,9 @@ uint16_t *lcd_native_fb(void)
 
 const uint16_t *lcd_last_frame(int *w, int *h)
 {
-    if (w) *w = s_last_kind == KIND_NATIVE ? PW : s_last_kind == KIND_CANVAS_LAND ? LAND_W : LCD_W;
-    if (h) *h = s_last_kind == KIND_NATIVE ? PH : s_last_kind == KIND_CANVAS_LAND ? LAND_H : LCD_H;
+    static const int ws[] = {LCD_W, LAND_W, LCD_WW, PW}, hs[] = {LCD_H, LAND_H, LCD_WH, PH};
+    if (w) *w = ws[s_last_kind];
+    if (h) *h = hs[s_last_kind];
     return s_last;
 }
 
