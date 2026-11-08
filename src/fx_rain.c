@@ -1,4 +1,4 @@
-// "Lluvia" (portrait): a rainy night seen through a window. The city behind is out of focus
+// "Lluvia" (full screen, wide canvas) (portrait): a rainy night seen through a window. The city behind is out of focus
 // (bokeh lights, blurred windows); drops on the glass act as tiny lenses showing the scene
 // upside down, some slide down leaving trails; the time glows on a flickering neon sign.
 #include <stdio.h>
@@ -8,8 +8,8 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LCD_W
-#define H LCD_H
+#define W WW
+#define H WH
 #define NDROPS 26
 
 typedef struct { float x, y, v; uint8_t r; } drop_t;
@@ -66,7 +66,7 @@ void rain_render(uint16_t *fb, uint32_t t, uint32_t dt)
         int f = y * 256 / H;
         gfx_fill_rect(fb, 0, y, W, 1, rgb565(10 + f / 20, 12 + f / 24, 30 + f / 14));
     }
-    for (int b = 0; b < 9; b++) {
+    for (int b = 0; b < 15; b++) {  // skyline across the whole width
         uint32_t h = fx_hash(b, 40);
         int bx = b * 20 - 6, bw = 22 + (int)(h % 10), top = 120 + (int)((h >> 8) % 90);
         gfx_fill_rect(fb, bx, top, bw, H - top, rgb565(20, 24, 44));
@@ -93,10 +93,10 @@ void rain_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Neon sign with the time (buzzing flicker now and then)
     bool off = (fx_hash(t / 90, 7) % 37) == 0;
     uint16_t neon = off ? rgb565(80, 30, 60) : rgb565(255, 90, 190);
-    clock_row_grad(fb, &font_seg_m, W / 2, 30, -2, off ? neon : rgb565(255, 230, 250), neon, rgb565(60, 0, 40), 0);
+    clock_row_grad(fb, &font_seg_m, W / 2, 40, -2, off ? neon : rgb565(255, 230, 250), neon, rgb565(60, 0, 40), 0);
     char date[24];
     clock_date_str(date);
-    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 98, date, rgb565(120, 230, 255), rgb565(0, 30, 60),
+    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 108, date, rgb565(120, 230, 255), rgb565(0, 30, 60),
             FONT_FILL | FONT_OUTLINE);
 
     // Drops on the glass

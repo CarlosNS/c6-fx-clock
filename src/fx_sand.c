@@ -1,4 +1,4 @@
-// "Arena" (portrait): an hourglass with real falling-sand physics. A gate at the neck lets
+// "Arena" (full screen, wide canvas): an hourglass with real falling-sand physics. A gate at the neck lets
 // exactly enough grains through for the top bulb to empty in one minute; when the minute
 // changes the hourglass turns over.
 #include <stdio.h>
@@ -8,13 +8,13 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LCD_W
-#define H LCD_H
+#define W WW
+#define H WH
 #define CELL 2
 #define GW 56            // grid columns (112 px wide)
 #define GH 104           // grid rows (208 px tall)
 #define GX ((W - GW * CELL) / 2)
-#define GY 84
+#define GY 94
 #define NECK (GH / 2)
 #define FLIP_MS 900
 

@@ -1,4 +1,4 @@
-// "Engranajes" (portrait): a skeleton mechanical watch. Brass gears that really mesh (speeds in
+// "Engranajes" (full screen, wide canvas): a skeleton mechanical watch. Brass gears that really mesh (speeds in
 // inverse ratio to their teeth), a balance wheel swinging back and forth, and an open dial with
 // hour, minute and sweeping second hands. A small digital readout sits below.
 #include <math.h>
@@ -8,21 +8,20 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LCD_W
-#define H LCD_H
-#define DX 86
-#define DY 100
-#define DR 78
+#define W WW
+#define H WH
+#define DX 137
+#define DY 122
+#define DR 88
 
 typedef struct { int16_t x, y, r, teeth; int8_t dir; } gear_t;
 
 // Chain of meshing gears: each one's pitch radius touches the previous one
 static const gear_t gears[] = {
-    {86, 100, 30, 20, 1},    // center wheel behind the dial
-    {136, 152, 40, 26, -1},
-    {70, 210, 44, 28, 1},
-    {130, 262, 30, 20, -1},
-    {36, 272, 26, 16, -1},
+    {137, 122, 36, 20, 1},   // center wheel behind the dial
+    {191, 186, 48, 26, -1},  // centres 84 apart = 36 + 48: the teeth mesh
+    {134, 270, 52, 28, 1},   // 100 from the last
+    {215, 287, 30, 20, -1},  // 82 from the last
 };
 #define NG (sizeof(gears) / sizeof(gears[0]))
 
@@ -85,7 +84,7 @@ void gears_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
     for (int i = 0; i < 18; i++) {  // screws and jewels
         uint32_t h = fx_hash(i, 8);
-        int x = 8 + (int)(h % (W - 16)), y = 190 + (int)((h >> 8) % 120);
+        int x = 30 + (int)(h % (W - 60)), y = 200 + (int)((h >> 8) % 100);
         gfx_circle(fb, x, y, 3, (h >> 20) & 1 ? rgb565(170, 20, 50) : rgb565(120, 124, 132));
     }
 
@@ -101,7 +100,7 @@ void gears_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // Balance wheel: swings back and forth five times a second
     float bal = sinf(t * 0.0157f * 2.5f) * 2.4f;
-    int bx = 128, by = 214;
+    int bx = 54, by = 290;
     gfx_ring(fb, bx, by, 20, 23, rgb565(210, 214, 220));
     for (int s = 0; s < 3; s++) {
         float a = bal + s * 2.094f;
@@ -136,13 +135,13 @@ void gears_render(uint16_t *fb, uint32_t t, uint32_t dt)
     float min = g_now.valid ? g_now.m + sec / 60 : 0;
     float hr = g_now.valid ? (g_now.h % 12) + min / 60 : 0;
     uint16_t blued = rgb565(40, 60, 140);
-    hand(fb, hr * 0.5236f, 40, 8, 4, rgb565(10, 12, 30));
-    hand(fb, hr * 0.5236f, 38, 6, 2, blued);
-    hand(fb, min * 0.10472f, 62, 10, 3, rgb565(10, 12, 30));
-    hand(fb, min * 0.10472f, 60, 8, 2, blued);
+    hand(fb, hr * 0.5236f, 46, 9, 5, rgb565(10, 12, 30));
+    hand(fb, hr * 0.5236f, 44, 7, 3, blued);
+    hand(fb, min * 0.10472f, 72, 11, 4, rgb565(10, 12, 30));
+    hand(fb, min * 0.10472f, 70, 9, 2, blued);
     if (g_app.show_secs) {
         float a = sec * 0.10472f;
-        gfx_line(fb, DX - (int)(sinf(a) * 16), DY + (int)(cosf(a) * 16), DX + (int)(sinf(a) * 70), DY - (int)(cosf(a) * 70),
+        gfx_line(fb, DX - (int)(sinf(a) * 18), DY + (int)(cosf(a) * 18), DX + (int)(sinf(a) * 80), DY - (int)(cosf(a) * 80),
                  rgb565(220, 40, 50));
         gfx_circle(fb, DX - (int)(sinf(a) * 14), DY + (int)(cosf(a) * 14), 3, rgb565(220, 40, 50));
     }
@@ -152,8 +151,8 @@ void gears_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // Date on top, digital readout on a small plate
     char date[24];
     clock_date_str(date);
-    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 2, date, rgb565(220, 200, 150), rgb565(20, 20, 24),
+    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 8, date, rgb565(220, 200, 150), rgb565(20, 20, 24),
             FONT_FILL | FONT_OUTLINE);
-    gfx_darken_rect(fb, 6, H - 46, 70, 40, 6, 2);
-    clock_row_grad(fb, &font_seg_s, 41, H - 42, -2, rgb565(255, 230, 160), rgb565(230, 170, 70), rgb565(10, 10, 14), 0);
+    gfx_darken_rect(fb, 16, 222, 76, 40, 6, 2);
+    clock_row_grad(fb, &font_seg_s, 54, 226, -2, rgb565(255, 230, 160), rgb565(230, 170, 70), rgb565(10, 10, 14), 0);
 }

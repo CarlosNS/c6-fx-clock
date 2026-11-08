@@ -1,4 +1,4 @@
-// Flat-shaded 3D cube over a warp starfield. Drag on the phone to spin it.
+// Flat-shaded 3D cube over a warp starfield, full screen (wide canvas). Drag to spin it.
 #include <math.h>
 #include "app.h"
 #include "control.h"
@@ -7,15 +7,15 @@
 
 #define N_STARS 140
 #define CUBE_DIST 4.3f
-#define FOV 190.0f
+#define FOV 230.0f
 #define AUTO_VX 0.55f
 #define AUTO_VY 0.85f
-#define CUBE_CY 116  // upper part of the screen; the time goes below
+#define CUBE_CY 132  // upper part of the screen; the time goes below
 
 typedef struct { float x, y, z; } vec3;
 
 static vec3 stars[N_STARS];
-static uint16_t bg[LCD_H];
+static uint16_t bg[WH];
 static float ax, ay, az, vx, vy;
 
 // Each face: outward normal axis (0=x,1=y,2=z), sign, and its 4 corners in cyclic order.
@@ -28,7 +28,7 @@ static const struct { uint8_t axis; int8_t sign; uint8_t v[4]; } faces[6] = {
 
 static void star_reset(vec3 *s, bool anywhere)
 {
-    s->x = ((int)(fx_rand() % 2001) - 1000) / 1000.0f * 0.8f;
+    s->x = ((int)(fx_rand() % 2001) - 1000) / 1000.0f * 1.25f;
     s->y = ((int)(fx_rand() % 2001) - 1000) / 1000.0f * 1.5f;
     s->z = anywhere ? (fx_rand() % 1000) / 1000.0f + 0.05f : 1.0f;
 }
@@ -36,7 +36,7 @@ static void star_reset(vec3 *s, bool anywhere)
 void cube_enter(void)
 {
     for (int i = 0; i < N_STARS; i++) star_reset(&stars[i], true);
-    for (int y = 0; y < LCD_H; y++) bg[y] = rgb565(4 + y * 20 / LCD_H, 2, 18 + y * 30 / LCD_H);
+    for (int y = 0; y < WH; y++) bg[y] = rgb565(4 + y * 20 / WH, 2, 18 + y * 30 / WH);
     ax = 0.4f;
     ay = 0.6f;
     az = 0;
@@ -73,28 +73,28 @@ void cube_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
 
     // Background gradient + stars rushing towards the viewer
-    for (int y = 0; y < LCD_H; y++) {
-        uint16_t c = bg[y], *row = fb + y * LCD_W;
-        for (int x = 0; x < LCD_W; x++) row[x] = c;
+    for (int y = 0; y < WH; y++) {
+        uint16_t c = bg[y], *row = fb + y * WW;
+        for (int x = 0; x < WW; x++) row[x] = c;
     }
     float warp = 0.25f + 0.08f * (fabsf(vx) + fabsf(vy));
     for (int i = 0; i < N_STARS; i++) {
         vec3 *s = &stars[i];
         s->z -= dts * warp;
         if (s->z <= 0.05f) star_reset(s, false);
-        int sx = LCD_W / 2 + (int)(s->x / s->z * 110);
-        int sy = LCD_H / 2 + (int)(s->y / s->z * 110);
-        if (sx < 0 || sx >= LCD_W - 1 || sy < 0 || sy >= LCD_H - 1) {
+        int sx = WW / 2 + (int)(s->x / s->z * 110);
+        int sy = WH / 2 + (int)(s->y / s->z * 110);
+        if (sx < 0 || sx >= WW - 1 || sy < 0 || sy >= WH - 1) {
             star_reset(s, false);
             continue;
         }
         uint8_t b = (uint8_t)(255 * (1.0f - s->z * 0.9f));
         uint16_t c = rgb565(b, b, b);
-        fb[sy * LCD_W + sx] = c;
+        fb[sy * WW + sx] = c;
         if (s->z < 0.35f) {
-            fb[sy * LCD_W + sx + 1] = c;
-            fb[(sy + 1) * LCD_W + sx] = c;
-            fb[(sy + 1) * LCD_W + sx + 1] = c;
+            fb[sy * WW + sx + 1] = c;
+            fb[(sy + 1) * WW + sx] = c;
+            fb[(sy + 1) * WW + sx + 1] = c;
         }
     }
 
@@ -113,7 +113,7 @@ void cube_render(uint16_t *fb, uint32_t t, uint32_t dt)
         float x = R[0][0] * v[0] + R[0][1] * v[1] + R[0][2] * v[2];
         float y = R[1][0] * v[0] + R[1][1] * v[1] + R[1][2] * v[2];
         float z = R[2][0] * v[0] + R[2][1] * v[1] + R[2][2] * v[2] + CUBE_DIST;
-        px[i] = LCD_W / 2 + (int)(x * FOV / z);
+        px[i] = WW / 2 + (int)(x * FOV / z);
         py[i] = CUBE_CY + (int)(y * FOV / z + bob);
     }
 
@@ -137,7 +137,7 @@ void cube_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char date[24];
     clock_date_str(date);
     uint16_t white = rgb565(255, 255, 255), ink = rgb565(6, 2, 24);
-    gfx_text_ol(fb, (LCD_W - gfx_text_width(date, 2)) / 2, 10, date, rgb565(200, 190, 255), ink, 2, 1);
-    clock_draw_row(fb, &font_round_m, 228, -4, white, ink, FONT_FILL | FONT_OUTLINE);
-    clock_draw_seconds_bar(fb, 30, 300, LCD_W - 60, 3, hsv565((uint8_t)(t / 30), 160, 255), rgb565(40, 30, 70));
+    gfx_text_ol(fb, (WW - gfx_text_width(date, 2)) / 2, 16, date, rgb565(200, 190, 255), ink, 2, 1);
+    clock_draw_row(fb, &font_round_m, 238, -4, white, ink, FONT_FILL | FONT_OUTLINE);
+    clock_draw_seconds_bar(fb, 70, 308, WW - 140, 3, hsv565((uint8_t)(t / 30), 160, 255), rgb565(40, 30, 70));
 }
