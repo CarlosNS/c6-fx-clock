@@ -68,10 +68,10 @@ const fx_t fx_list[FX_COUNT] = {
      .desc = "Jugada de fútbol en 16 bits: regate, salto sobre una entrada, gol por la escuadra y celebración. La hora, en el marcador."},
     // 20: retired (Cuento, removed for good on 2026-11-07). The number stays taken.
     {.name = "RETIRED", .retired = true, .label = "", .desc = ""},
-    {.name = "TIEMPO", .landscape = false, .enter = weather_enter, .render = weather_render,
+    {.name = "TIEMPO", .res = FX_WIDE, .enter = weather_enter, .render = weather_render,
      .label = "Tiempo", .group = FX_G_CLOCKS, .opts = "wx",
      .desc = "Esfera analógica minimalista con el tiempo actual de tu ciudad: temperatura, máxima y mínima, y un icono animado."},
-    {.name = "CLASICO", .landscape = false, .enter = classic_enter, .render = classic_render,
+    {.name = "CLASICO", .res = FX_WIDE, .enter = classic_enter, .render = classic_render,
      .label = "Clásico", .group = FX_G_CLOCKS, .opts = "cl",
      .desc = "Reloj de vestir rectangular de estilo Art Déco: caja de metal pulido, esfera sunburst del color que elijas con reflejos que se mueven, agujas doradas, fecha a las 3 y pequeño segundero a las 6 que late 8 veces por segundo."},
     {.name = "FERIA DE SEVILLA", .landscape = false, .enter = feria_enter, .render = feria_render,

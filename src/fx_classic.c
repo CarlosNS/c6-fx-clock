@@ -1,5 +1,5 @@
-// "Clasico" (portrait): a rectangular Art Deco dress watch. Dark gunmetal case with polished
-// edges and a crown, deep green sunburst dial whose reflections turn slowly, railroad minute
+// "Clasico" (full screen, wide canvas): a rectangular Art Deco dress watch. The screen is the case:
+// dark gunmetal with polished edges that follow the rounded corners of the display, deep green sunburst dial whose reflections turn slowly, railroad minute
 // track, applied gold batons, faceted dauphine hands, a date window at 3 and a small seconds
 // subdial at 6 that ticks 8 times per second like an automatic movement. Original design.
 #include <math.h>
@@ -9,21 +9,25 @@
 #include "fx.h"
 #include "gfx.h"
 
-#define W LCD_W
-#define H LCD_H
-// Case, bezel and dial rectangles: x0, y0, x1, y1 (exclusive), corner radius
-#define CASE_X0 8
-#define CASE_X1 164
-#define CASE_Y0 6
-#define CASE_Y1 314
-#define DIAL_X0 18
-#define DIAL_X1 154
-#define DIAL_Y0 18
-#define DIAL_Y1 302
-#define CX 86
-#define CY 136
-#define SUB_Y 236
-#define SUB_R 30
+#define W WW
+#define H WH
+// The screen is the case: the case follows the display's own rounded corners (2 px in, as the outer
+// pixels may not show), and the dial sits 16 px in, with corners wide enough to stay clear of them.
+// Case, bezel and dial rectangles: x0, y0, x1, y1 (exclusive)
+#define CASE_X0 2
+#define CASE_X1 (WW - 2)
+#define CASE_Y0 2
+#define CASE_Y1 (WH - 2)
+#define CASE_R (WIDE_CORNER_R - 2)
+#define DIAL_X0 16
+#define DIAL_X1 (WW - 16)
+#define DIAL_Y0 16
+#define DIAL_Y1 (WH - 16)
+#define DIAL_R 48
+#define CX 137
+#define CY 150
+#define SUB_Y 258
+#define SUB_R 34
 
 // Angle of every pixel of one dial quadrant (|dx|, |dy|), 0..255 for 0..90 degrees, kept in the
 // shared scratch arena
@@ -126,14 +130,14 @@ static void dial(uint16_t *fb, int light)
 {
     for (int y = DIAL_Y0; y < DIAL_Y1; y++) {
         int xl, xr;
-        if (!rr_span(y, DIAL_X0, DIAL_Y0, DIAL_X1, DIAL_Y1, 14, &xl, &xr)) continue;
+        if (!rr_span(y, DIAL_X0, DIAL_Y0, DIAL_X1, DIAL_Y1, DIAL_R, &xl, &xr)) continue;
         uint16_t *row = fb + y * W;
         int dy = y - CY, dy2 = dy * dy;
         int x0 = (xl + 15) >> 4, x1 = xr >> 4;
         for (int x = x0; x < x1; x++) {
             int dx = x - CX, a = angle(dx, dy);
             int shine = sin_q14[(2 * (a - light) + 256) & 1023];  // cos(2 (a - light))
-            int lvl = 22 + (shine * 13 >> 14) - ((dx * dx + dy2) >> 11) + ((a * 37 >> 2) & 3);
+            int lvl = 22 + (shine * 13 >> 14) - ((dx * dx + dy2) >> 12) + ((a * 37 >> 2) & 3);
             row[x] = s_dial[lvl < 0 ? 0 : lvl > 63 ? 63 : lvl];
         }
         // Soft edges against the bezel
@@ -142,19 +146,49 @@ static void dial(uint16_t *fb, int light)
     }
 }
 
-// Where a ray from the centre at angle a (0 = 12 o'clock, clockwise) meets the dial rectangle
-// inset by `ins` px; result in 1/16 px
+// Where a ray from the centre at angle a (0 = 12 o'clock, clockwise) meets the dial's rounded
+// rectangle inset by `ins` px; result in 1/16 px
 static void on_rect(int a, int ins, int *px, int *py)
 {
-    int s = sin_q14[a & 1023], c = -sin_q14[(a + 256) & 1023];  // direction (x right, y down)
-    int hx = s >= 0 ? DIAL_X1 - 1 - CX - ins : CX - DIAL_X0 - ins;
-    int hy = c >= 0 ? DIAL_Y1 - 1 - CY - ins : CY - DIAL_Y0 - ins;
-    int as = s < 0 ? -s : s, ac = c < 0 ? -c : c;
-    // t = min(hx / |s|, hy / |c|) in px (Q4 result)
-    int tx = as ? hx * 16 * 16384 / as : 1 << 30, ty = ac ? hy * 16 * 16384 / ac : 1 << 30;
-    int t = tx < ty ? tx : ty;
-    *px = CX * 16 + (int)((int64_t)s * t >> 14);
-    *py = CY * 16 + (int)((int64_t)c * t >> 14);
+    float fs = sin_q14[a & 1023] / 16384.0f, fc = -sin_q14[(a + 256) & 1023] / 16384.0f;
+    float hx = fs >= 0 ? DIAL_X1 - 1 - CX - ins : CX - DIAL_X0 - ins;
+    float hy = fc >= 0 ? DIAL_Y1 - 1 - CY - ins : CY - DIAL_Y0 - ins;
+    float rc = DIAL_R - ins, as = fabsf(fs), ac = fabsf(fc);
+    float t = (as > 1e-4f && hx / as < hy / (ac > 1e-4f ? ac : 1e-4f)) ? hx / as : hy / (ac > 1e-4f ? ac : 1e-4f);
+    float ex = as * t, ey = ac * t;
+    if (rc > 0 && ex > hx - rc && ey > hy - rc) {
+        // In a corner: meet the arc around (hx - rc, hy - rc) instead
+        float kx = hx - rc, ky = hy - rc, b = as * kx + ac * ky;
+        t = b + sqrtf(b * b - kx * kx - ky * ky + rc * rc);
+    }
+    *px = CX * 16 + (int)(fs * t * 16);
+    *py = CY * 16 + (int)(fc * t * 16);
+}
+
+// Thin outline of the dial's rounded rectangle inset by `ins` px, blended over the dial
+static void rr_outline(uint16_t *fb, int ins, uint16_t c, int alpha)
+{
+    int l = DIAL_X0 + ins, r = DIAL_X1 - 1 - ins, tp = DIAL_Y0 + ins, bt = DIAL_Y1 - 1 - ins, rc = DIAL_R - ins;
+    for (int x = l + rc; x <= r - rc; x++) {
+        fb[tp * W + x] = gfx_blend(fb[tp * W + x], c, alpha);
+        fb[bt * W + x] = gfx_blend(fb[bt * W + x], c, alpha);
+    }
+    for (int y = tp + rc; y <= bt - rc; y++) {
+        fb[y * W + l] = gfx_blend(fb[y * W + l], c, alpha);
+        fb[y * W + r] = gfx_blend(fb[y * W + r], c, alpha);
+    }
+    // Corner arcs, sampled finely enough to leave no gaps
+    int n = rc * 2;
+    for (int i = 0; i <= n; i++) {
+        int a = i * 256 / n;
+        int ox = rc * sin_q14[a] >> 14, oy = rc * sin_q14[(a + 256) & 1023] >> 14;
+        int pts[4][2] = {{l + rc - ox, tp + rc - oy}, {r - rc + ox, tp + rc - oy}, {l + rc - ox, bt - rc + oy},
+                         {r - rc + ox, bt - rc + oy}};
+        for (int k = 0; k < 4; k++) {
+            uint16_t *px = &fb[pts[k][1] * W + pts[k][0]];
+            *px = gfx_blend(*px, c, alpha);
+        }
+    }
 }
 
 // Applied gold baton along the ray: shadow, body, polished ridge
@@ -206,20 +240,20 @@ static void subdial(uint16_t *fb, bool secs)
         }
     }
     for (int i = 0; i < 60; i++) {
-        int a = i * 1024 / 60, r0 = i % 5 ? 25 : 22;
+        int a = i * 1024 / 60, r0 = i % 5 ? 28 : 25;
         int s = sin_q14[a], c = -sin_q14[(a + 256) & 1023];
-        gfx_aa_capsule(fb, CX * 16 + (s * r0 >> 10), SUB_Y * 16 + (c * r0 >> 10), CX * 16 + (s * 27 >> 10),
-                       SUB_Y * 16 + (c * 27 >> 10), i % 5 ? 4 : 7, c_champ, i % 5 ? 9 : 14);
+        gfx_aa_capsule(fb, CX * 16 + (s * r0 >> 10), SUB_Y * 16 + (c * r0 >> 10), CX * 16 + (s * 31 >> 10),
+                       SUB_Y * 16 + (c * 31 >> 10), i % 5 ? 4 : 7, c_champ, i % 5 ? 9 : 14);
     }
     if (!secs) return;
     // Eight beats per second
     uint32_t ms = g_now.minute_ms / 125 * 125;
     int a = (int)(ms * 1024 / 60000);
     int s = sin_q14[a & 1023], c = -sin_q14[(a + 256) & 1023];
-    gfx_aa_capsule(fb, CX * 16 - (s * 7 >> 10) + 16, SUB_Y * 16 - (c * 7 >> 10) + 24, CX * 16 + (s * 25 >> 10) + 16,
-                   SUB_Y * 16 + (c * 25 >> 10) + 24, 9, 0, 6);
-    gfx_aa_capsule(fb, CX * 16 - (s * 7 >> 10), SUB_Y * 16 - (c * 7 >> 10), CX * 16 + (s * 25 >> 10),
-                   SUB_Y * 16 + (c * 25 >> 10), 6, c_gold_l, 16);
+    gfx_aa_capsule(fb, CX * 16 - (s * 7 >> 10) + 16, SUB_Y * 16 - (c * 7 >> 10) + 24, CX * 16 + (s * 29 >> 10) + 16,
+                   SUB_Y * 16 + (c * 29 >> 10) + 24, 9, 0, 6);
+    gfx_aa_capsule(fb, CX * 16 - (s * 7 >> 10), SUB_Y * 16 - (c * 7 >> 10), CX * 16 + (s * 29 >> 10),
+                   SUB_Y * 16 + (c * 29 >> 10), 6, c_gold_l, 16);
     gfx_aa_capsule(fb, CX * 16, SUB_Y * 16, CX * 16, SUB_Y * 16, 30, c_gold, 16);
 }
 
@@ -239,27 +273,25 @@ void classic_render(uint16_t *fb, uint32_t t, uint32_t dt)
         }
     }
     // Corners of the case's bounding box (outside the rounded corners)
-    for (int y = CASE_Y0; y < CASE_Y0 + 26; y++)
+    for (int y = CASE_Y0; y < CASE_Y0 + CASE_R; y++)
         for (int k = 0; k < 2; k++) {
             int yy = k ? CASE_Y1 - 1 - (y - CASE_Y0) : y;
-            for (int x = CASE_X0; x < CASE_X0 + 26; x++) fb[yy * W + x] = bg;
-            for (int x = CASE_X1 - 26; x < CASE_X1; x++) fb[yy * W + x] = bg;
+            for (int x = CASE_X0; x < CASE_X0 + CASE_R; x++) fb[yy * W + x] = bg;
+            for (int x = CASE_X1 - CASE_R; x < CASE_X1; x++) fb[yy * W + x] = bg;
         }
 
-    // Crown on the right, then the case: dark outer edge, polished bevel, brushed gunmetal body
-    for (int y = CY - 11; y < CY + 11; y++)
-        for (int x = CASE_X1 - 2; x < W - 1; x++)
-            fb[y * W + x] = ((y - CY) & 1) ? c_gold_d : (y < CY - 5 ? c_gold_l : c_gold);
-    static const rr_t L0 = {CASE_X0, CASE_Y0, CASE_X1, CASE_Y1, 26}, L1 = {CASE_X0 + 1, CASE_Y0 + 1, CASE_X1 - 1, CASE_Y1 - 1, 25},
-                      L2 = {CASE_X0 + 3, CASE_Y0 + 3, CASE_X1 - 3, CASE_Y1 - 3, 23},
-                      B0 = {DIAL_X0 - 3, DIAL_Y0 - 3, DIAL_X1 + 3, DIAL_Y1 + 3, 17},
-                      B1 = {DIAL_X0 - 2, DIAL_Y0 - 2, DIAL_X1 + 2, DIAL_Y1 + 2, 16},
-                      DL = {DIAL_X0, DIAL_Y0, DIAL_X1, DIAL_Y1, 14};
+    // The case: dark outer edge, polished bevel, brushed gunmetal body
+    static const rr_t L0 = {CASE_X0, CASE_Y0, CASE_X1, CASE_Y1, CASE_R},
+                      L1 = {CASE_X0 + 1, CASE_Y0 + 1, CASE_X1 - 1, CASE_Y1 - 1, CASE_R - 1},
+                      L2 = {CASE_X0 + 3, CASE_Y0 + 3, CASE_X1 - 3, CASE_Y1 - 3, CASE_R - 3},
+                      B0 = {DIAL_X0 - 3, DIAL_Y0 - 3, DIAL_X1 + 3, DIAL_Y1 + 3, DIAL_R + 3},
+                      B1 = {DIAL_X0 - 2, DIAL_Y0 - 2, DIAL_X1 + 2, DIAL_Y1 + 2, DIAL_R + 2},
+                      DL = {DIAL_X0, DIAL_Y0, DIAL_X1, DIAL_Y1, DIAL_R};
     rrect(fb, L0, &L1, rgb565(20, 22, 22));
     rrect(fb, L1, &L2, rgb565(128, 134, 130));
     rrect(fb, L2, &B0, rgb565(46, 50, 50));
     // A long highlight down the left flank, like light on polished steel
-    for (int y = CASE_Y0 + 24; y < CASE_Y1 - 24; y++) {
+    for (int y = CASE_Y0 + CASE_R; y < CASE_Y1 - CASE_R; y++) {
         int f = sin_u8[(uint8_t)((y - CASE_Y0) * 128 / (CASE_Y1 - CASE_Y0))] / 32;
         fb[y * W + CASE_X0 + 5] = gfx_blend(fb[y * W + CASE_X0 + 5], rgb565(220, 226, 222), f);
         fb[y * W + CASE_X0 + 6] = gfx_blend(fb[y * W + CASE_X0 + 6], rgb565(220, 226, 222), f / 2);
@@ -279,17 +311,8 @@ void classic_render(uint16_t *fb, uint32_t t, uint32_t dt)
         on_rect(a, i % 5 ? 10 : 11, &x1, &y1);
         gfx_aa_capsule(fb, x0, y0, x1, y1, i % 5 ? 5 : 8, c_champ, i % 5 ? 10 : 15);
     }
-    for (int k = 0; k < 2; k++) {
-        int ins = k ? 10 : 6, l = DIAL_X0 + ins, r = DIAL_X1 - 1 - ins, tp = DIAL_Y0 + ins, bt = DIAL_Y1 - 1 - ins;
-        for (int x = l; x <= r; x++) {
-            fb[tp * W + x] = gfx_blend(fb[tp * W + x], c_champ, 9);
-            fb[bt * W + x] = gfx_blend(fb[bt * W + x], c_champ, 9);
-        }
-        for (int y = tp + 1; y < bt; y++) {
-            fb[y * W + l] = gfx_blend(fb[y * W + l], c_champ, 9);
-            fb[y * W + r] = gfx_blend(fb[y * W + r], c_champ, 9);
-        }
-    }
+    rr_outline(fb, 6, c_champ, 9);
+    rr_outline(fb, 10, c_champ, 9);
 
     // Applied hour batons (double at 12)
     for (int h = 0; h < 12; h++) {
@@ -299,23 +322,23 @@ void classic_render(uint16_t *fb, uint32_t t, uint32_t dt)
         if (h == 0) {
             baton(fb, x0 - 64, y0, x1 - 64, y1, 26);
             baton(fb, x0 + 64, y0, x1 + 64, y1, 26);
-        } else if (h == 6) {
-            continue;  // the subdial sits there
+        } else if (h == 6 || h == 3) {
+            continue;  // the subdial and the date window sit there
         } else {
             baton(fb, x0, y0, x1, y1, h % 3 ? 22 : 28);
         }
     }
 
     // Signature under 12
-    const char *mark = "C6", *sub = "AUTOMATIC";
-    ui_text(fb, &ui_m, CX - ui_width(&ui_m, mark) / 2, 62, mark, c_champ, c_champ, FONT_FILL);
-    ui_text(fb, &ui_s, CX - ui_width(&ui_s, sub) / 2, 84, sub, gfx_blend(s_dial[44], c_champ, 9), 0, FONT_FILL);
+    const char *mark = "MAREA", *sub = "AUTOMATIC";
+    ui_text(fb, &ui_m, CX - ui_width(&ui_m, mark) / 2, 72, mark, c_champ, c_champ, FONT_FILL);
+    ui_text(fb, &ui_s, CX - ui_width(&ui_s, sub) / 2, 94, sub, gfx_blend(s_dial[44], c_champ, 9), 0, FONT_FILL);
 
     // Date window at 3
     if (g_now.valid) {
         char d[4];
         snprintf(d, sizeof(d), "%d", g_now.day);
-        int wx = 118, wy = CY - 9;
+        int wx = DIAL_X1 - 1 - 16 - 22, wy = CY - 9;
         gfx_fill_rect(fb, wx - 1, wy - 1, 24, 20, c_gold_d);
         gfx_fill_rect(fb, wx, wy, 22, 18, c_gold);
         gfx_fill_rect(fb, wx + 1, wy + 1, 20, 16, rgb565(232, 226, 210));
@@ -331,8 +354,8 @@ void classic_render(uint16_t *fb, uint32_t t, uint32_t dt)
     uint32_t mms = g_now.valid ? g_now.minute_ms : 0;
     int a_h = (int)(((h % 12) * 60 + m) * 1024 / 720 + mms * 1024 / 43200000);
     int a_m = (int)((m * 60000 + mms) * 1024 / 3600000);
-    dauphine(fb, a_h, 42, 5);
-    dauphine(fb, a_m, 62, 4);
+    dauphine(fb, a_h, 62, 6);
+    dauphine(fb, a_m, 96, 5);
     gfx_aa_capsule(fb, CX * 16, CY * 16, CX * 16, CY * 16, 56, c_gold_d, 16);
     gfx_aa_capsule(fb, CX * 16 - 4, CY * 16 - 4, CX * 16 - 4, CY * 16 - 4, 40, c_gold, 16);
     gfx_aa_capsule(fb, CX * 16 - 12, CY * 16 - 12, CX * 16 - 12, CY * 16 - 12, 12, c_gold_l, 14);

@@ -8,12 +8,12 @@
 #include "gfx.h"
 #include "weather.h"
 
-#define W LCD_W
-#define H LCD_H
-#define CX 86
-#define CY 100
-#define ICX 42
-#define ICY 232
+#define W WW
+#define H WH
+#define CX 137
+#define CY 112
+#define ICX 92
+#define ICY 248
 
 typedef struct { uint8_t top[3], bot[3], ink[3], soft[3], accent[3], cloud[3]; } palette_t;
 static const palette_t PAL_SUN = {{248, 243, 233}, {238, 231, 216}, {60, 56, 50}, {170, 160, 144}, {206, 98, 62}, {206, 208, 212}};
@@ -161,16 +161,16 @@ void weather_render(uint16_t *fb, uint32_t t, uint32_t dt)
     for (int i = 0; i < 60; i++) {
         int a = i * 1024 / 60;
         if (i % 5) {
-            gfx_aa_capsule(fb, PX(CX, a, 72), PY(CY, a, 72), PX(CX, a, 72), PY(CY, a, 72), 9, s_soft, 16);
+            gfx_aa_capsule(fb, PX(CX, a, 84), PY(CY, a, 84), PX(CX, a, 84), PY(CY, a, 84), 10, s_soft, 16);
         } else {
-            int inner = i % 15 ? 64 : 58;
-            gfx_aa_capsule(fb, PX(CX, a, inner), PY(CY, a, inner), PX(CX, a, 72), PY(CY, a, 72), 14, i ? s_soft : s_ink, 16);
+            int inner = i % 15 ? 74 : 67;
+            gfx_aa_capsule(fb, PX(CX, a, inner), PY(CY, a, inner), PX(CX, a, 84), PY(CY, a, 84), 16, i ? s_soft : s_ink, 16);
         }
     }
     char date[24];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d", clock_wday_name(g_now.wday), g_now.day);
     else strcpy(date, "--");
-    center_text(fb, &ui_s, CY + 26, date, s_soft);
+    center_text(fb, &ui_s, CY + 30, date, s_soft);
 
     // Hands (10:10 until the time is known); the seconds hand sweeps smoothly
     int h = g_now.valid ? g_now.h : 10, m = g_now.valid ? g_now.m : 10;
@@ -179,20 +179,20 @@ void weather_render(uint16_t *fb, uint32_t t, uint32_t dt)
     int a_m = (int)((m * 60000 + mms) * 1024 / 3600000);
     int a_s = (int)(mms * 1024 / 60000);
     bool secs = g_app.show_secs && g_now.valid;
-    hand(fb, a_h, 40, 8, 38, 0, true);
-    hand(fb, a_m, 62, 10, 24, 0, true);
-    hand(fb, a_h, 40, 8, 38, s_ink, false);
-    hand(fb, a_m, 62, 10, 24, s_ink, false);
+    hand(fb, a_h, 46, 9, 42, 0, true);
+    hand(fb, a_m, 72, 11, 28, 0, true);
+    hand(fb, a_h, 46, 9, 42, s_ink, false);
+    hand(fb, a_m, 72, 11, 28, s_ink, false);
     if (secs) {
-        hand(fb, a_s, 68, 16, 8, 0, true);
-        hand(fb, a_s, 68, 16, 8, s_accent, false);
+        hand(fb, a_s, 78, 18, 9, 0, true);
+        hand(fb, a_s, 78, 18, 9, s_accent, false);
         gfx_aa_capsule(fb, PX(CX, a_s + 512, 14), PY(CY, a_s + 512, 14), PX(CX, a_s + 512, 14), PY(CY, a_s + 512, 14), 40, s_accent, 16);
     }
     gfx_aa_capsule(fb, CX * 16, CY * 16, CX * 16, CY * 16, 72, s_ink, 16);
     gfx_aa_capsule(fb, CX * 16, CY * 16, CX * 16, CY * 16, 32, secs ? s_accent : c3(s_pal->top), 16);
 
     // A short rule between the dial and the weather
-    gfx_aa_capsule(fb, (CX - 18) * 16, 192 * 16, (CX + 18) * 16, 192 * 16, 6, s_soft, 12);
+    gfx_aa_capsule(fb, (CX - 20) * 16, 212 * 16, (CX + 20) * 16, 212 * 16, 6, s_soft, 12);
 
     // Weather: icon, temperature, max / min, description, place
     icon(fb, code, day, t);
@@ -203,25 +203,25 @@ void weather_render(uint16_t *fb, uint32_t t, uint32_t dt)
     } else {
         strcpy(buf, "--");
     }
-    int tw = font_width(&font_round_m, buf, -2), tx = 112 - tw / 2;
-    if (tx + tw > W - 14) tx = W - 14 - tw;
-    font_draw(fb, &font_round_m, tx, 204, buf, -2, s_ink, s_ink, FONT_FILL);
-    gfx_ring(fb, tx + tw + 6, 212, 3, 5, s_ink);
+    int tw = font_width(&font_round_m, buf, -2), tx = 166 - tw / 2;
+    if (tx + tw > W - 44) tx = W - 44 - tw;
+    font_draw(fb, &font_round_m, tx, 220, buf, -2, s_ink, s_ink, FONT_FILL);
+    gfx_ring(fb, tx + tw + 6, 228, 3, 5, s_ink);
 
     if (valid) {
         int hi = (g_wx.hi10 + (g_wx.hi10 >= 0 ? 5 : -5)) / 10, lo = (g_wx.lo10 + (g_wx.lo10 >= 0 ? 5 : -5)) / 10;
         snprintf(buf, sizeof(buf), "max %d    min %d", hi, lo);
-        center_text(fb, &ui_s, 266, buf, s_soft);
-        center_text(fb, &ui_m, 282, weather_desc(code), s_ink);
+        center_text(fb, &ui_s, 282, buf, s_soft);
+        center_text(fb, &ui_m, 298, weather_desc(code), s_ink);
     } else {
-        center_text(fb, &ui_m, 282, "Sin datos", s_ink);
+        center_text(fb, &ui_m, 298, "Sin datos", s_ink);
     }
     // Place in capitals, with a small dot that turns soft when the data is getting old
     int i = 0;
     for (const char *p = g_wx_loc.name; *p && i < (int)sizeof(buf) - 1; p++) buf[i++] = (*p >= 'a' && *p <= 'z') ? *p - 32 : *p;
     buf[i] = 0;
     int lw = ui_width(&ui_s, buf), lx = (W - lw) / 2 + 5;
-    ui_text(fb, &ui_s, lx, 302, buf, s_soft, s_soft, FONT_FILL);
+    ui_text(fb, &ui_s, lx, 318, buf, s_soft, s_soft, FONT_FILL);
     int age = weather_age_s();
-    gfx_aa_capsule(fb, (lx - 9) * 16, 310 * 16, (lx - 9) * 16, 310 * 16, 24, age >= 0 && age < 1800 ? rgb565(110, 170, 110) : s_soft, 16);
+    gfx_aa_capsule(fb, (lx - 9) * 16, 326 * 16, (lx - 9) * 16, 326 * 16, 24, age >= 0 && age < 1800 ? rgb565(110, 170, 110) : s_soft, 16);
 }
