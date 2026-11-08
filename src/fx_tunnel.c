@@ -78,7 +78,7 @@ void tunnel_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char date[24];
     clock_date_str(date);
     uint16_t ink = rgb565(0, 0, 0), digit = hsv565(hue + 128, 90, 255);
-    gfx_darken_rect(fb, 46, 46, WW - 92, 250, 14, 2);
+    // No panel: the digits sit in the dark far end of the tunnel, their outline keeps them readable
     gfx_text_ol(fb, (WW - gfx_text_width(date, 2)) / 2, 18, date, rgb565(255, 255, 255), ink, 2, 1);
     clock_draw_stacked(fb, &font_seg_xl, 60, 12, digit, ink, FONT_FILL | FONT_OUTLINE);
     clock_draw_seconds_bar(fb, 70, 308, WW - 140, 3, digit, rgb565(40, 40, 50));
