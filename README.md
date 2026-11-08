@@ -1,6 +1,6 @@
-# ESP32-C6 FX Clock
+# Marea
 
-Reloj con **21 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST7789, 172×320), a 30 fps. Se controla desde el móvil con la app Android por Bluetooth, o desde el navegador por WiFi, y se actualiza solo por internet.
+Reloj de pulsera con **21 esferas animadas a pantalla completa** y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
@@ -10,174 +10,118 @@ Reloj con **21 esferas animadas** para la **Waveshare ESP32-C6-LCD-1.47** (ST778
 - **Instalación por USB** desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
 - **Licencia:** software libre, [GPL-3.0-or-later](LICENSE): úsalo, modifícalo y compártelo; quien distribuya versiones debe publicar también su código ([más](#licencia))
 
+El proyecto empezó como un reloj de sobremesa con un ESP32-C6 (de ahí el nombre del repositorio). Esa placa ya no se mantiene: su última versión es la 2.1.0.
+
+## El reloj
+
+![El sistema: esfera, lanzador, ajustes rápidos y ajustes](docs/img/sistema.png)
+
+El sistema sigue el estilo **Marea Solsticial**: pixel art nocturno junto al mar, paneles índigo, texto crema y el oro como acento. Cada esfera tiene su propio estilo.
+
+| Gesto | En la esfera | En una app o un menú |
+|---|---|---|
+| Deslizar desde el borde de arriba | Ajustes rápidos: brillo, Bluetooth, silencio, siempre encendida, linterna y batería | |
+| Deslizar desde el borde de abajo | Lanzador de apps | |
+| Deslizar a izquierda o derecha | Esfera siguiente o anterior | |
+| Mantener el dedo | Selector de esferas | |
+| Deslizar desde el borde izquierdo | | Volver |
+| **BOOT**, pulsación corta | Esfera siguiente | Volver |
+| **BOOT**, pulsación larga | Cambio automático de esfera | |
+| **BOOT** 10 s | Olvida los móviles emparejados | |
+
+La pantalla se enciende con BOOT, con un toque o al levantar la muñeca, y se apaga sola (de 5 s a 10 min, o siempre encendida). Con ella apagada no se dibuja nada y el panel queda en reposo, pero el reloj sigue conectado al móvil y contando pasos.
+
+**Apps:** Esferas, Alarmas (suenan por el altavoz y se posponen al agitar la muñeca), Pasos (podómetro con objetivo diario), Cronómetro, Música (lo que suena en el móvil, con sus controles), Linterna, Archivos (la microSD, con modo USB) y Ajustes. Llamadas: cuando el móvil suena, el reloj muestra quién llama y permite rechazarla o silenciarla. Textos en español o inglés.
+
 ## Esferas
 
-| # | Esfera | Orientación | Cómo muestra la hora |
-|---|--------|-------------|----------------------|
-| 0 | Plasma | vertical | HH / MM grandes sobre panel oscuro translúcido |
-| 1 | Cubo 3D | vertical | hora bajo el cubo; el cubo da una vuelta rápida en cada minuto |
-| 2 | Túnel | vertical | 7 segmentos del color complementario al túnel |
-| 3 | Lava | vertical | dígitos oscuros con borde luminoso |
-| 4 | Vida | horizontal | dígitos de células inmortales; al cambiar el minuto, los viejos se disuelven en la simulación |
-| 5 | HUD | horizontal | interfaz sci-fi: anillo de segundos, temperatura del chip, señal WiFi, glitch cada minuto |
-| 6 | Aventura | horizontal | viaje en pixel art a resolución nativa: parallax con bruma atmosférica, lago con reflejos, luz según la hora real (amanecer, día, atardecer, noche con faroles y luciérnagas) |
-| 7 | RPG | vertical | batalla 3D estilo FF VIII–X: cámara cinemática, arena con círculo rúnico, cristal guardián, grupo en HD-2D; las barras ATB marcan los segundos y cada minuto se lanza un hechizo con la hora como daño |
+Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fps.
+
+| # | Esfera | Cómo muestra la hora |
+|---|--------|----------------------|
+| 0 | Plasma | HH / MM enormes sobre plasma a resolución nativa |
+| 1 | Cubo 3D | hora bajo el cubo; el cubo da una vuelta rápida en cada minuto |
+| 2 | Túnel | 7 segmentos del color complementario, en el fondo oscuro del túnel |
+| 3 | Lava | dígitos oscuros con borde luminoso entre las bolas de lava |
+| 4 | Vida | horas encima de minutos, de células inmortales; al cambiar el minuto, los viejos se disuelven en la simulación |
+| 5 | HUD | interfaz sci-fi: hora, temperatura del chip, señal WiFi, tiempo encendido y anillo de segundos; glitch cada minuto |
+| 6 | Aventura | viaje en pixel art con parallax, lago con reflejos y luz según la hora real (amanecer, día, atardecer, noche con faroles y luciérnagas) |
+| 7 | RPG | batalla 3D estilo JRPG: arena con círculo rúnico, cristal guardián y grupo; las barras de turno marcan los segundos y cada minuto se lanza un hechizo con la hora como daño |
 
 **Basadas en obras famosas** (todas de dominio público; reinterpretaciones animadas, no copias):
 
-| # | Esfera | Orientación | Obra y animación |
-|---|--------|-------------|------------------|
-| 8 | Estrellada | horizontal | *La noche estrellada* (Van Gogh, 1889): cielo de pinceladas en remolino, halos que laten, ciprés que se mece |
-| 11 | Earthrise | horizontal | Foto del Apolo 8 (NASA, 1968): Tierra 3D con continentes y nubes que giran saliendo sobre la Luna |
+| # | Esfera | Obra y animación |
+|---|--------|------------------|
+| 8 | Estrellada | *La noche estrellada* (Van Gogh, 1889): cielo de pinceladas en remolino, halos que laten, ciprés que se mece |
+| 11 | Earthrise | Foto del Apolo 8 (NASA, 1968): Tierra 3D con continentes y nubes que giran saliendo sobre la Luna |
 
 **Diseño libre:**
 
-| # | Esfera | Orientación | Descripción |
-|---|--------|-------------|-------------|
-| 9 | WiFi | horizontal | la hora en grande sobre un espectro tenue de las redes WiFi de alrededor (escaneo en segundo plano) |
-| 12 | Sakura | horizontal | cerezo en flor junto a un estanque: pétalos que caen revoloteando y ondas donde tocan el agua |
-| 13 | Synthwave | horizontal | sol a franjas, rejilla de neón, palmeras, números cromados |
-| 14 | Arena | vertical | reloj de arena con física de granos: se vacía exactamente en un minuto y gira |
-| 15 | Engranajes | vertical | reloj analógico mecánico: engranajes que engranan, volante oscilante, agujas con segundero |
-| 17 | Lluvia | vertical | gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea |
-| 18 | Agujero negro | horizontal | disco de acreción con efecto Doppler, lente gravitatoria del disco trasero y anillo de fotones; las estrellas se curvan alrededor (ecuación de lente puntual) |
-| 19 | Gol | horizontal | jugada de fútbol en 16 bits con un delantero inspirado en Mbappé: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados; la hora en el marcador del estadio. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave |
-| 21 | Tiempo | vertical | minimalista: esfera analógica con agujas suavizadas y segundero de barrido; debajo, icono animado, temperatura, máx/mín y estado del cielo de la ciudad configurada. El fondo cambia con el tiempo (sol, gris, lluvia, noche) |
-| 22 | Clásico | vertical | reloj de vestir rectangular Art Déco: caja de metal pulido con corona, esfera sunburst cuyos reflejos se mueven (verde por defecto; el color se elige con un slider en la web), minutería de raíles, índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 con 8 pulsos por segundo |
-| 23 | Feria de Sevilla | vertical | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año a partir de la Semana Santa): portada de bombillas que parpadean, farolillos que se mecen, toldo de caseta y traje de lunares con la hora; durante la Feria, fuegos artificiales y el día en que va, y después la cuenta atrás hacia la del año siguiente |
+| # | Esfera | Descripción |
+|---|--------|-------------|
+| 9 | WiFi | la hora en grande sobre un espectro tenue de las redes WiFi de alrededor |
+| 12 | Sakura | cerezo en flor junto a un estanque: pétalos que caen revoloteando y ondas donde tocan el agua |
+| 13 | Synthwave | sol a franjas, rejilla de neón, palmeras, números cromados |
+| 14 | Arena | reloj de arena con física de granos: se vacía exactamente en un minuto y gira |
+| 15 | Engranajes | reloj mecánico de esqueleto: engranajes que engranan, volante oscilante, agujas con segundero |
+| 17 | Lluvia | gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea |
+| 18 | Agujero negro | disco de acreción con efecto Doppler, lente gravitatoria y anillo de fotones; las estrellas se curvan alrededor |
+| 19 | Gol | jugada de fútbol en 16 bits: regate, salto sobre una entrada, gol por la escuadra, confeti y celebración; la hora en el marcador del estadio |
+| 21 | Tiempo | esfera analógica con segundero de barrido; debajo, icono animado, temperatura, máx/mín y estado del cielo de la ciudad elegida |
+| 22 | Clásico | reloj de vestir Art Déco: la pantalla es la caja, esfera sunburst con reflejos que se mueven (el color se elige en la app), índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 |
+| 23 | Feria de Sevilla | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año): portada de bombillas, farolillos, toldo y traje de lunares; durante la Feria, fuegos artificiales |
 
-Los números 10, 16 y 20 están **retirados**: eran esferas eliminadas (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar. Si un reloj tenía elegida una de ellas, muestra la siguiente.
+Los números 10, 16 y 20 están **retirados** (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar.
 
-Todas van limitadas a **30 fps**.
+**¿Quieres hacer la tuya?** `python tools/new_face.py burbujas "Burbujas"` crea una esfera a pantalla completa que ya funciona, lista para cambiarla. La guía está en la wiki: [Crear una esfera](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera).
 
-**¿Quieres hacer la tuya?** `python tools/new_face.py burbujas "Burbujas"` crea una esfera que ya funciona, lista para cambiarla. La guía completa (pantalla, hora, herramientas de dibujo, rendimiento, ajustes propios y cómo enviarla) está en la wiki: [Crear una esfera](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera).
+## El móvil
+
+App Android **Marea** (Android 10 o superior), con la misma página de control que sirve el reloj:
+
+- **Conexión permanente:** mientras el reloj está cerca, la app se queda conectada por Bluetooth (con un aviso fijo de Android, como cualquier app de reloj). Al conectar le pone la hora y el tiempo de su ciudad, y lo repite cada 30 minutos. Si el reloj se aleja o se apaga, la app vuelve a conectar sola cuando reaparece.
+- **Música y llamadas:** con el permiso de leer notificaciones, el reloj muestra lo que suena en cualquier app de música (y la controla: reproducir, pausa, pistas y volumen) y avisa de las llamadas entrantes, que se pueden rechazar o silenciar desde la muñeca. No pide permisos de teléfono ni de contactos.
+- **Ajustes y esferas** desde la app, **actualizaciones** del reloj y de la propia app por internet.
+- Se empareja una vez, con la clave de 6 cifras que aparece en el reloj.
 
 ## Instalar y actualizar
 
-`python tools/build_webflasher.py` (tras `pio run`) genera en `webflasher/` dos archivos:
+- **Primera vez, por USB:** abre <https://carlosns.github.io/c6-fx-clock/flasher/> en Chrome o Edge y pulsa *Instalar el reloj*. Después, conecta el móvil a la red WiFi **Marea** (clave `mareamarea`) y abre `http://192.168.4.1` para darle tu WiFi, o empareja la app.
+- **Por internet:** *Actualizaciones → Buscar actualización*, en la app o en la página. El reloj se reinicia en modo actualización, descarga la imagen comprobando proyecto, tamaño y SHA-256 y vuelve a su modo. Si algo falla, se queda con la versión que tenía.
+- **Vuelta atrás automática:** una versión nueva tiene que funcionar 30 s para quedar confirmada; si se cuelga antes, el reloj vuelve solo a la anterior.
 
-| Archivo | Para qué |
-|---|---|
-| `c6-fx-clock.bin` | Instalación completa por USB (bootloader + tabla de particiones + firmware). Primera instalación o recuperación. |
-| `c6-fx-clock-ota.bin` | Solo el firmware, para actualizar **por WiFi** subiendo el archivo desde la web del reloj. Normalmente no hace falta: el reloj se actualiza solo por internet (abajo). |
+`python tools/build_webflasher.py` (tras `pio run`) genera `webflasher/marea.bin` (instalación completa) y `webflasher/marea-ota.bin` (solo el firmware). La flash de 32 MB tiene dos huecos de 7 MB para las actualizaciones y una partición de datos de 18 MB para más adelante.
 
-### Por USB (webflasher)
+## Hora, tiempo y microSD
 
-1. Doble clic en **`webflasher/Abrir flasher.bat`** (necesita Python; abre `http://localhost:8765`).
-2. En Chrome o Edge, pulsa **Instalar el reloj** y elige el puerto de la placa.
-3. Si eliges borrar el dispositivo, luego conecta el móvil a `C6-FX-Demo` y configura tu WiFi en la sección **Conexión** de `http://192.168.4.1`.
+- **Hora:** la ponen el móvil o internet (NTP), y la guarda el reloj de hardware de la placa, que sigue contando con el reloj apagado.
+- **Tiempo:** [Open-Meteo](https://open-meteo.com), gratis y sin clave. Lo trae el móvil o el propio reloj por WiFi, cada 10 minutos; gana el dato más reciente. La ciudad se elige en la tarjeta *Tiempo* de la app o la página.
+- **microSD:** la app Archivos muestra carpetas y archivos, borra y formatea. Su botón **USB** reinicia el reloj como disco USB para el ordenador; se vuelve al reloj con BOOT, expulsando el disco o desconectando el cable.
 
-La misma página está publicada en <https://carlosns.github.io/c6-fx-clock/flasher/> (siempre con la última versión): basta con abrirla en Chrome o Edge.
+## Desarrollo
 
-### Por WiFi (OTA)
-
-En la web del reloj: **Avanzado → Actualizar por WiFi**, elige `c6-fx-clock-ota.bin` y pulsa *Actualizar firmware* (unos 7 s). La pantalla muestra el progreso y el reloj se reinicia solo con la versión nueva.
-
-- La flash tiene dos huecos de 3,5 MB (`ota_0` / `ota_1`): la actualización se escribe en el que no está en uso, así que un corte a medias no estropea nada.
-- Solo acepta firmware de este proyecto: otro archivo se rechaza antes de escribir nada.
-- **Vuelta atrás automática:** una versión nueva debe funcionar 30 s para quedar confirmada; si se cuelga antes, el reloj vuelve solo a la anterior en el siguiente arranque.
-- Cambiar la tabla de particiones (como el paso a 2.0.0) exige una instalación por USB; OTA solo sustituye el firmware.
-
-### Por internet (desde 2.1.0)
-
-En la página de control (también en la app y en modo Bluetooth): **Actualizaciones → Buscar actualización**. El móvil o el navegador lee `https://carlosns.github.io/c6-fx-clock/manifest.json` y, si hay versión nueva, *Actualizar* envía `update apply <manifiesto>`. El reloj se reinicia en modo UPDATE, se conecta a su red WiFi guardada, descarga la imagen comprobando proyecto, tamaño y SHA-256 (máximo 5 min) y vuelve al modo en que estaba. El resultado (`updated`, `up_to_date`, `no_wifi`, `bad_image`, `timeout`, `interrupted`…) aparece en la página. Si algo falla, se queda la versión actual; un corte de corriente a mitad tampoco la estropea.
-
-La red WiFi se puede guardar también en modo Bluetooth (*Conexión*): el reloj solo la usa para actualizarse. Publicar una versión (sube el número en `CMakeLists.txt` antes):
-
-```
-python tools/release.py --notes "Qué cambia"    # compila, GitHub Pages + release con la app
+```bash
+pio run -t upload                 # compilar y flashear (ESP-IDF 5.5 con PlatformIO, puerto COM7)
+python tools/bootlog.py           # reinicia el reloj y muestra su arranque
+cd tests && python -m pytest -m now --ignore=wifi   # tests unitarios
 ```
 
-## Uso
-
-El reloj tiene dos modos (en el C6 el WiFi y el Bluetooth no caben a la vez en la RAM). Para cambiar de uno a otro: botón en la página de control (*Avanzado → Modo de conexión*) o mantener **BOOT 2 s** en la pantalla de bienvenida.
-
-- **Bluetooth:** se controla con la app Android (abajo). La primera vez se empareja con la clave de 6 cifras que aparece en el reloj. La app le pone la hora y el tiempo cada 30 min aunque esté cerrada.
-- **WiFi:** se controla desde el navegador, como hasta la 2.0:
-
-1. Compila y flashea: `pio run -t upload` (puerto COM5).
-2. Abre el panel web:
-   - en tu WiFi: la IP aparece en la pantalla al arrancar;
-   - o conecta el móvil a **C6-FX-Demo** (clave `esp32c6fx`) y abre **http://192.168.4.1**.
-3. **Pantalla**: apagada por defecto (no se renderiza nada). El **botón BOOT** la enciende el tiempo elegido en la web (*Apagar la pantalla tras*: de 5 s a 10 min; 10 s por defecto); con ella encendida, pulsación corta = siguiente esfera, larga = cambio automático. Usar la web también la mantiene encendida. Opción *Pantalla siempre encendida* en la web.
-
-### Hora
-
-- En modo Bluetooth la pone la app del móvil (al abrirla y cada 30 min).
-- En modo WiFi se sincroniza por **NTP** si la red tiene salida a internet (zona horaria Europe/Madrid con horario de verano).
-- Si no, la **web la envía sola** al abrirla (o con el botón *Sincronizar hora*).
-- La placa no tiene batería de reloj: tras quitar la corriente hay que volver a sincronizar.
-
-### Tiempo
-
-- Fuente: [Open-Meteo](https://open-meteo.com) (gratis, sin clave). En modo WiFi la placa lo consulta sola cada 10 min; en modo Bluetooth se lo manda la app.
-- Si la red no tiene salida a internet, la web lo consulta desde el móvil al abrirla y se lo pasa a la placa.
-- Ciudad: tarjeta **Tiempo** de la web (busca por nombre y elige el resultado). Por defecto, Sevilla.
-
-### Ajustes (se guardan en flash)
-
-Esfera, brillo, velocidad, 24/12 h, segundos, cambio automático (con las esferas que elijas) y **modo noche** (por defecto 23:00–07:00 al 10 % de brillo, con el LED apagado).
-
-### Depuración
-
-- `GET /screenshot` devuelve la pantalla como BMP. Parámetros opcionales: `fx` (esfera), `h` y `m` (simular una hora), `wait` (ms antes de capturar).
-- `GET /status` incluye `rus` / `rmax`: tiempo medio y máximo de render por fotograma (µs). El presupuesto a 30 fps es 33 ms.
-- `GET /faces` devuelve el catálogo de esferas (nombre, grupo, descripción, si es interactiva, ajustes propios).
-
-## Detalles técnicos
-
-- Cifras temáticas: Aventura usa dígitos pixel art 7×10 (degradado crema-dorado, bisel, contorno y sombra, como los HUD de RPG de 16 bits); RPG usa numerales caligráficos de pluma ancha con serifas y degradado (`font_nib_*`), en la línea de los menús de los JRPG de PS1/PS2. Todo diseño propio.
-- Texto de interfaz suavizado generado por `tools/gen_uifont.py` con Aileron (dominio público, incluida en Pillow).
-- Mezcla de color RGB565 con una sola multiplicación (canales empaquetados en 32 bits); el C6 no tiene FPU y divide lento.
-- Fuentes grandes generadas por `tools/gen_fonts.py` (dígitos de diseño propio, sin fuentes externas): cobertura + contorno en 4 bits por píxel para que se lean sobre cualquier fondo.
-- Rotación por hardware (MADCTL) según la esfera; mismo framebuffer en ambas orientaciones.
-- Doble framebuffer (2 × 110 KB) con DMA; el código de WiFi/lwIP/FreeRTOS va en flash para dejar heap a la red (~33 KB libres en marcha).
-- Flash de 8 MB: `nvs` (ajustes y WiFi), `otadata`, dos huecos de app de 3,5 MB para OTA y 896 KB libres (`storage`) para el futuro.
-- DNS públicos (1.1.1.1 / 8.8.8.8): algunos routers rechazan las consultas DNS de la LAN.
-- WiFi en redes malladas: busca en todos los canales y se une al nodo con mejor señal; si un nodo acepta la conexión pero no da IP en 20 s, se pasa al siguiente nodo más fuerte de la misma red.
-
-## Arquitectura
-
 ```
-transportes        web.c (HTTP + WebSocket)        ble.c (GATT, NimBLE)        console.c (serie)
-                            |                             |
-control            control.c  -- comandos de texto y JSON de estado --
-                   settings.c -- tabla única de ajustes (NVS, comando y JSON con la misma clave)
-                   ota.c      -- actualización por trozos, sin depender del transporte
-                   update.c   -- modo UPDATE: manifiesto, descarga HTTPS, SHA-256, resultado
-                   bootmode.c -- modos BLE / WIFI / UPDATE (NVS)
-servicios          net.c (WiFi)   clock.c (hora)   weather.c (tiempo)
-pantalla           main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   gfx.c / lcd.c
+transportes   web.c (HTTP + WebSocket)     ble.c (GATT, NimBLE)     console.c (serie)
+control       control.c (órdenes de texto y estado JSON)   settings.c (tabla de ajustes)
+              ota.c / update.c (actualizaciones)   bootmode.c (normal / actualización / USB)
+sistema       sys.c (vistas, lanzador, ajustes rápidos)   input.c (gestos)   ui.c (estilo Marea Solsticial)
+              app_*.c (apps)   alarm.c   steps.c   audio.c (ES8311)   phone.c (música y llamadas)
+servicios     net.c (WiFi)   clock.c (hora)   weather.c (tiempo)   usbdisk.c (modo USB)
+pantalla      main.c (bucle a 30 fps, reposo, botón)   fx_*.c (esferas)   gfx.c   lcd_co5300.c
+placa         board.c   pmu_axp2101.c   rtc_pcf85063.c   touch_ft3168.c   imu_qmi8658.c
 ```
 
-- **Comandos:** todo se controla con mensajes de texto (`bri 80`, `fx 3`, `loc 37.38 -5.98 Sevilla`, `wifi`...). La lista completa está en `control.h`. Cualquier transporte solo tiene que pasar esos textos a `app_command()` y leer `app_status_json()`.
-- **Ajustes:** añadir uno es una línea en `settings.c`; se guarda, se controla por comando y aparece en el estado sin tocar nada más.
-- **Esferas:** cada una se describe una sola vez en `fx_list` (`fx_common.c`): nombre, grupo, descripción, si es interactiva y sus ajustes propios. La web construye su menú a partir de `/faces`.
+- **Órdenes:** todo se controla con mensajes de texto (`bri 80`, `fx 3`, `loc 37.38 -5.98 Sevilla`, `ui launcher`…), iguales por WiFi, Bluetooth y consola serie. La lista está en `src/control.h`.
+- **Pantalla:** el sistema y Plasma dibujan a 410×502; las demás esferas, en un lienzo de 274×336 que se amplía ×1,5 al enviar, porque escribir la PSRAM es lo que más cuesta. Detalles en la wiki, página *Arquitectura*.
+- **App:** `cd android && gradlew assembleRelease` (JDK 21 y el SDK de Android; la firma necesita `android/keystore.properties`, que no está en git).
 
-### Bluetooth
-
-Hecho según `docs/PLAN-bluetooth.md`. Para controlarlo hay que emparejar con la clave de 6 dígitos que muestra el reloj (hasta 3 móviles; BOOT 10 s los olvida). El reloj se anuncia como `C6 Clock XXXX` y acepta los mismos comandos que la web; desde el PC:
-
-```
-python tools/ble_console.py          # comandos a mano
-python tools/fake_phone.py           # una sincronización como la hará la app
-python tools/ble_shot.py --fx 22     # captura de pantalla por Bluetooth (PNG)
-```
-
-La misma página de control funciona por los tres caminos: servida por el reloj en modo WiFi, desde Chrome/Edge por Web Bluetooth (abre `src/index.html` en `http://localhost`) y dentro de la app. Lo único que cambia es el enlace, en `src/transport.js`.
-
-### App Android (`android/`)
-
-App en Kotlin con la página de control en un WebView. El emparejamiento lo hace el sistema (Companion Device Manager) con la clave de la pantalla del reloj. Cada 30 min, aunque la app esté cerrada, sincroniza la hora y el tiempo de la ciudad del reloj; al encender el reloj o volver a estar cerca le pone la hora en segundos (Android 12+). Avisa de firmware y de app nuevos, y la app se actualiza sola. Requiere Android 10 o superior.
-
-```
-cd android
-gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
-gradlew test                 # tests unitarios (troceado, sincronización)
-gradlew assembleRelease      # firmada; necesita android/keystore.properties (no está en git)
-```
-
-Necesita JDK 21 (`JAVA_HOME`) y el SDK de Android (`android/local.properties` con `sdk.dir=...`).
+Más en [CLAUDE.md](CLAUDE.md), la wiki *Compilar y contribuir* y [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licencia
 

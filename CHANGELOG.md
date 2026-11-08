@@ -1,6 +1,20 @@
 # Cambios
 
-## Sin publicar (rama `s3`)
+## Sin publicar: Marea (3.0.0)
+
+> **Marea: el reloj pasa a la Waveshare ESP32-S3-Touch-AMOLED-2.06.** Pantalla AMOLED táctil de 410×502, batería, reloj de hardware, acelerómetro, altavoz y microSD. El ESP32-C6 deja de mantenerse (su última versión es la 2.1.0).
+
+- **Sistema nuevo** con el estilo *Marea Solsticial*: lanzador de apps (deslizar desde abajo), ajustes rápidos (desde arriba), selector de esferas (mantener el dedo) y volver deslizando desde la izquierda o con BOOT. Textos en español o inglés.
+- **Apps:** Esferas, Alarmas (por el altavoz; se posponen al agitar la muñeca), Pasos (podómetro con objetivo diario), Cronómetro, Música, Linterna, Archivos y Ajustes. Llamadas entrantes en la muñeca: quién llama, rechazar o silenciar.
+- **Todas las esferas a pantalla completa**, siguiendo las esquinas redondeadas y a 30 fps. Las que eran horizontales (Vida, HUD, Aventura, Estrellada, WiFi, Earthrise, Sakura, Synthwave, Agujero negro y Gol) pasan a verticales. Clásico usa la pantalla como caja; Feria, RPG, Túnel y Agujero negro cambian su composición.
+- **App 0.4.0: conexión permanente.** Mientras el reloj está cerca, la app se queda conectada y vuelve a conectar sola; sincroniza la hora y el tiempo al conectar y cada 30 minutos. Con permiso para leer notificaciones, el reloj muestra y controla la música del móvil y avisa de las llamadas.
+- **Modo USB:** el botón USB de Archivos reinicia el reloj como disco USB con la microSD; se vuelve con BOOT, expulsando el disco o desconectando el cable.
+- El tiempo que manda el móvil siempre gana sobre la descarga propia del reloj (es el más reciente).
+- La hora se guarda en el reloj de hardware (PCF85063) y se conserva con el reloj apagado. WiFi y Bluetooth funcionan a la vez, sin modos que cambiar. La pantalla se enciende al levantar la muñeca.
+- Red del punto de acceso: **Marea** (clave `mareamarea`); Bluetooth: **Marea XXXX**.
+- Para crear esferas: `tools/new_face.py` hace esferas a pantalla completa (lienzo ancho o `--native`).
+
+### Detalles de la etapa de paso a la S3
 
 > **Esferas retiradas: El grito, Acuario y Cuento.** Quedan 21 esferas. Sus números (10, 16 y 20) no se reutilizan; si un reloj tenía elegida una de ellas, pasa a la siguiente.
 

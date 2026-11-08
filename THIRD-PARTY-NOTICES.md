@@ -7,9 +7,12 @@ El código de este repositorio es de CarlosNS y se distribuye con la licencia [G
 | Componente | Licencia | Uso |
 |---|---|---|
 | [ESP-IDF](https://github.com/espressif/esp-idf) (Espressif), incluidos FreeRTOS, lwIP, NimBLE, mbedTLS y el controlador WiFi/Bluetooth | Apache 2.0 (y MIT/BSD en algunos componentes) | Sistema base, red, Bluetooth, HTTPS |
-| Fuente [Aileron](https://dotcolon.net/font/aileron/) (Sora Sagano), la que trae Pillow | CC0 (dominio público) | Texto pequeño de la interfaz (`src/uifont.c`, generado por `tools/gen_uifont.py`) |
+| [esp_tinyusb](https://components.espressif.com/components/espressif/esp_tinyusb) (Espressif) y [TinyUSB](https://github.com/hathach/tinyusb) (Ha Thach) | Apache 2.0 y MIT | Modo USB: la microSD como disco (`src/usbdisk.c`) |
+| Fuente [Aileron](https://dotcolon.net/font/aileron/) (Sora Sagano), la que trae Pillow | CC0 (dominio público) | Texto pequeño de las esferas (`src/uifont.c`, generado por `tools/gen_uifont.py`) |
+| Fuente [Jersey 10](https://fonts.google.com/specimen/Jersey+10) (The Soft Type Project Authors) | [SIL Open Font License 1.1](tools/fonts/OFL-jersey10.txt) | Títulos, números y botones del sistema (`src/ui_fonts.c`, generado por `tools/make_fonts.py`) |
+| Fuente [VT323](https://fonts.google.com/specimen/VT323) (Peter Hull) | [SIL Open Font License 1.1](tools/fonts/OFL-vt323.txt) | Etiquetas y textos del sistema (`src/ui_fonts.c`) |
 
-Los dígitos grandes, los sprites y todas las esferas son diseño propio, dibujados por código.
+Las dos fuentes OFL van convertidas a mapas de bits dentro del firmware; sus archivos originales y licencias están en `tools/fonts/`. Los dígitos grandes, los iconos, los fondos de pixel art, los sprites y todas las esferas son diseño propio, dibujados por código.
 
 ## App Android
 

@@ -1,7 +1,7 @@
 """Creates a new clock face from a working template and registers it in the firmware.
 
-    python tools/new_face.py burbujas "Burbujas"                       # portrait, group Efectos
-    python tools/new_face.py faro "Faro" --landscape --group nature --desc "Un faro en la costa..."
+    python tools/new_face.py burbujas "Burbujas"                       # wide canvas, group Efectos
+    python tools/new_face.py faro "Faro" --native --group nature --desc "Un faro en la costa..."
     python tools/new_face.py burbujas "Burbujas" --dry-run             # show what would change
 
 It writes src/fx_<id>.c (a face that already draws a background, something that moves and the
@@ -22,7 +22,7 @@ SRC = os.path.join(ROOT, "src")
 GROUPS = {"effects": "FX_G_EFFECTS", "games": "FX_G_GAMES", "art": "FX_G_ART",
           "nature": "FX_G_NATURE", "clocks": "FX_G_CLOCKS"}
 
-TEMPLATE = r'''// "{label}" ({orient}): {desc_comment}
+TEMPLATE = r'''// "{label}" (full screen, {orient}): {desc_comment}
 // Made from tools/new_face.py: replace the drawing below with your own idea.
 #include <stdio.h>
 #include "app.h"
@@ -30,8 +30,10 @@ TEMPLATE = r'''// "{label}" ({orient}): {desc_comment}
 #include "fx.h"
 #include "gfx.h"
 
-#define W {w_macro}  // this face is {orient}: {w_px} x {h_px} px
+#define W {w_macro}  // {orient}: {w_px} x {h_px} px, the whole screen{scale_note}
 #define H {h_macro}
+// The screen corners are rounded (radius {corner} px here): keep text and anything important away
+// from them. The outer 2 px of each edge may not show either.
 
 static int s_ox, s_oy;  // state kept between frames (here: how far the finger moved the ball)
 
@@ -69,9 +71,9 @@ void {id}_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char date[24];
     clock_date_str(date);
     uint16_t white = rgb565(255, 255, 255), ink = rgb565(12, 10, 30);
-    gfx_text_ol(fb, (W - gfx_text_width(date, 2)) / 2, H - 112, date, white, ink, 2, 1);
-    clock_draw_row(fb, &font_round_m, H - 88, -4, white, ink, FONT_FILL | FONT_OUTLINE);
-    clock_draw_seconds_bar(fb, 24, H - 18, W - 48, 3, white, rgb565(60, 60, 80));
+    gfx_text_ol(fb, (W - gfx_text_width(date, 2)) / 2, H - {date_up}, date, white, ink, 2, 1);
+    clock_draw_row(fb, &font_round_m, H - {row_up}, -4, white, ink, FONT_FILL | FONT_OUTLINE);
+    clock_draw_seconds_bar(fb, {bar_x}, H - {bar_up}, W - {bar_w}, 3, white, rgb565(60, 60, 80));
 }}
 '''
 
@@ -84,7 +86,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("id", help="C identifier and file name: lowercase letters, digits, _ (e.g. burbujas)")
     ap.add_argument("label", help='name shown in the app (e.g. "Burbujas")')
-    ap.add_argument("--landscape", action="store_true", help="320 x 172 instead of 172 x 320")
+    ap.add_argument("--native", action="store_true",
+                    help="410 x 502 at full resolution instead of the wide canvas (274 x 336, enlarged x1.5): "
+                         "sharper, but twice the pixels to draw (fine for faces that barely move)")
     ap.add_argument("--group", choices=GROUPS, default="effects", help="section of the app (default effects)")
     ap.add_argument("--desc", default="", help="one sentence for the app: what the face shows")
     ap.add_argument("--hint", default="", help="what dragging on the touch pad does (shows the pad)")
@@ -104,19 +108,22 @@ def main():
 
     count = int(re.search(r"#define FX_COUNT (\d+)", fx_h).group(1))
     desc = a.desc or f"Esfera {a.label}: describe aquí en una frase lo que se ve."
-    orient = "landscape" if a.landscape else "portrait"
+    orient = "native" if a.native else "wide canvas"
+    if a.native:
+        geo = dict(w_macro="FW", h_macro="FH", w_px=410, h_px=502, scale_note="", corner=120,
+                   date_up=180, row_up=150, bar_up=44, bar_x=110, bar_w=220)
+    else:
+        geo = dict(w_macro="WW", h_macro="WH", w_px=274, h_px=336, scale_note=", enlarged x1.5 when sent",
+                   corner=80, date_up=122, row_up=100, bar_up=30, bar_x=72, bar_w=144)
 
-    face_c = TEMPLATE.format(
-        id=a.id, label=a.label, orient=orient, desc_comment=a.desc or "describe what it shows",
-        w_macro="LAND_W" if a.landscape else "LCD_W", h_macro="LAND_H" if a.landscape else "LCD_H",
-        w_px=320 if a.landscape else 172, h_px=172 if a.landscape else 320)
+    face_c = TEMPLATE.format(id=a.id, label=a.label, orient=orient, desc_comment=a.desc or "describe what it shows", **geo)
 
     fx_h2 = fx_h.replace(f"#define FX_COUNT {count}", f"#define FX_COUNT {count + 1}")
     anchor = "\n// Scratch memory shared by faces"
     assert anchor in fx_h2, "fx.h: no encuentro dónde añadir los prototipos"
     fx_h2 = fx_h2.replace(anchor, f"void {a.id}_enter(void);\nvoid {a.id}_render(uint16_t *fb, uint32_t t, uint32_t dt);\n" + anchor, 1)
 
-    entry = (f'    {{.name = "{c_string(a.label.upper())}", .landscape = {"true" if a.landscape else "false"}, '
+    entry = (f'    {{.name = "{c_string(a.label.upper())}", .res = {"FX_NATIVE" if a.native else "FX_WIDE"}, '
              f'.enter = {a.id}_enter, .render = {a.id}_render,\n'
              f'     .label = "{c_string(a.label)}", .group = {GROUPS[a.group]},'
              + (f' .hint = "{c_string(a.hint)}",' if a.hint else "")
@@ -136,7 +143,7 @@ def main():
     for name, text in ((path, face_c), ("fx.h", fx_h2), ("fx_common.c", common2), ("CMakeLists.txt", cmake2)):
         with open(os.path.join(SRC, name), "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
-    print("\nAhora: pio run -e c6lcd -t upload, y elígela en la app o con `fx %d`." % count)
+    print("\nAhora: pio run -t upload, y elígela en el reloj, en la app o con `fx %d`." % count)
     print("Antes de enviarla: añádela a la tabla del README y su captura: python tools/ble_shot.py --fx %d --out fx%02d.png" % (count, count) + ".")
 
 
