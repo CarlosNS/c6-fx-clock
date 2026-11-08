@@ -1,17 +1,17 @@
-# C6 FX Clock: notas para Claude Code
+# Marea: notas para Claude Code
 
-Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth, una página web de control y actualizaciones por internet.
+**Marea** es un reloj de pulsera con esferas animadas y apps propias, sobre la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502, táctil, batería, RTC, acelerómetro, altavoz, microSD). Tiene una app Android que se queda conectada por Bluetooth mientras el reloj está cerca, una página web de control y actualizaciones por internet.
 
-- **Placa actual:** Waveshare ESP32-C6-LCD-1.47.
-- **Placa nueva:** Waveshare ESP32-S3-Touch-AMOLED-2.06 (ver [docs/PLAN-s3.md](docs/PLAN-s3.md)).
-- **Repositorio público:** https://github.com/CarlosNS/c6-fx-clock (GPL-3.0-or-later).
+- **Repositorio público:** https://github.com/CarlosNS/c6-fx-clock (GPL-3.0-or-later). El nombre viene del primer reloj, con un ESP32-C6, que ya no se usa ni se mantiene.
+- **Plan en curso:** [docs/PLAN-marea.md](docs/PLAN-marea.md). Históricos: `docs/PLAN-s3.md` (paso del C6 a la S3) y `docs/PLAN-bluetooth.md`.
+- **Estilo visual del sistema:** «Marea Solsticial» (pixel art nocturno junto al mar), resumido en `docs/PLAN-marea.md`. Cada esfera tiene su propio estilo.
 - **Documentación de usuario y de desarrollo:** la wiki, cuyo código fuente está en `docs/wiki/`.
 
 ## Normas del dueño (obligatorias)
 
 - **Todo en español:** respuestas, lista de tareas, resúmenes, documentación y mensajes de commit. Los comentarios del código están en inglés; mantén ese estilo.
 - **Commits:** autor `CarlosNS <19167897+CarlosNS@users.noreply.github.com>`, ya configurado en el repositorio. **Nunca** escribas el correo personal del dueño en ningún archivo del repositorio. Termina cada commit con la línea `Co-Authored-By` que indique el sistema.
-- **Publicar** necesita permiso explícito **cada vez**: `tools/release.py` (release, GitHub Pages y manifiesto que leen los relojes) y `tools/publish_wiki.py`. Hacer push a `main` también se pregunta, salvo que el dueño ya lo haya pedido en esa tarea.
+- **Publicar** necesita permiso explícito **cada vez**: `tools/release.py` (GitHub Pages, manifiesto que leen los relojes y releases) y `tools/publish_wiki.py`. Hacer push a `main` también se pregunta, salvo que el dueño ya lo haya pedido en esa tarea.
 - **Esferas:** las nuevas van **siempre al final** de `fx_list`, porque los relojes guardan el número de la esfera elegida. Nunca reordenes. Para quitar una, se **retira** (entrada `.retired`, ver la guía) y su número no se reutiliza. Retiradas para siempre: El grito (10), Acuario (16) y Cuento (20); el dueño no quiere dedicarles más tiempo. Usa `python tools/new_face.py` y sigue la guía de la wiki `Crear-una-esfera.md`, que el dueño quiere completa y al día.
 - **Documentación:** cada cambio visible para el usuario se documenta en el README, en `docs/wiki/` y en `CHANGELOG.md`.
 - **Derechos:** nada de arte, marcas ni personajes copiados. Solo obras de dominio público o inspiración libre (ver THIRD-PARTY-NOTICES.md).
@@ -21,67 +21,53 @@ Reloj de escritorio con esferas animadas a 30 fps, una app Android por Bluetooth
 | Ruta | Qué es |
 |---|---|
 | `src/` | Firmware (ESP-IDF 5.5 con PlatformIO). Detalle en la wiki, página `Arquitectura.md` |
-| `src/board.h`, `src/lcd.c` | Todo lo que depende de la placa: pines, pantalla, botón, LED. `board.h` elige `board_c6lcd.h` o `board_s3amoled.h` según el chip |
-| `src/board_*.c`, `src/lcd_co5300.c`, `src/i2c_bus.c`, `src/pmu_axp2101.c`, `src/rtc_pcf85063.c`, `src/touch_ft3168.c`, `src/imu_qmi8658.c` | Código propio de cada placa: `board_init()`; en la S3, el bus I2C, el AXP2101 (batería), el RTC, el táctil, el acelerómetro y la pantalla. Cada cosa se activa con un `BOARD_HAS_*` en la cabecera de la placa. `lcd_co5300.c` implementa `lcd.h` ampliando el lienzo de 172×320 (modo compatibilidad) |
+| `src/board.h`, `src/board.c` | Pines y arranque de la placa: bus I2C, AXP2101, táctil, acelerómetro |
+| `src/lcd_co5300.c` | Pantalla: QSPI a 80 MHz, búferes en PSRAM, envío en el núcleo 1. Las esferas antiguas dibujan en un lienzo de 172×320 que se amplía al enviar |
+| `src/pmu_axp2101.c`, `src/rtc_pcf85063.c`, `src/touch_ft3168.c`, `src/imu_qmi8658.c`, `src/i2c_bus.c` | Batería, reloj de hardware, táctil, acelerómetro y bus I2C |
 | `src/fx_*.c`, `src/fx_common.c` | Esferas y su catálogo `fx_list` (`FX_COUNT` en `fx.h`) |
 | `src/settings.c` | Tabla de ajustes: una línea da orden, guardado en NVS y campo en el estado JSON |
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |
 | `src/index.html`, `src/transport.js` | Página de control, embebida en el firmware y también dentro de la app |
-| `android/` | App Kotlin: una WebView con la misma página, Companion Device Manager y WorkManager |
+| `android/` | App Kotlin «Marea» (paquete `io.github.carlosns.c6clock`, que no cambia para que se actualice sobre la instalada) |
 | `tests/` | pytest por fases (`tests/README.md`), con `clocklib/` como código compartido |
-| `tools/` | `new_face.py`, `ble_shot.py` (captura por Bluetooth), `ble_console.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py` |
-| `docs/PLAN-bluetooth.md` | Plan histórico de las fases 0–7, ya cerrado |
-| `docs/PLAN-s3.md` | Plan del paso a la placa S3 AMOLED |
+| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py` |
 
 ## Compilar, flashear y probar (Windows)
 
 ```bash
 PIO="$USERPROFILE/.platformio/penv/Scripts/pio.exe"
-"$PIO" run -e c6lcd                 # compilar (la primera vez tarda unos 2 min)
-"$PIO" run -e c6lcd -t upload       # flashear por COM5
-python tools/build_webflasher.py    # después de cada cambio: imágenes de cada placa compilada (instalador web, tests de actualización)
-cd tests && python -m pytest -m now # unitarios (16) y web
-"$PIO" run -e s3amoled              # placa S3 AMOLED (rama s3); -t upload flashea por COM7
-python tools/bootlog.py --port COM7 # reinicia la S3 y muestra su arranque
+"$PIO" run                          # compilar (en limpio, unos 5 min)
+"$PIO" run -t upload                # flashear por COM7
+python tools/bootlog.py             # reinicia el reloj por RTS y muestra su arranque
+python tools/build_webflasher.py    # imágenes marea.bin / marea-ota.bin (instalador web, tests de actualización)
+cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 ```
 
-- `pio run` sin `-e` compila solo el C6 (`default_envs`). Los ajustes de ESP-IDF propios de la S3 están en `sdkconfig.defaults.esp32s3`; si los cambias, borra `sdkconfig.s3amoled` para que se regenere.
-
-- `pio run` tarda más de 2 minutos en limpio: lánzalo en segundo plano y espera el aviso. No hagas sondeos con `sleep`.
-- **Abrir COM5 reinicia el C6**, aunque sea solo para leer. Comprueba lo que haga falta antes de abrirlo.
-- **Consola serie:** acepta cualquier orden de `control.h` (`status`, `fx 3`, `mode ble|wifi|update`, `time <epoch> <ms>`, `dbgtime h m`). Úsala desde `tests/clocklib/board.py` con `SerialSession`.
-  - Sin hilo lector propio, llama a `status(reading=False)`.
-  - Tras abrir el puerto, espera a la línea `Face:` del arranque antes de mandar órdenes.
-- **Las órdenes guardan los ajustes del reloj:** restaura lo que cambies (esfera, `fxoff`, `auto`…). `tests/conftest.py` lo hace en las pruebas por WiFi.
-- **Arranque callado:** un reloj emparejado que arranca sin hora no anuncia su Bluetooth durante 60 s (`QUIET_BOOT_MS` en `ble.c`), para que el móvil lo note y le dé la hora. Los tests se lo saltan mandando `time` por la consola (`SerialSession.wait_advertising`).
-- **Capturas:** `python tools/ble_shot.py --fx N --out x.png --scale 2` en modo Bluetooth, o `GET /screenshot` en modo WiFi.
-- **Herramientas:** JDK 21 en `%LOCALAPPDATA%\DevTools\jdk-21.0.13+9` (pon `JAVA_HOME` antes de `android\gradlew.bat`), Android SDK en `%LOCALAPPDATA%\Android\Sdk` y `gh` en `%LOCALAPPDATA%\Programs\gh\bin\gh.exe`.
-- **App:** cada versión publicada necesita un `versionCode` mayor.
-  - La clave de firma está en `%USERPROFILE%\.c6clock\`. Si se pierde, los usuarios tendrán que desinstalar la app para actualizar.
-  - Para instalar con `adb install`, el móvil (POCO F7, HyperOS) tiene que tener activado «Instalar vía USB» y alguien debe tocar «Instalar» en él.
+- `pio run` tarda varios minutos en limpio: lánzalo en segundo plano y espera el aviso. No hagas sondeos con `sleep`.
+- **Abrir COM7 no reinicia el reloj.** `tools/bootlog.py` y `SerialSession` lo reinician por RTS (en Windows hay que reescribir DTR para que `usbser.sys` mande el cambio).
+- **Si cambias `sdkconfig.defaults`, borra `sdkconfig.s3amoled`** para que se regenere.
+- **Consola serie:** acepta cualquier orden de `control.h` (`status`, `fx 3`, `mode update`, `time <epoch> <ms>`, `dbgtime h m`). Úsala desde `tests/clocklib/board.py` con `SerialSession`.
+- **Las órdenes guardan los ajustes del reloj:** restaura lo que cambies (esfera, `fxoff`, `auto`, `aon`…).
+- **Capturas:** `GET /screenshot` por WiFi o `python tools/ble_shot.py` por Bluetooth (dan el lienzo de la esfera).
+- **Herramientas:** JDK 21 en `%LOCALAPPDATA%\DevTools\jdk-21.0.13+9` (pon `JAVA_HOME` antes de `android\gradlew.bat`), Android SDK en `%LOCALAPPDATA%\Android\Sdk` y `gh` en `%LOCALAPPDATA%\Programs\gh\bin\gh.exe`. `build_webflasher.py` se ejecuta con el `python` del sistema, que trae esptool.
+- **App:** cada versión publicada necesita un `versionCode` mayor. La clave de firma está en `%USERPROFILE%\.c6clock\`; si se pierde, habrá que desinstalar la app para actualizar. Para `adb install`, el móvil (POCO F7, HyperOS) necesita «Instalar vía USB» y que alguien toque «Instalar».
 
 ## Rarezas conocidas
 
-- **Memoria del C6:** no caben WiFi y Bluetooth a la vez, por eso existen los modos de arranque BLE, WIFI y UPDATE. En la S3 sí caben (`BOARD_RADIO_EXCLUSIVE 0`): el arranque normal levanta las dos, y solo UPDATE es aparte. Allí lo justo es la RAM interna, unos 70 KB libres: lo grande va a la PSRAM.
-- **HyperOS:**
-  - bloquea los escaneos Bluetooth en segundo plano;
-  - avisa de que el reloj desaparece y reaparece cada unos 20 s, así que la presencia solo sincroniza tras 30 s de ausencia;
-  - `am force-stop` corta los avisos de presencia hasta que se abre la app.
-- **Red WiFi «Merlos»:** es una red mallada. Un nodo puede asociar el reloj sin darle IP; `net.c` lo vigila.
-- **El C6 no tiene coma flotante (FPU):** las esferas usan enteros y tablas (`sin_q14`).
+- **Esquinas redondeadas:** radio de unos 120 px (`BOARD_LCD_CORNER_R`), y los 2 px exteriores de cada borde pueden no verse. Ten en cuenta siempre esa zona perdida al colocar cualquier cosa.
+- **RAM interna:** es lo que se agota (unos 70 KB libres con WiFi y Bluetooth a la vez). Lo grande va a la PSRAM, incluidos los búferes de WiFi, NimBLE y TLS.
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
-- **La pantalla de la S3 tiene las esquinas redondeadas**, con un radio de unos 120 px (`BOARD_LCD_CORNER_R`), y los 2 px exteriores de cada borde pueden no verse. Ten en cuenta siempre esa zona perdida al colocar cualquier cosa: esferas, textos, avisos, la superposición `ovl` y la clave Bluetooth.
-- **Manifiesto de actualizaciones:** las claves de arriba son del C6 y no se tocan; cada placa nueva va en `boards.<BOARD_ID>`. Los relojes hasta la 3.0.0 solo leen 1023 bytes: `release.py` lo comprueba.
-- **No renombres el repositorio:** los relojes instalados y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`, y un cambio de nombre rompería esa dirección de GitHub Pages.
+- **La caché de datos de 64 KB del S3 cuelga la placa al arrancar:** no la actives.
+- **Vigilante:** si el bucle principal pasa 8 s sin avanzar, el reloj se reinicia y al arrancar dice en qué paso estaba (`hang.h`).
+- **El táctil a veces no responde a una lectura:** el driver conserva el último estado; los errores de `i2c.master` están silenciados.
+- **Manifiesto de actualizaciones:** la entrada de Marea es `boards.s3amoled`. Las claves de arriba son de los relojes C6 (2.1.0) y **nunca** se tocan. Los C6 solo leen 1023 bytes: `release.py` lo comprueba.
+- **`project(c6-fx-demo)` no se renombra:** `ota.c` exige que la imagen nueva tenga el mismo nombre de proyecto que la instalada.
+- **HyperOS:** bloquea escaneos Bluetooth en segundo plano y mata apps; la app tiene que guiar para quitar las restricciones de batería.
+- **Red WiFi «Merlos»:** es una red mallada. Un nodo puede asociar el reloj sin darle IP; `net.c` lo vigila.
+- **No renombres el repositorio:** los relojes y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`.
 
 ## Estado (noviembre de 2026)
 
-- **Versión publicada:** 2.1.0.
-- **3.0.0:** preparada en `CHANGELOG.md` y sin publicar. **Aplazada** por decisión del dueño (7 de noviembre de 2026) mientras se trabaja en la S3; faltan las pruebas con el móvil de `tests/MANUAL.md`. Antes de publicarla:
-  - `PROJECT_VER` 3.0.0;
-  - en la app, `versionName` 1.0.0 y un `versionCode` mayor;
-  - `BOOT_DEFAULT` → `BOOT_BLE`;
-  - y permiso del dueño.
-- **App:** la 0.3.10 (código 13) está compilada pero no instalada en el móvil del dueño.
-- **Placa nueva:** ha llegado la S3 AMOLED. El trabajo sigue según [docs/PLAN-s3.md](docs/PLAN-s3.md), en la rama `s3`.
-  - Copia del firmware de fábrica: `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`.
+- **En el reloj del dueño:** `3.0.0-beta.1`, instalada por la actualización real desde GitHub (solo `boards.s3amoled` en Pages).
+- **Trabajo en curso:** ver [docs/PLAN-marea.md](docs/PLAN-marea.md).
+- **Copia del firmware de fábrica:** `C:\Users\Carlos\Esp32\backups\s3-amoled-fabrica\`.

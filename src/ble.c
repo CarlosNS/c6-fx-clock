@@ -417,7 +417,7 @@ static void on_sync(void)
     ble_hs_id_infer_auto(0, &s_addr_type);
     uint8_t mac[6] = {0};
     ble_hs_id_copy_addr(s_addr_type, mac, NULL);
-    snprintf(s_name, sizeof(s_name), "C6 Clock %02X%02X", mac[1], mac[0]);
+    snprintf(s_name, sizeof(s_name), "Marea %02X%02X", mac[1], mac[0]);
     ble_svc_gap_device_name_set(s_name);
     // A quick power cycle is too short for the phone to notice the clock was gone, so it would not
     // bring the time until its next periodic sync (Xiaomi phones can't peek at the advertising

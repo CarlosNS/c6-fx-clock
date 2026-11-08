@@ -304,7 +304,7 @@ class MainActivity : ComponentActivity() {
     private fun installApp() {
         val app = appOffer ?: return
         if (!AppUpdate.mayInstall(this)) {
-            js("appUpdateState", JSONObject.quote("Activa «Permitir de esta fuente» para C6 Clock, vuelve y pulsa otra vez"))
+            js("appUpdateState", JSONObject.quote("Activa «Permitir de esta fuente» para Marea, vuelve y pulsa otra vez"))
             startActivity(AppUpdate.allowInstallIntent(this))
             return
         }

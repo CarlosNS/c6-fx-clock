@@ -33,7 +33,7 @@ def sync_once(link: ClockLink, weather_cmd=None, now=None):
     return info
 
 
-def sync_session(name_prefix="C6 Clock", address=None, weather_cmd=None, retries=0):
+def sync_session(name_prefix="Marea", address=None, weather_cmd=None, retries=0):
     """Connect, sync, disconnect — exactly one background sync of the app. Returns (info, seconds).
     retries: extra connection attempts, as the app makes (Windows sometimes fails one at random)."""
     t0 = time.monotonic()

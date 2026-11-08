@@ -1,15 +1,14 @@
 #pragma once
 
-// Boot modes (docs/PLAN-bluetooth.md, section 2). On boards where Wi-Fi and Bluetooth don't fit
-// together (BOARD_RADIO_EXCLUSIVE), each radio gets its own mode and switching is a controlled reboot.
+// Boot modes. Wi-Fi and Bluetooth always run together; the only special boot is UPDATE. BLE and WIFI
+// are kept as names because older apps, the tests and the status JSON use them: both mean "normal".
 typedef enum {
-    BOOT_BLE,     // daily use: Bluetooth only, synced by the phone
-    BOOT_WIFI,    // fallback: the web control page over Wi-Fi (as in 2.0.0)
+    BOOT_BLE,     // normal
+    BOOT_WIFI,    // normal (same as BLE)
     BOOT_UPDATE,  // one-shot: Wi-Fi client, fetch and apply an update, then back to the previous mode
 } boot_mode_t;
 
-// Mode until the Bluetooth transport exists (phase 2 switches it to BOOT_BLE)
-#define BOOT_DEFAULT BOOT_WIFI
+#define BOOT_DEFAULT BOOT_BLE
 
 // Reads the mode stored in NVS. When it is UPDATE, the stored mode is reset to the return mode
 // *before* anything else runs, so a crash during the update can never trap the clock in it.

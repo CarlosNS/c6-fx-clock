@@ -1,6 +1,6 @@
 """Regression of the Wi-Fi web mode (what works today, must keep working in the WIFI boot mode).
 
-Needs the clock on the network: pytest tests/wifi --host 192.168.1.140
+Needs the clock on the network: pytest tests/wifi --host 192.168.1.157
 """
 import asyncio
 import json

@@ -7,9 +7,7 @@
 #include "board.h"
 #include "esp_log.h"
 #include "esp_netif_sntp.h"
-#if BOARD_HAS_RTC
 #include "rtc.h"
-#endif
 
 static const char *TAG = "clock";
 clock_now_t g_now;
@@ -17,16 +15,13 @@ clock_now_t g_now;
 static void on_sync(struct timeval *tv)
 {
     ESP_LOGI(TAG, "Time synchronized via NTP");
-#if BOARD_HAS_RTC
     rtc_write(tv->tv_sec, (int)(tv->tv_usec / 1000));
-#endif
 }
 
 void clock_init(void)
 {
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);  // Europe/Madrid with DST
     tzset();
-#if BOARD_HAS_RTC
     // The battery-backed clock kept the time while the board was off: valid from the first frame,
     // so the Bluetooth quiet boot (ble.c, waiting for the phone to bring the time) is skipped too
     int64_t epoch;
@@ -35,7 +30,6 @@ void clock_init(void)
         settimeofday(&tv, NULL);
         ESP_LOGI(TAG, "Time from the RTC");
     }
-#endif
     clock_update();
 }
 
@@ -75,9 +69,7 @@ void clock_set_epoch(int64_t sec, int ms)
     struct timeval tv = {.tv_sec = (time_t)sec, .tv_usec = ms * 1000};
     settimeofday(&tv, NULL);
     ESP_LOGI(TAG, "Time set from phone");
-#if BOARD_HAS_RTC
     rtc_write(sec, ms);
-#endif
 }
 
 int clock_display_hour(void)

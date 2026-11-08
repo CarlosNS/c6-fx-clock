@@ -7,7 +7,7 @@
 // joins the stored Wi-Fi, reads the manifest, downloads the image into the other OTA slot checking
 // project, size and SHA-256, stores the outcome and reboots into the mode it came from.
 //
-// Manifest: {"version":"2.1.0","url":"https://.../c6-fx-clock-ota.bin","size":N,"sha256":"<hex>"}
+// Manifest: {..., "boards":{"s3amoled":{"version":"3.0.0","url":"https://.../marea-ota.bin","size":N,"sha256":"<hex>"}}}
 // Only https:// is accepted, except http:// to a private LAN address (the PC test server).
 
 // Validates and stores the manifest URL; false (and *msg, Spanish) if it is not acceptable.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>C6 FX Clock</title>
+<title>Marea</title>
 <style>
 :root{--bg:#0b0d14;--card:#151926;--card2:#1b2031;--line:#262c3f;--txt:#e8ebf5;--dim:#8a91a8;--acc:#7c5cff;--acc2:#22d3ee;--ok:#30d158}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -85,7 +85,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 <body>
 <main>
 <header>
-  <h1><span>ESP32-C6</span> Clock</h1>
+  <h1>Marea</h1>
   <div class="badge"><span id="clk">--:--:--</span><div class="dot" id="dot" title="Conexión con el reloj"></div></div>
 </header>
 
@@ -189,7 +189,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
       <div class="item"><div class="t">Firmware<small id="otainfo">--</small></div><span class="status">versión <b id="ver">--</b></span></div>
       <div class="item"><div class="t">Modo de conexión<small id="modetxt"></small></div><button class="btn" id="tomode">Cambiar</button></div>
       <div class="stack" id="wifionly" style="padding-top:9px;border-top:1px solid var(--line)">
-        <div class="t">Actualizar por WiFi (OTA)<small style="display:block;color:var(--dim);font-size:12px">Elige <b>c6-fx-clock-ota.bin</b> de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
+        <div class="t">Actualizar por WiFi (OTA)<small style="display:block;color:var(--dim);font-size:12px">Elige <b>marea-ota.bin</b> de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
         <input type="file" id="otafile" accept=".bin" style="font-size:13px;color:var(--dim)">
         <button class="btn full" id="otago" disabled>Actualizar firmware</button>
         <div class="bar hide" id="otabar"><div id="otafill"></div></div>
@@ -205,7 +205,7 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 <script src="transport.js"></script>
 <script>
 // Face catalogue comes from the firmware (/faces): one source of truth
-let FX=[],GROUPS=[],BOARD='c6lcd';  // BOARD: which entry of the update manifest is this clock's
+let FX=[],GROUPS=[],BOARD='s3amoled';  // BOARD: which entry of the update manifest is this watch's
 const $=id=>document.getElementById(id);
 let cur=-1,lastUser=0,synced=false;
 // The link (Wi-Fi, Web Bluetooth or the Android app) comes from transport.js
@@ -276,11 +276,11 @@ $('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)r
 async function poll(){try{show(await L.request('status'))}catch(e){}}
 let tick=null;
 function show(s){
- BOARD=s.board||'c6lcd';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);
+ BOARD=s.board||'s3amoled';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);
  if(s.bat!==undefined){$('batrow').hidden=false;$('bat').innerHTML=s.bat<0?(s.usb?'Sin batería · USB':'--'):`<b>${s.bat} %</b>`+(s.chg?' · cargando':s.usb?' · USB':'')+(s.bmv>0?` · ${(s.bmv/1000).toFixed(2)} V`:'')}tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
  mode=s.mode;$('wgo').textContent=mode==='wifi'?'Conectar el reloj a esta red':'Guardar esta red para las actualizaciones';
  $('wst').innerHTML=mode!=='wifi'?(s.ssid?`Red guardada: <b>${s.ssid}</b>. El reloj solo la usa para actualizarse.`:'Sin red guardada: hace falta para que el reloj se actualice.')
-  :s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi C6-FX-Demo');
+  :s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi Marea');
  updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
  if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
@@ -308,8 +308,8 @@ function updStatus(s){const u=s.upd;if(!u)return;
  if(L.kind==='android'&&!autoUpd&&s.ver){autoUpd=true;updCheck()}}  // the app looks by itself on opening
 async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;
  try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json(),ver=$('ver').textContent;
-  // The C6 image is the manifest's top level (as always); other boards have theirs under boards.<id>
-  const e=BOARD==='c6lcd'?m:(m.boards||{})[BOARD];
+  // This watch's image is under boards.<id>; the top-level keys belong to the old ESP32-C6 clocks
+  const e=(m.boards||{})[BOARD];
   if(!e){$('updst').textContent='Aún no hay versiones publicadas para esta placa';return}
   if(e.version===ver){$('updst').innerHTML=`Tienes la última versión (<b>${ver}</b>)`;return}
   offer=e;$('updst').innerHTML=`Disponible la <b>${e.version}</b> (tienes la ${ver})${m.notes?': '+m.notes:''}`;$('updgo').textContent='Actualizar a la '+e.version;$('updgo').classList.remove('hide')}

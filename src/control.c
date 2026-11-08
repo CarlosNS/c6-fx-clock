@@ -1,8 +1,6 @@
 #include "control.h"
 #include "board.h"
-#if BOARD_HAS_PMU
 #include "pmu_axp2101.h"
-#endif
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
@@ -151,14 +149,12 @@ size_t app_status_json(char *buf, size_t size)
                      ota_progress(), (unsigned)ota_max_size(), ota_running_label(), boot_mode_name(boot_mode()));
     if (n > 0) len += n;
     if (len + 2 < size) len += update_result_json(buf + len, size - len - 1);
-#if BOARD_HAS_PMU
     pmu_battery_t bat;
     if (pmu_battery(&bat) && len < size) {
         n = snprintf(buf + len, size - len, ",\"bat\":%d,\"bmv\":%d,\"chg\":%d,\"usb\":%d",
                      bat.present ? bat.percent : -1, bat.mv, bat.charging, bat.usb);
         if (n > 0) len += n;
     }
-#endif
     if (len + 1 < size) buf[len++] = '}', buf[len] = 0;
     return len < size ? len : size - 1;
 }

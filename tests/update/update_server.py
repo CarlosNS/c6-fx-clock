@@ -60,19 +60,25 @@ class Server:
         base = f"http://{self.host}:{port}"
 
         def manifest(version, name, sha=None, size=None):
+            # As published: the watch's entry under boards.s3amoled, and top-level keys for the old
+            # ESP32-C6 clocks that the watch must ignore (an image it would reject)
             data = self.files[name]
-            return {"version": version, "url": f"{base}/{name}", "size": size or len(data),
-                    "sha256": sha or hashlib.sha256(data).hexdigest(), "notes": "test"}
+            e = {"version": version, "url": f"{base}/{name}", "size": size or len(data),
+                 "sha256": sha or hashlib.sha256(data).hexdigest(), "notes": "test"}
+            return {"version": "2.1.0", "url": f"{base}/foreign.bin", "size": len(self.files["foreign.bin"]),
+                    "sha256": hashlib.sha256(self.files["foreign.bin"]).hexdigest(), "boards": {"s3amoled": e}}
 
         # "newer" is only claimed by the manifest; the image keeps its real version, so after a
         # successful test update the clock runs the same firmware it started with.
+        slow = manifest(newer, "good.bin")
+        slow["boards"]["s3amoled"]["url"] = f"{base}/slow/good.bin"
         self.manifests = {
             "good": manifest(newer, "good.bin"),
             "same": manifest(self.running_version, "good.bin"),
             "badsha": manifest(newer, "good.bin", sha="0" * 64),
             "truncated": manifest(newer, "truncated.bin", size=len(good)),
             "foreign": manifest(newer, "foreign.bin"),
-            "slow": manifest(newer, "good.bin") | {"url": f"{base}/slow/good.bin"},
+            "slow": slow,
         }
         self.hits = []
 

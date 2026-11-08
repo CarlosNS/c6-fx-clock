@@ -19,7 +19,7 @@ from update_server import Server
 
 pytestmark = [pytest.mark.phase6, pytest.mark.slow]
 
-FIRMWARE = os.path.join(os.path.dirname(__file__), "..", "..", "webflasher", "c6-fx-clock-ota.bin")
+FIRMWARE = os.path.join(os.path.dirname(__file__), "..", "..", "webflasher", "marea-ota.bin")
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +34,7 @@ def clock(link, server):
     """The paired clock's address; the module link is closed so every test opens its own."""
     running = link.request("get info", "info")["ver"]
     if server.running_version != running:  # the "good" test would install that other version
-        pytest.exit(f"webflasher/c6-fx-clock-ota.bin is {server.running_version}, the clock runs {running}: "
+        pytest.exit(f"webflasher/marea-ota.bin is {server.running_version}, the clock runs {running}: "
                     "run `pio run` and tools/build_webflasher.py first", returncode=2)
     addr = link.address
     link.close()

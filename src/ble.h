@@ -11,5 +11,5 @@ void ble_start(void);
 bool ble_connected(void);
 // Forgets every paired phone (the next connection must pair again with the on-screen code)
 void ble_forget_all(void);
-// Advertised name ("C6 Clock XXXX"); empty until the stack is up
+// Advertised name ("Marea XXXX"); empty until the stack is up
 const char *ble_name(void);

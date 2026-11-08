@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FX Clock Flasher</title>
+<title>Marea · instalador</title>
 <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
 <style>
 :root{--bg:#0b0d14;--card:#151926;--line:#262c3f;--txt:#e8ebf5;--dim:#8a91a8;--acc:#7c5cff;--acc2:#22d3ee;--warn:#f5a524}
@@ -26,8 +26,8 @@ code{background:var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
 </head>
 <body>
 <main>
-  <h1><span>ESP32</span> FX Clock</h1>
-  <p class="sub">Instalador web para la Waveshare ESP32-C6-LCD-1.47 y la ESP32-S3-Touch-AMOLED-2.06: instala sola la versión de tu placa</p>
+  <h1>Marea</h1>
+  <p class="sub">Instalador web del reloj Marea (Waveshare ESP32-S3-Touch-AMOLED-2.06)</p>
 
   <div class="card install">
     <esp-web-install-button manifest="manifest.json">
@@ -50,7 +50,7 @@ code{background:var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
   <div class="card">
     <strong>¿Borrar el dispositivo?</strong>
     <p class="note">Si eliges <b>borrar</b>, se pierde todo lo guardado: la red WiFi y los ajustes del reloj. Es lo recomendable si la placa tenía otro proyecto.
-      Después, conecta el móvil a la WiFi <code>C6-FX-Demo</code> (clave <code>esp32c6fx</code>), abre <code>http://192.168.4.1</code> y en
+      Después, conecta el móvil a la WiFi <code>Marea</code> (clave <code>mareamarea</code>), abre <code>http://192.168.4.1</code> y en
       <b>Conexión</b> escribe tu red para que el reloj se conecte y ponga la hora solo.</p>
   </div>
 
@@ -62,9 +62,8 @@ code{background:var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
 
   <div class="card">
     <strong>Móvil Android</strong>
-    <p class="note">La app <b>C6 Clock</b> (en las <a href="https://github.com/CarlosNS/c6-fx-clock/releases">releases</a>) controla el reloj por Bluetooth,
-      sin WiFi, y le pone la hora y el tiempo aunque esté cerrada. En la placa C6, pasa el reloj a modo Bluetooth manteniendo <b>BOOT</b> 2 s en la pantalla de bienvenida
-      (la S3 tiene el Bluetooth siempre activo) y empareja con la clave que aparece en él.</p>
+    <p class="note">La app <b>Marea</b> (en las <a href="https://github.com/CarlosNS/c6-fx-clock/releases">releases</a>) se queda conectada al reloj por Bluetooth
+      mientras está cerca: le pone la hora y el tiempo, avisa de llamadas y controla la música. Se empareja una vez con la clave que aparece en el reloj.</p>
   </div>
 
   <div class="card">

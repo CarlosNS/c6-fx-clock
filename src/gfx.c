@@ -256,7 +256,7 @@ void gfx_glow(uint16_t *fb, int cx, int cy, int r, uint16_t color, int max_alpha
 {
     int r2 = r * r;
     if (r2 <= 0) return;
-    int32_t inv = (1 << 24) / r2;  // the C6 divides slowly: one reciprocal instead of two divisions per pixel
+    int32_t inv = (1 << 24) / r2;  // one reciprocal instead of two divisions per pixel
     for (int dy = -r; dy <= r; dy++) {
         int y = cy + dy;
         if ((unsigned)y >= (unsigned)H) continue;

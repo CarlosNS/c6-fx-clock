@@ -1,29 +1,27 @@
-CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_160=y
+# PlatformIO only notices changes to this file when sdkconfig.s3amoled is older: after editing it,
+# delete sdkconfig.s3amoled so it is generated again.
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
 CONFIG_FREERTOS_HZ=1000
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_HTTPD_WS_SUPPORT=y
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
-# RAM is shared between code and data on the C6 and two framebuffers take 220 KB:
-# keep Wi-Fi / lwIP / FreeRTOS code in flash so the network stack has heap to work with
+# Internal RAM is what runs short (Wi-Fi + Bluetooth + display strips): keep Wi-Fi / lwIP / FreeRTOS
+# code in flash so the internal heap stays free
 CONFIG_ESP_WIFI_IRAM_OPT=n
 CONFIG_ESP_WIFI_EXTRA_IRAM_OPT=n
 CONFIG_ESP_WIFI_RX_IRAM_OPT=n
 CONFIG_ESP_WIFI_SLP_IRAM_OPT=n
 CONFIG_LWIP_IRAM_OPTIMIZATION=n
 CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
-# Fewer fixed Wi-Fi receive buffers (10 -> 6, 1.6 KB each): commands and OTA uploads don't need
-# more, and it gives back the heap the Bluetooth controller takes in every mode
+# Fewer fixed Wi-Fi receive buffers (10 -> 6, 1.6 KB each): commands and OTA uploads don't need more
 CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
 CONFIG_ESP_WIFI_RX_BA_WIN=6
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
-CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 # OTA: a freshly updated firmware must confirm itself (ota_confirm_app) or the bootloader rolls back
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
-# Bluetooth (ble.c): NimBLE peripheral only, one connection. Only started in the BLE boot mode;
-# the other modes release its memory (esp_bt_mem_release).
+# Bluetooth (ble.c): NimBLE peripheral only, one connection
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
@@ -33,9 +31,30 @@ CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_MAX_BONDS=3
 CONFIG_BT_NIMBLE_NVS_PERSIST=y
-# On the C6 code and data share the same SRAM: the BLE controller keeps ~29 KB of code in RAM in
-# every mode, which leaves the Wi-Fi mode without heap. Run it from flash instead (slower radio
-# timing, fine for short commands and status messages).
+# The BLE controller code runs from flash instead of taking ~29 KB of internal RAM (slower radio
+# timing, fine for short commands and status messages)
 CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY=y
 # NimBLE logs two lines per notification at INFO: keep the serial console readable
 CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
+
+# ---- ESP32-S3 board ----
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# 32 MB GigaDevice quad flash. The CPU can only map the first 16 MB without experimental options,
+# so the app partitions stay below that line (partitions.csv)
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
+
+# 8 MB octal PSRAM: framebuffers and big buffers go there
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+# Wi-Fi and Bluetooth run together on this board: their buffers, NimBLE's memory and the TLS
+# buffers (HTTPS: weather, updates) go to PSRAM to keep internal RAM free
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# Not set: the 64 KB data cache (CONFIG_ESP32S3_DATA_CACHE_64KB, with 32 or 64 B lines) hangs this
+# board right after the bootloader hands over to the app (ESP-IDF 5.5.0, tried 2026-11-07)

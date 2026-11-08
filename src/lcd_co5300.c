@@ -1,6 +1,6 @@
 // lcd.h for the Waveshare ESP32-S3-Touch-AMOLED-2.06: CO5300 AMOLED, 410x502, over QSPI.
 //
-// Compatibility mode: the faces draw on the C6's canvas (LCD_W x LCD_H = 172x320, or 320x172 in
+// Compatibility mode: faces not redrawn for this screen yet draw on a canvas (LCD_W x LCD_H = 172x320, or 320x172 in
 // landscape) and this driver enlarges it while sending: portrait x1.5 to 258x480, landscape x1.25 to
 // 400x215 (the watch is worn upright, so landscape faces are shown level, not turned), both centred
 // with black around. Every third (x1.5) or fifth (x1.25) output pixel is the average of its two

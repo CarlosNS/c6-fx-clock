@@ -35,9 +35,7 @@ static const setting_t SETTINGS[] = {
     {"aon", &g_app.always_on, 0, 1, true, NULL},
     {"wks", &g_app.wake_secs, 3, 600, true, on_wake},
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
-#if BOARD_HAS_IMU
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
-#endif
     {"ovl", &g_app.overlay, 0, 1, false, NULL},  // debug only
 };
 #define NSET (sizeof(SETTINGS) / sizeof(SETTINGS[0]))

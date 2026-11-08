@@ -3,7 +3,7 @@ Bluetooth without a person: DeviceAccess answers the Bluetooth device chooser th
 
     with Browser() as b:
         b.open("http://127.0.0.1:8765/src/index.html")
-        b.click("#blego", choose=lambda d: d["name"].startswith("C6 Clock"))
+        b.click("#blego", choose=lambda d: d["name"].startswith("Marea"))
         b.eval("document.getElementById('dot').className")
 """
 import asyncio

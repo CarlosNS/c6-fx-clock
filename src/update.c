@@ -200,9 +200,9 @@ void update_run(void)
     if (n <= 0) finish("bad_manifest", NULL, "manifiesto no valido");
     body[n] = 0;
     cJSON *m = cJSON_Parse(body);
-    // This board's entry: the top level for the C6 (as the manifest has always been), boards.<id> for
-    // the others. A manifest without one has nothing for this board: never try another board's image.
-    const cJSON *e = strcmp(BOARD_ID, "c6lcd") == 0 ? m : cJSON_GetObjectItem(cJSON_GetObjectItem(m, "boards"), BOARD_ID);
+    // This watch's entry is boards.<id>; the top-level keys are the old ESP32-C6 clocks' image. A
+    // manifest without our entry has nothing for us: never try another board's image.
+    const cJSON *e = cJSON_GetObjectItem(cJSON_GetObjectItem(m, "boards"), BOARD_ID);
     if (m && !e) {
         cJSON_Delete(m);
         finish("up_to_date", running, "no hay version para esta placa");

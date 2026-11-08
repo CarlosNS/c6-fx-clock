@@ -1,5 +1,5 @@
-// FX Clock — animated clock faces controlled from a phone. Boards: Waveshare ESP32-C6-LCD-1.47 and
-// ESP32-S3-Touch-AMOLED-2.06 (see board.h)
+// Marea: a watch with animated faces and its own apps, controlled from a phone
+// (Waveshare ESP32-S3-Touch-AMOLED-2.06, see board.h)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +21,6 @@
 #include "gfx.h"
 #include "hang.h"
 #include "lcd.h"
-#include "led.h"
 #include "nvs_flash.h"
 #include "ota.h"
 #include "settings.h"
@@ -30,19 +29,14 @@
 #include "web.h"
 #include "weather.h"
 #include "wifi_config.h"
-#if BOARD_HAS_IMU
 #include "imu.h"
-#endif
-#if BOARD_HAS_TOUCH
 #include "lcd_co5300.h"
 #include "control.h"
 #include "touch.h"
-#endif
 
 #define AUTO_CYCLE_MS 30000
 #define SPLASH_MS 5000
 #define FRAME_US 33333        // 30 fps cap: keeps the chip cool and the power draw low
-#define MODE_HOLD_MS 2000     // holding BOOT this long on the splash switches Wi-Fi <-> Bluetooth mode
 #define LONG_PRESS_MS 800
 #define FORGET_HINT_MS 3000   // holding BOOT this long shows the "forget phones" hint...
 #define FORGET_MS 10000       // ...and this long forgets every paired phone
@@ -105,8 +99,7 @@ static void text_centered(uint16_t *fb, int y, const char *s, uint16_t color, in
     gfx_text(fb, (g_lcd_w - gfx_text_width(s, scale)) / 2, y, s, color, scale);
 }
 
-// hold: 0..1000 progress of a BOOT press that switches the mode
-static void draw_splash(uint16_t *fb, uint32_t t, int hold)
+static void draw_splash(uint16_t *fb, uint32_t t)
 {
     for (int y = 0; y < LCD_H; y++) {
         uint16_t c = hsv565((uint8_t)(170 + y / 6 + t / 30), 200, 40 + y / 8);
@@ -114,9 +107,7 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
     }
     uint16_t white = rgb565(255, 255, 255), dim = rgb565(170, 180, 210);
     uint16_t accent = hsv565((uint8_t)(t / 8), 160, 255);
-    text_centered(fb, 40, BOARD_CHIP, accent, 3);
-    text_centered(fb, 72, "FX CLOCK", white, 3);
-#if !BOARD_RADIO_EXCLUSIVE
+    text_centered(fb, 56, "MAREA", accent, 4);
     // Both radios at once: the app over Bluetooth and the web page over Wi-Fi, no modes to switch
     text_centered(fb, 116, "WIFI Y BLUETOOTH", accent, 1);
     text_centered(fb, 140, "En la app del reloj, busca:", dim, 1);
@@ -132,36 +123,6 @@ static void draw_splash(uint16_t *fb, uint32_t t, int hold)
     } else if (g_app.sta_ssid[0]) {
         text_centered(fb, 288, "conectando a tu WiFi...", dim, 1);
     }
-    (void)hold;
-#else
-    bool wifi = boot_mode() == BOOT_WIFI;
-    if (wifi) {
-        text_centered(fb, 116, "MODO WIFI", accent, 1);
-        text_centered(fb, 136, "Conecta tu movil a:", dim, 1);
-        text_centered(fb, 152, AP_SSID, white, 2);
-        text_centered(fb, 174, "clave: " AP_PASS, dim, 1);
-        text_centered(fb, 194, "y abre", dim, 1);
-        text_centered(fb, 208, g_app.ap_ip, white, 2);
-        if (g_app.sta_ip[0]) {
-            text_centered(fb, 238, "o en tu red WiFi:", dim, 1);
-            text_centered(fb, 254, g_app.sta_ip, white, 2);
-        } else if (g_app.sta_ssid[0]) {
-            text_centered(fb, 238, "conectando a tu WiFi...", dim, 1);
-        }
-    } else {
-        text_centered(fb, 116, "MODO BLUETOOTH", accent, 1);
-        text_centered(fb, 152, "Abre la app del reloj", white, 1);
-        text_centered(fb, 170, "en tu movil y busca:", dim, 1);
-        text_centered(fb, 192, ble_name()[0] ? ble_name() : "...", white, 2);
-    }
-    // Hold BOOT to switch mode; a bar fills while it is held
-    const char *hint = wifi ? "Manten BOOT: modo Bluetooth" : "Manten BOOT: modo WiFi";
-    text_centered(fb, 288, hint, dim, 1);
-    if (hold > 0) {
-        gfx_fill_rect(fb, 20, 302, LCD_W - 40, 4, rgb565(40, 46, 70));
-        gfx_fill_rect(fb, 20, 302, (LCD_W - 40) * hold / 1000, 4, accent);
-    }
-#endif
 }
 
 static void draw_overlay(uint16_t *fb, int fx)
@@ -219,21 +180,6 @@ static void draw_pairing(uint16_t *fb, int code, uint32_t now)
     ui_text(fb, &ui_s, (g_lcd_w - ui_width(&ui_s, t2)) / 2, y + 68, t2, rgb565(170, 180, 210), 0, FONT_FILL);
 }
 
-// The RGB LED mirrors the average color of a few screen pixels, like a tiny ambilight
-static void led_follow_screen(const uint16_t *fb, int bri)
-{
-    int r = 0, g = 0, b = 0;
-    for (int i = 0; i < 16; i++) {
-        uint16_t p = fb[(g_lcd_h / 5 + (i / 4) * g_lcd_h / 5) * g_lcd_w + (i % 4 + 1) * g_lcd_w / 5];
-        p = (p >> 8) | (p << 8);
-        r += (p >> 11) << 3;
-        g += ((p >> 5) & 0x3F) << 2;
-        b += (p & 0x1F) << 3;
-    }
-    int k = 16 * 6 * 100 / (bri < 1 ? 1 : bri);
-    led_set(r / k, g / k, b / k);
-}
-
 static bool is_night(void)
 {
     if (!g_app.night_on || !g_now.valid) return false;
@@ -284,7 +230,6 @@ static void poll_button(uint32_t now)
     }
 }
 
-#if BOARD_HAS_TOUCH
 // Touch screen. Screen off: a touch only wakes it, like the button. Swiping left / right shows the
 // next / previous face. On interactive faces (those with a hint) the finger goes to the face, as on
 // the pad in the apps, unless the swipe starts outside the face or close to a side edge: those still
@@ -336,9 +281,7 @@ static void poll_touch(uint32_t now)
         }
     }
 }
-#endif
 
-#if BOARD_HAS_IMU
 // Raise to wake, checked while the screen is off (about 25 times a second). The screen comes on when
 // it ends up facing up (z over 0.7 g for 3 samples in a row) after not facing up within the last
 // 1.2 s (z under 0.3 g): turning the wrist to look. A watch lying still on the table never triggers.
@@ -359,7 +302,6 @@ static void poll_raise(uint32_t now)
         app_wake();
     }
 }
-#endif
 
 void app_main(void)
 {
@@ -371,10 +313,9 @@ void app_main(void)
     }
     settings_load();
     boot_mode_t mode = boot_mode_init();
-    // Which radios this boot starts. Where they don't fit together (BOARD_RADIO_EXCLUSIVE) the boot
-    // mode picks one; elsewhere both run in every mode but UPDATE.
-    bool use_wifi = mode == BOOT_WIFI || (!BOARD_RADIO_EXCLUSIVE && mode != BOOT_UPDATE);
-    bool use_ble = mode == BOOT_BLE || (!BOARD_RADIO_EXCLUSIVE && mode != BOOT_UPDATE);
+    // Wi-Fi and Bluetooth run together in every mode but UPDATE (a one-shot boot that only fetches
+    // an update)
+    bool use_wifi = mode != BOOT_UPDATE, use_ble = mode != BOOT_UPDATE;
     // Bluetooth is compiled in but not always used: then give its static RAM (~15 KB) back to the
     // heap. Irreversible until the next reboot, and changing mode always reboots.
     if (!use_ble) {
@@ -385,10 +326,9 @@ void app_main(void)
 
     // The screen first, so the framebuffers get the big contiguous blocks of RAM. Update mode keeps
     // one buffer to leave room for HTTPS.
-    lcd_init(mode == BOOT_UPDATE ? 1 : BOARD_FB_COUNT);
+    lcd_init(mode == BOOT_UPDATE ? 1 : 2);
     fx_common_init();
     clock_init();
-    led_init();
     gpio_config_t btn = {.pin_bit_mask = 1ULL << BOARD_PIN_BUTTON, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE};
     gpio_config(&btn);
     console_start();
@@ -402,7 +342,7 @@ void app_main(void)
     net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)
     strcpy(g_app.ap_ip, "192.168.4.1");
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot
-    draw_splash(lcd_fb(), 0, 0);
+    draw_splash(lcd_fb(), 0);
     lcd_flush();
     lcd_set_brightness(g_app.brightness);
 
@@ -417,30 +357,20 @@ void app_main(void)
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 
-#if BOARD_HANG_REBOOT
     // From here on the main loop must keep turning: if it stalls 8 s, the task watchdog reboots the
     // clock (and board_init() reports the step it was stuck in, see hang.h)
     esp_task_wdt_config_t wdt = {.timeout_ms = 8000, .idle_core_mask = 0, .trigger_panic = true};
     esp_task_wdt_reconfigure(&wdt);
     esp_task_wdt_add(NULL);
-#endif
 
-    // Splash; holding BOOT through it switches between the Wi-Fi and Bluetooth modes (boards that
-    // run one radio at a time)
-    uint32_t start = now_ms(), held_since = 0;
-    while (now_ms() - start < SPLASH_MS || held_since) {
+    // Splash
+    uint32_t start = now_ms();
+    while (now_ms() - start < SPLASH_MS) {
         uint32_t now = now_ms();
-        bool pressed = gpio_get_level(BOARD_PIN_BUTTON) == 0;
-        if (pressed && !held_since) held_since = now ? now : 1;
-        if (!pressed) held_since = 0;
-        int hold = held_since ? (int)(now - held_since) * 1000 / MODE_HOLD_MS : 0;
-        if (BOARD_RADIO_EXCLUSIVE && hold >= 1000) boot_mode_switch(mode == BOOT_WIFI ? BOOT_BLE : BOOT_WIFI);
         console_poll();
         clock_update();
-#if BOARD_HANG_REBOOT
         esp_task_wdt_reset();
-#endif
-        draw_splash(lcd_fb(), now - start, hold);
+        draw_splash(lcd_fb(), now - start);
         lcd_flush();
         vTaskDelay(pdMS_TO_TICKS(33));
     }
@@ -448,24 +378,20 @@ void app_main(void)
     int cur = -1, frames = 0, cur_bri = -1, render_max = 0, fade = 1000;
     int64_t render_sum = 0;
     bool confirmed = false, panel_asleep = false;
-    uint32_t last = now_ms(), fx_since = last, fps_t = last, led_t = last, anim_t = 0, dirty_t = 0;
+    uint32_t last = now_ms(), fx_since = last, fps_t = last, anim_t = 0, dirty_t = 0;
     int64_t next_frame = esp_timer_get_time();
     for (;;) {
         uint32_t now = now_ms();
         uint32_t dt = now - last;
         if (dt > 100) dt = 100;
         last = now;
-#if BOARD_HANG_REBOOT
         esp_task_wdt_reset();
-#endif
         STAGE_MAIN(1);
         clock_update();
         STAGE_MAIN(2);
         poll_button(now);
-#if BOARD_HAS_TOUCH
         STAGE_MAIN(3);
         poll_touch(now);
-#endif
         STAGE_MAIN(4);
         console_poll();
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
@@ -511,10 +437,7 @@ void app_main(void)
                 lcd_sleep(true);
                 panel_asleep = true;
             }
-            led_set(0, 0, 0);
-#if BOARD_HAS_IMU
             poll_raise(now);
-#endif
             if (g_app.dirty) {
                 g_app.dirty = false;
                 settings_save();
@@ -547,11 +470,6 @@ void app_main(void)
         if (ota >= 0) draw_ota(fb, ota);
         int code = g_app.pairing_code;
         if (code >= 0) draw_pairing(fb, code, now);
-        if (now - led_t > 40) {
-            if (is_night()) led_set(0, 0, 0);
-            else led_follow_screen(fb, eff);
-            led_t = now;
-        }
         STAGE_MAIN(12);
         lcd_flush();
         STAGE_MAIN(13);

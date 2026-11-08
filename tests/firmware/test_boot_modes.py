@@ -1,7 +1,7 @@
 """Phase 1: boot modes (docs/PLAN-bluetooth.md, section 2), driven over the serial console.
 
-The tests run in order and walk through every mode: WIFI -> BLE -> UPDATE (returns by itself to
-BLE) -> WIFI. Opening the serial port resets the board; the module always leaves it in Wi-Fi mode.
+The tests run in order: the normal boot, UPDATE (returns by itself) and back. Wi-Fi and Bluetooth run
+together in the normal modes ("ble" and "wifi" are the same). The module leaves the watch in "wifi".
 Run with:  pytest -m phase1
 """
 import re
@@ -47,16 +47,6 @@ def free_heap(log):
 def test_boots_cleanly(console):
     assert not PANIC.search(console.text)
     assert re.search(r"Boot mode: (ble|wifi)", console.text)
-
-
-def test_ble_mode_starts_no_wifi(console):
-    log = switch(console, "ble")  # from "Boot mode" to "Free heap after start"
-    assert log.startswith("Boot mode: ble")
-    assert "double buffering" in log
-    assert "wifi:mode" not in log and "httpd" not in log and "AP '" not in log
-    # With Bluetooth running (59.5 KB measured in phase 4); the plan's minimum is 30 KB
-    assert free_heap(log) >= 45000, "too little RAM left in BLE mode"
-    assert not PANIC.search(log)
 
 
 def test_console_works_without_radios(console):

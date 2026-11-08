@@ -5,8 +5,8 @@
 #include "fonts.h"
 #include "lcd.h"
 
-// The ESP32-C6 has no FPU: per-pixel work uses integer / fixed-point math and lookup tables,
-// floats are only used for a handful of per-frame values.
+// The ESP32-S3 has a single-precision FPU; many faces still use the integer / fixed-point tables they
+// were written with (sin_q14, sin_u8), which are as fast and keep results identical.
 
 enum { FX_G_EFFECTS, FX_G_GAMES, FX_G_ART, FX_G_NATURE, FX_G_CLOCKS, FX_G_COUNT };
 extern const char *const fx_group_names[FX_G_COUNT];

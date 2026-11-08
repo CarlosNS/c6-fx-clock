@@ -28,7 +28,7 @@ def _shared_loop():
 
 
 class ClockLink:
-    def __init__(self, name_prefix="C6 Clock", timeout=15.0):
+    def __init__(self, name_prefix="Marea", timeout=15.0):
         self.name_prefix = name_prefix
         self.timeout = timeout
         self._loop = _shared_loop()

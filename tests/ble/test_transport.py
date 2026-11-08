@@ -17,7 +17,7 @@ def test_advertises(ble_name):
     finally:
         lk.close()
     assert hit, "clock not advertising"
-    assert hit[1].startswith(ble_name) and len(hit[1]) == len(ble_name) + 5  # "C6 Clock ABCD"
+    assert hit[1].startswith(ble_name) and len(hit[1]) == len(ble_name) + 5  # "Marea ABCD"
 
 
 def test_mtu_is_negotiated(link):

@@ -67,7 +67,7 @@ esp_err_t ota_write(const void *data, size_t len, const char **msg)
     }
     if (s_done == 0 && !same_project(data, len)) {
         ota_abort();
-        *msg = "Ese archivo no es un firmware de este reloj (usa c6-fx-clock-ota.bin)";
+        *msg = "Ese archivo no es un firmware de este reloj (usa marea-ota.bin)";
         return ESP_ERR_INVALID_ARG;
     }
     esp_err_t err = esp_ota_write(s_handle, data, len);

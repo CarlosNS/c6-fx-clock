@@ -1,7 +1,7 @@
 #pragma once
 #include <stdbool.h>
 
-// Motion sensor (boards with BOARD_HAS_IMU): only the accelerometer, for "raise to wake".
+// QMI8658 motion sensor: the accelerometer, for "raise to wake" and the step counter.
 
 // false if the sensor does not answer
 bool imu_init(void);

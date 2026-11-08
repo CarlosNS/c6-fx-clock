@@ -1,16 +1,16 @@
 """Shared options for the clock test-suite.
 
-  --host      the clock's IP in Wi-Fi mode            (default 192.168.1.140)
-  --port      serial port of the board                (default COM5; opening it RESETS the board)
-  --ble-name  prefix of the advertised Bluetooth name (default "C6 Clock")
+  --host      the watch's IP on the home Wi-Fi        (default 192.168.1.157)
+  --port      serial port of the board                (default COM7; sessions reset it through RTS)
+  --ble-name  prefix of the advertised Bluetooth name (default "Marea")
 """
 import pytest
 
 
 def pytest_addoption(parser):
-    parser.addoption("--host", default="192.168.1.140")
-    parser.addoption("--port", default="COM5")
-    parser.addoption("--ble-name", default="C6 Clock")
+    parser.addoption("--host", default="192.168.1.157")
+    parser.addoption("--port", default="COM7")
+    parser.addoption("--ble-name", default="Marea")
 
 
 @pytest.fixture(scope="session")
