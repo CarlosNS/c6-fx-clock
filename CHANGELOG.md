@@ -27,6 +27,12 @@
 - Arreglado: con una app abierta, la esfera se reiniciaba 30 veces por segundo por detrás (gasto de batería inútil).
 - Arreglado: la página ofrecía versiones más viejas que la instalada; la app comparaba mal las betas.
 - **Actualizaciones sin WiFi en el reloj (3.0.0-beta.6, app 0.5.0):** el móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, que la instala mientras sigue funcionando, con una pantalla de progreso. Funciona en cualquier sitio con los datos del móvil. Los relojes anteriores siguen actualizándose por su WiFi. Desde el PC: `tools/ble_ota.py`.
+- **App y página nuevas, con el estilo del reloj** (*Marea Solsticial*: pixel art nocturno, fuentes Jersey 10 y VT323). En vez de una lista larguísima, **Inicio** con los avisos que piden algo (versión nueva del reloj o de la app, permiso que falta), la esfera que se ve y cuatro secciones:
+  - **Esferas:** vista previa de cada una; el **ojo** la incluye o la saca del cambio automático. La esfera actual reúne su velocidad, su panel táctil y sus opciones.
+  - **Alarmas:** la etiqueta se ve sin abrirlas, cada una tiene interruptor, y **Animación de alarma** abre una ventana con la vista previa de cada animación.
+  - **Archivos:** para mirar la microSD desde el móvil: carpetas, tamaños y fechas (no abre ni borra).
+  - **Ajustes:** Idioma (español o inglés, en el reloj y en la app a la vez), Pantalla, Hora, Móvil y conexión, Actualizaciones y Avanzado (donde pasa *Sincronizar hora*, que ya se hace sola).
+  - El botón atrás del móvil recorre las secciones antes de salir.
 - Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.
 - La barra de estado muestra el porcentaje de batería, y un rayo sobre el icono mientras está enchufado; los ajustes rápidos dicen «cargando» o «cargada».

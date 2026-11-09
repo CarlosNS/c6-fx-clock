@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // Shared state between the render loop (main.c), the control layer (control.c) and the
@@ -63,6 +64,10 @@ enum { SD_NONE, SD_OK, SD_BAD };  // g_app.sd_state
 void app_wake(void);
 // Checks the microSD in the background (app_files.c) and updates g_app.sd_state
 void sd_check(void);
+// One folder of the microSD as JSON, for the app's file viewer (GET /files?p=, "get files <path>"):
+// {"st":"ok","path":"/Música","free":B,"total":B,"list":[{"n":"Olas.mp3","d":0,"s":5200000,"m":epoch}]}.
+// st is "none" (no card), "bad" (unreadable) or "nodir". path is from the card's root ("/" = root).
+size_t sd_list_json(const char *path, char *buf, size_t size);
 // Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
 void power_off_now(bool really);
 // Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it

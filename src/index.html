@@ -3,266 +3,480 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#14102C">
 <title>Marea</title>
 <style>
-:root{--bg:#0b0d14;--card:#151926;--card2:#1b2031;--line:#262c3f;--txt:#e8ebf5;--dim:#8a91a8;--acc:#7c5cff;--acc2:#22d3ee;--ok:#30d158}
+/* Marea Solsticial (docs/PLAN-marea.md): night by the sea in pixel art. Hard edges and shadows, no
+   rounded corners or gradients; Jersey 10 for titles, numbers and buttons, VT323 for text. */
+:root{--noche:#14102C;--panel:#221A42;--panel2:#2A2052;--linea:#463A7A;--off:#3E3468;--crema:#F6EEE2;--gris:#A89CCE;
+ --oro:#F9B25A;--oro2:#FFD166;--verde:#78D6A0;--coral:#EC6066;--sombra:#0A0818}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:radial-gradient(ellipse at top,#1a1440,var(--bg) 60%);color:var(--txt);font:15px/1.45 system-ui,sans-serif;min-height:100vh;padding:16px;user-select:none}
-main{max-width:640px;margin:0 auto}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-h1{font-size:20px;margin:0;letter-spacing:.5px}
-h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;color:transparent}
-.badge{display:flex;gap:10px;align-items:center;font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
-.dot{width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 8px #e5484d}
-.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin:22px 0 4px}
-.sub{font-size:13px;color:var(--dim);margin:0 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
-.card h3{margin:0 0 10px;font-size:15px}
-/* current face */
-.cur{background:linear-gradient(160deg,#211a4a,var(--card) 70%);border-color:#3a3170}
-.cur h3{font-size:22px;margin:0}
-.tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-.tag{font-size:12px;padding:2px 9px;border-radius:99px;background:#ffffff12;color:var(--dim)}
-.tag.int{background:#22d3ee22;color:var(--acc2)}
-.desc{margin:0;color:#cfd4e6}
-.own{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
-.own .lbl{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin-bottom:8px}
-.padrow{display:flex;gap:14px;align-items:center}
-#pad{width:min(40vw,150px);aspect-ratio:172/320;border-radius:14px;background:repeating-linear-gradient(0deg,#ffffff08 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,#ffffff08 0 1px,transparent 1px 20px),var(--bg);border:1px solid var(--line);touch-action:none;position:relative;overflow:hidden;flex:none}
-#pad.land{aspect-ratio:320/172;width:min(56vw,240px)}
-#pad .touch{position:absolute;width:44px;height:44px;margin:-22px;border-radius:50%;background:radial-gradient(circle,#22d3eeaa,transparent 70%);pointer-events:none;display:none}
-.hint{font-size:14px;color:#cfd4e6}
-/* face picker */
-.group{margin-bottom:12px}
-.group .gname{font-size:12px;color:var(--dim);margin:0 0 6px 2px}
-.fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
-.fx button{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 8px;font:inherit;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:7px;text-align:left}
-.fx button i{display:inline-block;border:2px solid currentColor;border-radius:2px;opacity:.55;flex:none}
-.fx button i.v{width:8px;height:14px}.fx button i.h{width:14px;height:8px}
-.fx button.off{opacity:.45}
-.fx button.off::after{content:"";flex:none;margin-left:auto;width:11px;height:11px;border:2px solid currentColor;border-radius:50%;background:linear-gradient(135deg,transparent 42%,currentColor 42%,currentColor 58%,transparent 58%)}
-.editing .fx button:not(.off)::after{content:"";flex:none;margin-left:auto;width:5px;height:10px;border:solid #4ade80;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-2px,-1px)}
-.fx button.on{background:linear-gradient(135deg,var(--acc),#4f46e5);border-color:transparent;box-shadow:0 4px 18px #7c5cff55}
-/* controls */
-.item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
-.item:first-of-type{border-top:0;padding-top:0}
-.item .t{display:flex;flex-direction:column}
-.item small{color:var(--dim);font-size:12px}
-.slider{padding:9px 0;border-top:1px solid var(--line)}
-.slider:first-of-type{border-top:0;padding-top:0}
-.slider .top{display:flex;justify-content:space-between;margin-bottom:4px}
-.slider b{font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--acc)}
-.sw{width:42px;height:24px;appearance:none;background:#333a52;border-radius:12px;position:relative;cursor:pointer;transition:.2s;flex:none;margin:0}
-.sw:checked{background:var(--acc)}
-.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
-.sw:checked::after{left:21px}
-select,input[type=text],input[type=password]{background:#0f1320;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+html,body{background:var(--noche)}
+body{margin:0;color:var(--crema);font:20px/1.15 'VT323',ui-monospace,monospace;min-height:100vh;user-select:none}
+a{color:var(--crema);text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.j{font-family:'Jersey 10',system-ui,sans-serif;font-weight:400}
+.dim{color:var(--gris)}
+.ok{color:var(--verde)}.bad{color:var(--coral)}
+.hide{display:none!important}
+main{max-width:560px;margin:0 auto;position:relative}
+.view{padding:12px 16px 28px;display:flex;flex-direction:column;gap:12px;min-height:100vh}
+.top{display:flex;align-items:center;gap:2px;margin:0 0 0 -8px}
+.top h1{margin:0;font:400 38px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;background:none;border:0;padding:0}
+.lbl{font:400 22px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro);margin:6px 0 0}
+.panel{background:var(--panel);border:4px solid var(--linea);box-shadow:4px 4px 0 var(--sombra);padding:12px}
+.panel.gold{border-color:var(--oro)}.panel.red{border-color:var(--coral)}
+.btn{font:400 22px/1 'Jersey 10',system-ui,sans-serif;min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ background:var(--panel2);border:4px solid var(--linea);color:var(--crema);box-shadow:3px 3px 0 var(--sombra);padding:0 14px;text-align:center}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--sombra)}
+.btn.gold{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.5}
+.list{background:var(--panel);border:4px solid var(--linea);box-shadow:4px 4px 0 var(--sombra);display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;min-height:62px;padding:8px 12px;border-top:3px solid var(--panel2)}
+.row:first-child{border-top:0}
+.row .t{flex:1;display:flex;flex-direction:column;min-width:0}
+.row .t>b,.tt{font:400 24px/1 'Jersey 10',system-ui,sans-serif}
+.row small,.small{color:var(--gris);font-size:18px}
+.row.col{flex-direction:column;align-items:stretch;gap:6px}
+.go{font:400 28px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)}
+.badge{font:400 18px/1 'Jersey 10',system-ui,sans-serif;background:var(--oro);color:var(--noche);padding:2px 6px}
+.pip{width:10px;height:10px;background:var(--coral);flex:none}
+/* pixel switch */
+.sw{appearance:none;-webkit-appearance:none;width:52px;height:30px;margin:0;flex:none;position:relative;background:var(--off);border:3px solid var(--linea);cursor:pointer}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--gris)}
+.sw:checked{background:var(--verde);border-color:var(--verde)}
+.sw:checked::after{left:auto;right:2px;background:var(--noche)}
+/* pixel slider: the filled part is painted from script (fill()) */
+input[type=range]{appearance:none;-webkit-appearance:none;width:100%;height:8px;margin:12px 0 6px;background:var(--off);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:24px;background:var(--crema);border:0;border-radius:0;box-shadow:2px 2px 0 var(--sombra)}
+input[type=range]::-moz-range-thumb{width:14px;height:24px;background:var(--crema);border:0;border-radius:0}
+input.hue{background:linear-gradient(90deg,hsl(0 62% 30%),hsl(60 62% 30%),hsl(120 62% 30%),hsl(180 62% 30%),hsl(240 62% 30%),hsl(300 62% 30%),hsl(360 62% 30%))!important}
+select,input[type=text],input[type=password]{background:var(--noche);color:var(--crema);border:3px solid var(--linea);border-radius:0;min-height:46px;padding:0 10px;font:inherit}
 input[type=text],input[type=password]{width:100%;min-width:0}
 .stack{display:flex;flex-direction:column;gap:8px}
-.inline{display:flex;gap:8px}
-.btn{background:#1e2436;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
-.btn.full{width:100%}
-.btn:active{background:var(--acc)}
-.status{font-size:13px;color:var(--dim)}
-.status b{color:var(--txt);font-weight:600}
+.inline{display:flex;gap:8px;align-items:center}
+.seg{display:flex;border:3px solid var(--linea);flex:none}
+.seg button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;min-height:42px;padding:0 12px;border:0;background:var(--noche);color:var(--gris)}
+.seg button.on{background:var(--oro);color:var(--noche)}
+.bar{height:12px;background:var(--off);border:2px solid var(--linea)}
+.bar div{height:100%;width:0;background:var(--oro)}
+.prev{background:var(--panel2);display:block;object-fit:cover;image-rendering:pixelated}
+.prev.noimg{visibility:hidden}
+/* home */
+.sky{position:absolute;left:0;top:0;width:2px;height:2px;background:var(--crema);pointer-events:none;
+ box-shadow:40px 12px var(--crema),96px 30px var(--gris),150px 10px var(--crema),210px 34px var(--gris),262px 16px var(--crema),18px 30px var(--gris),300px 70px var(--gris),236px 62px var(--crema),330px 100px var(--gris)}
+.moon{position:absolute;right:24px;top:22px;width:28px;height:28px;background:var(--crema);box-shadow:inset -8px -4px 0 #D9CBB6;pointer-events:none}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;gap:6px;min-height:118px}
+.tile .tt{font-size:28px}
+/* faces */
+.fx{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fc{position:relative;background:var(--panel);border:4px solid var(--linea);box-shadow:3px 3px 0 var(--sombra)}
+.fc.on{border-color:var(--oro)}
+.fc.off .pick{opacity:.5}
+.fc .pick{display:flex;flex-direction:column;width:100%;padding:0;border:0;background:none;text-align:left}
+.fc .pick img{width:100%;aspect-ratio:274/336}
+.fc .pick span{font:400 19px/1 'Jersey 10',system-ui,sans-serif;padding:8px 38px 8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .eye{position:absolute;right:0;bottom:0;width:40px;height:36px;border:0;background:none;padding:0;display:flex;align-items:center;justify-content:center}
+#pad{width:min(52vw,190px);aspect-ratio:274/336;background:var(--noche);border:3px solid var(--linea);touch-action:none;position:relative;overflow:hidden;flex:none;
+ background-image:linear-gradient(var(--panel2) 1px,transparent 1px),linear-gradient(90deg,var(--panel2) 1px,transparent 1px);background-size:20px 20px}
+#pad.land{aspect-ratio:336/274;width:min(70vw,260px)}
+#pad .touch{position:absolute;width:24px;height:24px;margin:-12px;background:var(--oro);pointer-events:none;display:none}
+.swatch{display:inline-block;width:42px;height:20px;border:3px solid var(--linea)}
 #wxres{display:flex;flex-wrap:wrap;gap:6px}
-#wxres .btn{font-weight:500;font-size:13px;padding:7px 10px}
-.hide{display:none!important}
-.swatch{display:inline-block;width:42px;height:18px;border-radius:6px;border:1px solid var(--line)}
-input.hue{appearance:none;height:14px;border-radius:7px;background:linear-gradient(90deg,hsl(0 62% 30%),hsl(60 62% 30%),hsl(120 62% 30%),hsl(180 62% 30%),hsl(240 62% 30%),hsl(300 62% 30%),hsl(360 62% 30%))}
-input.hue::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #000a}
-input.hue::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #000a}
-.bar{height:10px;border-radius:5px;background:#0f1320;border:1px solid var(--line);overflow:hidden}
-.bar div{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .2s}
-details summary{cursor:pointer;color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:1px;list-style:none}
-details summary::before{content:"▸ "}
-details[open] summary::before{content:"▾ "}
-footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
+#wxres .btn{font-size:18px;min-height:40px}
+/* alarms */
+.al .head{display:flex;align-items:center;gap:12px}
+.al .open{flex:1;display:flex;flex-direction:column;background:none;border:0;padding:0;text-align:left;min-width:0}
+.al .tag{font:400 20px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro2)}
+.al .time{font:400 52px/.9 'Jersey 10',system-ui,sans-serif}
+.al.offd .open{opacity:.55}
+.al .more{display:flex;flex-direction:column;gap:10px;border-top:3px solid var(--linea);padding-top:12px;margin-top:12px}
+/* files */
+.crumbs{display:flex;align-items:center;flex-wrap:wrap}
+.crumbs button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;background:none;border:0;color:var(--oro);padding:0 2px;min-height:44px}
+.crumbs button:last-child{color:var(--crema)}
+.frow{display:flex;align-items:center;gap:12px;min-height:58px;padding:6px 12px;border:0;border-top:3px solid var(--panel2);background:none;width:100%;text-align:left}
+.frow:first-child{border-top:0}
+.frow .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* dialogs */
+.modal{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.modal .scrim{position:absolute;inset:0;background:var(--sombra);opacity:.75}
+.modal .box{position:relative;width:100%;max-width:540px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:4px solid var(--oro);
+ box-shadow:6px 6px 0 var(--sombra);padding:14px;display:flex;flex-direction:column;gap:12px}
+.modal h2{margin:0;font:400 32px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)}
+.anims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.anims button{display:flex;flex-direction:column;padding:0;background:var(--panel);border:4px solid var(--linea);text-align:left}
+.anims button.on{border-color:var(--verde)}
+.anims img{width:100%;aspect-ratio:274/336}
+.anims span{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font:400 24px/1 'Jersey 10',system-ui,sans-serif}
 </style>
 </head>
 <body>
 <main>
-<header>
-  <h1>Marea</h1>
-  <div class="badge"><span id="clk">--:--:--</span><div class="dot" id="dot" title="Conexión con el reloj"></div></div>
-</header>
 
-<div class="card hide" id="blecard">
-  <h3>Conectar por Bluetooth</h3>
-  <p class="desc" style="margin-bottom:10px">Empareja el reloj desde aquí, no desde los ajustes de Bluetooth. La primera vez, el reloj enseña una clave de 6 cifras: tienes 30 segundos para escribirla (la barra de arriba los cuenta).</p>
-  <button class="btn full" id="blego">Buscar el reloj</button>
-  <div class="status" id="blest" style="margin-top:8px"></div>
-</div>
+<!-- ============================================================ Inicio -->
+<section class="view" id="v-inicio">
+  <div class="sky" aria-hidden="true"></div><div class="moon" aria-hidden="true"></div>
+  <div style="display:flex;flex-direction:column;gap:2px;position:relative;margin-top:10px">
+    <h1 class="j" style="margin:0;font-size:46px;line-height:1;color:var(--oro)">Marea</h1>
+    <div class="inline" style="gap:8px"><span id="dot" class="pip" title="Conexión con el reloj"></span><span id="hstat">--</span><span class="dim">·</span><span id="clk">--:--:--</span></div>
+  </div>
 
-<h2>Esfera actual</h2>
-<div class="card cur">
-  <h3 id="cname">--</h3>
-  <div class="tags" id="ctags"></div>
-  <p class="desc" id="cdesc"></p>
-  <div class="own hide" id="ownpad">
-    <div class="lbl">Interactúa con esta esfera</div>
-    <div class="padrow"><div id="pad"><div class="touch" id="touch"></div></div><div class="hint" id="hint"></div></div>
+  <div class="panel hide" id="blecard">
+    <div class="tt" data-en="Connect over Bluetooth">Conectar por Bluetooth</div>
+    <p class="dim" style="margin:6px 0 10px" data-en="Pair the watch from here, not from the Bluetooth settings. The first time, the watch shows a 6-digit code: you have 30 seconds to type it.">Empareja el reloj desde aquí, no desde los ajustes de Bluetooth. La primera vez, el reloj enseña una clave de 6 cifras: tienes 30 segundos para escribirla.</p>
+    <button class="btn gold full" id="blego" data-en="Find the watch">Buscar el reloj</button>
+    <div class="dim" id="blest" style="margin-top:8px"></div>
   </div>
-  <div class="own hide" id="owncl" data-opts="cl">
-    <div class="lbl">Ajustes de esta esfera</div>
-    <div class="slider" style="padding-top:0"><div class="top">Color de la esfera <span class="swatch" id="chuesw"></span></div><input type="range" id="chue" class="hue" min="0" max="359"></div>
-    <button class="btn" id="chuereset" style="margin-top:6px">Volver al verde original</button>
+
+  <div class="panel gold hide" id="nupd">
+    <div class="inline" style="align-items:flex-start;gap:10px">
+      <svg width="24" height="24" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><path fill="#FFD166" d="M5 1h2v6H5zM3 5h1v1h1v1h2V6h1V5h1v1H8v1H7v1H5V7H4V6H3zM2 10h8v1H2z"/></svg>
+      <div style="flex:1"><div class="tt" data-en="New watch version">Versión nueva del reloj</div><div class="dim" id="nupdtxt"></div></div>
+    </div>
+    <button class="btn gold full" id="nupdgo" style="margin-top:10px" data-en="Update">Actualizar</button>
   </div>
-  <div class="own hide" id="ownox" data-opts="ox">
-    <div class="lbl">Ajustes de esta esfera</div>
-    <div class="slider" style="padding-top:0"><div class="top">Color del acento</div><input type="range" id="ohue" class="hue" min="0" max="359"></div>
-    <button class="btn" id="ohuereset" style="margin-top:6px">Volver al ámbar</button>
+  <div class="panel gold hide" id="napp">
+    <div class="inline" style="align-items:flex-start;gap:10px">
+      <svg width="24" height="24" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><path fill="#FFD166" d="M5 1h2v6H5zM3 5h1v1h1v1h2V6h1V5h1v1H8v1H7v1H5V7H4V6H3zM2 10h8v1H2z"/></svg>
+      <div style="flex:1"><div class="tt" data-en="New app version">Versión nueva de la app</div><div class="dim" id="napptxt"></div></div>
+    </div>
+    <button class="btn gold full" id="nappgo" style="margin-top:10px" data-en="Update the app">Actualizar la app</button>
   </div>
-  <div class="own hide" id="ownwx" data-opts="wx">
-    <div class="lbl">Ajustes de esta esfera</div>
-    <div class="stack">
-      <div class="status" id="wxst">--</div>
-      <div class="inline"><input type="text" id="wxq" placeholder="Cambiar ciudad (p. ej. Sevilla)" autocomplete="off"><button class="btn" id="wxgo">Buscar</button></div>
-      <div id="wxres"></div>
-      <div class="status">Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</div>
+  <div class="panel red hide" id="nperm">
+    <div class="inline" style="gap:10px">
+      <svg width="24" height="24" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><path fill="#EC6066" d="M5 1h2v1h1v2h1v2h1v2h1v3H1V8h1V6h1V4h1V2h1zM5 4v3h2V4zM5 8v1h2V8z"/></svg>
+      <div style="flex:1;min-width:0"><div class="tt" data-en="A permission is missing">Falta un permiso</div><div class="dim" id="npermtxt"></div></div>
+      <a class="btn" href="#movil" data-en="Review">Revisar</a>
     </div>
   </div>
-</div>
 
-<h2>Elegir esfera</h2>
-<div id="groups"></div>
+  <a class="panel" href="#esferas" style="display:flex;align-items:center;gap:12px;padding:8px">
+    <img class="prev" id="hfimg" alt="" style="width:66px;height:81px;border:3px solid var(--linea)">
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0"><span class="dim" data-en="Now on the watch">Ahora en el reloj</span><span class="j" id="hfname" style="font-size:30px;line-height:1">--</span></div>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
 
-<h2>Ajustes generales</h2>
-<p class="sub">Se aplican a todas las esferas y se guardan en el reloj.</p>
-
-<div class="card">
-  <h3>Pantalla</h3>
-  <div class="slider"><div class="top">Brillo <b id="briv"></b></div><input type="range" id="bri" min="5" max="100"></div>
-  <div class="item"><div class="t">Siempre encendida<small>Si no, se apaga sola y el botón BOOT la enciende</small></div><input type="checkbox" class="sw" id="aon"></div>
-  <div class="item hide" id="raiserow"><div class="t">Encender al levantar la muñeca<small>La pantalla se enciende al girar el reloj para mirarlo</small></div><input type="checkbox" class="sw" id="raise"></div>
-  <div class="item" id="wksrow"><div class="t">Apagar tras</div><select id="wks"><option value="5">5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
-  <div class="item"><div class="t">Modo noche<small>Baja el brillo y apaga el LED por la noche</small></div><input type="checkbox" class="sw" id="non"></div>
-  <div id="nightopts">
-    <div class="item"><div class="t">Horario</div><div class="inline" style="align-items:center"><select id="nst"></select>a<select id="nen"></select></div></div>
-    <div class="slider" style="border-top:1px solid var(--line)"><div class="top">Brillo nocturno <b id="nbrv"></b></div><input type="range" id="nbr" min="1" max="60"></div>
+  <div class="tiles">
+    <a class="panel tile" href="#esferas">
+      <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M4 1h8v1h1v12h-1v1H4v-1H3V2h1zM5 3v10h6V3zM7 5h1v3h2v1H7z"/></svg>
+      <span class="tt" data-en="Faces">Esferas</span><span class="dim" id="tfx">--</span>
+    </a>
+    <a class="panel tile" href="#alarmas">
+      <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 3h6v1h2v2h1v6h-1v2h-2v1H5v-1H3v-2H2V6h1V4h2zM5 5v1H4v6h1v1h6v-1h1V6h-1V5zM7 6h1v3h2v1H7zM1 2h2v1H2v1H1zM13 2h2v2h-1V3h-1z"/></svg>
+      <span class="tt" data-en="Alarms">Alarmas</span><span class="dim" id="tal">--</span>
+    </a>
+    <a class="panel tile" href="#archivos">
+      <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M4 1h7l3 3v11H2V3h2zM4 3v10h8V5h-2V3zM5 7h6v1H5zM5 9h6v1H5z"/></svg>
+      <span class="tt" data-en="Files">Archivos</span><span class="dim" data-en="microSD card">Tarjeta microSD</span>
+    </a>
+    <a class="panel tile" href="#ajustes">
+      <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M7 1h2v2h2V2h1v1h1v1h-1v2h2v2h-2v2h1v1h-1v1h-1v-1H9v2H7v-2H5v1H4v-1H3v-1h1V8H2V6h2V4H3V3h1V2h1v1h2zM6 6v3h4V6z"/></svg>
+      <span class="tt" data-en="Settings">Ajustes</span><span class="dim" data-en="Display, language…">Pantalla, idioma…</span>
+    </a>
   </div>
-</div>
+</section>
 
-<div class="card">
-  <h3>Reloj</h3>
-  <div class="item"><div class="t">Formato 24 h</div><input type="checkbox" class="sw" id="h24"></div>
-  <div class="item"><div class="t">Mostrar segundos<small>Barra, anillo o segundero, según la esfera</small></div><input type="checkbox" class="sw" id="secs"></div>
-  <div class="item"><div class="t">Cambiar de esfera sola<small>Pasa a la siguiente cada 30 s</small></div><input type="checkbox" class="sw" id="auto"></div>
-  <div class="item"><div class="t">Esferas del cambio automático<small id="offinfo">Todas</small></div><button class="btn" id="editauto">Elegir</button></div>
-  <div class="slider" style="border-top:1px solid var(--line)"><div class="top">Velocidad de esta esfera <b id="spdv"></b></div><input type="range" id="spd" min="10" max="300" step="5"></div>
-</div>
-
-<div class="card">
-  <h3>Alarmas</h3>
-  <div class="stack" id="alarms"><div class="status">Cargando…</div></div>
-  <div class="status" style="margin-top:6px">Las alarmas se crean y se cambian de hora en el reloj; aquí se les pone una etiqueta y la animación con la que suenan.</div>
-</div>
-
-<div class="card">
-  <h3>Conexión</h3>
-  <div class="stack">
-    <div class="item hide" id="wifirow"><div class="t">WiFi del reloj<small>Apagado gasta mucha menos batería: la hora, el tiempo y las actualizaciones llegan por el móvil</small></div><input type="checkbox" class="sw" id="wifi"></div>
-    <div class="status" id="wst">--</div>
-    <input type="text" id="wssid" placeholder="Nombre de la red WiFi" autocomplete="off">
-    <input type="password" id="wpass" placeholder="Contraseña">
-    <button class="btn full" id="wgo">Conectar el reloj a esta red</button>
-    <button class="btn full" id="sync">Sincronizar hora con este dispositivo</button>
-  </div>
-</div>
-
-<div class="card">
-  <h3>Actualizaciones</h3>
-  <div class="stack">
-    <div class="status" id="updst">--</div>
-    <div class="status" id="updlast"></div>
-    <button class="btn full" id="updcheck">Buscar actualización</button>
-    <button class="btn full hide" id="updgo">Actualizar</button>
-    <div class="status hide" id="appupdst" style="margin-top:6px"></div>
-    <button class="btn full hide" id="appupdgo">Actualizar la app</button>
-  </div>
-</div>
-
-<div class="card hide" id="appcard">
-  <h3>Este móvil</h3>
-  <div class="item"><div class="t">Sincronización<small id="appsync">--</small></div><button class="btn" id="appnow">Ahora</button></div>
-  <div class="item"><div class="t">Funcionar en segundo plano<small id="appbg">--</small></div><button class="btn" id="appbgo">Permitir</button></div>
-  <div class="item"><div class="t">Música y llamadas en el reloj<small id="appph">--</small></div><button class="btn" id="appphgo">Permitir</button></div>
-  <div class="item"><div class="t">Olvidar este reloj<small>Borra el emparejamiento en el móvil y en el reloj</small></div><button class="btn" id="appforget">Olvidar</button></div>
-</div>
-
-<div class="card">
-  <details>
-    <summary>Avanzado</summary>
-    <div style="margin-top:12px">
-      <div class="item"><div class="t">Info de depuración en pantalla<small>Nombre de la esfera, fps e IP</small></div><input type="checkbox" class="sw" id="ovl"></div>
-      <div class="item"><div class="t">Rendimiento</div><span class="status"><b id="fps">--</b> fps · <b id="heap">--</b> KB libres</span></div>
-      <div class="item" id="batrow" hidden><div class="t">Batería</div><span class="status" id="bat">--</span></div>
-      <div class="item"><div class="t">Firmware<small id="otainfo">--</small></div><span class="status">versión <b id="ver">--</b></span></div>
-      <div class="item" id="moderow"><div class="t">Modo de conexión<small id="modetxt"></small></div><button class="btn" id="tomode">Cambiar</button></div>
-      <div class="stack" id="wifionly" style="padding-top:9px;border-top:1px solid var(--line)">
-        <div class="t">Actualizar por WiFi (OTA)<small style="display:block;color:var(--dim);font-size:12px">Elige <b>marea-ota.bin</b> de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
-        <input type="file" id="otafile" accept=".bin" style="font-size:13px;color:var(--dim)">
-        <button class="btn full" id="otago" disabled>Actualizar firmware</button>
-        <div class="bar hide" id="otabar"><div id="otafill"></div></div>
-        <div class="status" id="otast"></div>
-      </div>
+<!-- ============================================================ Esferas -->
+<section class="view hide" id="v-esferas" data-parent="inicio">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Faces">Esferas</h1></div>
+  <div class="panel gold" style="display:flex;gap:12px">
+    <img class="prev" id="cimg" alt="" style="width:108px;height:132px;border:3px solid var(--linea);flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+      <span class="dim" data-en="On the watch">En el reloj</span>
+      <span class="j" id="cname" style="font-size:32px;line-height:1">--</span>
+      <span class="dim small" id="cdesc" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden"></span>
     </div>
-  </details>
-</div>
+  </div>
+  <div class="list">
+    <div class="row col"><div class="inline" style="justify-content:space-between"><span class="tt" data-en="Speed of this face">Velocidad de esta esfera</span><span class="j" style="font-size:24px" id="spdv"></span></div><input type="range" id="spd" min="10" max="300" step="5"></div>
+    <div class="row hide" id="cbtns"><button class="btn" style="flex:1" id="ctouch" data-en="Play with it">Tocar</button><button class="btn" style="flex:1" id="copts" data-en="Options">Opciones</button></div>
+  </div>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="Change face by itself">Cambiar de esfera sola</b><small id="offinfo">--</small></div><input type="checkbox" class="sw" id="auto" aria-label="Cambiar de esfera sola"></div>
+    <div class="row inline dim" style="min-height:0;gap:6px"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M3 2h4v1h1v1h1v2H8v1H7v1H3V7H2V6H1V4h1V3h1zM4 4v2h2V4z"/></svg><span data-en="The eye on each face puts it in or out of the automatic change">El ojo de cada esfera la incluye o la saca del cambio automático</span></div>
+  </div>
+  <div id="groups" class="stack" style="gap:12px"></div>
+</section>
 
-<footer>Botón BOOT: con la pantalla apagada, la enciende · encendida, pulsación corta = siguiente esfera, larga = cambio automático</footer>
+<!-- ============================================================ Alarmas -->
+<section class="view hide" id="v-alarmas" data-parent="inicio">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Alarms">Alarmas</h1></div>
+  <div class="stack" id="alarms" style="gap:12px"><div class="dim" data-en="Loading…">Cargando…</div></div>
+  <p class="dim" style="margin:2px" data-en="Tap an alarm to change its label and animation. Times and days are set on the watch.">Toca una alarma para cambiar su etiqueta y su animación. La hora y los días se ponen en el reloj.</p>
+</section>
+
+<!-- ============================================================ Archivos -->
+<section class="view hide" id="v-archivos" data-parent="inicio">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Files">Archivos</h1></div>
+  <div class="stack" id="sdinfo" style="gap:4px">
+    <div class="inline" style="justify-content:space-between"><span>microSD</span><span class="dim" id="sdfree"></span></div>
+    <div class="bar"><div id="sdfill"></div></div>
+  </div>
+  <nav class="crumbs" id="crumbs" aria-label="Ruta"></nav>
+  <div class="list" id="flist"><div class="frow dim" data-en="Loading…">Cargando…</div></div>
+  <p class="dim" style="margin:2px" data-en="Only for looking: folders open, files do not.">Solo para mirar: las carpetas se abren, los archivos no.</p>
+</section>
+
+<!-- ============================================================ Ajustes -->
+<section class="view hide" id="v-ajustes" data-parent="inicio">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Settings">Ajustes</h1></div>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="Language">Idioma</b><small data-en="On the watch and in the app">En el reloj y en la app</small></div>
+      <div class="seg" role="group" aria-label="Idioma"><button id="langes">ES</button><button id="langen">EN</button></div></div>
+  </div>
+  <p class="lbl" data-en="The watch">El reloj</p>
+  <div class="list">
+    <a class="row" href="#pantalla"><div class="t"><b data-en="Display">Pantalla</b><small data-en="Brightness, sleep, night mode">Brillo, apagado, modo noche</small></div><span class="go" aria-hidden="true">›</span></a>
+    <a class="row" href="#hora"><div class="t"><b data-en="Time">Hora</b><small data-en="24-hour clock, seconds">Formato 24 h, segundos</small></div><span class="go" aria-hidden="true">›</span></a>
+  </div>
+  <p class="lbl" data-en="Connection">Conexión</p>
+  <div class="list">
+    <a class="row" href="#movil"><div class="t"><b data-en="Phone and connection">Móvil y conexión</b><small data-en="Bluetooth, permissions, Wi-Fi">Bluetooth, permisos, WiFi</small></div><span class="pip hide" id="permpip"></span><span class="go" aria-hidden="true">›</span></a>
+    <a class="row" href="#actualizaciones"><div class="t"><b data-en="Updates">Actualizaciones</b><small id="updsub">--</small></div><span class="badge hide" id="updbadge">1</span><span class="go" aria-hidden="true">›</span></a>
+    <a class="row" href="#avanzado"><div class="t"><b data-en="Advanced">Avanzado</b><small data-en="Sync time, battery, debugging">Sincronizar hora, batería, depuración</small></div><span class="go" aria-hidden="true">›</span></a>
+  </div>
+</section>
+
+<!-- ============================================================ Ajustes › Pantalla -->
+<section class="view hide" id="v-pantalla" data-parent="ajustes">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Display">Pantalla</h1></div>
+  <div class="list">
+    <div class="row col"><div class="inline" style="justify-content:space-between"><span class="tt" data-en="Brightness">Brillo</span><span class="j" style="font-size:24px" id="briv"></span></div><input type="range" id="bri" min="5" max="100"></div>
+    <div class="row"><div class="t"><b data-en="Always on">Siempre encendida</b><small data-en="Uses much more battery">Gasta mucha más batería</small></div><input type="checkbox" class="sw" id="aon" aria-label="Siempre encendida"></div>
+    <div class="row hide" id="raiserow"><div class="t"><b data-en="Wake on wrist raise">Encender al levantar la muñeca</b></div><input type="checkbox" class="sw" id="raise" aria-label="Encender al levantar la muñeca"></div>
+    <div class="row" id="wksrow"><div class="t"><b data-en="Turn off after">Apagar tras</b></div><select id="wks"><option value="5">5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
+  </div>
+  <p class="lbl" data-en="Night mode">Modo noche</p>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="Night mode">Modo noche</b><small data-en="Lowers the brightness at night">Baja el brillo por la noche</small></div><input type="checkbox" class="sw" id="non" aria-label="Modo noche"></div>
+    <div id="nightopts">
+      <div class="row"><div class="t"><b data-en="Hours">Horario</b></div><select id="nst" aria-label="Empieza"></select><span class="dim" data-en="to">a</span><select id="nen" aria-label="Termina"></select></div>
+      <div class="row col"><div class="inline" style="justify-content:space-between"><span class="tt" data-en="Night brightness">Brillo nocturno</span><span class="j" style="font-size:24px" id="nbrv"></span></div><input type="range" id="nbr" min="1" max="60"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Ajustes › Hora -->
+<section class="view hide" id="v-hora" data-parent="ajustes">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Time">Hora</h1></div>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="24-hour clock">Formato 24 h</b></div><input type="checkbox" class="sw" id="h24" aria-label="Formato 24 h"></div>
+    <div class="row"><div class="t"><b data-en="Show seconds">Mostrar segundos</b><small data-en="Bar, ring or second hand, depending on the face">Barra, anillo o segundero, según la esfera</small></div><input type="checkbox" class="sw" id="secs" aria-label="Mostrar segundos"></div>
+  </div>
+  <p class="dim" style="margin:2px" data-en="The time comes from your phone by itself; there is nothing to do.">La hora llega sola desde el móvil: no hay que hacer nada.</p>
+</section>
+
+<!-- ============================================================ Ajustes › Móvil y conexión -->
+<section class="view hide" id="v-movil" data-parent="ajustes">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Phone and connection" style="font-size:34px">Móvil y conexión</h1></div>
+  <p class="lbl" style="margin:0">Bluetooth</p>
+  <div class="list">
+    <div class="row"><span class="pip" id="btpip"></span><div class="t"><b data-en="Marea watch">Reloj Marea</b><small id="btst">--</small></div></div>
+    <div class="row hide" id="forgetrow"><div class="t"><b data-en="Forget this watch">Olvidar este reloj</b><small data-en="Removes the pairing on both">Borra el emparejamiento en los dos</small></div><button class="btn" id="appforget" style="color:var(--coral)" data-en="Forget">Olvidar</button></div>
+  </div>
+  <div class="hide stack" id="appcard" style="gap:12px">
+    <p class="lbl" data-en="This phone's permissions">Permisos de este móvil</p>
+    <div class="list">
+      <div class="row"><div class="t"><b data-en="Run in the background">Funcionar en segundo plano</b><small id="appbg">--</small></div><button class="btn gold" id="appbgo" data-en="Allow">Permitir</button></div>
+      <div class="row"><div class="t"><b data-en="Music and calls">Música y llamadas</b><small id="appph">--</small></div><button class="btn gold" id="appphgo" data-en="Allow">Permitir</button></div>
+    </div>
+  </div>
+  <p class="lbl" data-en="Watch Wi-Fi">WiFi del reloj</p>
+  <div class="list">
+    <div class="row hide" id="wifirow"><div class="t"><b>WiFi</b><small data-en="Off uses much less battery: the time, weather and updates come through the phone">Apagado gasta mucha menos batería: la hora, el tiempo y las actualizaciones llegan por el móvil</small></div><input type="checkbox" class="sw" id="wifi" aria-label="WiFi del reloj"></div>
+    <div class="row"><div class="t"><b data-en="Network">Red</b><small id="wst">--</small></div><button class="btn" id="wedit" data-en="Change">Cambiar</button></div>
+    <div class="row col hide" id="wform">
+      <input type="text" id="wssid" placeholder="Nombre de la red WiFi" data-en-ph="Wi-Fi network name" autocomplete="off">
+      <input type="password" id="wpass" placeholder="Contraseña" data-en-ph="Password">
+      <button class="btn gold full" id="wgo">Conectar el reloj a esta red</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Ajustes › Actualizaciones -->
+<section class="view hide" id="v-actualizaciones" data-parent="ajustes">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Updates">Actualizaciones</h1></div>
+  <p class="lbl" style="margin:0" data-en="Watch">Reloj</p>
+  <div class="panel stack">
+    <div id="updst">--</div>
+    <div class="dim small" id="updlast"></div>
+    <button class="btn gold full hide" id="updgo">Actualizar</button>
+    <button class="btn full" id="updcheck" data-en="Check for updates">Buscar actualización</button>
+  </div>
+  <div class="hide stack" id="appupd" style="gap:12px">
+    <p class="lbl" data-en="App">App</p>
+    <div class="panel stack">
+      <div id="appupdst">--</div>
+      <button class="btn gold full hide" id="appupdgo">Actualizar la app</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Ajustes › Avanzado -->
+<section class="view hide" id="v-avanzado" data-parent="ajustes">
+  <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Advanced">Avanzado</h1></div>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="Sync time now">Sincronizar la hora ahora</b><small data-en="It happens by itself; only if the watch shows a wrong time">Se hace sola; solo si el reloj marca mal la hora</small></div><button class="btn" id="sync" data-en="Sync">Sincronizar</button></div>
+    <div class="row hide" id="appsyncrow"><div class="t"><b data-en="Phone sync">Sincronización del móvil</b><small id="appsync">--</small></div><button class="btn" id="appnow" data-en="Now">Ahora</button></div>
+    <div class="row hide" id="batrow"><div class="t"><b data-en="Battery">Batería</b><small id="bat">--</small></div></div>
+    <div class="row"><div class="t"><b data-en="Firmware">Firmware</b><small id="otainfo">--</small></div><span class="j" style="font-size:22px" id="ver">--</span></div>
+    <div class="row"><div class="t"><b data-en="Performance">Rendimiento</b><small><span id="fps">--</span> fps · <span id="heap">--</span> KB <span data-en="free">libres</span></small></div></div>
+    <div class="row"><div class="t"><b data-en="Debug info on screen">Info de depuración en pantalla</b><small data-en="Face name, fps and IP">Nombre de la esfera, fps e IP</small></div><input type="checkbox" class="sw" id="ovl" aria-label="Info de depuración"></div>
+    <div class="row" id="moderow"><div class="t"><b data-en="Connection mode">Modo de conexión</b><small id="modetxt"></small></div><button class="btn" id="tomode">Cambiar</button></div>
+    <div class="row col" id="wifionly">
+      <div class="t"><b data-en="Update over Wi-Fi (file)">Actualizar por WiFi (archivo)</b><small data-en="Pick marea-ota.bin from the webflasher folder. If the new version failed to start, the watch goes back to the previous one by itself.">Elige marea-ota.bin de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
+      <input type="file" id="otafile" accept=".bin" style="font-size:16px;color:var(--gris)">
+      <button class="btn full" id="otago" disabled data-en="Update firmware">Actualizar firmware</button>
+      <div class="bar hide" id="otabar"><div id="otafill"></div></div>
+      <div class="dim" id="otast"></div>
+    </div>
+  </div>
+  <p class="dim small" style="margin:2px" data-en="BOOT button: with the screen off it turns it on; on, a short press goes back.">Botón BOOT: con la pantalla apagada, la enciende; encendida, una pulsación corta vuelve atrás.</p>
+</section>
 </main>
+
+<!-- ============================================================ dialogs -->
+<div class="modal hide" id="mface" role="dialog" aria-labelledby="mfacet">
+  <div class="scrim" data-close></div>
+  <div class="box">
+    <h2 id="mfacet">--</h2>
+    <div class="hide stack" id="ownpad">
+      <div class="dim" data-en="Drag on the square as if it were the watch screen">Arrastra en el recuadro como si fuera la pantalla del reloj</div>
+      <div class="inline" style="gap:14px;align-items:center"><div id="pad"><div class="touch" id="touch"></div></div><div id="hint" style="font-size:20px"></div></div>
+    </div>
+    <div class="hide stack" id="owncl" data-opts="cl">
+      <div class="inline" style="justify-content:space-between"><span class="tt" data-en="Dial colour">Color de la esfera</span><span class="swatch" id="chuesw"></span></div>
+      <input type="range" id="chue" class="hue" min="0" max="359">
+      <button class="btn" id="chuereset" data-en="Back to the original green">Volver al verde original</button>
+    </div>
+    <div class="hide stack" id="ownox" data-opts="ox">
+      <span class="tt" data-en="Accent colour">Color del acento</span>
+      <input type="range" id="ohue" class="hue" min="0" max="359">
+      <button class="btn" id="ohuereset" data-en="Back to amber">Volver al ámbar</button>
+    </div>
+    <div class="hide stack" id="ownwx" data-opts="wx">
+      <div id="wxst">--</div>
+      <div class="inline"><input type="text" id="wxq" placeholder="Cambiar ciudad (p. ej. Sevilla)" data-en-ph="Change city (e.g. Seville)" autocomplete="off"><button class="btn" id="wxgo" data-en="Search">Buscar</button></div>
+      <div id="wxres"></div>
+      <div class="dim small"><span data-en="Weather data:">Datos del tiempo:</span> <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:var(--oro)">Open-Meteo.com</a> (CC BY 4.0)</div>
+    </div>
+    <button class="btn full" data-close data-en="Close">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal hide" id="manim" role="dialog" aria-labelledby="manimt">
+  <div class="scrim" data-close></div>
+  <div class="box">
+    <div><h2 id="manimt" data-en="Alarm animation">Animación de alarma</h2><div class="dim" id="manimsub"></div></div>
+    <div class="anims" id="animlist"></div>
+    <div class="dim small" data-en="New animations will show up here as they arrive with updates.">Aquí aparecerán las animaciones nuevas que lleguen con las actualizaciones.</div>
+    <div class="inline"><button class="btn" style="flex:1" data-close data-en="Cancel">Cancelar</button><button class="btn gold" style="flex:1" id="animok" data-en="Choose">Elegir</button></div>
+  </div>
+</div>
 
 <script src="transport.js"></script>
 <script>
 // Face catalogue comes from the firmware (/faces): one source of truth
 let FX=[],GROUPS=[],BOARD='s3amoled';  // BOARD: which entry of the update manifest is this watch's
 const $=id=>document.getElementById(id);
-let cur=-1,lastUser=0,synced=false;
+let cur=-1,lastUser=0,synced=false,status={};
 // The link (Wi-Fi, Web Bluetooth or the Android app) comes from transport.js
 const L=ClockLink.pick();
 function send(s){return L.send(s)}
 function syncTime(){const n=Date.now();return send(`time ${Math.floor(n/1000)} ${n%1000}`)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// Pictures and fonts (src/web/): served by the watch at /a/, copied to web/a/ in the app; a page opened
+// from the repository (Web Bluetooth tests) finds them in src/web/
+const A=L.kind==='ble'?'web/':'a/';
+document.head.insertAdjacentHTML('beforeend',`<style>@font-face{font-family:'Jersey 10';src:url(${A}jersey10.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'VT323';src:url(${A}vt323.ttf) format('truetype');font-display:swap}</style>`);
+function preview(img,src){img.classList.remove('noimg');img.onerror=()=>img.classList.add('noimg');img.src=src}
 
-// Face picker, grouped
-const btns=[];let offMask=0,editAuto=false;
+// ------------------------------------------------------------ language (the watch's "lang" setting)
+let LANG=0;try{LANG=+localStorage.getItem('lang')||0}catch(e){}
+const tr=(es,en)=>LANG?en:es;
+const GROUPS_EN=['Effects','Video games','Art','Nature and space','Clocks and tools'];
+function applyLang(){document.documentElement.lang=LANG?'en':'es';
+ for(const el of document.querySelectorAll('[data-en]')){if(el.dataset.es===undefined)el.dataset.es=el.textContent;el.textContent=LANG?el.dataset.en:el.dataset.es}
+ for(const el of document.querySelectorAll('[data-en-ph]')){if(el.dataset.esPh===undefined)el.dataset.esPh=el.placeholder;el.placeholder=LANG?el.dataset.enPh:el.dataset.esPh}
+ $('langes').classList.toggle('on',!LANG);$('langen').classList.toggle('on',!!LANG);
+ for(const b of document.querySelectorAll('.back'))b.setAttribute('aria-label',tr('Atrás','Back'));
+ if(FX.length)buildFaces();renderAlarms();if(view==='archivos')renderFiles();if(status.ver)show(status,true);homeTiles()}
+function setLang(v){if(v===LANG)return;LANG=v;try{localStorage.setItem('lang',v)}catch(e){}applyLang()}
+$('langes').onclick=()=>{lastUser=Date.now();setLang(0);send('lang 0')};
+$('langen').onclick=()=>{lastUser=Date.now();setLang(1);send('lang 1')};
+
+// ------------------------------------------------------------ views: #inicio, #esferas… (the hash keeps the back button working)
+let view='inicio';const stack=[];
+function route(){const h=(location.hash||'#inicio').slice(1);const v=$('v-'+h)?h:'inicio';
+ if(stack.length>1&&stack[stack.length-2]===v)stack.pop();else if(stack[stack.length-1]!==v)stack.push(v);
+ view=v;for(const s of document.querySelectorAll('.view'))s.classList.toggle('hide',s.id!=='v-'+v);
+ closeModals();window.scrollTo(0,0);
+ if(v==='archivos')loadFiles(fpath);if(v==='alarmas')loadAlarms();if(v==='movil'||v==='avanzado')appInfo()}
+window.addEventListener('hashchange',route);
+for(const b of document.querySelectorAll('.back'))b.onclick=()=>{const p=b.closest('.view').dataset.parent||'inicio';
+ if(stack.length>1&&stack[stack.length-2]===p)history.back();else location.replace('#'+p)};
+function closeModals(){for(const m of document.querySelectorAll('.modal'))m.classList.add('hide')}
+for(const el of document.querySelectorAll('[data-close]'))el.onclick=closeModals;
+
+// ------------------------------------------------------------ faces
+let offMask=0;
 // Retired faces (x) keep their number in the catalogue but are never shown or counted
 const liveMask=()=>FX.reduce((m,f,i)=>f.x?m:m|1<<i,0),liveCount=()=>FX.filter(f=>!f.x).length;
-function renderOff(){btns.forEach((b,i)=>b&&b.classList.toggle('off',!!(offMask>>i&1)));const all=liveCount(),n=all-btns.filter((b,i)=>b&&(offMask>>i&1)).length;
- $('offinfo').textContent=editAuto?'Toca las esferas para quitarlas o ponerlas':(n===all?'Todas':n+' de '+all);$('groups').classList.toggle('editing',editAuto);$('editauto').textContent=editAuto?'Hecho':'Elegir'}
+const EYE_ON='<svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M3 2h4v1h1v1h1v2H8v1H7v1H3V7H2V6H1V4h1V3h1zM4 4v2h2V4z"/></svg>';
+const EYE_OFF='<svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#A89CCE" d="M1 1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1H8V8H7V7H6V6H5V5H4V4H3V3H2V2H1zM2 4h1v2h1v1h2v1H3V7H2V6H1V5h1zM4 2h3v1h1v1h1v2H8V5H7V4H6V3H4z"/></svg>';
 async function loadFaces(){
  for(;;){try{const r=await L.request('faces');FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
- GROUPS.forEach((g,gi)=>{const d=document.createElement('div');d.className='group';d.innerHTML=`<div class="gname">${g}</div><div class="fx"></div>`;
-  FX.forEach((f,i)=>{if(f.g!==gi)return;const b=document.createElement('button');b.innerHTML=`<i class="${f.o}"></i>`;b.append(f.label);
-   b.onclick=()=>{lastUser=Date.now();
-    if(editAuto){const m=offMask^(1<<i);if((m&liveMask())===liveMask())return;offMask=m;renderOff();send('fxoff '+offMask);return}
-    setFx(i);$('auto').checked=false;send('fx '+i)};btns[i]=b;d.lastChild.appendChild(b)});
-  $('groups').appendChild(d)});
- renderOff();if(cur>=0){const c=cur;cur=-1;setFx(c)}}
-$('editauto').onclick=()=>{editAuto=!editAuto;renderOff()};
-function setFx(i){cur=i;btns.forEach((b,j)=>b&&b.classList.toggle('on',j===i));const f=FX[i];if(!f)return;
- $('cname').textContent=f.label;$('cdesc').textContent=f.desc;
- $('ctags').innerHTML=`<span class="tag">${f.o==='h'?'Horizontal':'Vertical'}</span><span class="tag">${GROUPS[f.g]}</span>`+(f.hint?'<span class="tag int">Interactiva</span>':'');
- $('ownpad').classList.toggle('hide',!f.hint);$('hint').textContent=f.hint;$('pad').classList.toggle('land',f.o==='h');
- for(const el of document.querySelectorAll('.own[data-opts]'))el.classList.toggle('hide',el.dataset.opts!==f.opts)}
+ buildFaces();homeTiles();if(cur>=0){const c=cur;cur=-1;setFx(c)}}
+function buildFaces(){const box=$('groups');box.innerHTML='';
+ GROUPS.forEach((g,gi)=>{const items=FX.map((f,i)=>[f,i]).filter(([f])=>f.g===gi);if(!items.length)return;
+  const d=document.createElement('div');d.className='stack';d.innerHTML=`<p class="lbl">${esc(LANG?GROUPS_EN[gi]||g:g)}</p><div class="fx"></div>`;
+  for(const[f,i]of items){const c=document.createElement('div');c.className='fc';c.dataset.i=i;
+   c.innerHTML=`<button class="pick"><img class="prev" alt=""><span>${esc(f.label)}</span></button><button class="eye"></button>`;
+   preview(c.querySelector('img'),`${A}fx${i}.webp`);
+   c.querySelector('.pick').onclick=()=>{lastUser=Date.now();setFx(i);$('auto').checked=false;send('fx '+i)};
+   c.querySelector('.eye').onclick=()=>{lastUser=Date.now();const m=offMask^(1<<i);if((m&liveMask())===liveMask())return;offMask=m;renderOff();send('fxoff '+offMask)};
+   d.lastChild.appendChild(c)}
+  box.appendChild(d)});
+ renderOff();markCur()}
+function renderOff(){const all=liveCount();let n=0;
+ for(const c of document.querySelectorAll('.fc')){const i=+c.dataset.i,off=!!(offMask>>i&1);if(!off)n++;c.classList.toggle('off',off);
+  const e=c.querySelector('.eye');e.innerHTML=off?EYE_OFF:EYE_ON;e.setAttribute('aria-label',(off?tr('Incluir en el cambio automático: ','Include in the automatic change: '):tr('Sacar del cambio automático: ','Leave out of the automatic change: '))+FX[i].label)}
+ $('offinfo').textContent=tr(`Cada 30 s · ${n} de ${all} incluidas`,`Every 30 s · ${n} of ${all} included`)}
+function markCur(){for(const c of document.querySelectorAll('.fc'))c.classList.toggle('on',+c.dataset.i===cur)}
+function setFx(i){cur=i;markCur();const f=FX[i];if(!f)return;
+ $('cname').textContent=$('hfname').textContent=f.label;$('cdesc').textContent=f.desc;$('mfacet').textContent=f.label;
+ preview($('cimg'),`${A}fx${i}.webp`);preview($('hfimg'),`${A}fx${i}.webp`);
+ $('ctouch').classList.toggle('hide',!f.hint);$('copts').classList.toggle('hide',!f.opts);$('cbtns').classList.toggle('hide',!f.hint&&!f.opts);
+ $('hint').textContent=f.hint;$('pad').classList.toggle('land',f.o==='h')}
+function faceModal(what){for(const el of $('mface').querySelectorAll('[data-opts],#ownpad'))el.classList.add('hide');
+ const f=FX[cur]||{};if(what==='pad')$('ownpad').classList.remove('hide');else{const el=document.querySelector(`[data-opts="${f.opts}"]`);if(el)el.classList.remove('hide')}
+ $('mface').classList.remove('hide')}
+$('ctouch').onclick=()=>faceModal('pad');$('copts').onclick=()=>faceModal('opts');
 
+// ------------------------------------------------------------ settings
 for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).padStart(2,'0')+':00',h));
-function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
-bind('spd','spd',v=>v+'%');bind('bri','bri',v=>v+'%');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('secs','secs');
+// The slider's filled part, flat (no gradient look): a hard stop between gold and the empty track
+function fill(e){if(e.classList.contains('hue'))return;const p=(e.value-e.min)/(e.max-e.min)*100;e.style.background=`linear-gradient(90deg,var(--oro) ${p}%,var(--off) ${p}%)`}
+function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);if(e.type==='range')fill(e);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
+bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('secs','secs');
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
-const swatch=h=>$('chuesw').style.background=`linear-gradient(135deg,hsl(${h} 62% 9%),hsl(${h} 62% 30%),hsl(${h} 62% 12%))`;
+const swatch=h=>$('chuesw').style.background=`hsl(${h} 62% 30%)`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
 $('ohue').oninput=()=>{lastUser=Date.now();send('ohue '+$('ohue').value)};
 $('ohuereset').onclick=()=>{lastUser=Date.now();$('ohue').value=28;send('ohue 28')};
 $('chuereset').onclick=()=>{lastUser=Date.now();$('chue').value=146;swatch(146);send('chue 146')};
-function night(){lastUser=Date.now();$('nbrv').textContent=$('nbr').value+'%';send(`night ${$('non').checked?1:0} ${$('nst').value} ${$('nen').value} ${$('nbr').value}`);vis()}
+function night(){lastUser=Date.now();$('nbrv').textContent=$('nbr').value+' %';fill($('nbr'));send(`night ${$('non').checked?1:0} ${$('nst').value} ${$('nen').value} ${$('nbr').value}`);vis()}
 ['non','nst','nen','nbr'].forEach(id=>$(id).oninput=night);
 // Options that only matter in some states
 function vis(){$('wksrow').classList.toggle('hide',$('aon').checked);$('nightopts').classList.toggle('hide',!$('non').checked)}
-$('wgo').onclick=()=>{const n=$('wssid').value.trim();if(!n)return;if(send('wifi\n'+n+'\n'+$('wpass').value)){$('wst').textContent=mode==='wifi'?'Conectando a '+n+'…':'Red guardada: '+n;$('wpass').value=''}};
-$('sync').onclick=()=>{if(syncTime()){$('sync').textContent='Hora enviada ✓';setTimeout(()=>$('sync').textContent='Sincronizar hora con este dispositivo',2000)}};
+$('wedit').onclick=()=>{$('wform').classList.toggle('hide');if(!$('wform').classList.contains('hide'))$('wssid').focus()};
+$('wgo').onclick=()=>{const n=$('wssid').value.trim();if(!n)return;if(send('wifi\n'+n+'\n'+$('wpass').value)){$('wst').textContent=mode==='wifi'?tr('Conectando a ','Connecting to ')+n+'…':tr('Red guardada: ','Saved network: ')+n;$('wpass').value='';$('wform').classList.add('hide')}};
+$('sync').onclick=()=>{if(syncTime()){$('sync').textContent=tr('Enviada ✓','Sent ✓');setTimeout(()=>$('sync').textContent=tr('Sincronizar','Sync'),2000)}};
 
 // Touch pad: absolute position (0..1000) plus relative movement, batched every 30 ms
 const pad=$('pad'),dot=$('touch');let down=false,px=0,py=0,ax=0,ay=0,nx=0,ny=0,timer=null;
@@ -274,35 +488,41 @@ pad.onpointerup=pad.onpointercancel=()=>{if(!down)return;flush();down=false;dot.
 
 // Weather: the board fetches it itself; if it has no internet, this device fetches it and pushes it
 let wxFetched=0;
-const t10=v=>Math.round(v*10);
+const t10=v=>Math.round(v*10),dec1=v=>LANG?v.toFixed(1):v.toFixed(1).replace('.',',');
 async function pushWx(lat,lon){try{const r=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`)).json();const c=r.current,d=r.daily;send(`wx ${t10(c.temperature_2m)} ${c.weather_code} ${c.relative_humidity_2m} ${Math.round(c.wind_speed_10m)} ${t10(d.temperature_2m_max[0])} ${t10(d.temperature_2m_min[0])} ${c.is_day}`)}catch(e){}}
 function wxStatus(s){
- if(s.wv){const m=Math.floor(s.wage/60);$('wxst').innerHTML=`<b>${s.wloc}</b>: ${(s.wt/10).toFixed(1).replace('.',',')} °C · actualizado hace ${m} min${s.wweb?' (desde este móvil)':''}`}
- else $('wxst').innerHTML=`<b>${s.wloc}</b>: esperando datos…`;
+ if(s.wv){const m=Math.floor(s.wage/60);$('wxst').innerHTML=`<b class="j" style="font-size:22px">${esc(s.wloc)}</b>: ${dec1(s.wt/10)} °C · ${tr(`hace ${m} min`,`${m} min ago`)}${s.wweb?tr(' (desde este móvil)',' (from this phone)'):''}`}
+ else $('wxst').innerHTML=`<b class="j" style="font-size:22px">${esc(s.wloc)}</b>: ${tr('esperando datos…','waiting for data…')}`;
  if((!s.wv||s.wage>900)&&Date.now()-wxFetched>600000){wxFetched=Date.now();pushWx(s.wlat,s.wlon)}}
-$('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)return;box.textContent='Buscando…';
- try{const r=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=5&language=es&format=json&name='+encodeURIComponent(q))).json();box.innerHTML='';
-  if(!r.results){box.textContent='No encontrada';return}
+$('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)return;box.textContent=tr('Buscando…','Searching…');
+ try{const r=await(await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=5&language=${LANG?'en':'es'}&format=json&name=`+encodeURIComponent(q))).json();box.innerHTML='';
+  if(!r.results){box.textContent=tr('No encontrada','Not found');return}
   for(const p of r.results){const b=document.createElement('button');b.className='btn';b.textContent=[p.name,p.admin1,p.country].filter(Boolean).join(', ');
-   b.onclick=()=>{const n=p.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7e]/g,'').slice(0,31);send(`loc ${p.latitude.toFixed(4)} ${p.longitude.toFixed(4)} ${n}`);box.textContent='Ciudad cambiada a '+n;$('wxq').value='';wxFetched=0};box.appendChild(b)}}
- catch(e){box.textContent='Este dispositivo no tiene internet para buscar'}};
+   b.onclick=()=>{const n=p.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7e]/g,'').slice(0,31);send(`loc ${p.latitude.toFixed(4)} ${p.longitude.toFixed(4)} ${n}`);box.textContent=tr('Ciudad cambiada a ','City changed to ')+n;$('wxq').value='';wxFetched=0};box.appendChild(b)}}
+ catch(e){box.textContent=tr('Este dispositivo no tiene internet para buscar','This device has no internet to search')}};
 
-// Status: polled, and pushed by the clock over Bluetooth whenever a setting changes
+// ------------------------------------------------------------ status: polled, and pushed by the clock over Bluetooth whenever a setting changes
 async function poll(){try{show(await L.request('status'))}catch(e){}}
-let tick=null;
-function show(s){
- BOARD=s.board||'s3amoled';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;$('otainfo').textContent=s.part?`Ejecutándose desde ${s.part} · hueco libre ${(s.otamax/1048576).toFixed(1)} MB`:'';$('heap').textContent=Math.round(s.heap/1024);
- if(s.bat!==undefined){$('batrow').hidden=false;$('bat').innerHTML=s.bat<0?(s.usb?'Sin batería · USB':'--'):`<b>${s.bat} %</b>`+(s.chg?' · cargando':s.usb?' · USB':'')+(s.bmv>0?` · ${(s.bmv/1000).toFixed(2)} V`:'')}tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
+let tick=null,up=false;
+function show(s,relang){status=s;
+ if(s.lang!==undefined&&!relang&&Date.now()-lastUser>1500&&s.lang!==LANG)setLang(s.lang);
+ BOARD=s.board||'s3amoled';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;
+ $('otainfo').textContent=s.part?tr(`Desde ${s.part} · hueco libre ${dec1(s.otamax/1048576)} MB`,`Running from ${s.part} · ${dec1(s.otamax/1048576)} MB free slot`):'';$('heap').textContent=Math.round(s.heap/1024);
+ let bat='';
+ if(s.bat!==undefined){$('batrow').classList.remove('hide');bat=s.bat<0?(s.usb?tr('Sin batería · USB','No battery · USB'):''):`${s.bat} %`+(s.chg?tr(' · cargando',' · charging'):s.usb?' · USB':'');
+  $('bat').textContent=(bat||'--')+(s.bmv>0?` · ${(s.bmv/1000).toFixed(2)} V`:'')}
+ homeStatus(bat);
+ tick=s.tv?{t:s.time.split(':').reduce((a,v)=>a*60+ +v,0),at:Date.now()}:null;clock();
  // Marea (S3) has Wi-Fi and Bluetooth at once: its Wi-Fi is always the real one, there are no modes
- mode=BOARD==='s3amoled'?'wifi':s.mode;$('wgo').textContent=mode==='wifi'?'Conectar el reloj a esta red':'Guardar esta red para las actualizaciones';
- $('wst').innerHTML=mode!=='wifi'?(s.ssid?`Red guardada: <b>${s.ssid}</b>. El reloj solo la usa para actualizarse.`:'Sin red guardada: hace falta para que el reloj se actualice.')
-  :s.wifi===0?(s.ssid?`WiFi apagado. Red guardada: <b>${s.ssid}</b>`:'WiFi apagado')
-  :s.sip?`Conectado a <b>${s.ssid}</b> (${s.sip})`:(s.ssid?`Buscando ${s.ssid}…`:'Sin red configurada: solo su propia WiFi Marea');
+ mode=BOARD==='s3amoled'?'wifi':s.mode;$('wgo').textContent=mode==='wifi'?tr('Conectar el reloj a esta red','Connect the watch to this network'):tr('Guardar esta red para las actualizaciones','Save this network for updates');
+ $('wst').innerHTML=mode!=='wifi'?(s.ssid?tr(`Guardada: <b>${esc(s.ssid)}</b>, solo para actualizarse`,`Saved: <b>${esc(s.ssid)}</b>, only for updates`):tr('Sin red guardada','No saved network'))
+  :s.wifi===0?(s.ssid?tr(`Guardada: ${esc(s.ssid)} · WiFi apagado`,`Saved: ${esc(s.ssid)} · Wi-Fi off`):tr('WiFi apagado','Wi-Fi off'))
+  :s.sip?tr(`Conectado a <b>${esc(s.ssid)}</b> (${s.sip})`,`Connected to <b>${esc(s.ssid)}</b> (${s.sip})`):(s.ssid?tr(`Buscando ${esc(s.ssid)}…`,`Looking for ${esc(s.ssid)}…`):tr('Sin red configurada','No network set up'));
  updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
  if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
   if(s.fxoff!==undefined&&s.fxoff!==offMask){offMask=s.fxoff;if(FX.length)renderOff()}
-  for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+'%'}
+  for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
   if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}
@@ -311,18 +531,29 @@ function show(s){
   vis()}
  $('moderow').classList.toggle('hide',BOARD==='s3amoled');$('wifionly').classList.toggle('hide',L.kind!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
  $('modetxt').textContent=MODE_TXT[s.mode]||''}
-// Updates over the internet: this device reads the manifest, the clock downloads the image itself
+function homeStatus(bat){$('dot').style.background=up?'var(--verde)':'var(--coral)';$('dot').classList.toggle('on',up);
+ $('hstat').textContent=(up?tr('Conectado','Connected'):tr('Sin conexión','Not connected'))+(bat?' · '+tr('batería ','battery ')+bat:'');
+ $('btpip').style.background=up?'var(--verde)':'var(--coral)';$('btst').textContent=up?tr('Conectado','Connected'):tr('Sin conexión','Not connected');
+ $('btst').className=up?'ok':'bad'}
+function homeTiles(){if(FX.length)$('tfx').textContent=tr(`${liveCount()} esferas`,`${liveCount()} faces`);$('tal').textContent=nextAlarm()}
+
+// ------------------------------------------------------------ updates: this device reads the manifest, the clock downloads the image (or the app passes it over Bluetooth)
 // Yes/no question: in the app Kotlin turns it into a native dialog (title + button named after the action)
-function ask(title,body,ok){return confirm(L.kind==='android'?JSON.stringify({title,body,ok}):title+'\n\n'+body)}
+function ask(title,body,ok){return confirm(L.kind==='android'?JSON.stringify({title,body,ok,cancel:tr('Cancelar','Cancel')}):title+'\n\n'+body)}
 const MANIFEST='https://carlosns.github.io/c6-fx-clock/manifest.json';
-const UPD_TXT={updated:'Actualizado',up_to_date:'Ya tenía la última versión',no_wifi:'No pudo conectarse a su red WiFi (revisa Conexión)',
- no_internet:'Su red no tenía internet',bad_manifest:'No pudo leer la información de la versión',bad_image:'La descarga no era válida; sigue con la versión anterior',
- timeout:'La descarga tardó demasiado; sigue con la versión anterior',ble_lost:'Se cortó el Bluetooth a mitad; sigue con la versión anterior',cancelled:'Cancelada; sigue con la versión anterior',interrupted:'Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior',running:'En curso'};
-let mode='',updAt=null,updWaiting=false,offer=null,autoUpd=false;
-function updStatus(s){const u=s.upd;if(!u)return;
- if(u.state!=='none')$('updlast').textContent=`Último intento: ${UPD_TXT[u.state]||u.state}${u.state==='updated'?` (${u.from} → ${u.to})`:''}`;
- if(updAt===null)updAt=u.at;else if(u.at!==updAt){updAt=u.at;updWaiting=false;$('updst').innerHTML=`<b>${UPD_TXT[u.state]||u.state}</b>`;$('updgo').classList.add('hide')}
- if(!updWaiting&&!offer&&$('updst').textContent==='--')$('updst').textContent=`Versión ${s.ver}`;
+const UPD_TXT={updated:['Actualizado','Updated'],up_to_date:['Ya tenía la última versión','It already had the latest version'],no_wifi:['No pudo conectarse a su red WiFi','It could not join its Wi-Fi network'],
+ no_internet:['Su red no tenía internet','Its network had no internet'],bad_manifest:['No pudo leer la información de la versión','It could not read the version information'],bad_image:['La descarga no era válida; sigue con la versión anterior','The download was not valid; it keeps the previous version'],
+ timeout:['La descarga tardó demasiado; sigue con la versión anterior','The download took too long; it keeps the previous version'],ble_lost:['Se cortó el Bluetooth a mitad; sigue con la versión anterior','Bluetooth dropped halfway; it keeps the previous version'],
+ cancelled:['Cancelada; sigue con la versión anterior','Cancelled; it keeps the previous version'],interrupted:['Se cortó a mitad (reinicio o sin corriente); sigue con la versión anterior','Interrupted (restart or power loss); it keeps the previous version'],running:['En curso','In progress']};
+const updTxt=k=>UPD_TXT[k]?UPD_TXT[k][LANG]:k;
+let mode='',updAt=null,updWaiting=false,offer=null,autoUpd=false,appOfferV=null,updMsg=null;
+function setUpd(html){updMsg=html;$('updst').innerHTML=html}
+function updStatus(s){const u=s.upd;
+ $('updsub').textContent=tr('Reloj ','Watch ')+(s.ver||'--')+(L.kind==='android'?tr(' · app ',' · app ')+ClockBridge.appVersion():'');
+ if(!u)return;
+ if(u.state!=='none')$('updlast').textContent=tr('Último intento: ','Last attempt: ')+updTxt(u.state)+(u.state==='updated'?` (${u.from} → ${u.to})`:'');
+ if(updAt===null)updAt=u.at;else if(u.at!==updAt){updAt=u.at;updWaiting=false;setUpd(`<b>${updTxt(u.state)}</b>`);showOffer(null)}
+ if(!updWaiting&&!offer&&!updMsg)setUpd(tr('Versión ','Version ')+s.ver);
  if(L.kind==='android'&&!autoUpd&&s.ver){autoUpd=true;updCheck()}}  // the app looks by itself on opening
 // Semantic versions: 3.0.0-beta.6 < 3.0.0-beta.10 < 3.0.0 < 3.0.1; "+build" does not count (as Firmware.compare in the app)
 function verCmp(a,b){const sp=v=>{const c=v.split('+')[0],i=c.indexOf('-');return[(i<0?c:c.slice(0,i)).split('.').map(n=>+n||0),i<0?null:c.slice(i+1).split('.')]};
@@ -330,88 +561,150 @@ function verCmp(a,b){const sp=v=>{const c=v.split('+')[0],i=c.indexOf('-');retur
  if(!ap||!bp)return(ap?0:1)-(bp?0:1);
  for(let i=0;i<Math.max(ap.length,bp.length);i++){const x=ap[i],y=bp[i];if(x===undefined)return-1;if(y===undefined)return 1;
   const xn=/^\d+$/.test(x),yn=/^\d+$/.test(y),d=xn&&yn?+x-+y:xn?-1:yn?1:x<y?-1:x>y?1:0;if(d)return Math.sign(d)}return 0}
+function showOffer(e){offer=e;const on=!!e;$('updgo').classList.toggle('hide',!on);$('nupd').classList.toggle('hide',!on);$('updbadge').classList.toggle('hide',!on&&!appOfferV);
+ if(on){$('updgo').textContent=tr('Actualizar a la ','Update to ')+e.version;$('nupdtxt').textContent=e.version+tr(' · llega por Bluetooth',' · comes over Bluetooth')}}
 // The watch's entry in the manifest (or null): what to offer, only if it is newer
 function offerFrom(e,ver){
-  // Only a newer version is offered (a development build can be ahead of what is published)
-  if(verCmp(e.version,ver)<=0){$('updst').innerHTML=verCmp(e.version,ver)<0?`Tienes la <b>${ver}</b>, más nueva que la publicada (${e.version})`:`Tienes la última versión (<b>${ver}</b>)`;return}
-  offer=e;$('updst').innerHTML=`Disponible la <b>${e.version}</b> (tienes la ${ver})${e.notes?': '+e.notes:''}`;$('updgo').textContent='Actualizar a la '+e.version;$('updgo').classList.remove('hide')}
-const UPD_NONET='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas';
-async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;const ver=$('ver').textContent;
+  if(!e||verCmp(e.version,ver)<=0){setUpd(e&&verCmp(e.version,ver)<0?tr(`Tienes la <b>${ver}</b>, más nueva que la publicada (${e.version})`,`You have <b>${ver}</b>, newer than the published one (${e.version})`):tr(`Tienes la última versión (<b>${ver}</b>)`,`You have the latest version (<b>${ver}</b>)`));showOffer(null);return}
+  setUpd(tr(`Disponible la <b>${e.version}</b> (tienes la ${ver})`,`<b>${e.version}</b> is available (you have ${ver})`)+(e.notes?': '+esc(e.notes):''));showOffer(e)}
+const UPD_NONET=()=>tr('No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas','Could not check: this device has no internet or nothing is published yet');
+async function updCheck(){setUpd(tr('Buscando…','Checking…'));showOffer(null);const ver=$('ver').textContent;
  // In the app, Kotlin reads the manifest (its own connection, no CORS) and answers through clockOffer()
  if(L.kind==='android'&&ClockBridge.checkClock){ClockBridge.checkClock(BOARD);return}
  try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json();
   // This watch's image is under boards.<id>; the top-level keys belong to the old ESP32-C6 clocks
   offerFrom((m.boards||{})[BOARD],ver)}
- catch(e){$('updst').textContent=UPD_NONET}}
-window.clockOffer=s=>{if(s==='error'){$('updst').textContent=UPD_NONET;return}offerFrom(s&&JSON.parse(s),$('ver').textContent)};
+ catch(e){setUpd(UPD_NONET())}}
+window.clockOffer=s=>{if(s==='error'){setUpd(UPD_NONET());return}offerFrom(s&&JSON.parse(s),$('ver').textContent)};
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
-$('updgo').onclick=()=>{if(!offer)return;
+function updGo(){if(!offer)return;
  // The app passes the image over Bluetooth (watches from 3.0.0-beta.6): no Wi-Fi needed on the watch
  if(L.kind==='android'&&ClockBridge.canUpdateClock&&ClockBridge.canUpdateClock()){
-  if(!ask(`¿Actualizar el reloj a la ${offer.version}?`,'El móvil descarga la versión nueva y se la pasa al reloj por Bluetooth. Tarda unos minutos: deja la app abierta y el reloj cerca. Al terminar, el reloj se reinicia solo. Si algo falla, seguirá con la versión que tiene ahora.','Actualizar'))return;
-  ClockBridge.updateClock(JSON.stringify(offer));updWaiting=true;offer=null;$('updgo').classList.add('hide');return}
- if(!ask(`¿Actualizar el reloj a la ${offer.version}?`,'El reloj se reiniciará, se conectará a tu WiFi y descargará la nueva versión. Tarda de 1 a 3 minutos. Si algo falla, seguirá con la versión que tiene ahora.','Actualizar'))return;
- if(send('update apply '+MANIFEST)){updWaiting=true;offer=null;$('updgo').classList.add('hide');$('updst').innerHTML='<b>Actualizando…</b> el reloj volverá solo en unos minutos.'}};
+  if(!ask(tr(`¿Actualizar el reloj a la ${offer.version}?`,`Update the watch to ${offer.version}?`),tr('El móvil descarga la versión nueva y se la pasa al reloj por Bluetooth. Tarda unos minutos: deja la app abierta y el reloj cerca. Al terminar, el reloj se reinicia solo. Si algo falla, seguirá con la versión que tiene ahora.','The phone downloads the new version and passes it to the watch over Bluetooth. It takes a few minutes: keep the app open and the watch close. When it finishes, the watch restarts by itself. If anything fails, it keeps the version it has now.'),tr('Actualizar','Update')))return;
+  ClockBridge.updateClock(JSON.stringify(offer));updWaiting=true;showOffer(null);location.hash='#actualizaciones';return}
+ if(!ask(tr(`¿Actualizar el reloj a la ${offer.version}?`,`Update the watch to ${offer.version}?`),tr('El reloj se reiniciará, se conectará a tu WiFi y descargará la nueva versión. Tarda de 1 a 3 minutos. Si algo falla, seguirá con la versión que tiene ahora.','The watch will restart, join your Wi-Fi and download the new version. It takes 1 to 3 minutes. If anything fails, it keeps the version it has now.'),tr('Actualizar','Update')))return;
+ if(send('update apply '+MANIFEST)){updWaiting=true;showOffer(null);setUpd(tr('<b>Actualizando…</b> el reloj volverá solo en unos minutos.','<b>Updating…</b> the watch will come back by itself in a few minutes.'))}}
+$('updgo').onclick=updGo;$('nupdgo').onclick=updGo;
 // The clock's time ticks here between status messages (over Bluetooth they come every few seconds)
-function clock(){if(!tick){$('clk').textContent='sin hora';return}const t=Math.floor(tick.t+(Date.now()-tick.at)/1000)%86400;$('clk').textContent=[t/3600,t/60%60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':')}
+function clock(){if(!tick){$('clk').textContent=tr('sin hora','no time');return}const t=Math.floor(tick.t+(Date.now()-tick.at)/1000)%86400;$('clk').textContent=[t/3600,t/60%60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':')}
 // OTA: upload firmware.bin straight to /ota, then wait for the board to come back
 let otaMax=0,otaBusy=false;
 $('otafile').onchange=()=>{$('otago').disabled=!$('otafile').files.length;$('otast').textContent=''};
 $('otago').onclick=async()=>{const file=$('otafile').files[0];if(!file||otaBusy)return;
  const head=new Uint8Array(await file.slice(0,1).arrayBuffer());
- if(head[0]!==0xE9){$('otast').textContent='Ese archivo no es un firmware de ESP32';return}
- if(otaMax&&file.size>otaMax){$('otast').textContent='El archivo es demasiado grande para el reloj';return}
- otaBusy=true;$('otago').disabled=true;$('otabar').classList.remove('hide');$('otast').textContent='Enviando…';
+ if(head[0]!==0xE9){$('otast').textContent=tr('Ese archivo no es un firmware de ESP32','That file is not an ESP32 firmware');return}
+ if(otaMax&&file.size>otaMax){$('otast').textContent=tr('El archivo es demasiado grande para el reloj','The file is too big for the watch');return}
+ otaBusy=true;$('otago').disabled=true;$('otabar').classList.remove('hide');$('otast').textContent=tr('Enviando…','Sending…');
  const x=new XMLHttpRequest();x.open('POST','/ota');
- x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);$('otafill').style.width=p+'%';$('otast').textContent=`Enviando… ${p}%`}};
- x.onload=()=>{if(x.status===200){$('otafill').style.width='100%';$('otast').textContent='Instalado. El reloj se está reiniciando…';waitBack()}else{otaBusy=false;$('otago').disabled=false;$('otast').textContent=x.responseText||'Error en la actualización'}};
- x.onerror=()=>{otaBusy=false;$('otago').disabled=false;$('otast').textContent='Se perdió la conexión durante el envío'};
+ x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);$('otafill').style.width=p+'%';$('otast').textContent=tr('Enviando… ','Sending… ')+p+' %'}};
+ x.onload=()=>{if(x.status===200){$('otafill').style.width='100%';$('otast').textContent=tr('Instalado. El reloj se está reiniciando…','Installed. The watch is restarting…');waitBack()}else{otaBusy=false;$('otago').disabled=false;$('otast').textContent=x.responseText||tr('Error en la actualización','Update error')}};
+ x.onerror=()=>{otaBusy=false;$('otago').disabled=false;$('otast').textContent=tr('Se perdió la conexión durante el envío','The connection was lost while sending')};
  x.send(file)};
 async function waitBack(){const t0=Date.now();await new Promise(r=>setTimeout(r,4000));
- for(;;){try{const s=await(await fetch('/status',{cache:'no-store'})).json();$('otast').textContent=`Listo: versión ${s.ver} funcionando`;otaBusy=false;break}catch(e){if(Date.now()-t0>120000){$('otast').textContent='El reloj tarda en volver; recarga la página en un momento';otaBusy=false;break}await new Promise(r=>setTimeout(r,2000))}}}
+ for(;;){try{const s=await(await fetch('/status',{cache:'no-store'})).json();$('otast').textContent=tr('Listo: versión ','Done: version ')+s.ver;otaBusy=false;break}catch(e){if(Date.now()-t0>120000){$('otast').textContent=tr('El reloj tarda en volver; recarga la página en un momento','The watch is slow to come back; reload the page in a moment');otaBusy=false;break}await new Promise(r=>setTimeout(r,2000))}}}
 
+// The old ESP32-C6 clocks switch between Wi-Fi and Bluetooth modes (Marea has both at once)
 const MODE_TXT={wifi:'Ahora en WiFi. En Bluetooth se controla desde la app del móvil, sin WiFi. Para volver aquí: mantén BOOT 2 s en la pantalla de bienvenida.',
  ble:'Ahora en Bluetooth. En WiFi se controla desde el navegador, en la IP del reloj, y la app deja de verlo hasta que vuelva.'};
 $('tomode').onclick=()=>{const to=$('tomode').textContent.includes('WiFi')?'wifi':'ble';
  if((to==='ble'?ask('¿Pasar el reloj a modo Bluetooth?','Se reiniciará y esta página dejará de responder, porque solo funciona por WiFi. Para volver al modo WiFi, mantén pulsado BOOT 2 segundos mientras se ve la pantalla de bienvenida.','Cambiar a Bluetooth'):ask('¿Pasar el reloj a modo WiFi?','Se reiniciará y se conectará a tu red WiFi guardada. Mientras esté en WiFi, la app no podrá controlarlo ni ponerle la hora. Para volver a Bluetooth, usa este mismo botón desde la página del reloj (en su IP) o mantén pulsado BOOT 2 segundos en la pantalla de bienvenida.','Cambiar a WiFi')))send('mode '+to)};
 
+// ------------------------------------------------------------ connection
 // Bluetooth from a browser: Chrome shows its device chooser after a tap
-$('blego').onclick=async()=>{$('blest').textContent='Elige el reloj en la lista…';
- try{await L.pick();$('blest').textContent='';if(L.kind==='android'){$('appcard').classList.remove('hide');appInfo()}}catch(e){$('blest').textContent=e.name==='NotFoundError'?'No elegiste ningún reloj':'No se pudo conectar: '+e.message}};
+$('blego').onclick=async()=>{$('blest').textContent=tr('Elige el reloj en la lista…','Pick the watch in the list…');
+ try{await L.pick();$('blest').textContent='';if(L.kind==='android'){$('appcard').classList.remove('hide');appInfo()}}catch(e){$('blest').textContent=e.name==='NotFoundError'?tr('No elegiste ningún reloj','You did not pick a watch'):tr('No se pudo conectar: ','Could not connect: ')+e.message}};
 $('blecard').classList.toggle('hide',!L.needsPick);
-if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent='Este navegador no tiene Web Bluetooth: usa Chrome o Edge'}
-L.start({onState:up=>{$('dot').classList.toggle('on',up);if(L.needsPick&&up)$('blecard').classList.add('hide');if(up)poll()},
+if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent=tr('Este navegador no tiene Web Bluetooth: usa Chrome o Edge','This browser has no Web Bluetooth: use Chrome or Edge')}
+L.start({onState:u=>{up=u;homeStatus(status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u)$('blecard').classList.add('hide');if(u){poll();if(!ALARMS)loadAlarms();if(view==='archivos')loadFiles(fpath)}},
  onMessage:m=>{if(m.t==='status')show(m)}});
-// Android app: sync, background permission and forgetting the clock live in Kotlin
+// Android app: sync, permissions and forgetting the clock live in Kotlin
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
- $('appsync').textContent=(i.lastSync?`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`:'Todavía ninguna')+(i.permanent?' · conexión permanente':` · cada ${i.every} min`);
- $('appph').textContent=i.phone?'Permitido: el reloj muestra lo que suena y avisa de las llamadas':'Sin permitir: la app necesita leer las notificaciones de música y llamadas';$('appphgo').classList.toggle('hide',!!i.phone);
- $('appbg').textContent=i.background?'Permitido: la hora y el tiempo llegan aunque cierres la app':'Sin permitir: el sistema puede cortar la sincronización';$('appbgo').classList.toggle('hide',i.background)}
-if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent='Sincronizando…';setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appforget').onclick=()=>{if(ask('¿Olvidar este reloj?','El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','Olvidar'))ClockBridge.forget()};
+ $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
+ $('appph').textContent=i.phone?tr('Permitido','Allowed'):tr('Falta el acceso a las notificaciones','Notification access is missing');$('appph').className=i.phone?'ok':'bad';$('appphgo').classList.toggle('hide',!!i.phone);
+ $('appbg').textContent=i.background?tr('Permitido','Allowed'):tr('El sistema puede cortar la conexión','The system may cut the connection');$('appbg').className=i.background?'ok':'bad';$('appbgo').classList.toggle('hide',i.background);
+ const miss=[!i.phone&&tr('Música y llamadas','Music and calls'),!i.background&&tr('Segundo plano','Background')].filter(Boolean);
+ $('nperm').classList.toggle('hide',!miss.length||L.needsPick);$('npermtxt').textContent=miss.join(' · ');$('permpip').classList.toggle('hide',!miss.length)}
+if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forgetrow').classList.toggle('hide',L.needsPick);$('appsyncrow').classList.remove('hide');$('appupd').classList.remove('hide');
+ $('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent=tr('Sincronizando…','Syncing…');setTimeout(appInfo,6000)};
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();
+ $('appforget').onclick=()=>{if(ask(tr('¿Olvidar este reloj?','Forget this watch?'),tr('El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','The phone and the watch will no longer be paired, and the app will not be able to control it or set its time. To use it again, tap "Find the watch" and type the code it shows.'),tr('Olvidar','Forget')))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
- window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();$('appupdst').classList.remove('hide');$('appupdgo').classList.toggle('hide',!o);
-  if(!o){$('appupdst').innerHTML=`App: tienes la última (<b>${v}</b>)`;return}
-  $('appupdst').innerHTML=`App: disponible la <b>${o.version}</b> (tienes la ${v})`;$('appupdgo').textContent='Actualizar la app a la '+o.version};
+ window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();appOfferV=o&&o.version;$('appupdgo').classList.toggle('hide',!o);$('napp').classList.toggle('hide',!o);
+  $('updbadge').classList.toggle('hide',!o&&!offer);
+  if(!o){$('appupdst').innerHTML=tr(`Tienes la última (<b>${v}</b>)`,`You have the latest (<b>${v}</b>)`);return}
+  $('appupdst').innerHTML=tr(`Disponible la <b>${o.version}</b> (tienes la ${v})`,`<b>${o.version}</b> is available (you have ${v})`);$('appupdgo').textContent=tr('Actualizar la app a la ','Update the app to ')+o.version;$('napptxt').textContent=o.version};
  window.appUpdateState=t=>{$('appupdst').textContent=t};
- window.clockUpdateState=t=>{$('updst').textContent=t};
- $('appupdgo').onclick=()=>ClockBridge.installApp();
+ window.clockUpdateState=t=>{setUpd(esc(t))};
+ $('appupdgo').onclick=$('nappgo').onclick=()=>ClockBridge.installApp();
  ClockBridge.checkApp()}
-// Alarms: label and ringing animation (the watch keeps the times and days)
-const DAYS='LMXJVSD';
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+// ------------------------------------------------------------ alarms: label, on/off and ringing animation (the watch keeps the times and days)
+const DAYS=['LMXJVSD','MTWTFSS'];
+let ALARMS=null,openAl=-1,animFor=-1,animSel=0;
+const hm=a=>String(a.h).padStart(2,'0')+':'+String(a.m).padStart(2,'0');
 // The watch keeps 23 bytes of UTF-8: cut whole characters
 function cut23(s){let o='';for(const ch of s){if(new TextEncoder().encode(o+ch).length>23)break;o+=ch}return o}
-async function loadAlarms(){let r;try{r=await L.request('alarms')}catch(e){setTimeout(loadAlarms,3000);return}
- const box=$('alarms');
- if(!r.list.length){box.innerHTML='<div class="status">No hay alarmas. Créalas en el reloj (app Alarmas).</div>';return}
- box.innerHTML=r.list.map((a,i)=>{const days=a.d?[...DAYS].map((c,k)=>a.d>>k&1?c:'·').join(' '):'una vez';
-  return `<div class="item" style="flex-wrap:wrap;gap:8px"><div class="t"><b>${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}</b>${a.on?'':' (apagada)'}<small>${days}</small></div>
-  <input type="text" data-al="${i}" maxlength="23" placeholder="Etiqueta" value="${esc(a.l)}" style="flex:1;min-width:140px">
-  <select data-an="${i}" style="min-width:120px">${r.anims.map((n,k)=>`<option value="${k}"${k===a.a?' selected':''}>${esc(n)}</option>`).join('')}</select></div>`}).join('');
- box.querySelectorAll('input[data-al]').forEach(el=>el.onchange=()=>{el.value=cut23(el.value.replace(/\|/g,''));send(`alarm ${el.dataset.al} label ${el.value}`)});
- box.querySelectorAll('select[data-an]').forEach(el=>el.onchange=()=>send(`alarm ${el.dataset.an} anim ${el.value}`))}
+async function loadAlarms(){try{ALARMS=await L.request('alarms')}catch(e){if(view==='alarmas')setTimeout(loadAlarms,3000);return}renderAlarms();homeTiles()}
+function animName(k){return ALARMS&&ALARMS.anims[k]||'?'}
+function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
+ if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas. Créalas en el reloj (app Alarmas).','No alarms. Create them on the watch (Alarms app).')}</div>`;return}
+ box.innerHTML=ALARMS.list.map((a,i)=>{const days=a.d?[...DAYS[LANG]].filter((c,k)=>a.d>>k&1).join(' '):tr('Una vez','Once');
+  return `<div class="panel al${a.on?'':' offd'}${openAl===i?' gold':''}" data-i="${i}">
+   <div class="head"><button class="open" aria-expanded="${openAl===i}"><span class="tag" style="${a.l?'':'color:var(--gris)'}">${a.l?esc(a.l):tr('Sin etiqueta','No label')}</span><span class="time">${hm(a)}</span><span class="dim">${days} · ${esc(animName(a.a))}</span></button>
+   <input type="checkbox" class="sw" ${a.on?'checked':''} aria-label="${tr('Alarma de las ','Alarm at ')}${hm(a)}"></div>
+   ${openAl===i?`<div class="more"><label class="stack" style="gap:4px"><span class="dim">${tr('Etiqueta','Label')}</span><input type="text" maxlength="23" value="${esc(a.l)}" placeholder="${tr('Sin etiqueta','No label')}"></label>
+    <button class="btn anim" style="justify-content:flex-start"><img class="prev" alt="" style="width:30px;height:37px;border:2px solid var(--linea)"><span style="flex:1;text-align:left">${tr('Animación de alarma','Alarm animation')}<br><span style="font:18px VT323,monospace;color:var(--gris)">${esc(animName(a.a))}</span></span><span class="go">›</span></button>
+    <button class="btn test">${tr('Probar en el reloj','Try it on the watch')}</button></div>`:''}</div>`}).join('');
+ for(const el of box.querySelectorAll('.al')){const i=+el.dataset.i,a=ALARMS.list[i];
+  el.querySelector('.open').onclick=()=>{openAl=openAl===i?-1:i;renderAlarms()};
+  el.querySelector('.sw').onchange=e=>{a.on=e.target.checked?1:0;send(`alarm ${i} on ${a.on}`);renderAlarms();homeTiles()};
+  const t=el.querySelector('input[type=text]');if(t)t.onchange=()=>{t.value=cut23(t.value.replace(/\|/g,''));a.l=t.value;send(`alarm ${i} label ${t.value}`);renderAlarms()};
+  const img=el.querySelector('.anim img');if(img)preview(img,`${A}alarm${a.a}.webp`);
+  const b=el.querySelector('.anim');if(b)b.onclick=()=>animModal(i);
+  const tb=el.querySelector('.test');if(tb)tb.onclick=()=>{send(`alarm ${i} test`);tb.textContent=tr('Sonando en el reloj…','Ringing on the watch…');setTimeout(()=>tb.textContent=tr('Probar en el reloj','Try it on the watch'),3000)}}}
+function animModal(i){animFor=i;animSel=ALARMS.list[i].a;const a=ALARMS.list[i];$('manimsub').textContent=(a.l?a.l+' · ':'')+hm(a);drawAnims();$('manim').classList.remove('hide')}
+function drawAnims(){const box=$('animlist');box.innerHTML='';
+ ALARMS.anims.forEach((n,k)=>{const b=document.createElement('button');b.className=k===animSel?'on':'';b.setAttribute('aria-pressed',k===animSel);
+  b.innerHTML=`<img class="prev" alt=""><span>${esc(n)}${k===animSel?'<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#78D6A0" d="M8 2h1v2H8v1H7v1H6v1H5v1H3V7H2V6H1V4h1v1h1v1h1V5h1V4h1V3h1V2z"/></svg>':''}</span>`;
+  preview(b.querySelector('img'),`${A}alarm${k}.webp`);b.onclick=()=>{animSel=k;drawAnims()};box.appendChild(b)})}
+$('animok').onclick=()=>{const a=ALARMS.list[animFor];if(a&&a.a!==animSel){a.a=animSel;send(`alarm ${animFor} anim ${animSel}`)}closeModals();renderAlarms();homeTiles()};
+// The next alarm that will ring, by this device's clock: "Mañana 07:30"
+function nextAlarm(){if(!ALARMS)return'--';const now=new Date(),wd=(now.getDay()+6)%7,nm=now.getHours()*60+now.getMinutes();let best=null;
+ for(const a of ALARMS.list){if(!a.on)continue;const t=a.h*60+a.m;
+  for(let o=0;o<8;o++){const d=(wd+o)%7;if(a.d&&!(a.d>>d&1))continue;if(o===0&&t<=nm)continue;const m=o*1440+t-nm;if(!best||m<best.m)best={m,o,a};break}}
+ if(!best)return tr('Ninguna activa','None on');
+ const day=best.o===0?tr('Hoy','Today'):best.o===1?tr('Mañana','Tomorrow'):(LANG?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'])[(wd+best.o)%7];
+ return day+' '+hm(best.a)}
+
+// ------------------------------------------------------------ microSD viewer (look only)
+let fpath='/',FILES=null,fbusy=false;
+async function loadFiles(p){fpath=p;FILES=null;renderFiles();
+ try{const r=await L.request('files',p);if(r.path!==undefined&&r.path!==fpath&&r.st!=='nodir')return;FILES=r;if(r.st==='nodir'&&p!=='/'){loadFiles('/');return}}catch(e){FILES={st:'err'}}
+ renderFiles()}
+const fsize=b=>b<1e3?b+' B':b<1e6?Math.round(b/1e3)+' KB':b<1e9?dec1(b/1e6)+' MB':dec1(b/1e9)+' GB';  // decimal, as the watch and the card's label
+const fdate=m=>{if(!m||m<946684800)return'';const d=new Date(m*1000);return d.toLocaleDateString(LANG?'en-GB':'es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})};
+function renderFiles(){const parts=fpath.split('/').filter(Boolean);
+ $('crumbs').innerHTML='';[['microSD','/'],...parts.map((n,i)=>[n,'/'+parts.slice(0,i+1).join('/')])].forEach(([n,p],i)=>{
+  if(i)$('crumbs').insertAdjacentHTML('beforeend','<span class="dim" style="padding:0 4px">/</span>');
+  const b=document.createElement('button');b.textContent=n;b.onclick=()=>loadFiles(p);$('crumbs').appendChild(b)});
+ const box=$('flist');
+ if(!FILES){box.innerHTML=`<div class="frow dim">${tr('Cargando…','Loading…')}</div>`;return}
+ const msg={none:tr('No hay tarjeta en el reloj','There is no card in the watch'),bad:tr('La tarjeta no se puede leer. Puedes formatearla desde la app Archivos del reloj.','The card cannot be read. You can format it from the watch\'s Files app.'),err:tr('El reloj no responde','The watch does not answer')}[FILES.st];
+ $('sdinfo').classList.toggle('hide',FILES.st!=='ok');
+ if(msg){box.innerHTML=`<div class="frow">${msg}</div>`;return}
+ $('sdfree').textContent=tr(`${fsize(FILES.free)} libres de ${fsize(FILES.total)}`,`${fsize(FILES.free)} free of ${fsize(FILES.total)}`);
+ $('sdfill').style.width=(FILES.total?Math.round((FILES.total-FILES.free)/FILES.total*100):0)+'%';
+ const list=FILES.list.filter(f=>!f.n.startsWith('.')&&f.n!=='System Volume Information').sort((a,b)=>a.d!==b.d?b.d-a.d:a.n.localeCompare(b.n,LANG?'en':'es',{sensitivity:'base'}));
+ if(!list.length){box.innerHTML=`<div class="frow dim">${tr('Carpeta vacía','Empty folder')}</div>`;return}
+ box.innerHTML='';
+ for(const f of list){const el=document.createElement(f.d?'button':'div');el.className='frow';
+  el.innerHTML=f.d?`<svg width="26" height="26" viewBox="0 0 13 13" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M1 2h4l1 1h6v8H1zM2 5v5h9V5z"/></svg><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="nm j" style="font-size:24px;line-height:1">${esc(f.n)}</span></span><span class="go" aria-hidden="true">›</span>`
+   :`<svg width="26" height="26" viewBox="0 0 13 13" shape-rendering="crispEdges" aria-hidden="true"><path fill="#A89CCE" d="M2 1h6l3 3v8H2zM3 2v9h7V5H7V2z"/></svg><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="nm">${esc(f.n)}</span><span class="dim small">${fsize(f.s)}${fdate(f.m)?' · '+fdate(f.m):''}</span></span>`;
+  if(f.d)el.onclick=()=>loadFiles((fpath==='/'?'':fpath)+'/'+f.n);box.appendChild(el)}}
+
+// ------------------------------------------------------------ start
+applyLang();route();
 loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
 </script>
 </body>

@@ -319,6 +319,16 @@ static void worker(void *arg)
                     send_msg(buf, 13 + n);
                     free(buf);
                 }
+            } else if (strncmp(c, "get files", 9) == 0 && (c[9] == 0 || c[9] == ' ')) {
+                const size_t cap = 32 * 1024;  // one folder of the microSD for the app's viewer
+                char *buf = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
+                if (buf) {
+                    memcpy(buf, "{\"t\":\"files\",", 13);
+                    size_t n = sd_list_json(c[9] ? c + 10 : "/", buf + 12, cap - 12);  // its "{" becomes the comma
+                    buf[12] = ',';
+                    send_msg(buf, 12 + n);
+                    free(buf);
+                }
             } else if (strcmp(c, "get pm") == 0) {
                 send_pm();
             } else if (strcmp(c, "shot") == 0) {

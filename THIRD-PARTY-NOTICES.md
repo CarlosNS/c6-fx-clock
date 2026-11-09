@@ -13,7 +13,7 @@ El código de este repositorio es de CarlosNS y se distribuye con la licencia [G
 | Fuente [Jersey 10](https://fonts.google.com/specimen/Jersey+10) (The Soft Type Project Authors) | [SIL Open Font License 1.1](tools/fonts/OFL-jersey10.txt) | Títulos, números y botones del sistema (`src/ui_fonts.c`, generado por `tools/make_fonts.py`) |
 | Fuente [VT323](https://fonts.google.com/specimen/VT323) (Peter Hull) | [SIL Open Font License 1.1](tools/fonts/OFL-vt323.txt) | Etiquetas y textos del sistema (`src/ui_fonts.c`) |
 
-Las dos fuentes OFL van convertidas a mapas de bits dentro del firmware; sus archivos originales y licencias están en `tools/fonts/`. Los dígitos grandes, los iconos, los fondos de pixel art, los sprites y todas las esferas son diseño propio, dibujados por código.
+Las dos fuentes OFL van convertidas a mapas de bits dentro del firmware; sus archivos originales y licencias están en `tools/fonts/`. La página de control y la app usan además una copia de cada una recortada a los caracteres latinos (`src/web/jersey10.ttf` y `src/web/vt323.ttf`, hechas con `fontTools.subset`), con la misma licencia y su mismo nombre, que ninguna de las dos reserva. Los dígitos grandes, los iconos, los fondos de pixel art, los sprites y todas las esferas son diseño propio, dibujados por código.
 
 ## App Android
 

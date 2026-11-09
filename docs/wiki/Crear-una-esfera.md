@@ -208,17 +208,16 @@ Una esfera puede tener sus propios ajustes en la app, como el color de *Clásico
 
    Con eso ya existe la orden `bsize 5` (por Bluetooth, WiFi y consola), se guarda en el reloj y sale en `status`.
 3. **Catálogo:** `.opts = "bb"` (dos letras cualesquiera) en la entrada de `fx_list`.
-4. **App:** en `src/index.html`, junto a los otros bloques de esfera (busca `data-opts="cl"`), un bloque que la app solo enseña con tu esfera:
+4. **App:** en `src/index.html`, dentro de la ventana de opciones de esfera (busca `data-opts="cl"`), un bloque que la app solo enseña con tu esfera, al pulsar *Opciones*:
 
    ```html
-   <div class="own hide" data-opts="bb">
-     <div class="lbl">Ajustes de esta esfera</div>
-     <div class="slider" style="padding-top:0"><div class="top">Tamaño de las burbujas</div>
-       <input type="range" id="bsize" min="1" max="10"></div>
+   <div class="hide stack" data-opts="bb">
+     <span class="tt" data-en="Bubble size">Tamaño de las burbujas</span>
+     <input type="range" id="bsize" min="1" max="10">
    </div>
    ```
 
-   Después, en el script, `bind('bsize','bsize')` para que mover el control mande la orden. Añade `'bsize'` a la lista de `wks`, `nst`, `nen`, `chue` para que el control muestre el valor que tiene el reloj.
+   `data-en` es el texto en inglés. Después, en el script, `bind('bsize','bsize')` para que mover el control mande la orden. Añade `'bsize'` a la lista de `wks`, `nst`, `nen`, `chue` para que el control muestre el valor que tiene el reloj.
 5. **Esfera:** lee `g_app.bub_size` en `render()`.
 
 La app Android usa esta misma página, así que el ajuste sale también en la app al compilarla.
@@ -235,7 +234,7 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
 | `.label` | `"Burbujas"` | Nombre en la app |
 | `.group` | `FX_G_EFFECTS` | Sección: `FX_G_EFFECTS`, `FX_G_GAMES`, `FX_G_ART`, `FX_G_NATURE`, `FX_G_CLOCKS` |
 | `.hint` | `"Arrastra para…"` | Solo si es interactiva |
-| `.desc` | `"Burbujas que…"` | Una o dos frases para la tarjeta *Esfera actual* |
+| `.desc` | `"Burbujas que…"` | Una o dos frases para la esfera actual en la sección Esferas de la app |
 | `.opts` | `"bb"` | Solo si tiene [ajustes propios](#ajustes-propios) |
 
 **Las esferas nuevas van siempre al final.** El número de cada esfera es su posición en la lista, y los relojes lo guardan (la esfera elegida, el cambio automático). Si insertas una en medio o reordenas, a quien actualice le cambiará la esfera. El cambio automático se salta las esferas que el usuario quita en la app (`fxoff`, máscara de 31 bits: hay un `_Static_assert` en `fx.h` que avisa si pasas de 31 esferas). La app las agrupa por `.group`, así que el orden de la lista no se ve. La app lee el catálogo del propio reloj, así que no hay que tocarla.
@@ -257,7 +256,8 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
    - que se lee bien a distintas horas (`dbgtime`), en 12 y 24 h, con y sin segundos, y sin hora (`--:--` justo al encender);
    - que sigue bien al quitarla y volver a ponerla (`enter()` reinicia lo que debe);
    - si es interactiva, el panel táctil de la app.
-6. **Tests:** `pytest -m now` (rápidos); con el reloj conectado, los de su modo (ver [[Compilar y contribuir]]). Cuentan las esferas a partir de `FX_COUNT`, así que una esfera nueva no los rompe.
+6. **Vista previa para la app:** con el reloj por USB y en tu WiFi, `python tools/web_previews.py --faces N` guarda `src/web/fxN.webp`, la imagen de la esfera en la app. Compila otra vez para que entre en el firmware y en la app.
+7. **Tests:** `pytest -m now` (rápidos); con el reloj conectado, los de su modo (ver [[Compilar y contribuir]]). Cuentan las esferas a partir de `FX_COUNT`, así que una esfera nueva no los rompe.
 
 ## Normas
 
@@ -273,6 +273,7 @@ Una pull request con:
 
 - [ ] `src/fx_<id>.c` y los cambios de `fx.h`, `fx_common.c` y `CMakeLists.txt` (y de `app.h`, `settings.c`, `main.c` e `index.html` si tiene ajustes);
 - [ ] una fila en la tabla de esferas del `README.md`, en su grupo;
+- [ ] su vista previa para la app, `src/web/fxNN.webp`, hecha con `tools/web_previews.py`;
 - [ ] su captura, `fxNN.png`, hecha con `tools/ble_shot.py`, adjunta a la pull request (el autor la añade a la página [[Esferas]] de la wiki);
 - [ ] los fps y el `rus` medio que has medido, en la descripción;
 - [ ] una línea en `CHANGELOG.md`, en la versión en preparación.

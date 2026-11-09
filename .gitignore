@@ -15,3 +15,4 @@ claude-monitor-mockup.png
 # Serial log of the last Bluetooth test run
 tests/.ble_serial.log
 release/
+src/web.pack

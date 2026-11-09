@@ -84,7 +84,7 @@ App Android **Marea** (Android 10 o superior), con la misma página de control q
 
 - **Conexión permanente:** mientras el reloj está cerca, la app se queda conectada por Bluetooth (con un aviso fijo de Android, como cualquier app de reloj). Al conectar le pone la hora y el tiempo de su ciudad, y lo repite cada 30 minutos. Si el reloj se aleja o se apaga, la app vuelve a conectar sola cuando reaparece.
 - **Música y llamadas:** con el permiso de leer notificaciones, el reloj muestra lo que suena en cualquier app de música (y la controla: reproducir, pausa, pistas y volumen) y avisa de las llamadas entrantes, que se pueden rechazar o silenciar desde la muñeca. No pide permisos de teléfono ni de contactos.
-- **Ajustes y esferas** desde la app, **actualizaciones** del reloj y de la propia app por internet.
+- **Con el estilo del reloj:** Inicio con los avisos y la esfera que se ve; Esferas con vista previa de cada una (y un ojo para sacarla del cambio automático); Alarmas con etiqueta, interruptor y animación; Archivos para mirar la microSD; Ajustes con idioma (español o inglés, en el reloj y en la app) y **actualizaciones** del reloj y de la propia app por internet.
 - Se empareja una vez, con la clave de 6 cifras que aparece en el reloj.
 
 ## Instalar y actualizar
@@ -98,7 +98,7 @@ App Android **Marea** (Android 10 o superior), con la misma página de control q
 ## Hora, tiempo y microSD
 
 - **Hora:** la ponen el móvil o internet (NTP), y la guarda el reloj de hardware de la placa, que sigue contando con el reloj apagado.
-- **Tiempo:** [Open-Meteo](https://open-meteo.com), gratis y sin clave. Lo trae el móvil o el propio reloj por WiFi, cada 10 minutos; gana el dato más reciente. La ciudad se elige en la tarjeta *Tiempo* de la app o la página.
+- **Tiempo:** [Open-Meteo](https://open-meteo.com), gratis y sin clave. Lo trae el móvil o el propio reloj por WiFi, cada 10 minutos; gana el dato más reciente. La ciudad se elige en *Esferas → Tiempo → Opciones* de la app o la página.
 - **microSD:** la app Archivos muestra carpetas y archivos, borra y formatea. Su botón **USB** reinicia el reloj como disco USB para el ordenador; se vuelve al reloj con BOOT, expulsando el disco o desconectando el cable.
 
 ## Desarrollo

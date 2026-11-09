@@ -19,7 +19,7 @@ Hazlo **desde la app**, no desde los ajustes de Bluetooth del móvil.
 4. **Tienes 30 segundos** desde que aparece la clave: es un límite del propio Bluetooth. La barra de encima de la clave se acorta. Si se pasa el tiempo, vuelve a pulsar *Buscar el reloj*.
 5. Al terminar aparecen las esferas.
 
-El reloj recuerda hasta **3 móviles**. Para olvidarlos todos: BOOT 10 s, *Ajustes → Olvidar móviles* en el reloj, o *Este móvil → Olvidar este reloj* en la app (olvida ese móvil en los dos lados).
+El reloj recuerda hasta **3 móviles**. Para olvidarlos todos: BOOT 10 s, *Ajustes → Olvidar móviles* en el reloj, o *Ajustes → Móvil y conexión → Olvidar este reloj* en la app (olvida ese móvil en los dos lados).
 
 ## La conexión permanente
 
@@ -35,11 +35,13 @@ Mientras el reloj está cerca, la app mantiene el enlace Bluetooth abierto, aunq
 
 Con la app en pantalla el enlace va más rápido (para la página de control); en segundo plano usa el intervalo de bajo consumo del Bluetooth.
 
-La tarjeta **Este móvil** enseña cuándo fue la última sincronización y si salió bien, y tiene el botón **Ahora** para forzar una.
+En *Ajustes → Avanzado*, **Sincronización del móvil** enseña cuándo fue la última y si salió bien, con el botón **Ahora** para forzar una.
+
+La app es la misma [[Página de control]] que sirve el reloj: Inicio con los avisos, Esferas con vistas previas, Alarmas, Archivos de la microSD y Ajustes. El botón atrás del móvil vuelve por las secciones antes de salir.
 
 ## Música y llamadas
 
-En la tarjeta **Este móvil**, *Música y llamadas en el reloj → Permitir* abre la pantalla de Android para dejar que la app **lea las notificaciones**. Con eso:
+En *Ajustes → Móvil y conexión*, *Música y llamadas → Permitir* (Inicio avisa si falta) abre la pantalla de Android para dejar que la app **lea las notificaciones**. Con eso:
 
 - **Música:** el reloj (app Música) muestra el título, el artista y si suena, de cualquier app de música o podcasts del móvil, y la controla: reproducir, pausa, pista anterior y siguiente, y volumen.
 - **Llamadas:** cuando suena el móvil, el reloj muestra quién llama y suena por su altavoz (la placa no tiene motor de vibración), salvo con *No molestar*. La pantalla se queda mientras dure el timbre y se quita al contestar, al colgar quien llama, al rechazar o silenciar, o si se corta el Bluetooth. Desde la muñeca se puede **rechazar** (pulsa el botón de rechazar de la propia llamada) o **silenciar** el timbre durante un minuto.
@@ -52,14 +54,14 @@ La app no pide permisos de teléfono ni de contactos: el nombre de quien llama l
 
 La conexión permanente es un servicio en primer plano, que Android respeta, pero algunas marcas lo cortan igualmente.
 
-- En la app: *Este móvil → Funcionar en segundo plano → Permitir*.
+- En la app: *Ajustes → Móvil y conexión → Funcionar en segundo plano → Permitir*.
 - **Xiaomi / HyperOS / MIUI:** *Ajustes → Apps → Marea*: activa **Inicio automático** y pon **Ahorro de batería → Sin restricciones**.
 - **Samsung:** *Ajustes → Batería → Límites de uso en segundo plano*: que Marea no esté en «Apps en suspensión».
 - **Otros:** busca en <https://dontkillmyapp.com> las instrucciones de tu marca.
 
 ## Actualizaciones
 
-En la tarjeta **Actualizaciones** la app muestra las dos versiones:
+En *Ajustes → Actualizaciones* la app muestra las dos versiones, e Inicio avisa cuando hay una nueva:
 
 - **Reloj:** *Actualizar a la X* descarga la versión en el móvil y se la pasa al reloj por Bluetooth, así que el reloj no necesita WiFi y funciona en cualquier sitio (relojes desde la 3.0.0-beta.6; los anteriores la descargan con su WiFi). Deja la app abierta unos minutos. Ver [[Actualizaciones]].
 - **App:** *Actualizar la app a la X* la descarga, comprueba su tamaño y su SHA-256 y abre el instalador de Android, que pide confirmación. La primera vez Android pide además permitir que Marea instale apps («Permitir de esta fuente»). Solo acepta versiones firmadas con la misma clave, y se conserva el emparejamiento.

@@ -7,7 +7,7 @@
 **El emparejamiento falla o se cancela.**
 - Hay **30 segundos** desde que aparece la clave (límite del Bluetooth; lo cuenta la barra de encima). Vuelve a pulsar *Buscar el reloj*.
 - Empareja **desde la app**, no desde los ajustes de Bluetooth del móvil.
-- Si el móvil ya tenía el reloj emparejado de antes: en la app *Este móvil → Olvidar este reloj* (o bórralo de los ajustes de Bluetooth) y en el reloj **BOOT 10 s**; luego empareja de nuevo.
+- Si el móvil ya tenía el reloj emparejado de antes: en la app *Ajustes → Móvil y conexión → Olvidar este reloj* (o bórralo de los ajustes de Bluetooth) y en el reloj **BOOT 10 s**; luego empareja de nuevo.
 - El reloj recuerda **3 móviles**: si ya tiene 3, olvídalos con BOOT 10 s.
 
 **Pide la clave otra vez cada vez.** El móvil o el reloj han perdido el emparejamiento (por ejemplo, tras BOOT 10 s o reinstalar la app). Olvídalo en los dos lados y vuelve a emparejar.
@@ -16,9 +16,9 @@
 
 **El reloj no tiene la hora.** Su reloj de hardware la guarda mientras quede algo de batería. Si se agotó del todo, la recupera en cuanto se conecta el móvil (al abrir la app o al acercarlo, con Android 12+) o internet por WiFi.
 
-**La app se desconecta con la app cerrada, o desaparece el aviso «Marea conectado».** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. La tarjeta *Este móvil* dice cuándo fue la última sincronización.
+**La app se desconecta con la app cerrada, o desaparece el aviso «Marea conectado».** El sistema está matando la app en segundo plano. Sigue los pasos de *Dejar que funcione en segundo plano* en [[App Android]]; en Xiaomi/HyperOS son imprescindibles el **Inicio automático** y la batería **Sin restricciones**. *Ajustes → Avanzado* dice cuándo fue la última sincronización.
 
-**El reloj no muestra la música o no avisa de las llamadas.** Hace falta el permiso de leer notificaciones: *Este móvil → Música y llamadas en el reloj → Permitir*. Si Android responde «Se ha denegado el acceso», primero *Ajustes → Aplicaciones → Marea → ⋮ → Permitir ajustes restringidos* (ver [[App Android]]). Si ya está dado y no va, quítalo y vuelve a darlo (algunos móviles lo desactivan al actualizar la app). Las llamadas no suenan con *No molestar*.
+**El reloj no muestra la música o no avisa de las llamadas.** Hace falta el permiso de leer notificaciones: *Ajustes → Móvil y conexión → Música y llamadas → Permitir*. Si Android responde «Se ha denegado el acceso», primero *Ajustes → Aplicaciones → Marea → ⋮ → Permitir ajustes restringidos* (ver [[App Android]]). Si ya está dado y no va, quítalo y vuelve a darlo (algunos móviles lo desactivan al actualizar la app). Las llamadas no suenan con *No molestar*.
 
 **La esfera Tiempo no tiene datos.** Necesita internet en el móvil o en el reloj (por WiFi). La ciudad se elige en los ajustes de la propia esfera.
 

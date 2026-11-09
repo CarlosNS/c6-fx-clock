@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
         store = Store(this)
         val assets = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
         web = WebView(this).apply {
-            setBackgroundColor(0xFF0B0D14.toInt())
+            setBackgroundColor(0xFF14102C.toInt())
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             webChromeClient = object : WebChromeClient() {
@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
                         .setTitle(q?.optString("title")?.ifEmpty { null })
                         .setMessage(q?.optString("body") ?: message)
                         .setPositiveButton(q?.optString("ok")?.ifEmpty { null } ?: "Aceptar") { _, _ -> result.confirm() }
-                        .setNegativeButton("Cancelar") { _, _ -> result.cancel() }
+                        .setNegativeButton(q?.optString("cancel")?.ifEmpty { null } ?: "Cancelar") { _, _ -> result.cancel() }
                         .setOnCancelListener { result.cancel() }
                         .show()
                     return true
@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
         }
         // Android 15 draws apps under the status and navigation bars: keep the page clear of them.
         // The padding goes on a frame around the WebView (a WebView's own padding doesn't move its content)
-        val frame = FrameLayout(this).apply { setBackgroundColor(0xFF0B0D14.toInt()); addView(web) }
+        val frame = FrameLayout(this).apply { setBackgroundColor(0xFF14102C.toInt()); addView(web) }
         ViewCompat.setOnApplyWindowInsetsListener(frame) { v, insets ->
             val b = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             v.setPadding(b.left, b.top, b.right, b.bottom)
@@ -109,6 +109,12 @@ class MainActivity : ComponentActivity() {
         }
         setContentView(frame)
         web.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
+        // The page has sections (#esferas, #ajustes…): the back button walks back through them first
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (web.canGoBack()) web.goBack() else { isEnabled = false; onBackPressedDispatcher.onBackPressed(); isEnabled = true }
+            }
+        })
         val wanted = buildList {
             if (Build.VERSION.SDK_INT >= 31) { add(Manifest.permission.BLUETOOTH_CONNECT); add(Manifest.permission.BLUETOOTH_SCAN) }
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)

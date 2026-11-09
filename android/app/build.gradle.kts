@@ -49,6 +49,7 @@ android {
 // The interface is the clock's own web page (src/index.html + src/transport.js): one copy for both
 val copyWeb by tasks.registering(Copy::class) {
     from(rootProject.file("../src")) { include("index.html", "transport.js") }
+    from(rootProject.file("../src/web")) { into("a") }  // previews and fonts, as the watch serves them at /a/
     into(layout.buildDirectory.dir("generated/web/web"))
 }
 tasks.named("preBuild") { dependsOn(copyWeb) }

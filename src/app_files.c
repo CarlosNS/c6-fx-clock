@@ -179,6 +179,72 @@ void sd_info(void)
     xSemaphoreGive(s_lock);
 }
 
+// ---------------------------------------------------------------- the phone's file viewer
+
+static size_t json_str(char *buf, size_t n, size_t size, const char *s)
+{
+    for (; *s && n + 8 < size; s++) {
+        unsigned char c = (unsigned char)*s;
+        if (c == '"' || c == '\\') buf[n++] = '\\', buf[n++] = c;
+        else if (c < 32) n += snprintf(buf + n, size - n, "\\u%04x", c);
+        else buf[n++] = c;
+    }
+    return n;
+}
+
+size_t sd_list_json(const char *path, char *buf, size_t size)
+{
+    if (!path || !*path) path = "/";
+    // Only plain paths from the card's root: nothing that climbs out of it
+    if (path[0] != '/' || strstr(path, "/..") || strlen(path) > 200) return snprintf(buf, size, "{\"st\":\"nodir\",\"path\":\"/\",\"list\":[]}");
+    if (!s_lock) sd_check();
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine = false;  // mounted here just for this listing (the Files app was not open)
+    int st = SD_OK;
+    if (!s_card) {
+        st = mount(false);
+        mine = st == SD_OK;
+        if (st != g_app.sd_state) g_app.sd_state = st, sys_dirty();
+    }
+    size_t n = snprintf(buf, size, "{\"st\":\"%s\",\"path\":\"", st == SD_OK ? "ok" : st == SD_BAD ? "bad" : "none");
+    n = json_str(buf, n, size, path);
+    n += snprintf(buf + n, size - n, "\"");
+    if (st == SD_OK) {
+        uint64_t total = 0, free_b = 0;
+        esp_vfs_fat_info(MOUNT, &total, &free_b);
+        n += snprintf(buf + n, size - n, ",\"free\":%llu,\"total\":%llu,\"list\":[", (unsigned long long)free_b, (unsigned long long)total);
+        char full[240];
+        snprintf(full, sizeof(full), MOUNT "%s", strcmp(path, "/") ? path : "");
+        DIR *d = opendir(full);
+        if (!d) {
+            n = snprintf(buf, size, "{\"st\":\"nodir\",\"path\":\"/\",\"list\":[]");  // closed below
+        } else {
+            struct dirent *de;
+            bool first = true;
+            while ((de = readdir(d)) && n + 400 < size) {
+                char f[sizeof(full) + 260];
+                struct stat s = {0};
+                snprintf(f, sizeof(f), "%s/%s", full, de->d_name);
+                stat(f, &s);
+                bool dir = de->d_type == DT_DIR;
+                n += snprintf(buf + n, size - n, "%s{\"n\":\"", first ? "" : ",");
+                n = json_str(buf, n, size, de->d_name);
+                n += snprintf(buf + n, size - n, "\",\"d\":%d,\"s\":%llu,\"m\":%lld}", dir, dir ? 0ULL : (unsigned long long)s.st_size,
+                              (long long)s.st_mtime);
+                first = false;
+            }
+            closedir(d);
+            n += snprintf(buf + n, size - n, "]");
+        }
+    } else {
+        n += snprintf(buf + n, size - n, ",\"list\":[]");
+    }
+    if (n + 2 < size) buf[n++] = '}', buf[n] = 0;
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return n < size ? n : size - 1;
+}
+
 static void files_open(void)
 {
     s_modal = M_NONE;

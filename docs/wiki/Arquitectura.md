@@ -65,9 +65,10 @@ Una por mensaje (lista completa en `src/control.h`):
 | `mode ble\|update\|usb` | Reinicia en ese modo |
 | `update apply <url del manifiesto>` | Actualiza por internet |
 | `ota begin <tamaño> <sha256> <versión>` / `ota abort` | Actualización por Bluetooth desde el móvil (solo Bluetooth; ver [[Protocolo Bluetooth]]) |
+| `alarm <i> label <texto>` / `anim <n>` / `on <0\|1>` / `test` | Etiqueta, animación, encendido de una alarma, o hacerla sonar ya |
 | `unpair` | Olvida todos los móviles emparejados |
 
-Solo por Bluetooth: `get info`, `get status`, `get faces`, `shot` (captura de pantalla) y `sync done` (fin de una sincronización). Ver [[Protocolo Bluetooth]].
+Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get files <ruta>`, `shot` (captura de pantalla) y `sync done` (fin de una sincronización). Ver [[Protocolo Bluetooth]]. Por WiFi, lo mismo son las peticiones `GET` de [[Página de control]].
 
 ## Ajustes (`settings.c`)
 
@@ -106,9 +107,15 @@ Cada esfera es un `src/fx_*.c` con una función que dibuja un fotograma completo
 
 En los dos de una sola vez, al entrar, el modo guardado ya es el de vuelta, así que un fallo nunca deja el reloj atrapado.
 
+## La página de control
+
+`src/index.html` es una página de una sola pieza con secciones (`#inicio`, `#esferas`, `#alarmas`, `#archivos`, `#ajustes`…): el `#` de la dirección dice cuál se ve, así que el botón atrás del navegador o del móvil recorre las secciones. Los textos están en español en el HTML y en inglés en `data-en`; `tr(es, en)` hace lo mismo en el script, y el idioma es el ajuste `lang` del reloj.
+
+Sus imágenes y fuentes están en `src/web/`: vistas previas de las esferas (`fxN.webp`, N = número de la esfera) y de las animaciones de alarma (`alarmN.webp`), sacadas del reloj con `tools/web_previews.py`, y Jersey 10 y VT323 recortadas a los caracteres latinos. `tools/web_pack.py` las junta en `src/web.pack` antes de cada compilación (PlatformIO lo lanza solo) y el reloj las sirve en `/a/<nombre>`. La app copia la carpeta tal cual.
+
 ## La app Android
 
-Kotlin, con la misma página de control (`src/index.html` y `src/transport.js`, copiados al compilar) dentro de un WebView. Kotlin se ocupa de lo que una página no puede:
+Kotlin, con la misma página de control (`src/index.html`, `src/transport.js` y las imágenes y fuentes de `src/web/`, copiados al compilar) dentro de un WebView. Kotlin se ocupa de lo que una página no puede:
 
 - emparejar con el Companion Device Manager;
 - el enlace Bluetooth (`ClockBle`), que mantiene abierto un servicio en primer plano (`LinkService`) mientras el reloj está cerca;

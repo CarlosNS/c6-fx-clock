@@ -2,7 +2,8 @@
 //   wifi:    served by the clock itself (Wi-Fi mode): WebSocket for commands, HTTP for JSON
 //   ble:     Web Bluetooth from Chrome on a PC or phone (secure origin, e.g. http://localhost)
 //   android: the Android app's WebView; Kotlin owns the Bluetooth link (window.ClockBridge)
-// Every link offers the same calls: start(), send(cmd), request('status'|'faces'|'info').
+// Every link offers the same calls: start(), send(cmd), request('status'|'faces'|'info'|'alarms'|'files', arg).
+// arg (optional) goes as ?p= over Wi-Fi and after the name over Bluetooth ("get files /Música").
 // Bluetooth framing (3.2) is the same as tests/clocklib/protocol.py and the app's Framing.kt.
 (function (g) {
   'use strict';
@@ -69,7 +70,7 @@
       open();
     }
     send(s) { if (this.ws && this.ws.readyState === 1) { this.ws.send(s); return true; } return false; }
-    async request(what) { return (await fetch('/' + what, {cache: 'no-store'})).json(); }
+    async request(what, arg) { return (await fetch('/' + what + (arg === undefined ? '' : '?p=' + encodeURIComponent(arg)), {cache: 'no-store'})).json(); }
   }
 
   class WebBleLink {
@@ -109,7 +110,7 @@
       this.queue = this.queue.then(() => c.writeValueWithResponse(enc.encode(s))).catch(e => console.warn('write failed', e));
       return true;
     }
-    request(what) { const p = this.waiters.wait(what, 10000); if (!this.send('get ' + what)) return Promise.reject(new Error('not connected')); return p; }
+    request(what, arg) { const p = this.waiters.wait(what, 15000); if (!this.send('get ' + what + (arg === undefined ? '' : ' ' + arg))) { p.catch(() => {}); return Promise.reject(new Error('not connected')); } return p; }
   }
 
   // Kotlin calls window.clockState(bool), window.clockMessage(json string) and window.clockPickFailed(text)
@@ -129,7 +130,7 @@
       });
     }
     send(s) { return this.up && g.ClockBridge.send(s); }
-    request(what) { const p = this.waiters.wait(what, 10000); if (!this.send('get ' + what)) return Promise.reject(new Error('not connected')); return p; }
+    request(what, arg) { const p = this.waiters.wait(what, 15000); if (!this.send('get ' + what + (arg === undefined ? '' : ' ' + arg))) { p.catch(() => {}); return Promise.reject(new Error('not connected')); } return p; }
   }
 
   // The clock serves the page over http:// from its own IP; anything else is Bluetooth

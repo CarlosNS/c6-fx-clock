@@ -41,6 +41,8 @@ Un mensaje de un solo trozo lleva `0xC0 | id`. El receptor junta los trozos con 
 | `status` | Tras `get status`, cuando cambia algo (máx. uno cada 300 ms) y cada 30 s | Estado completo: ajustes, hora, ciudad (`wlat`, `wlon`), versión, actualización… |
 | `info` | Tras `get info` | `ver`, `mode`, `part`, `name`, `sync` (`last`, `count`), `heap`, `upd` |
 | `faces` | Tras `get faces` | Catálogo de esferas |
+| `alarms` | Tras `get alarms` | `list` (cada alarma: `h`, `m`, `d` días en bits de lunes a domingo, `on`, `a` animación, `l` etiqueta) y `anims` (nombres de las animaciones) |
+| `files` | Tras `get files <ruta>` (p. ej. `get files /Música`; sin ruta, la raíz) | `st` (`ok`, `none` sin tarjeta, `bad` ilegible, `nodir`), `path`, `free` y `total` en bytes, y `list` con `n` nombre, `d` carpeta, `s` tamaño y `m` fecha (epoch) |
 | `ack` | Tras `sync done`, `unpair` y `update apply` | `cmd`; en `update`, también `ok` y `msg` |
 | `shot` / `shotdata` / `shotend` | Tras `shot` | Captura RGB565 en filas codificadas en base64 |
 | `media` | Al tocar los controles de la app Música | `cmd`: `play`, `pause`, `next`, `prev`, `vol+` o `vol-` |

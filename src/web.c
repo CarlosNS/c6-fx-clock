@@ -18,6 +18,8 @@
 #include "lcd.h"
 #include "net.h"
 #include "ota.h"
+#include "web_assets.h"
+#include "esp_heap_caps.h"
 
 static const char *TAG = "web";
 extern const char index_html_start[] asm("_binary_index_html_start");
@@ -58,6 +60,83 @@ static esp_err_t alarms_get(httpd_req_t *req)
     size_t n = alarms_json(buf, sizeof(buf));
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_send(req, buf, n);
+}
+
+// web.pack (tools/web_pack.py): "MPK1", u32 count, {u8 name length, name, u32 offset, u32 size}..., data
+extern const uint8_t web_pack_start[] asm("_binary_web_pack_start");
+extern const uint8_t web_pack_end[] asm("_binary_web_pack_end");
+
+static uint32_t rd32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24; }
+
+const uint8_t *web_asset_find(const char *name, size_t len, size_t *size)
+{
+    const uint8_t *p = web_pack_start, *end = web_pack_end;
+    if (end - p < 8 || memcmp(p, "MPK1", 4)) return NULL;
+    uint32_t count = rd32(p + 4);
+    p += 8;
+    for (uint32_t i = 0; i < count && p < end; i++) {
+        size_t n = *p++;
+        if (p + n + 8 > end) return NULL;
+        uint32_t off = rd32(p + n), sz = rd32(p + n + 4);
+        if (n == len && !memcmp(p, name, n) && off + sz <= (size_t)(end - web_pack_start)) {
+            *size = sz;
+            return web_pack_start + off;
+        }
+        p += n + 8;
+    }
+    return NULL;
+}
+
+// GET /a/<name> -> a picture or font of the page (src/web/)
+static esp_err_t asset_get(httpd_req_t *req)
+{
+    const char *name = req->uri + 3;
+    size_t len = strcspn(name, "?#"), size = 0;
+    const uint8_t *data = web_asset_find(name, len, &size);
+    if (!data) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "no such file");
+        return ESP_FAIL;
+    }
+    const char *ext = memrchr(name, '.', len);
+    size_t el = ext ? len - (ext - name) : 0;
+    httpd_resp_set_type(req, el == 5 && !memcmp(ext, ".webp", 5) ? "image/webp"
+                             : el == 4 && !memcmp(ext, ".png", 4) ? "image/png"
+                             : el == 4 && !memcmp(ext, ".ttf", 4) ? "font/ttf" : "application/octet-stream");
+    httpd_resp_set_hdr(req, "Cache-Control", "max-age=86400");
+    return httpd_resp_send(req, (const char *)data, size);
+}
+
+// %XX and + in a query value (httpd_query_key_value leaves them as they came)
+static void url_decode(char *s)
+{
+    char *o = s;
+    for (; *s; s++) {
+        if (*s == '%' && s[1] && s[2]) {
+            char hex[3] = {s[1], s[2], 0};
+            *o++ = (char)strtol(hex, NULL, 16);
+            s += 2;
+        } else {
+            *o++ = *s == '+' ? ' ' : *s;
+        }
+    }
+    *o = 0;
+}
+
+// GET /files?p=/Música -> one folder of the microSD (app_files.c, sd_list_json)
+static esp_err_t files_get(httpd_req_t *req)
+{
+    char q[320] = "", p[256] = "/";
+    httpd_req_get_url_query_str(req, q, sizeof(q));
+    if (httpd_query_key_value(q, "p", p, sizeof(p)) == ESP_OK) url_decode(p);
+    const size_t cap = 32 * 1024;
+    char *buf = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
+    if (!buf) return httpd_resp_send_500(req);
+    size_t n = sd_list_json(p, buf, cap);
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    esp_err_t err = httpd_resp_send(req, buf, n);
+    free(buf);
+    return err;
 }
 
 // GET /faces -> the face catalogue (control.c, app_faces_json), streamed in pieces
@@ -210,6 +289,7 @@ void web_start(void)
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.lru_purge_enable = true;
     cfg.max_uri_handlers = 16;  // the default 8 silently dropped the last ones (the /ws commands) once /alarms came
+    cfg.uri_match_fn = httpd_uri_match_wildcard;  // /a/* (the page's pictures and fonts)
     cfg.stack_size = 6144;
     cfg.recv_wait_timeout = 10;  // seconds; OTA uploads over a weak link
     ESP_ERROR_CHECK(httpd_start(&server, &cfg));
@@ -220,6 +300,8 @@ void web_start(void)
         {.uri = "/status", .method = HTTP_GET, .handler = status_get},
         {.uri = "/faces", .method = HTTP_GET, .handler = faces_get},
         {.uri = "/alarms", .method = HTTP_GET, .handler = alarms_get},
+        {.uri = "/files", .method = HTTP_GET, .handler = files_get},
+        {.uri = "/a/*", .method = HTTP_GET, .handler = asset_get},
         {.uri = "/batlog", .method = HTTP_GET, .handler = batlog_get},
         {.uri = "/screenshot", .method = HTTP_GET, .handler = screenshot_get},
         {.uri = "/ota", .method = HTTP_POST, .handler = ota_post},

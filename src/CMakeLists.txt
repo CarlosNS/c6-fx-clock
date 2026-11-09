@@ -10,10 +10,12 @@ list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "a
                  "app_music.c" "app_files.c" "usbdisk.c" "batlog.c" "bleota.c")
 list(APPEND srcs "board.c" "lcd_co5300.c" "i2c_bus.c" "pmu_axp2101.c" "rtc_pcf85063.c" "touch_ft3168.c" "imu_qmi8658.c")
 
+# web.pack: the page's pictures and fonts (src/web/), packed by tools/web_pack.py before each build
 idf_component_register(
     SRCS ${srcs}
     INCLUDE_DIRS "."
-    EMBED_TXTFILES "index.html" "transport.js")
+    EMBED_TXTFILES "index.html" "transport.js"
+    EMBED_FILES "web.pack")
 
 # USB disk mode: notice when the computer ejects the drive (usbdisk.c wraps esp_tinyusb's handler)
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=tud_msc_start_stop_cb")

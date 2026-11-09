@@ -90,6 +90,10 @@ bool alarm_command(const char *cmd)
         if (i >= 0 && i < g_nalarms && !s_ringing) ring(i);
         return true;
     }
+    if (sscanf(cmd, "alarm %d on %d", &i, &v) == 2) {  // switch it on or off (the app's alarm list)
+        if (i >= 0 && i < g_nalarms) g_alarms[i].on = v ? 1 : 0, alarms_save(), sys_dirty();
+        return true;
+    }
     if (sscanf(cmd, "alarm %d anim %d", &i, &v) == 2) {
         if (i >= 0 && i < g_nalarms && v >= 0 && v < ALARM_ANIMS) g_alarms[i].anim = (uint8_t)v, alarms_save(), sys_dirty();
         return true;

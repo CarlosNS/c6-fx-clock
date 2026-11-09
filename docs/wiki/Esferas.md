@@ -1,7 +1,7 @@
 El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla.
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT**, en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
-- Las que tienen ajustes propios o son interactivas lo indican en la tarjeta *Esfera actual* de la app (ver [[Página de control]]).
+- Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
 - Las capturas son de la pantalla real (410×502, con sus esquinas), sacadas con `GET /screenshot`.
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.
 - Los números 10, 16 y 20 están **retirados**: eran esferas eliminadas (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar. Si un reloj tenía elegida una de ellas, muestra la siguiente.

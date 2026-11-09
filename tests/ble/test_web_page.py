@@ -46,7 +46,7 @@ def page(link, ble_name, ble_serial):
 
 def test_page_connects_and_loads_everything(page):
     assert page.connect_s < 20
-    page.wait_until(f"document.querySelectorAll('.fx button').length === {len(fx_live())}", 20)
+    page.wait_until(f"document.querySelectorAll('.fx .pick').length === {len(fx_live())}", 20)
     page.wait_until("document.getElementById('cname').textContent !== '--'", 15)
     assert page.eval("document.getElementById('blecard').classList.contains('hide')")
     assert page.eval("document.getElementById('wifionly').classList.contains('hide')"), "OTA upload shown over Bluetooth"
@@ -73,24 +73,21 @@ def test_change_on_the_clock_shows_on_the_page(page, ble_serial):
 
 
 def test_face_button_changes_the_face(page, ble_serial):
-    page.eval("document.querySelectorAll('.fx button')[3].click()", gesture=True)
+    page.eval("document.querySelectorAll('.fx .pick')[3].click()", gesture=True)
     time.sleep(1.5)
     assert ble_serial.status()["fx"] == 3
-    assert page.eval("document.querySelectorAll('.fx button')[3].classList.contains('on')")
+    assert page.eval("document.querySelectorAll('.fx .pick')[3].parentElement.classList.contains('on')")
 
 
 def test_faces_can_be_left_out_of_the_automatic_rotation(page, ble_serial):
-    page.eval("document.getElementById('editauto').click()", gesture=True)
-    page.eval("document.querySelectorAll('.fx button')[4].click()", gesture=True)  # edit mode: toggles, does not select
+    page.eval("document.querySelectorAll('.fx .eye')[4].click()", gesture=True)  # the eye toggles, it does not select
     time.sleep(1.5)
     assert ble_serial.status()["fxoff"] == 1 << 4
-    assert page.eval("document.querySelectorAll('.fx button')[4].classList.contains('off')")
-    assert page.eval("document.getElementById('offinfo').textContent").startswith("Toca")
-    page.eval("document.querySelectorAll('.fx button')[4].click()", gesture=True)  # back in
-    page.eval("document.getElementById('editauto').click()", gesture=True)
+    assert page.eval("document.querySelectorAll('.fx .fc')[4].classList.contains('off')")
+    assert " de " in page.eval("document.getElementById('offinfo').textContent")
+    page.eval("document.querySelectorAll('.fx .eye')[4].click()", gesture=True)  # back in
     time.sleep(1.5)
     assert ble_serial.status()["fxoff"] == 0
-    assert page.eval("document.getElementById('offinfo').textContent") == "Todas"
 
 
 def test_page_reconnects_after_a_drop(page, ble_serial):

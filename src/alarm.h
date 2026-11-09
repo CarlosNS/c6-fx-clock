@@ -37,6 +37,7 @@ const char *alarm_day_letter(int i);
 // The alarms as JSON for the app and the page: {"list":[{"h":7,"m":30,"d":31,"on":1,"a":0,"l":"Trabajo"}],
 // "anims":["Amanecer","Bomba"]} (GET /alarms, "get alarms" over Bluetooth)
 size_t alarms_json(char *buf, size_t size);
-// "alarm <i> label <text>" / "alarm <i> anim <n>"; true if it was an alarm command
+// "alarm <i> label <text>" / "alarm <i> anim <n>" / "alarm <i> on <0|1>" / "alarm <i> test";
+// true if it was an alarm command
 bool alarm_command(const char *cmd);
 const char *alarm_anim_name(int anim);
