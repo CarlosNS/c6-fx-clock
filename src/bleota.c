@@ -310,6 +310,8 @@ bool bleota_command(const char *cmd)
     return false;
 }
 
+bool bleota_busy(void) { return s_state == ST_RECV; }
+
 int bleota_data(const uint8_t *p, size_t n)
 {
     if (s_state != ST_RECV || !s_sb || n < 4) return BLE_ATT_ERR_UNLIKELY;

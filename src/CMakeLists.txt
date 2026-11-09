@@ -14,3 +14,6 @@ idf_component_register(
     SRCS ${srcs}
     INCLUDE_DIRS "."
     EMBED_TXTFILES "index.html" "transport.js")
+
+# USB disk mode: notice when the computer ejects the drive (usbdisk.c wraps esp_tinyusb's handler)
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=tud_msc_start_stop_cb")

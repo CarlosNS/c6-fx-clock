@@ -20,6 +20,9 @@
 - La velocidad de las animaciones pasa a ser del 75 % por defecto.
 - **Iconos nuevos en la barra de estado:** la microSD (coral con «!» si no se puede leer) y el USB cuando el cable va a un ordenador.
 - **microSD en exFAT:** el reloj lee tarjetas FAT32 y exFAT y formatea en exFAT. Una tarjeta ilegible se puede formatear desde Archivos.
+- Arreglado: tras usar el modo USB, el reloj podía quedarse con el USB a medias. Su registro se quedaba esperando a un puerto que nadie leía, el Bluetooth dejaba de responder y la batería se vaciaba en una noche. Ahora devuelve el USB a la consola al arrancar y, sin ordenador o mientras duerme, no escribe el registro.
+- Batería en reposo: con la pantalla apagada, el reloj comprueba sensores 10 veces por segundo (antes 20) y un toque lo despierta al instante. Pide al móvil un intervalo de conexión lento y apaga el códec de audio cuando no suena nada.
+- Arreglado: al expulsar el disco en el ordenador, el modo USB no volvía solo al reloj.
 - Arreglado: con una app abierta, la esfera se reiniciaba 30 veces por segundo por detrás (gasto de batería inútil).
 - Arreglado: la página ofrecía versiones más viejas que la instalada; la app comparaba mal las betas.
 - **Actualizaciones sin WiFi en el reloj (3.0.0-beta.6, app 0.5.0):** el móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, que la instala mientras sigue funcionando, con una pantalla de progreso. Funciona en cualquier sitio con los datos del móvil. Los relojes anteriores siguen actualizándose por su WiFi. Desde el PC: `tools/ble_ota.py`.

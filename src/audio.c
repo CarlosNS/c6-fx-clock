@@ -36,6 +36,25 @@ static const rv_t ES_INIT[] = {
     {0x37, 0x08}, {0x45, 0x00}, {0x32, 0xBF},
 };
 
+static bool codec_init(void)
+{
+    for (size_t i = 0; i < sizeof(ES_INIT) / sizeof(ES_INIT[0]); i++)
+        if (!i2c_reg_write(ES_ADDR, ES_INIT[i].reg, ES_INIT[i].val)) return false;
+    return true;
+}
+
+// Between sounds the codec is powered down (its DAC and references drew current all day); the
+// sequence is Espressif's es8311 driver suspend, and codec_init() brings it back
+static const rv_t ES_SUSPEND[] = {
+    {0x32, 0x00}, {0x17, 0x00}, {0x0E, 0xFF}, {0x12, 0x02}, {0x14, 0x00}, {0x0D, 0xFA}, {0x15, 0x00},
+    {0x37, 0x08}, {0x00, 0x00}, {0x00, 0x1F}, {0x01, 0x30}, {0x01, 0x00}, {0x45, 0x01},
+};
+
+static void codec_suspend(void)
+{
+    for (size_t i = 0; i < sizeof(ES_SUSPEND) / sizeof(ES_SUSPEND[0]); i++) i2c_reg_write(ES_ADDR, ES_SUSPEND[i].reg, ES_SUSPEND[i].val);
+}
+
 static void set_volume(int vol)
 {
     // 0xBF is 0 dB; 0.5 dB per step. 0..100 % maps to -50..0 dB (0 = mute)
@@ -86,11 +105,19 @@ static void task(void *arg)
             gpio_set_level(BOARD_PIN_AMP, 0);
             // An enabled I2S channel holds a power lock that keeps the chip out of light sleep: only
             // while a sound plays
-            if (enabled) i2s_channel_disable(s_tx), enabled = false;
+            if (enabled) {
+                i2s_channel_disable(s_tx);
+                codec_suspend();
+                enabled = false;
+            }
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             continue;
         }
-        if (!enabled) i2s_channel_enable(s_tx), enabled = true;
+        if (!enabled) {
+            i2s_channel_enable(s_tx);  // the codec needs MCLK running to wake up
+            codec_init();
+            enabled = true;
+        }
         gpio_set_level(BOARD_PIN_AMP, 1);
         set_volume(g_app.volume);
         if (mode == 3) {
@@ -105,11 +132,9 @@ static void task(void *arg)
 
 void audio_init(void)
 {
-    for (size_t i = 0; i < sizeof(ES_INIT) / sizeof(ES_INIT[0]); i++) {
-        if (!i2c_reg_write(ES_ADDR, ES_INIT[i].reg, ES_INIT[i].val)) {
-            ESP_LOGW(TAG, "ES8311 not answering");
-            return;
-        }
+    if (!codec_init()) {
+        ESP_LOGW(TAG, "ES8311 not answering");
+        return;
     }
     gpio_config_t pa = {.pin_bit_mask = 1ULL << BOARD_PIN_AMP, .mode = GPIO_MODE_OUTPUT};
     gpio_config(&pa);

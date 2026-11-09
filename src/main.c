@@ -29,8 +29,10 @@
 #include "apps.h"
 #include "esp_pm.h"
 #include "esp_sleep.h"
+#include "freertos/semphr.h"
 #include "esp_system.h"
 #include "soc/usb_serial_jtag_struct.h"
+#include "hal/usb_serial_jtag_ll.h"
 #include "batlog.h"
 #include "usbdisk.h"
 #include "web.h"
@@ -251,7 +253,7 @@ static void poll_button(uint32_t now)
     }
 }
 
-// Raise to wake, checked while the screen is off (20 times a second). The screen comes on when
+// Raise to wake, checked while the screen is off (10 times a second). The screen comes on when
 // it ends up facing up (z over 0.7 g for 3 samples in a row) after not facing up within the last
 // 1.2 s (z under 0.3 g): turning the wrist to look. A watch lying still on the table never triggers.
 #define RAISE_UP_MG 700
@@ -286,6 +288,9 @@ static bool s_usb, s_ls_on;
 // again. Done at boot and whenever the cable appears.
 static void usb_console_reconnect(void)
 {
+    // After the USB disk mode the internal PHY is still routed to USB OTG (TinyUSB), and a software
+    // reset does not route it back: give it to the serial console again
+    usb_serial_jtag_ll_phy_enable_external(false);
     USB_SERIAL_JTAG.conf0.usb_pad_enable = 1;
     USB_SERIAL_JTAG.conf0.pad_pull_override = 1;
     USB_SERIAL_JTAG.conf0.dp_pullup = 0;
@@ -294,12 +299,60 @@ static void usb_console_reconnect(void)
     USB_SERIAL_JTAG.conf0.pad_pull_override = 0;
 }
 
+static int log_nowhere(const char *fmt, va_list ap) { return 0; }
+
+// Screen off, the loop runs 10 times a second; a touch must not wait for the next pass (a quick tap
+// could slip between two). The touch controller pulls its INT line low on a touch: that wakes the
+// chip from light sleep and, through this interrupt, the loop at once. The interrupt switches itself
+// off until the loop has seen the touch and the line is high again (no storm while the finger stays).
+static SemaphoreHandle_t s_wake_sem;
+static volatile bool s_touch_irq;
+
+static void IRAM_ATTR touch_isr(void *arg)
+{
+    gpio_intr_disable(BOARD_TOUCH_INT);
+    s_touch_irq = true;
+    BaseType_t hp = pdFALSE;
+    xSemaphoreGiveFromISR(s_wake_sem, &hp);
+    if (hp) portYIELD_FROM_ISR();
+}
+
+static void touch_wake_arm(bool on)
+{
+    if (on) {
+        s_touch_irq = false;
+        gpio_wakeup_enable(BOARD_TOUCH_INT, GPIO_INTR_LOW_LEVEL);  // also the interrupt type, low level
+        gpio_intr_enable(BOARD_TOUCH_INT);
+    } else {
+        gpio_intr_disable(BOARD_TOUCH_INT);
+        gpio_wakeup_disable(BOARD_TOUCH_INT);
+    }
+}
+
+static void touch_wake_init(void)
+{
+    s_wake_sem = xSemaphoreCreateBinary();
+    gpio_config_t io = {.pin_bit_mask = 1ULL << BOARD_TOUCH_INT, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE,
+                        .intr_type = GPIO_INTR_DISABLE};
+    gpio_config(&io);
+    esp_sleep_enable_gpio_wakeup();
+    if (gpio_install_isr_service(0) != ESP_OK) ESP_LOGW(TAG, "GPIO ISR service already there");
+    gpio_isr_handler_add(BOARD_TOUCH_INT, touch_isr, NULL);
+}
+
 static void light_sleep_allow(bool on)
 {
     if (on == s_ls_on) return;
     esp_pm_config_t pm = {.max_freq_mhz = 240, .min_freq_mhz = 80, .light_sleep_enable = on};
-    if (esp_pm_configure(&pm) != ESP_OK) return;
+    // The USB console is off while the chip sleeps: a log line written then would make its task wait
+    // for a port nobody can read. Logs go nowhere whenever light sleep is allowed.
+    if (on) esp_log_set_vprintf(log_nowhere);
+    if (esp_pm_configure(&pm) != ESP_OK) {
+        if (on) esp_log_set_vprintf(g_app.usb_data ? vprintf : log_nowhere);
+        return;
+    }
     s_ls_on = on;
+    if (!on) esp_log_set_vprintf(g_app.usb_data ? vprintf : log_nowhere);
     if (!on && s_usb) usb_console_reconnect();  // it may have slept with the cable in ("sleeptest")
 }
 
@@ -357,6 +410,9 @@ static void battery_guard(const pmu_battery_t *b)
 
 void app_main(void)
 {
+    // A software reset out of the USB disk mode leaves the USB PHY on USB OTG, and every log line would
+    // then wait on a console nobody can read: give it back to the serial console before anything logs
+    usb_serial_jtag_ll_phy_enable_external(false);
     board_init();
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -414,6 +470,7 @@ void app_main(void)
     }
     if (use_ble) ble_start();
     sd_check();  // the microSD icon in the status bar
+    touch_wake_init();
     tunnel_enter();  // builds its lookup tables once
     ESP_LOGI(TAG, "Free heap after start: %u (internal RAM %u, largest block %u)",
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT), (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
@@ -505,6 +562,14 @@ void app_main(void)
                 last_sof = sof;
                 if (data != g_app.usb_data) sys_dirty();
                 g_app.usb_data = data;
+                // Without a computer reading the console, each log line could wait on the USB port and
+                // stall whoever logs (the Bluetooth host stopped answering that way): drop the log
+                // then, and bring it back when a computer is there
+                static int log_to_usb = -1;
+                if (data != log_to_usb) {
+                    log_to_usb = data;
+                    esp_log_set_vprintf(data && !s_ls_on ? vprintf : log_nowhere);
+                }
                 battery_guard(&b);
             }
             if (pct != g_app.bat_pct || chg != g_app.bat_chg || full != g_app.bat_full || linked != g_app.phone_linked)
@@ -560,6 +625,14 @@ void app_main(void)
                 lcd_sleep(true);
                 panel_asleep = true;
                 if (use_wifi) net_power(false);
+                g_app.screen_off = true;
+                ble_link_pace(false);
+                touch_wake_arm(true);
+            }
+            if (s_touch_irq) {  // a touch on the sleeping screen: wake it (next pass draws)
+                s_touch_irq = false;
+                app_wake();
+                input_swallow();
             }
             batlog_tick(now, false, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
             if (have_imu) poll_raise(now, az);
@@ -569,7 +642,7 @@ void app_main(void)
             }
             g_app.fps = 0;
             light_sleep_allow(!s_usb || (int32_t)(g_sleep_test_until - now) > 0);
-            vTaskDelay(pdMS_TO_TICKS(50));
+            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(100));  // 10 passes a second, or at once on a touch
             last = now_ms();
             next_frame = esp_timer_get_time();
             continue;
@@ -578,6 +651,9 @@ void app_main(void)
         if (panel_asleep) {
             STAGE_MAIN(9);
             light_sleep_allow(false);
+            touch_wake_arm(false);
+            g_app.screen_off = false;
+            ble_link_pace(true);
             static uint32_t sd_t;
             if (now - sd_t > 30000) {  // a card may have gone in or out while the screen was off
                 sd_t = now;

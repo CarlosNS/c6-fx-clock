@@ -26,6 +26,7 @@ typedef struct {
     volatile int wifi_on;      // the watch's own Wi-Fi (off by default: the phone brings everything)
     volatile int sd_state;     // microSD for the status bar: SD_NONE, SD_OK, SD_BAD (app_files.c sd_check)
     volatile bool usb_data;    // the USB cable goes to a computer (data), not just a charger
+    volatile bool screen_off;  // the panel is asleep (main.c): Bluetooth slows its link then
     volatile int volume;       // speaker volume 0..100 (alarms, sounds)
     volatile int step_goal;    // daily steps goal
 

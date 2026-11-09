@@ -9,6 +9,7 @@
 #include "control.h"
 #include "esp_log.h"
 #include "esp_pm.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 
 static const char *TAG = "console";
@@ -52,6 +53,13 @@ static void run_line(char *line)
         static char buf[192 * 32 + 64];
         batlog_csv(buf, sizeof(buf));
         printf("%s\nbatlog end\n", buf);
+        return;
+    }
+    if (strcmp(line, "why") == 0) {  // why the watch last restarted (esp_reset_reason)
+        static const char *const R[] = {"unknown", "power-on", "external", "software", "panic", "int-wdt", "task-wdt",
+                                        "wdt", "deep-sleep", "brownout", "sdio", "usb", "jtag", "efuse", "pwr-glitch", "cpu-lockup"};
+        int r = esp_reset_reason();
+        printf("why: %s (%d)\n", r >= 0 && r < (int)(sizeof(R) / sizeof(R[0])) ? R[r] : "?", r);
         return;
     }
     if (strcmp(line, "sdinfo") == 0) {

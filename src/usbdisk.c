@@ -8,6 +8,7 @@
 #include "driver/gpio.h"
 #include "driver/sdmmc_host.h"
 #include "esp_log.h"
+#include "hal/usb_serial_jtag_ll.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -22,11 +23,28 @@
 static const char *TAG = "usbdisk";
 static volatile bool s_exposed, s_ejected;
 
-// The card goes back to the watch's own side when the computer ejects it
+// Back to the watch: hand the USB PHY back to the serial console first (a software reset keeps it on USB OTG)
+static void restart(void)
+{
+    usb_serial_jtag_ll_phy_enable_external(false);
+    esp_restart();
+}
+
 static void mount_changed(tinyusb_msc_event_t *e)
 {
     if (!e->mount_changed_data.is_mounted) s_exposed = true;
     else if (s_exposed) s_ejected = true;
+}
+
+// Ejecting on the computer arrives as SCSI START STOP UNIT (load_eject, !start). esp_tinyusb answers it
+// itself and tells nobody (its mount callback only follows mounts on the watch's side), so the call
+// is wrapped at link time (src/CMakeLists.txt: --wrap=tud_msc_start_stop_cb) to notice it.
+bool __real_tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject);
+bool __wrap_tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject)
+{
+    bool ok = __real_tud_msc_start_stop_cb(lun, power_condition, start, load_eject);
+    if (load_eject && !start) s_ejected = true;
+    return ok;
 }
 
 static void screen(const char *line1, const char *line2, uint16_t accent)
@@ -83,7 +101,7 @@ void usbdisk_run(void)
             screen(s_ejected ? TR("Disco expulsado", "Drive ejected") : TR("Cable desconectado", "Cable unplugged"),
                    TR("Volviendo al reloj...", "Back to the watch..."), MS_VERDE);
             vTaskDelay(pdMS_TO_TICKS(1500));
-            esp_restart();
+            restart();
         }
         if (state) was_mounted = 1, gone = 0;
         if (state != shown) {
@@ -93,7 +111,7 @@ void usbdisk_run(void)
         }
         // BOOT (active low), once it has been seen released: back to the watch
         if (gpio_get_level(BOARD_PIN_BUTTON)) released = 1;
-        else if (released) esp_restart();
+        else if (released) restart();
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

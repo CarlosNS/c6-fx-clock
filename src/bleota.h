@@ -21,3 +21,5 @@ bool bleota_command(const char *cmd);
 int bleota_data(const uint8_t *p, size_t n);
 // The link dropped
 void bleota_link_lost(void);
+// A transfer is running (the link must stay fast)
+bool bleota_busy(void);

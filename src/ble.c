@@ -142,6 +142,18 @@ void ble_fast_link(void)
     ESP_LOGI(TAG, "Asked for a fast link (%d)", rc);
 }
 
+void ble_link_pace(bool screen_on)
+{
+    // Screen off: talk to the phone every 0.4-0.5 s (each connection event wakes the radio and the
+    // chip); screen on: every 30-50 ms, so the music and call buttons answer at once. The phone may
+    // pick other values (the app asks for its own when its page is open).
+    uint16_t conn = s_conn;
+    if (conn == BLE_HS_CONN_HANDLE_NONE || bleota_busy()) return;
+    struct ble_gap_upd_params p = screen_on ? (struct ble_gap_upd_params){.itvl_min = 24, .itvl_max = 40, .latency = 0, .supervision_timeout = 400}
+                                            : (struct ble_gap_upd_params){.itvl_min = 320, .itvl_max = 400, .latency = 0, .supervision_timeout = 600};
+    ble_gap_update_params(conn, &p);
+}
+
 bool ble_send_json(const char *json)
 {
     if (!ble_connected()) return false;
@@ -464,6 +476,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         // A new firmware may have new characteristics, and phones / PCs keep a cached copy of a paired
         // watch's services: tell them to read them again ("Service Changed"). A device that connects
         // only after a later reboot misses it; the app then refreshes its cache itself (ClockBle.kt)
+        if (link_secure(ev->enc_change.conn_handle)) ble_link_pace(!g_app.screen_off);
         if (s_gatt_changed && link_secure(ev->enc_change.conn_handle)) {
             struct ble_gap_conn_desc d;
             bool told = ble_gap_conn_find(ev->enc_change.conn_handle, &d) != 0;  // no peer: nothing to do

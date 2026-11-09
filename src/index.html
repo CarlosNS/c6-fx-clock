@@ -324,15 +324,20 @@ function verCmp(a,b){const sp=v=>{const c=v.split('+')[0],i=c.indexOf('-');retur
  if(!ap||!bp)return(ap?0:1)-(bp?0:1);
  for(let i=0;i<Math.max(ap.length,bp.length);i++){const x=ap[i],y=bp[i];if(x===undefined)return-1;if(y===undefined)return 1;
   const xn=/^\d+$/.test(x),yn=/^\d+$/.test(y),d=xn&&yn?+x-+y:xn?-1:yn?1:x<y?-1:x>y?1:0;if(d)return Math.sign(d)}return 0}
-async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;
- try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json(),ver=$('ver').textContent;
-  // This watch's image is under boards.<id>; the top-level keys belong to the old ESP32-C6 clocks
-  const e=(m.boards||{})[BOARD];
-  if(!e){$('updst').textContent='Aún no hay versiones publicadas para esta placa';return}
+// The watch's entry in the manifest (or null): what to offer, only if it is newer
+function offerFrom(e,ver){
   // Only a newer version is offered (a development build can be ahead of what is published)
   if(verCmp(e.version,ver)<=0){$('updst').innerHTML=verCmp(e.version,ver)<0?`Tienes la <b>${ver}</b>, más nueva que la publicada (${e.version})`:`Tienes la última versión (<b>${ver}</b>)`;return}
   offer=e;$('updst').innerHTML=`Disponible la <b>${e.version}</b> (tienes la ${ver})${e.notes?': '+e.notes:''}`;$('updgo').textContent='Actualizar a la '+e.version;$('updgo').classList.remove('hide')}
- catch(e){$('updst').textContent='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas'}}
+const UPD_NONET='No se pudo comprobar: este dispositivo no tiene internet o aún no hay versiones publicadas';
+async function updCheck(){$('updst').textContent='Buscando…';$('updgo').classList.add('hide');offer=null;const ver=$('ver').textContent;
+ // In the app, Kotlin reads the manifest (its own connection, no CORS) and answers through clockOffer()
+ if(L.kind==='android'&&ClockBridge.checkClock){ClockBridge.checkClock(BOARD);return}
+ try{const m=await(await fetch(MANIFEST,{cache:'no-store'})).json();
+  // This watch's image is under boards.<id>; the top-level keys belong to the old ESP32-C6 clocks
+  offerFrom((m.boards||{})[BOARD],ver)}
+ catch(e){$('updst').textContent=UPD_NONET}}
+window.clockOffer=s=>{if(s==='error'){$('updst').textContent=UPD_NONET;return}offerFrom(s&&JSON.parse(s),$('ver').textContent)};
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
 $('updgo').onclick=()=>{if(!offer)return;
  // The app passes the image over Bluetooth (watches from 3.0.0-beta.6): no Wi-Fi needed on the watch

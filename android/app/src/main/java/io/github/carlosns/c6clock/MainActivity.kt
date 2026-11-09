@@ -41,6 +41,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -387,6 +389,13 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }
         @JavascriptInterface fun installApp() = runOnUiThread { this@MainActivity.installApp() }
+        /** The watch's entry of the manifest (boards.<board>) for the page, through clockOffer(). */
+        @JavascriptInterface fun checkClock(board: String) {
+            lifecycleScope.launch {
+                val r = runCatching { withContext(Dispatchers.IO) { Firmware.entry(Net.getJson(Firmware.manifestUrl), board) } }
+                js("clockOffer", r.getOrNull()?.let { JSONObject.quote(it.toString()) } ?: if (r.isSuccess) "null" else JSONObject.quote("error"))
+            }
+        }
         @JavascriptInterface fun canUpdateClock() = Live.link?.takeIf { it.ready }?.canOta == true
         @JavascriptInterface fun updateClock(entry: String) {
             val e = runCatching { JSONObject(entry) }.getOrNull() ?: return
