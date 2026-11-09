@@ -8,6 +8,8 @@
 
 void settings_load(void);  // from NVS into g_app (missing / out-of-range values keep their defaults)
 void settings_save(void);  // writes the persistent ones
+// Each face keeps its own animation speed: brings face fx's into g_app.speed (when the face changes)
+void settings_face_speed(int fx);
 // Applies "<key> <value>"; returns false if the key is unknown. Marks g_app.dirty when needed.
 bool settings_set(const char *key, int value);
 // Appends "key":value pairs (comma separated, no braces) to buf; returns the new length

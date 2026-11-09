@@ -600,6 +600,7 @@ void app_main(void)
         // here on every pass re-initialised the face 30 times a second behind every app
         if (g_app.fx != cur && sys_view() == VIEW_FACE) {
             cur = g_app.fx;
+            settings_face_speed(cur);  // each face has its own animation speed
             STAGE_MAIN(5);
             if (fx_list[cur].res == FX_COMPAT) lcd_set_landscape(fx_list[cur].landscape);
             STAGE_MAIN(6);

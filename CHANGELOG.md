@@ -17,7 +17,7 @@
   - La pantalla ya no se enciende cada vez que el móvil se conecta o cambia la canción.
   - **Apagado seguro:** aviso al 10 %; por debajo de 3,30 V guarda los ajustes y se apaga. Se enciende con PWR.
   - Al enchufarlo, el ordenador vuelve a reconocer su USB aunque estuviera dormido.
-- La velocidad de las animaciones pasa a ser del 75 % por defecto.
+- **Velocidad por esfera:** cada esfera guarda su propia velocidad de animación (75 % por defecto); el control de la app ajusta la esfera que se ve.
 - **Iconos nuevos en la barra de estado:** la microSD (coral con «!» si no se puede leer) y el USB cuando el cable va a un ordenador.
 - **microSD en exFAT:** el reloj lee tarjetas FAT32 y exFAT y formatea en exFAT. Una tarjeta ilegible se puede formatear desde Archivos.
 - Arreglado: tras usar el modo USB, el reloj podía quedarse con el USB a medias. Su registro se quedaba esperando a un puerto que nadie leía, el Bluetooth dejaba de responder y la batería se vaciaba en una noche. Ahora devuelve el USB a la consola al arrancar y, sin ordenador o mientras duerme, no escribe el registro.
