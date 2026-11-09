@@ -614,7 +614,9 @@ void ble_start(void)
     ble_svc_gatt_init();
     ble_gatts_count_cfg(SERVICES);
     ble_gatts_add_svcs(SERVICES);
-    xTaskCreate(worker, "ble_worker", 4096, NULL, 4, NULL);
+    // 8 KB: "get files" mounts and reads the microSD here (FatFs with exFAT and long names wants stack);
+    // 4 KB overflowed. Internal RAM, not PSRAM: the worker also saves settings to flash.
+    xTaskCreate(worker, "ble_worker", 8192, NULL, 4, NULL);
     nimble_port_freertos_init(host_task);
     s_running = true;
 }

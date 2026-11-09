@@ -213,7 +213,7 @@ size_t sd_list_json(const char *path, char *buf, size_t size)
         uint64_t total = 0, free_b = 0;
         esp_vfs_fat_info(MOUNT, &total, &free_b);
         n += snprintf(buf + n, size - n, ",\"free\":%llu,\"total\":%llu,\"list\":[", (unsigned long long)free_b, (unsigned long long)total);
-        char full[240];
+        static char full[240];  // static: under s_lock, and the Bluetooth worker's stack is small
         snprintf(full, sizeof(full), MOUNT "%s", strcmp(path, "/") ? path : "");
         DIR *d = opendir(full);
         if (!d) {
@@ -222,8 +222,9 @@ size_t sd_list_json(const char *path, char *buf, size_t size)
             struct dirent *de;
             bool first = true;
             while ((de = readdir(d)) && n + 400 < size) {
-                char f[sizeof(full) + 260];
-                struct stat s = {0};
+                static char f[sizeof(full) + 260];
+                static struct stat s;
+                memset(&s, 0, sizeof(s));
                 snprintf(f, sizeof(f), "%s/%s", full, de->d_name);
                 stat(f, &s);
                 bool dir = de->d_type == DT_DIR;
