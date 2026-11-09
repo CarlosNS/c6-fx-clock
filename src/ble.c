@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include "alarm.h"
 #include "app.h"
 #include "bleota.h"
 #include "bootmode.h"
@@ -309,6 +310,15 @@ static void worker(void *arg)
                 s_sync_last = tv.tv_sec;
                 s_sync_count++;
                 send_ack("sync");
+            } else if (strcmp(c, "get alarms") == 0) {
+                char *buf = malloc(1100);
+                if (buf) {
+                    memcpy(buf, "{\"t\":\"alarms\",", 14);
+                    size_t n = alarms_json(buf + 13, 1100 - 13);  // its "{" becomes the separating comma
+                    buf[13] = ',';
+                    send_msg(buf, 13 + n);
+                    free(buf);
+                }
             } else if (strcmp(c, "get pm") == 0) {
                 send_pm();
             } else if (strcmp(c, "shot") == 0) {

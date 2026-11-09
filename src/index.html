@@ -155,6 +155,12 @@ footer{margin:18px 0 8px;font-size:12px;color:var(--dim);text-align:center}
 </div>
 
 <div class="card">
+  <h3>Alarmas</h3>
+  <div class="stack" id="alarms"><div class="status">Cargando…</div></div>
+  <div class="status" style="margin-top:6px">Las alarmas se crean y se cambian de hora en el reloj; aquí se les pone una etiqueta y la animación con la que suenan.</div>
+</div>
+
+<div class="card">
   <h3>Conexión</h3>
   <div class="stack">
     <div class="item hide" id="wifirow"><div class="t">WiFi del reloj<small>Apagado gasta mucha menos batería: la hora, el tiempo y las actualizaciones llegan por el móvil</small></div><input type="checkbox" class="sw" id="wifi"></div>
@@ -392,7 +398,21 @@ if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('appn
  window.clockUpdateState=t=>{$('updst').textContent=t};
  $('appupdgo').onclick=()=>ClockBridge.installApp();
  ClockBridge.checkApp()}
-loadFaces();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
+// Alarms: label and ringing animation (the watch keeps the times and days)
+const DAYS='LMXJVSD';
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// The watch keeps 23 bytes of UTF-8: cut whole characters
+function cut23(s){let o='';for(const ch of s){if(new TextEncoder().encode(o+ch).length>23)break;o+=ch}return o}
+async function loadAlarms(){let r;try{r=await L.request('alarms')}catch(e){setTimeout(loadAlarms,3000);return}
+ const box=$('alarms');
+ if(!r.list.length){box.innerHTML='<div class="status">No hay alarmas. Créalas en el reloj (app Alarmas).</div>';return}
+ box.innerHTML=r.list.map((a,i)=>{const days=a.d?[...DAYS].map((c,k)=>a.d>>k&1?c:'·').join(' '):'una vez';
+  return `<div class="item" style="flex-wrap:wrap;gap:8px"><div class="t"><b>${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}</b>${a.on?'':' (apagada)'}<small>${days}</small></div>
+  <input type="text" data-al="${i}" maxlength="23" placeholder="Etiqueta" value="${esc(a.l)}" style="flex:1;min-width:140px">
+  <select data-an="${i}" style="min-width:120px">${r.anims.map((n,k)=>`<option value="${k}"${k===a.a?' selected':''}>${esc(n)}</option>`).join('')}</select></div>`}).join('');
+ box.querySelectorAll('input[data-al]').forEach(el=>el.onchange=()=>{el.value=cut23(el.value.replace(/\|/g,''));send(`alarm ${el.dataset.al} label ${el.value}`)});
+ box.querySelectorAll('select[data-an]').forEach(el=>el.onchange=()=>send(`alarm ${el.dataset.an} anim ${el.value}`))}
+loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
 </script>
 </body>
 </html>

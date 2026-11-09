@@ -204,7 +204,8 @@ class PhoneWatch : NotificationListenerService() {
     }
 
     /** The ring ends on the clock: answered, rejected or the caller gave up. */
-    private fun endCall() {
+    private fun endCall(why: String) {
+        Log.i(TAG, "call end: $why")
         main.removeCallbacks(endLater)
         callKey = null
         callNotification = null
@@ -213,7 +214,7 @@ class PhoneWatch : NotificationListenerService() {
 
     // The dialer often replaces its notification while ringing (HyperOS removes and reposts it when the
     // full-screen call UI comes up), so a removal only ends the call if nothing takes its place
-    private val endLater = Runnable { endCall() }
+    private val endLater = Runnable { endCall("notification removed") }
 
     // Answering switches the phone's audio to call mode: the surest sign, with no phone permission
     private var modeListener: AudioManager.OnModeChangedListener? = null
@@ -222,7 +223,8 @@ class PhoneWatch : NotificationListenerService() {
         super.onCreate()
         if (Build.VERSION.SDK_INT >= 31) {
             val l = AudioManager.OnModeChangedListener { mode ->
-                if (callKey != null && (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION)) endCall()
+                Log.i(TAG, "audio mode $mode (ringing: ${callKey != null})")
+                if (callKey != null && (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION)) endCall("audio mode $mode")
             }
             runCatching { getSystemService(AudioManager::class.java).addOnModeChangedListener(mainExecutor, l) }
                 .onSuccess { modeListener = l }
@@ -244,8 +246,10 @@ class PhoneWatch : NotificationListenerService() {
         val answered = type == CALL_TYPE_ONGOING || (type < 0 && n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
         val incoming = type == CALL_TYPE_INCOMING || (type < 0 && !answered && n.fullScreenIntent != null)
         val ours = sbn.key == callKey
+        Log.i(TAG, "call notification ${sbn.packageName} key=${sbn.key.takeLast(24)} type=$type chrono=${n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER)} " +
+            "fullscreen=${n.fullScreenIntent != null} ongoing=${n.flags and Notification.FLAG_ONGOING_EVENT != 0} -> answered=$answered incoming=$incoming ours=$ours")
         when {
-            answered -> if (ours || callKey != null) endCall()
+            answered -> if (ours || callKey != null) endCall("notification says answered")
             incoming || (callKey != null && type < 0 && !answered) -> {
                 main.removeCallbacks(endLater)
                 callKey = sbn.key
@@ -259,6 +263,7 @@ class PhoneWatch : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (sbn.notification?.category == Notification.CATEGORY_CALL) Log.i(TAG, "call notification removed key=${sbn.key.takeLast(24)} ours=${sbn.key == callKey}")
         if (sbn.key != callKey) return
         main.removeCallbacks(endLater)
         main.postDelayed(endLater, 1500)

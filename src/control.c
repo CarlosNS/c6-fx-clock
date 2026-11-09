@@ -17,6 +17,7 @@
 #include "ota.h"
 #include "settings.h"
 #include "update.h"
+#include "alarm.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "weather.h"
@@ -38,6 +39,7 @@ void app_command(const char *cmd)
         app_wake();
 
     if (phone_command(cmd)) return;  // "music ..." / "call ..." from the phone app
+    if (alarm_command(cmd)) return;  // "alarm <i> label <text>" / "alarm <i> anim <n>"
     if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"...
         sys_request(cmd + 3);
         return;

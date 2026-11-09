@@ -17,6 +17,7 @@
   - La pantalla ya no se enciende cada vez que el móvil se conecta o cambia la canción.
   - **Apagado seguro:** aviso al 10 %; por debajo de 3,30 V guarda los ajustes y se apaga. Se enciende con PWR.
   - Al enchufarlo, el ordenador vuelve a reconocer su USB aunque estuviera dormido.
+- **Alarmas con etiqueta y animación:** desde la app (tarjeta Alarmas) se pone a cada alarma una etiqueta, que se ve en el reloj, y la animación con la que suena. Nueva animación **Bomba**: cuenta atrás con cables y unos alicates que no se atreven a cortar; +5 min reinicia la cuenta y Parar la desactiva en verde. El botón de posponer dice «+5 min».
 - **Velocidad por esfera:** cada esfera guarda su propia velocidad de animación (75 % por defecto); el control de la app ajusta la esfera que se ve.
 - **Iconos nuevos en la barra de estado:** la microSD (coral con «!» si no se puede leer) y el USB cuando el cable va a un ordenador.
 - **microSD en exFAT:** el reloj lee tarjetas FAT32 y exFAT y formatea en exFAT. Una tarjeta ilegible se puede formatear desde Archivos.

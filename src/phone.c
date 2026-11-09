@@ -51,6 +51,7 @@ bool phone_command(const char *cmd)
             if (!g_app.dnd) audio_ring_start();
             sys_alert(&app_call);
         } else if (g_call.ringing) {
+            ESP_LOGI(TAG, "call over (%s)", p);
             g_call.ringing = false;
             audio_stop();
             sys_alert_done();

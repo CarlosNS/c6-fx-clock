@@ -3,7 +3,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "alarm.h"
+#include "esp_random.h"
 #include "apps.h"
 #include "audio.h"
 #include "clock.h"
@@ -60,6 +62,11 @@ static void draw_list(void)
         ui_print(&ui_jersey, 4, X0 + 16, y + 6, buf, a->on ? MS_CREMA : MS_GRIS);
         if (a->days) days_text(a, X0 + 18, y + 54, 1);
         else ui_print(&ui_vt, 1, X0 + 18, y + 54, TR("una vez", "once"), MS_GRIS);
+        if (a->label[0]) {  // the label from the phone, after the days
+            char l[ALARM_LABEL_MAX + 4];
+            ui_ellipsize(&ui_jersey, 2, WID - 230, a->label, l, sizeof(l));
+            ui_print(&ui_jersey, 2, X0 + 128, y + 50, l, a->on ? MS_ORO2 : MS_GRIS);
+        }
         ui_switch(X0 + WID - 84, y + 26, a->on);
     }
     if (!g_nalarms)
@@ -78,7 +85,7 @@ static void list_event(const ui_event_t *e)
     if (e->y < TOP || i < 0 || i >= list_rows()) return;
     if (i == g_nalarms) {
         s_new = true;
-        s_draft = (alarm_t){g_now.valid ? (g_now.h + 1) % 24 : 7, 0, 0x1F, 1};  // weekdays
+        s_draft = (alarm_t){.h = g_now.valid ? (g_now.h + 1) % 24 : 7, .m = 0, .days = 0x1F, .on = 1};  // weekdays
         s_edit = i;
     } else if (e->x >= X0 + WID - 100) {
         g_alarms[i].on = !g_alarms[i].on;
@@ -281,6 +288,151 @@ static void sunrise(uint32_t t, float rise)
     }
 }
 
+// ---------------------------------------------------------------- the bomb
+// The classic film scene: dynamite with a red countdown and four wires, and a pair of cutters going
+// from wire to wire without daring to cut. The countdown runs the two minutes after which the alarm
+// snoozes by itself. +5 min: the digits spin and start again at 05:00 (the snooze); Stop: the cutters
+// snip a wire and the display turns green.
+
+#define BOMB_EXIT_MS 2400
+#define BOMB_COUNT_MS 120000
+
+static void thick_line(int x0, int y0, int x1, int y1, int w, uint16_t c)
+{
+    int dx = x1 - x0, dy = y1 - y0, n = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    if (n < 1) n = 1;
+    for (int i = 0; i <= n; i += 2) ui_rect(x0 + dx * i / n - w / 2, y0 + dy * i / n - w / 2, w, w, c);
+}
+
+// A wire: a quadratic curve bulging to one side; cut (gap at t 0.45..0.6) after a stop
+static void wire(int x0, int y0, int x1, int y1, int bulge, uint16_t c, bool cut, int spread)
+{
+    int cx = (x0 + x1) / 2 + bulge, cy = (y0 + y1) / 2;
+    uint16_t dark = ui_mix(c, MS_NOCHE, 150);
+    for (int i = 0; i <= 40; i++) {
+        float t = i / 40.0f, u = 1 - t;
+        if (cut && t > 0.45f && t < 0.6f) continue;
+        int off = cut ? (t < 0.5f ? -spread : spread) : 0;  // the two ends spring apart
+        int x = (int)(u * u * x0 + 2 * u * t * cx + t * t * x1) + (t > 0.3f && t < 0.75f ? off : 0);
+        int y = (int)(u * u * y0 + 2 * u * t * cy + t * t * y1);
+        ui_rect(x - 4, y - 3, 8, 8, dark);
+        ui_rect(x - 4, y - 4, 8, 6, c);
+    }
+}
+
+// Point on a wire, for the cutters to aim at
+static void wire_point(int k, float t, int *px, int *py)
+{
+    static const int X0S[4] = {130, 172, 238, 280}, X1S[4] = {150, 186, 224, 260}, BULGE[4] = {-90, -50, 50, 90};
+    int x0 = X0S[k], y0 = 210, x1 = X1S[k], y1 = 304, cx = (x0 + x1) / 2 + BULGE[k], cy = (y0 + y1) / 2;
+    float u = 1 - t;
+    *px = (int)(u * u * x0 + 2 * u * t * cx + t * t * x1);
+    *py = (int)(u * u * y0 + 2 * u * t * cy + t * t * y1);
+}
+
+// Cutters: the jaws' tip at (x, y), opened by `open` (0 closed .. 1), handles down to the right
+static void cutters(int x, int y, float open)
+{
+    uint16_t steel = ui_rgb(0xB8, 0xC0, 0xCC), steel_d = ui_rgb(0x70, 0x78, 0x88), grip = ui_rgb(0xD8, 0x3A, 0x3A);
+    int px = x + 26, py = y + 30;                       // pivot
+    int a = (int)(open * 14);
+    thick_line(px, py, x - a, y + a / 3, 7, steel_d);   // lower jaw
+    thick_line(px, py, x + a / 3, y - a, 7, steel);     // upper jaw
+    ui_rect(px - 6, py - 6, 12, 12, steel_d);
+    thick_line(px, py, px + 52, py + 70 + a, 12, grip); // handles
+    thick_line(px, py, px + 70 + a, py + 50, 12, ui_mix(grip, MS_NOCHE, 60));
+}
+
+static void bomb(uint32_t now, uint32_t el, int exiting, float f)
+{
+    // Workbench: dark blue-grey with a faint grid
+    for (int y = 0; y < UI_H; y += 2) ui_rect(0, y, UI_W, 2, ui_mix(ui_rgb(0x1C, 0x22, 0x30), ui_rgb(0x0A, 0x0C, 0x14), y * 256 / UI_H));
+    for (int x = 10; x < UI_W; x += 40) ui_rect(x, 0, 1, UI_H, ui_rgb(0x22, 0x2A, 0x3A));
+    for (int y = 10; y < UI_H; y += 40) ui_rect(0, y, UI_W, 1, ui_rgb(0x22, 0x2A, 0x3A));
+    // Dynamite: three sticks with paper caps, two bands of black tape
+    uint16_t red = ui_rgb(0xC8, 0x30, 0x2C), red_hi = ui_rgb(0xE8, 0x60, 0x50), red_lo = ui_rgb(0x88, 0x1C, 0x1C);
+    for (int s = 0; s < 3; s++) {
+        int sx = 140 + s * 46;
+        ui_rect(sx, 214, 42, 112, red);
+        ui_rect(sx + 4, 214, 8, 112, red_hi);
+        ui_rect(sx + 32, 214, 10, 112, red_lo);
+        ui_rect(sx, 326, 42, 8, ui_rgb(0xE8, 0xD8, 0xB0));
+    }
+    ui_rect(132, 236, 154, 16, ui_rgb(0x18, 0x18, 0x1C));
+    ui_rect(132, 292, 154, 16, ui_rgb(0x18, 0x18, 0x1C));
+    // Timer box on top
+    ui_rect(100, 118, 210, 88, ui_rgb(0x20, 0x20, 0x24));
+    ui_rect(104, 122, 202, 80, ui_rgb(0x08, 0x08, 0x0A));
+    // Countdown: 02:00 down to 00:00; +5 min: the digits spin and land on 05:00; stop: they freeze green
+    int left_ms = BOMB_COUNT_MS - (int)el;
+    if (left_ms < 0) left_ms = 0;
+    static int s_frozen_ms;
+    if (!exiting) s_frozen_ms = left_ms;
+    char t[16];
+    uint16_t col = ui_rgb(0xFF, 0x30, 0x20);
+    bool colon = (now / 500) & 1;
+    if (exiting == 1) {
+        if (f < 0.55f) snprintf(t, sizeof(t), "%02d:%02d", (int)(esp_random() % 60), (int)(esp_random() % 60));
+        else snprintf(t, sizeof(t), "05:00");
+        col = ui_rgb(0xFF, 0xB0, 0x30);
+        colon = true;
+    } else {
+        int secs = ((exiting == 2 ? s_frozen_ms : left_ms) + 999) / 1000;
+        snprintf(t, sizeof(t), "%02d:%02d", (secs / 60) % 100, secs % 60);
+        if (exiting == 2 && f > 0.35f) col = MS_VERDE, colon = true;
+        else if (!exiting && secs <= 10 && (now / 250) & 1) col = ui_rgb(0x80, 0x18, 0x10);  // last seconds flash
+    }
+    if (!colon) t[2] = ' ';
+    ui_print_c(&ui_jersey, 6, UI_W / 2, 100, "88:88", ui_rgb(0x2A, 0x0C, 0x0A), false);  // unlit segments
+    ui_print_c(&ui_jersey, 6, UI_W / 2, 100, t, col, false);
+    // Blinking LED
+    bool led = exiting == 2 ? f > 0.35f : (now / 400) & 1;
+    ui_rect(286, 104, 14, 12, led ? (exiting == 2 ? MS_VERDE : ui_rgb(0xFF, 0x40, 0x30)) : ui_rgb(0x40, 0x10, 0x10));
+    // Wires: red, blue, yellow, green. Stop cuts the one the cutters are on.
+    uint16_t wc[4] = {ui_rgb(0xE0, 0x38, 0x30), ui_rgb(0x30, 0x80, 0xE8), ui_rgb(0xF0, 0xD0, 0x30), ui_rgb(0x40, 0xC8, 0x60)};
+    static const int X0S[4] = {130, 172, 238, 280}, X1S[4] = {150, 186, 224, 260}, BULGE[4] = {-90, -50, 50, 90};
+    // The cutters hop from wire to wire every 1.6 s, hesitate and nibble without cutting
+    uint32_t step = now / 1600;
+    int target = (int)((step * 2654435761u) >> 30);  // 0..3, pseudo-random per step
+    static int s_cut = -1;
+    if (exiting == 2 && s_cut < 0) s_cut = target;
+    if (!exiting) s_cut = -1;
+    if (s_cut >= 0) target = s_cut;
+    for (int k = 0; k < 4; k++) {
+        bool cut = exiting == 2 && k == s_cut && f > 0.3f;
+        int spread = cut ? (int)((f - 0.3f) * 30) : 0;
+        if (spread > 10) spread = 10;
+        wire(X0S[k], 210, X1S[k], 304, BULGE[k], wc[k], cut, spread);
+    }
+    int tx, ty;
+    wire_point(target, 0.52f, &tx, &ty);
+    float phase = (now % 1600) / 1600.0f;
+    float open = 0.6f + 0.4f * sinf(now * 0.02f);       // nibbling
+    int jx = tx, jy = ty;
+    if (!exiting) {
+        if (phase < 0.25f) {  // travelling from the previous wire
+            int px, py;
+            wire_point((int)(((step - 1) * 2654435761u) >> 30), 0.52f, &px, &py);
+            float e = phase / 0.25f;
+            e = e * e * (3 - 2 * e);
+            jx = px + (int)((tx - px) * e) - 14, jy = py + (int)((ty - py) * e) - 14;
+            open = 0.9f;
+        } else {
+            jx += (int)(sinf(now * 0.05f) * 2) - 6;  // shaky hands
+            jy -= 6;
+        }
+    } else if (exiting == 2) {
+        open = f < 0.3f ? 1.0f - f / 0.3f : 0.0f;    // snip
+        if (f > 0.3f && f < 0.45f)                   // spark
+            for (int i = 0; i < 10; i++) ui_rect(tx - 20 + (int)(esp_random() % 40), ty - 20 + (int)(esp_random() % 40), 4, 4, ui_rgb(0xFF, 0xE0, 0x80));
+        jx -= 6, jy -= 6;
+    } else {
+        jx += (int)(f * 120), jy += (int)(f * 160);  // +5: the hand pulls back
+    }
+    cutters(jx, jy, open);
+    if (exiting == 2 && f > 0.35f) ui_print_c(&ui_jersey, 3, UI_W / 2, 244, TR("DESACTIVADA", "DEFUSED"), MS_VERDE, true);
+}
+
 static bool ring_draw(uint32_t now, bool force)
 {
     (void)force;
@@ -288,6 +440,9 @@ static bool ring_draw(uint32_t now, bool force)
     uint32_t el = now - s_ring_t0;
     float rise = el / (float)RISE_MS;
     if (rise > 1) rise = 1;
+    const alarm_t *a = alarm_current();
+    int anim = a ? a->anim : ALARM_ANIM_SUNRISE;
+    uint32_t exit_ms = anim == ALARM_ANIM_BOMB ? BOMB_EXIT_MS : EXIT_MS;
     if (!s_exit) {
         // Shaking the watch snoozes it, like a hand slapping a bedside clock
         int x, y, z;
@@ -299,9 +454,10 @@ static bool ring_draw(uint32_t now, bool force)
             audio_stop();
         }
     }
+    float f = 0;
     if (s_exit) {
         if (!s_exit_t0) s_exit_t0 = now ? now : 1;  // the tap only asks: the clock is this loop's
-        float f = (now - s_exit_t0) / (float)EXIT_MS;
+        f = (now - s_exit_t0) / (float)exit_ms;
         if (f >= 1) {
             if (s_exit == 1) alarm_snooze();
             else alarm_stop();
@@ -311,16 +467,26 @@ static bool ring_draw(uint32_t now, bool force)
         float e = 1 - (1 - f) * (1 - f);
         rise = s_exit == 1 ? s_exit_from * (1 - e) - 0.25f * e : s_exit_from + (1.25f - s_exit_from) * e;
     }
-    sunrise(now, rise);
-    // The time over the sky, with a soft beat
-    const alarm_t *a = alarm_current();
-    char buf[8];
+    char buf[16], title[ALARM_LABEL_MAX + 8];
     snprintf(buf, sizeof(buf), "%02d:%02d", a ? a->h : g_now.h, a ? a->m : g_now.m);
-    int beat = (int)((sinf(el * 0.0063f) + 1) * 128);  // about once a second
-    ui_print_c(&ui_jersey, 3, UI_W / 2, 36, TR("ALARMA", "ALARM"), MS_CREMA, true);
-    ui_print_c(&ui_jersey, 8, UI_W / 2, 72, buf, ui_mix(MS_ORO2, MS_CREMA, s_exit ? 0 : beat), true);
+    // The label from the phone, or just "ALARM"
+    if (a && a->label[0]) ui_ellipsize(&ui_jersey, 3, UI_W - 120, a->label, title, sizeof(title));
+    else strlcpy(title, TR("ALARMA", "ALARM"), sizeof(title));
+    if (anim == ALARM_ANIM_BOMB) {
+        bomb(now, el, s_exit, f);
+        ui_print_c(&ui_jersey, 3, UI_W / 2, 26, title, MS_CREMA, true);
+        ui_print_c(&ui_jersey, 3, UI_W / 2, 64, buf, MS_GRIS, true);
+    } else {
+        sunrise(now, rise);
+        // The time over the sky, with a soft beat
+        int beat = (int)((sinf(el * 0.0063f) + 1) * 128);  // about once a second
+        ui_print_c(&ui_jersey, 3, UI_W / 2, 36, title, MS_CREMA, true);
+        ui_print_c(&ui_jersey, 8, UI_W / 2, 72, buf, ui_mix(MS_ORO2, MS_CREMA, s_exit ? 0 : beat), true);
+    }
     if (!s_exit) {
-        ui_button(UI_W / 2 - 160, 350, 150, 76, TR("Posponer", "Snooze"), UI_BTN_SECONDARY, false);
+        char snooze[16];
+        snprintf(snooze, sizeof(snooze), "+%d min", SNOOZE_MIN);
+        ui_button(UI_W / 2 - 160, 350, 150, 76, snooze, UI_BTN_SECONDARY, false);
         ui_button(UI_W / 2 + 10, 350, 150, 76, TR("Parar", "Stop"), UI_BTN_MAIN, false);
         ui_print_c(&ui_vt, 1, UI_W / 2, 436, TR("agita el reloj para posponer", "shake the watch to snooze"), MS_CREMA, false);
     }

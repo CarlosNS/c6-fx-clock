@@ -1,6 +1,7 @@
 // HTTP transport: the control page, its WebSocket, the status / catalogue JSON, screenshots and
 // OTA uploads. All decisions live in control.c / ota.c so other transports can reuse them.
 #include "web.h"
+#include "alarm.h"
 #include "batlog.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +50,15 @@ static esp_err_t status_get(httpd_req_t *req)
 }
 
 static void emit_chunk(const char *piece, void *ctx) { httpd_resp_send_chunk((httpd_req_t *)ctx, piece, HTTPD_RESP_USE_STRLEN); }
+
+// GET /alarms -> the alarms with their labels and animations (alarm.c)
+static esp_err_t alarms_get(httpd_req_t *req)
+{
+    char buf[1100];
+    size_t n = alarms_json(buf, sizeof(buf));
+    httpd_resp_set_type(req, "application/json");
+    return httpd_resp_send(req, buf, n);
+}
 
 // GET /faces -> the face catalogue (control.c, app_faces_json), streamed in pieces
 // Battery log (batlog.c) as CSV
@@ -199,6 +209,7 @@ void web_start(void)
     httpd_handle_t server;
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.lru_purge_enable = true;
+    cfg.max_uri_handlers = 16;  // the default 8 silently dropped the last ones (the /ws commands) once /alarms came
     cfg.stack_size = 6144;
     cfg.recv_wait_timeout = 10;  // seconds; OTA uploads over a weak link
     ESP_ERROR_CHECK(httpd_start(&server, &cfg));
@@ -208,10 +219,12 @@ void web_start(void)
         {.uri = "/transport.js", .method = HTTP_GET, .handler = transport_get},
         {.uri = "/status", .method = HTTP_GET, .handler = status_get},
         {.uri = "/faces", .method = HTTP_GET, .handler = faces_get},
+        {.uri = "/alarms", .method = HTTP_GET, .handler = alarms_get},
         {.uri = "/batlog", .method = HTTP_GET, .handler = batlog_get},
         {.uri = "/screenshot", .method = HTTP_GET, .handler = screenshot_get},
         {.uri = "/ota", .method = HTTP_POST, .handler = ota_post},
         {.uri = "/ws", .method = HTTP_GET, .handler = ws_handler, .is_websocket = true},
     };
-    for (int i = 0; i < sizeof(uris) / sizeof(uris[0]); i++) httpd_register_uri_handler(server, &uris[i]);
+    for (int i = 0; i < sizeof(uris) / sizeof(uris[0]); i++)
+        if (httpd_register_uri_handler(server, &uris[i]) != ESP_OK) ESP_LOGE("web", "could not register %s", uris[i].uri);
 }
