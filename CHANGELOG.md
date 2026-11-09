@@ -27,7 +27,7 @@
 - Arreglado: con una app abierta, la esfera se reiniciaba 30 veces por segundo por detrás (gasto de batería inútil).
 - Arreglado: la página ofrecía versiones más viejas que la instalada; la app comparaba mal las betas.
 - **Actualizaciones sin WiFi en el reloj (3.0.0-beta.6, app 0.5.0):** el móvil descarga la versión nueva y se la pasa al reloj por Bluetooth, que la instala mientras sigue funcionando, con una pantalla de progreso. Funciona en cualquier sitio con los datos del móvil. Los relojes anteriores siguen actualizándose por su WiFi. Desde el PC: `tools/ble_ota.py`.
-- **App y página nuevas, con el estilo del reloj** (*Marea Solsticial*: pixel art nocturno, fuentes Jersey 10 y VT323). En vez de una lista larguísima, **Inicio** con los avisos que piden algo (versión nueva del reloj o de la app, permiso que falta), la esfera que se ve y cuatro secciones:
+- **App y página nuevas, con el estilo del reloj (3.0.0-beta.7, app 0.6.0)** (*Marea Solsticial*: pixel art nocturno, fuentes Jersey 10 y VT323). En vez de una lista larguísima, **Inicio** con los avisos que piden algo (versión nueva del reloj o de la app, permiso que falta), la esfera que se ve y cuatro secciones:
   - **Esferas:** vista previa de cada una; el **ojo** la incluye o la saca del cambio automático. La esfera actual reúne su velocidad, su panel táctil y sus opciones.
   - **Alarmas:** la etiqueta se ve sin abrirlas, cada una tiene interruptor, y **Animación de alarma** abre una ventana con la vista previa de cada animación.
   - **Archivos:** para mirar la microSD desde el móvil: carpetas, tamaños y fechas (no abre ni borra).
