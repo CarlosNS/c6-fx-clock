@@ -1,11 +1,13 @@
 // Files: the microSD card (SDMMC, 1 bit, mounted at /sd while the app is open; FAT or exFAT, see
-// components/fatfs). Folders and files with their size; tap a folder to enter it, ".." to go up; long
-// press a file to delete it (a second tap confirms). The format button wipes the card (exFAT) after two
-// confirmations, also offered for a card that cannot be read; the USB button restarts the watch as a
-// USB drive for the computer (usbdisk.c) after one. sd_check() tells the status bar whether there is
-// a card.
+// components/fatfs). Folders first, then files with their size, in alphabetical order; long names are
+// cut with "…" and a scroll bar shows where the list is. Tap a folder to enter it, ".." to go up; tap
+// a file for a dialog with its whole name, size and Delete; long press deletes (files, empty folders).
+// USB restarts the watch as a USB drive for the computer (usbdisk.c) and Format wipes the card as
+// exFAT, each after a dialog. sd_check() tells the status bar whether there is a card.
 #include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -13,6 +15,7 @@
 #include "board.h"
 #include "bootmode.h"
 #include "driver/sdmmc_host.h"
+#include "esp_attr.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
@@ -25,7 +28,7 @@
 
 #define MOUNT "/sd"
 #define MAX_ENT 64
-#define TOP 122
+#define TOP 134
 #define ROW 62
 #define X0 40
 #define WID 330
@@ -34,15 +37,24 @@
 static const char *TAG = "files";
 static sdmmc_card_t *s_card;
 static char s_path[160] = MOUNT;
-static struct {
-    char name[40];
+EXT_RAM_BSS_ATTR static struct {  // PSRAM: 64 long names
+    char name[128];
     bool dir;
     uint32_t size;
 } s_ent[MAX_ENT];
 static int s_n;
 static ui_scroll_t s_scroll;
-static int s_confirm = -1;      // entry waiting for the delete confirmation; -2 = format, -3 = format (2nd)
+enum { M_NONE, M_FILE, M_DELETE, M_USB, M_FORMAT };
+static int s_modal = M_NONE;  // dialog on screen
+static int s_sel = -1;        // entry the dialog is about
 static char s_msg[48];
+
+static int by_name(const void *a, const void *b)
+{
+    const typeof(s_ent[0]) *x = a, *y = b;
+    if (x->dir != y->dir) return x->dir ? -1 : 1;
+    return strcasecmp(x->name, y->name);
+}
 
 static void load(void)
 {
@@ -66,6 +78,8 @@ static void load(void)
         s_n++;
     }
     closedir(d);
+    int first = strcmp(s_path, MOUNT) ? 1 : 0;
+    qsort(&s_ent[first], s_n - first, sizeof(s_ent[0]), by_name);
 }
 
 // ---------------------------------------------------------------- the card (also for the status bar)
@@ -167,7 +181,7 @@ void sd_info(void)
 
 static void files_open(void)
 {
-    s_confirm = -1;
+    s_modal = M_NONE;
     s_msg[0] = 0;
     strcpy(s_path, MOUNT);
     if (!s_lock) sd_check();
@@ -191,10 +205,99 @@ static void size_text(char *b, size_t n, uint32_t v)
     else snprintf(b, n, "%u B", (unsigned)v);
 }
 
+// Bottom bar buttons, and the scroll bar on the right edge (straight between the rounded corners)
+#define BTN_Y (UI_H - 84)
+#define BTN_W 150
+#define BTN_H 54
+#define SB_X (X0 + WID + 10)
+
+static void draw_modal(void)
+{
+    char body[200], size[24];
+    const char *name = s_sel >= 0 && s_sel < s_n ? s_ent[s_sel].name : "";
+    switch (s_modal) {
+    case M_FILE:
+        size_text(size, sizeof(size), s_ent[s_sel].size);
+        snprintf(body, sizeof(body), "%s\n%s", name, size);
+        ui_dialog(TR("Archivo", "File"), body, TR("Cerrar", "Close"), TR("Borrar", "Delete"), UI_BTN_DANGER);
+        break;
+    case M_DELETE:
+        snprintf(body, sizeof(body), "%s%s", name, s_ent[s_sel].dir ? TR("\n(solo si está vacía)", "\n(only if empty)") : "");
+        ui_dialog(s_ent[s_sel].dir ? TR("¿Borrar la carpeta?", "Delete the folder?") : TR("¿Borrar el archivo?", "Delete the file?"), body,
+                  TR("Cancelar", "Cancel"), TR("Borrar", "Delete"), UI_BTN_DANGER);
+        break;
+    case M_USB:
+        ui_dialog(TR("Modo USB", "USB mode"),
+                  TR("El reloj se reinicia como disco USB del ordenador. Vuelve con BOOT, al expulsar el disco o al "
+                     "quitar el cable.",
+                     "The watch restarts as a USB drive for the computer. It comes back with BOOT, on eject or when "
+                     "unplugged."),
+                  TR("Cancelar", "Cancel"), TR("Reiniciar", "Restart"), UI_BTN_MAIN);
+        break;
+    case M_FORMAT:
+        ui_dialog(TR("¿Formatear?", "Format?"),
+                  TR("Se borra todo lo que hay en la tarjeta. Queda en exFAT, que leen ordenadores y móviles.",
+                     "Everything on the card is erased. It ends up as exFAT, for computers and phones."),
+                  TR("Cancelar", "Cancel"), TR("Formatear", "Format"), UI_BTN_DANGER);
+        break;
+    default:
+        break;
+    }
+}
+
+static void draw_list(void)
+{
+    char buf[48], name[sizeof(s_ent[0].name) + 4];
+    s_scroll.view_h = UI_H - TOP - BAR;
+    s_scroll.content_h = s_n * ROW;
+    for (int i = 0; i < s_n; i++) {
+        int y = TOP + i * ROW - s_scroll.offset;
+        if (y > UI_H - BAR || y + ROW < TOP - 20) continue;
+        ui_panel(X0, y, WID, ROW - 8, MS_PANEL, MS_LINEA, 4, false);
+        // Name in Jersey (the narrow font); the size beside it when both fit, otherwise the name gets the
+        // whole row, cut with "…" if it must be (the dialog a tap opens has the whole name and the size)
+        char shown[sizeof(name)];
+        strlcpy(name, s_ent[i].name, sizeof(name));
+        if (s_ent[i].dir && strcmp(s_ent[i].name, "..")) strlcat(name, "/", sizeof(name));
+        int room = WID - 32, name_w = ui_print_w(&ui_jersey, 2, name);
+        if (!s_ent[i].dir) {
+            size_text(buf, sizeof(buf), s_ent[i].size);
+            int size_w = ui_print_w(&ui_vt, 1, buf) + 14;
+            if (name_w <= room - size_w) {
+                ui_print_r(&ui_vt, 1, X0 + WID - 14, y + 18, buf, MS_GRIS);
+                room -= size_w;
+            }
+        }
+        ui_ellipsize(&ui_jersey, 2, room, name, shown, sizeof(shown));
+        ui_print(&ui_jersey, 2, X0 + 16, y + 14, shown, s_ent[i].dir ? MS_ORO2 : MS_CREMA);
+    }
+    if (!s_n) ui_print_c(&ui_vt, 2, UI_W / 2, TOP + 40, TR("vacía", "empty"), MS_GRIS, false);
+    // scroll bar: where the visible part sits in the whole list (only when it does not all fit)
+    int track_y = TOP, track_h = UI_H - BAR - TOP - 10;
+    if (s_scroll.content_h > s_scroll.view_h) {
+        int thumb_h = track_h * s_scroll.view_h / s_scroll.content_h;
+        if (thumb_h < 24) thumb_h = 24;
+        int max = s_scroll.content_h - s_scroll.view_h;
+        int thumb_y = track_y + (track_h - thumb_h) * s_scroll.offset / (max > 0 ? max : 1);
+        ui_rect(SB_X, track_y, 6, track_h, MS_PANEL);
+        ui_rect(SB_X, thumb_y, 6, thumb_h, MS_ORO2);
+    }
+    // bottom: free space, the USB and format buttons
+    uint64_t total = 0, free_b = 0;
+    esp_vfs_fat_info(MOUNT, &total, &free_b);
+    if (total >= 10ULL << 30)
+        snprintf(buf, sizeof(buf), TR("libre %u de %u GB", "free %u of %u GB"), (unsigned)(free_b >> 30), (unsigned)(total >> 30));
+    else
+        snprintf(buf, sizeof(buf), TR("libre %u MB de %u", "free %u MB of %u"), (unsigned)(free_b >> 20), (unsigned)(total >> 20));
+    ui_rect(0, UI_H - BAR, UI_W, BAR, MS_NOCHE);
+    ui_print_c(&ui_vt, 1, UI_W / 2, UI_H - BAR + 6, s_msg[0] ? s_msg : buf, s_msg[0] ? MS_ORO2 : MS_GRIS, false);
+    ui_button(UI_W / 2 - BTN_W - 6, BTN_Y, BTN_W, BTN_H, "USB", UI_BTN_SECONDARY, false);
+    ui_button(UI_W / 2 + 6, BTN_Y, BTN_W, BTN_H, TR("Formatear", "Format"), UI_BTN_SECONDARY, false);
+}
+
 static bool draw(uint32_t now, bool force)
 {
     if (!force) return false;
-    char buf[48];
     ui_background(false);
     ui_veil(60, UI_H, 3);
     if (!s_card && g_app.sd_state == SD_BAD) {  // the card answers but cannot be read: offer to format it
@@ -203,47 +306,24 @@ static bool draw(uint32_t now, bool force)
         ui_print_c(&ui_vt, 1, UI_W / 2, 236, TR("la tarjeta no tiene un formato", "the card has no format"), MS_GRIS, false);
         ui_print_c(&ui_vt, 1, UI_W / 2, 262, TR("que el reloj entienda", "the watch understands"), MS_GRIS, false);
         if (s_msg[0]) ui_print_c(&ui_vt, 1, UI_W / 2, UI_H - 128, s_msg, MS_ORO2, false);
-        const char *fl = s_confirm == -2 ? TR("Â¿Seguro?", "Sure?") : s_confirm == -3 ? TR("Â¡Se borra todo!", "Erase all!")
-                                                                                     : TR("Formatear (exFAT)", "Format (exFAT)");
-        ui_button(UI_W / 2 - 120, UI_H - 96, 240, 56, fl, s_confirm <= -2 ? UI_BTN_DANGER : UI_BTN_SECONDARY, false);
+        ui_button(UI_W / 2 - 120, UI_H - 96, 240, 56, TR("Formatear (exFAT)", "Format (exFAT)"), UI_BTN_SECONDARY, false);
     } else if (!s_card) {
         ui_panel(48, 150, UI_W - 96, 170, MS_PANEL, MS_CORAL, 4, true);
         ui_print_c(&ui_jersey, 3, UI_W / 2, 176, TR("Sin tarjeta", "No card"), MS_CREMA, false);
         ui_print_c(&ui_vt, 1, UI_W / 2, 236, TR("mete una microSD", "insert a microSD"), MS_GRIS, false);
         ui_print_c(&ui_vt, 1, UI_W / 2, 266, TR("y vuelve a entrar", "and open again"), MS_GRIS, false);
     } else {
-        s_scroll.view_h = UI_H - TOP - BAR;
-        s_scroll.content_h = s_n * ROW;
-        for (int i = 0; i < s_n; i++) {
-            int y = TOP + i * ROW - s_scroll.offset;
-            if (y > UI_H - BAR || y + ROW < TOP - 20) continue;
-            bool conf = i == s_confirm;
-            ui_panel(X0, y, WID, ROW - 8, conf ? MS_PANEL2 : MS_PANEL, conf ? MS_CORAL : MS_LINEA, 4, false);
-            ui_print(&ui_vt, 2, X0 + 16, y + 4, s_ent[i].name, s_ent[i].dir ? MS_ORO2 : MS_CREMA);
-            if (conf) ui_print_r(&ui_vt, 1, X0 + WID - 14, y + 18, TR("Â¿borrar?", "delete?"), MS_CORAL);
-            else if (!s_ent[i].dir) {
-                size_text(buf, sizeof(buf), s_ent[i].size);
-                ui_print_r(&ui_vt, 1, X0 + WID - 14, y + 18, buf, MS_GRIS);
-            }
-        }
-        if (!s_n) ui_print_c(&ui_vt, 2, UI_W / 2, TOP + 40, TR("vacÃ­a", "empty"), MS_GRIS, false);
-        // bottom: free space, the USB and format buttons
-        uint64_t total = 0, free_b = 0;
-        esp_vfs_fat_info(MOUNT, &total, &free_b);
-        snprintf(buf, sizeof(buf), TR("libre %u MB de %u", "free %u MB of %u"), (unsigned)(free_b >> 20), (unsigned)(total >> 20));
-        ui_rect(0, UI_H - BAR, UI_W, BAR, MS_NOCHE);
-        ui_print_c(&ui_vt, 1, UI_W / 2, UI_H - BAR + 6, s_msg[0] ? s_msg : buf, s_msg[0] ? MS_ORO2 : MS_GRIS, false);
-        ui_button(UI_W / 2 - 150, UI_H - 82, 140, 50, s_confirm == -4 ? TR("Â¿Reiniciar?", "Restart?") : "USB",
-                  s_confirm == -4 ? UI_BTN_MAIN : UI_BTN_SECONDARY, false);
-        const char *fl = s_confirm == -2 ? TR("Â¿Seguro?", "Sure?") : s_confirm == -3 ? TR("Â¡Se borra todo!", "Erase all!") : TR("Formatear", "Format");
-        ui_button(UI_W / 2 + 10, UI_H - 82, 140, 50, fl, s_confirm <= -2 ? UI_BTN_DANGER : UI_BTN_SECONDARY, false);
+        draw_list();
     }
     ui_background_band(false, 0, TOP - 16);
     ui_shade(0, 0, UI_W, TOP - 16, 1);
     ui_status_bar();
     const char *title = strcmp(s_path, MOUNT) ? strrchr(s_path, '/') + 1 : TR("Archivos", "Files");
-    int sc = ui_fit(&ui_jersey, 4, 2, UI_W - 120, title);
-    ui_print_c(&ui_jersey, sc, UI_W / 2, 64 + (4 - sc) * 8, title, MS_ORO, true);
+    char t[48];
+    ui_ellipsize(&ui_jersey, 2, UI_W - 120, title, t, sizeof(t));
+    int sc = ui_fit(&ui_jersey, 4, 2, UI_W - 120, t);
+    ui_print_c(&ui_jersey, sc, UI_W / 2, 64 + (4 - sc) * 8, t, MS_ORO, true);
+    if (s_modal) draw_modal();
     return true;
 }
 
@@ -253,70 +333,82 @@ static int hit(int y)
     return y >= TOP && y < UI_H - BAR && i >= 0 && i < s_n ? i : -1;
 }
 
+static void format_card(void)
+{
+    strcpy(s_msg, TR("formateando...", "formatting..."));
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool ok;
+    if (s_card) {
+        ok = esp_vfs_fat_sdcard_format(MOUNT, s_card) == ESP_OK;
+    } else {
+        g_app.sd_state = mount(true);  // an unreadable card: format_if_mount_failed makes an exFAT volume
+        ok = s_card != NULL;
+    }
+    xSemaphoreGive(s_lock);
+    strcpy(s_msg, ok ? TR("tarjeta formateada", "card formatted") : TR("no se pudo formatear", "format failed"));
+    strcpy(s_path, MOUNT);
+    if (s_card) load();
+}
+
+static void modal_event(const ui_event_t *e)
+{
+    if (e->type != EV_TAP) return;
+    int b = ui_dialog_hit(e->x, e->y, true);
+    if (!b) return;
+    int m = s_modal;
+    s_modal = M_NONE;
+    if (b == 2) {
+        if (m == M_FILE) {
+            s_modal = M_DELETE;  // a second, explicit step before deleting
+        } else if (m == M_DELETE) {
+            char full[sizeof(s_path) + sizeof(s_ent[0].name) + 2];
+            snprintf(full, sizeof(full), "%s/%s", s_path, s_ent[s_sel].name);
+            strcpy(s_msg, (s_ent[s_sel].dir ? rmdir(full) : unlink(full)) == 0 ? TR("borrado", "deleted")
+                          : s_ent[s_sel].dir ? TR("la carpeta no está vacía", "the folder is not empty")
+                                             : TR("no se pudo borrar", "could not delete"));
+            load();
+        } else if (m == M_USB) {
+            files_close();
+            boot_mode_switch(BOOT_USB);  // does not return
+        } else if (m == M_FORMAT) {
+            format_card();
+        }
+    }
+    sys_dirty();
+}
+
 static void event(const ui_event_t *e)
 {
-    if (!s_card && g_app.sd_state == SD_BAD) {  // format an unreadable card: two confirmations
-        if (e->type != EV_TAP || e->y < UI_H - 110) return;
-        if (s_confirm == -3) {
-            strcpy(s_msg, TR("formateando...", "formatting..."));
-            xSemaphoreTake(s_lock, portMAX_DELAY);
-            g_app.sd_state = mount(true);  // format_if_mount_failed: FatFs makes an exFAT volume
-            xSemaphoreGive(s_lock);
-            strcpy(s_msg, s_card ? TR("tarjeta formateada", "card formatted") : TR("no se pudo formatear", "format failed"));
-            s_confirm = -1;
-            if (s_card) load();
-        } else {
-            s_confirm = s_confirm == -2 ? -3 : -2;
-        }
-        sys_dirty();
+    if (s_modal) {
+        modal_event(e);
+        return;
+    }
+    if (!s_card && g_app.sd_state == SD_BAD) {  // an unreadable card: the format button
+        if (e->type == EV_TAP && e->y >= UI_H - 110) s_modal = M_FORMAT, sys_dirty();
         return;
     }
     if (!s_card) return;
     ui_scroll_event(&s_scroll, e);
     if (e->type == EV_TAP && e->y >= UI_H - BAR) {
-        if (e->x < UI_W / 2) {  // USB drive mode: a restart, so one confirmation
-            if (s_confirm == -4) {
-                files_close();
-                boot_mode_switch(BOOT_USB);  // does not return
-            }
-            s_confirm = -4;
-            strcpy(s_msg, TR("el reloj se reinicia como disco USB", "the watch restarts as a USB drive"));
-            sys_dirty();
-            return;
-        }
-        if (s_confirm == -3) {
-            strcpy(s_msg, esp_vfs_fat_sdcard_format(MOUNT, s_card) == ESP_OK ? TR("tarjeta formateada", "card formatted")
-                                                                            : TR("no se pudo formatear", "format failed"));
-            strcpy(s_path, MOUNT);
-            load();
-            s_confirm = -1;
-        } else {
-            s_confirm = s_confirm == -2 ? -3 : -2;
-        }
+        if (e->y >= BTN_Y - 10) s_modal = e->x < UI_W / 2 ? M_USB : M_FORMAT;
     } else if (e->type == EV_TAP) {
         int i = hit(e->y);
         if (i < 0) return;
-        if (i == s_confirm) {  // delete confirmed
-            char full[sizeof(s_path) + sizeof(s_ent[0].name) + 2];
-            snprintf(full, sizeof(full), "%s/%s", s_path, s_ent[i].name);
-            strcpy(s_msg, (s_ent[i].dir ? rmdir(full) : unlink(full)) == 0 ? TR("borrado", "deleted") : TR("no se pudo borrar", "could not delete"));
-            s_confirm = -1;
-            load();
-        } else if (s_ent[i].dir) {
+        if (s_ent[i].dir) {
             if (!strcmp(s_ent[i].name, "..")) *strrchr(s_path, '/') = 0;
             else if (strlen(s_path) + strlen(s_ent[i].name) + 2 < sizeof(s_path)) {
                 strcat(s_path, "/");
                 strcat(s_path, s_ent[i].name);
             }
-            s_confirm = -1;
             s_msg[0] = 0;
             load();
         } else {
-            s_confirm = -1;
+            s_sel = i;
+            s_modal = M_FILE;  // the whole name, its size, and delete
         }
     } else if (e->type == EV_LONG) {
         int i = hit(e->y);
-        if (i >= 0 && strcmp(s_ent[i].name, "..")) s_confirm = i;
+        if (i >= 0 && strcmp(s_ent[i].name, "..")) s_sel = i, s_modal = M_DELETE;
     }
     sys_dirty();
 }

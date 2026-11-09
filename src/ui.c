@@ -212,8 +212,90 @@ void ui_button(int x, int y, int w, int h, const char *label, int kind, bool pre
     int d = pressed ? 2 : 0, sh = pressed ? 2 : 4;
     ui_shade(x + d + sh, y + d + sh, w, h, 2);
     ui_rect(x + d, y + d, w, h, bg);
-    int sc = ui_fit(&ui_jersey, 3, 2, w - 16, label);
-    ui_print_c(&ui_jersey, sc, x + d + w / 2, y + d + (h - ui_line_h(&ui_jersey, sc)) / 2 + sc, label, fg, false);
+    // Jersey at 3 or 2 (the narrowest font: ~7 px a letter at scale 1, VT323 is 10); only a label that
+    // does not fit even then drops to VT323 at scale 1 rather than spilling out of the button
+    const ui_font_t *f = &ui_jersey;
+    int sc = ui_fit(&ui_jersey, 3, 2, w - 8, label);
+    if (ui_print_w(&ui_jersey, sc, label) > w - 8) f = &ui_vt, sc = 1;
+    ui_print_c(f, sc, x + d + w / 2, y + d + (h - ui_line_h(f, sc)) / 2 + sc, label, fg, false);
+}
+
+void ui_ellipsize(const ui_font_t *f, int scale, int max_w, const char *src, char *dst, size_t n)
+{
+    strlcpy(dst, src, n);
+    if (ui_print_w(f, scale, dst) <= max_w) return;
+    int dots = ui_print_w(f, scale, "…");
+    size_t len = strlen(dst);
+    while (len > 0) {
+        do len--;
+        while (len > 0 && ((uint8_t)dst[len] & 0xC0) == 0x80);  // whole UTF-8 characters only
+        dst[len] = 0;
+        if (ui_print_w(f, scale, dst) + dots <= max_w) break;
+    }
+    if (len + 4 <= n) strcat(dst, "…");
+}
+
+// ---------------------------------------------------------------- dialog
+
+#define DLG_X 28
+#define DLG_W (UI_W - 2 * DLG_X)
+#define DLG_BTN_H 60
+#define DLG_LINE 28   // Jersey at scale 2: 20 px glyphs
+#define DLG_LINES 7
+static struct { int y, h; } s_dlg;
+
+// Word wrap in Jersey at scale 2 into the dialog width; '\n' forces a break. Returns the line count.
+static int wrap(const char *s, char lines[][48], int max_lines, int width)
+{
+    int n = 0;
+    char cur[48] = "";
+    while (*s && n < max_lines) {
+        const char *w = s;
+        while (*s && *s != ' ' && *s != '\n') s++;
+        char word[48];
+        size_t wl = (size_t)(s - w) < sizeof(word) - 1 ? (size_t)(s - w) : sizeof(word) - 1;
+        memcpy(word, w, wl);
+        word[wl] = 0;
+        char test[96];
+        snprintf(test, sizeof(test), "%s%s%s", cur, cur[0] ? " " : "", word);
+        if (ui_print_w(&ui_jersey, 2, test) <= width) {
+            strlcpy(cur, test, sizeof(cur));
+        } else {
+            if (cur[0]) strlcpy(lines[n++], cur, 48);
+            ui_ellipsize(&ui_jersey, 2, width, word, cur, sizeof(cur));  // a single word wider than a line
+        }
+        if (*s == '\n' && n < max_lines) strlcpy(lines[n++], cur, 48), cur[0] = 0;
+        if (*s) s++;
+    }
+    if (cur[0] && n < max_lines) strlcpy(lines[n++], cur, 48);
+    return n;
+}
+
+void ui_dialog(const char *title, const char *body, const char *no, const char *yes, int yes_kind)
+{
+    char lines[DLG_LINES][48];
+    int n = wrap(body ? body : "", lines, DLG_LINES, DLG_W - 36);
+    int h = 70 + n * DLG_LINE + 20 + DLG_BTN_H + 24;
+    s_dlg.y = (UI_H - h) / 2;
+    s_dlg.h = h;
+    ui_shade(0, 0, UI_W, UI_H, 2);  // the screen behind goes dark
+    ui_panel(DLG_X, s_dlg.y, DLG_W, h, MS_PANEL, yes_kind == UI_BTN_DANGER ? MS_CORAL : MS_ORO, 4, true);
+    int sc = ui_fit(&ui_jersey, 3, 2, DLG_W - 40, title);
+    ui_print_c(&ui_jersey, sc, UI_W / 2, s_dlg.y + 18, title, MS_ORO, true);
+    for (int i = 0; i < n; i++) ui_print_c(&ui_jersey, 2, UI_W / 2, s_dlg.y + 66 + i * DLG_LINE, lines[i], MS_CREMA, false);
+    int by = s_dlg.y + h - DLG_BTN_H - 22, bw = (DLG_W - 48) / 2;
+    if (no) ui_button(DLG_X + 16, by, bw, DLG_BTN_H, no, UI_BTN_SECONDARY, false);
+    ui_button(no ? DLG_X + 32 + bw : UI_W / 2 - bw / 2, by, bw, DLG_BTN_H, yes, yes_kind, false);
+}
+
+int ui_dialog_hit(int x, int y, bool has_no)
+{
+    int by = s_dlg.y + s_dlg.h - DLG_BTN_H - 22, bw = (DLG_W - 48) / 2;
+    if (y < by - 10 || y > by + DLG_BTN_H + 10) return 0;
+    if (!has_no) return x >= UI_W / 2 - bw / 2 - 10 && x <= UI_W / 2 + bw / 2 + 10 ? 2 : 0;
+    if (x >= DLG_X + 8 && x < DLG_X + 24 + bw) return 1;
+    if (x >= DLG_X + 24 + bw && x < DLG_X + DLG_W - 8) return 2;
+    return 0;
 }
 
 void ui_bar(int x, int y, int w, int h, int permille, uint16_t color)

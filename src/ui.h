@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include "ui_fonts.h"
 
@@ -67,6 +68,12 @@ int ui_fit(const ui_font_t *f, int max_scale, int min_scale, int max_w, const ch
 enum { UI_BTN_MAIN, UI_BTN_SECONDARY, UI_BTN_DANGER };
 // Button with a 4 px hard shadow; pressed: moves 2 px down-right and the shadow shrinks
 void ui_button(int x, int y, int w, int h, const char *label, int kind, bool pressed);
+// Copies src into dst, cut with "…" to fit max_w pixels (whole UTF-8 characters)
+void ui_ellipsize(const ui_font_t *f, int scale, int max_w, const char *src, char *dst, size_t n);
+// Modal dialog over the current screen: title, wrapped body ('\n' breaks), two buttons (no = NULL for
+// a single one). ui_dialog_hit tells which button a tap hit: 0 none, 1 no, 2 yes.
+void ui_dialog(const char *title, const char *body, const char *no, const char *yes, int yes_kind);
+int ui_dialog_hit(int x, int y, bool has_no);
 // Bar of w x h: background barra-off, `permille` filled in `color`
 void ui_bar(int x, int y, int w, int h, int permille, uint16_t color);
 // On / off switch, 64 x 32

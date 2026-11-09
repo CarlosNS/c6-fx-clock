@@ -158,9 +158,9 @@ static bool ota_draw(uint32_t now, bool force)
         ui_bar(78, 282, UI_W - 156, 18, pct * 10, MS_ORO);
         ui_print_c(&ui_jersey, 2, UI_W / 2, 306, p, MS_ORO2, false);
     } else {
-        ui_print_c(&ui_vt, 1, UI_W / 2, 296, TR("sigue la versiÃ³n actual", "the current version stays"), MS_GRIS, false);
+        ui_print_c(&ui_vt, 1, UI_W / 2, 296, TR("sigue la versión actual", "the current version stays"), MS_GRIS, false);
     }
-    ui_print_c(&ui_vt, 1, UI_W / 2, 380, TR("por Bluetooth desde el mÃ³vil", "over Bluetooth from the phone"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 380, TR("por Bluetooth desde el móvil", "over Bluetooth from the phone"), MS_GRIS, false);
     if (st == ST_RECV) ui_print_c(&ui_vt, 1, UI_W / 2, 404, TR("no apagues el reloj", "do not switch the watch off"), MS_GRIS, false);
     return true;
 }
@@ -197,7 +197,7 @@ static void writer(void *arg)
     if (!ok) fail("bad_image", "sin memoria");
     while (ok && s_written < s_size) {
         if (s_cancel) {
-            fail(s_cancel == 2 ? "ble_lost" : "cancelled", s_cancel == 2 ? "se cortÃ³ el Bluetooth" : "cancelada en el mÃ³vil");
+            fail(s_cancel == 2 ? "ble_lost" : "cancelled", s_cancel == 2 ? "se cortó el Bluetooth" : "cancelada en el móvil");
             ok = false;
             break;
         }
@@ -207,7 +207,7 @@ static void writer(void *arg)
         int64_t now = esp_timer_get_time();
         if (!n) {
             if (now - last_data > IDLE_LIMIT_US) {
-                fail("timeout", "el mÃ³vil dejÃ³ de enviar");
+                fail("timeout", "el móvil dejó de enviar");
                 ok = false;
             }
             continue;
@@ -236,7 +236,7 @@ static void writer(void *arg)
         char hex[65];
         sha_final(&sha, digest);
         for (int i = 0; i < 32; i++) sprintf(hex + 2 * i, "%02x", digest[i]);
-        if (strcasecmp(hex, s_sha) != 0) fail("bad_image", "la imagen llegÃ³ daÃ±ada");
+        if (strcasecmp(hex, s_sha) != 0) fail("bad_image", "la imagen llegó dañada");
         else if (ota_finish(&msg) != ESP_OK) fail("bad_image", msg ? msg : "no se pudo activar");
         else {
             ESP_LOGI(TAG, "Image verified, rebooting into %s", s_version);
@@ -261,10 +261,10 @@ static void begin(const char *args)
 {
     unsigned size = 0;
     char sha[65] = "", ver[32] = "";
-    if (s_state != ST_IDLE) return send_err("ya hay una actualizaciÃ³n en curso");
-    if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no vÃ¡lida");
-    if (size < 1024 || size > ota_max_size()) return send_err("tamaÃ±o no vÃ¡lido");
-    if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versiÃ³n");
+    if (s_state != ST_IDLE) return send_err("ya hay una actualización en curso");
+    if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no válida");
+    if (size < 1024 || size > ota_max_size()) return send_err("tamaño no válido");
+    if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versión");
     s_sb = xStreamBufferCreateWithCaps(BUF_BYTES, 1, MALLOC_CAP_SPIRAM);
     if (!s_sb) return send_err("sin memoria");
     if (ota_begin(size) != ESP_OK) {

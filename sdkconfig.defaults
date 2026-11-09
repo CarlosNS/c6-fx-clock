@@ -90,3 +90,8 @@ CONFIG_PM_RTOS_IDLE_OPT=n
 CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n
 # Big static arrays marked EXT_RAM_BSS_ATTR (face grids, buffers) live in PSRAM
 CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+
+# microSD names in UTF-8 (the fonts are UTF-8: "Música" showed without its accent in CP437), short
+# names in the Western European code page
+CONFIG_FATFS_API_ENCODING_UTF_8=y
+CONFIG_FATFS_CODEPAGE_850=y

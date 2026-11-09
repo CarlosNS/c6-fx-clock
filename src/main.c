@@ -369,11 +369,11 @@ void power_off_now(bool really)
     ui_begin(lcd_native_fb());
     ui_background(false);
     ui_veil(90, UI_H, 2);
-    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, TR("BaterÃ­a agotada", "Battery empty"), MS_ORO, true);
+    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, TR("Batería agotada", "Battery empty"), MS_ORO, true);
     ui_panel(48, 196, UI_W - 96, 150, MS_PANEL, MS_LINEA, 3, true);
     ui_print_c(&ui_vt, 2, UI_W / 2, 222, TR("el reloj se apaga", "the watch switches off"), MS_CREMA, false);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 270, TR("cÃ¡rgalo y enciÃ©ndelo", "charge it and switch it on"), MS_GRIS, false);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 294, TR("con el botÃ³n PWR", "with the PWR button"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 270, TR("cárgalo y enciéndelo", "charge it and switch it on"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 294, TR("con el botón PWR", "with the PWR button"), MS_GRIS, false);
     lcd_flush_native();
     lcd_set_brightness(g_app.brightness);
     settings_save();
