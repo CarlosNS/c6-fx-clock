@@ -88,6 +88,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 | `wks` | 3–600 | Segundos que se queda encendida |
 | `raise` | 0/1 | Encender al levantar la muñeca |
 | `tap` | 0–2 | Tocar la pantalla apagada: 0 no la enciende, 1 un toque, 2 doble toque |
+| `voice` | 0/1 | Órdenes de voz: mantener BOOT graba una para la app (`voice.c`) |
 | `lang` | 0/1 | Idioma: español o inglés |
 | `dnd` | 0/1 | No molestar: alarmas y llamadas sin sonido |
 | `vol` | 0–100 | Volumen del altavoz |

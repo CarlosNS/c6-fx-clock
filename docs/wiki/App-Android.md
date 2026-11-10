@@ -59,6 +59,15 @@ La conexión permanente es un servicio en primer plano, que Android respeta, per
 - **Samsung:** *Ajustes → Batería → Límites de uso en segundo plano*: que Marea no esté en «Apps en suspensión».
 - **Otros:** busca en <https://dontkillmyapp.com> las instrucciones de tu marca.
 
+## Órdenes de voz
+
+Con *Órdenes de voz* activas (en *Ajustes* de la app o del reloj), al mantener BOOT el reloj graba con sus micrófonos y manda el audio a la app. La app lo pasa al reconocimiento de voz de Android, en el idioma del reloj, y le devuelve al reloj lo que ha entendido para que pregunte antes de hacerlo (ver [[Manual del reloj]]).
+
+- **Android 13 o posterior.** El reconocedor tiene que aceptar audio que no viene del micrófono del móvil; en el POCO F7 funciona el de Google, sin internet una vez descargado el idioma.
+- **Permiso de micrófono.** Android lo exige para reconocer voz aunque el audio sea del reloj: la app **no graba con el micrófono del móvil**. Por eso el servicio de conexión permanente se declara también como servicio de micrófono, y Android solo deja añadirlo con la app en pantalla: tras instalar o actualizar la app, ábrela una vez.
+- **Idioma.** Si falta el paquete del idioma, la app pide a Android que lo descargue y el reloj avisa de que se pruebe en unos minutos.
+- El audio solo va del reloj a la app y al reconocedor del móvil; no se guarda.
+
 ## Actualizaciones
 
 En *Ajustes → Actualizaciones* la app muestra las dos versiones, e Inicio avisa cuando hay una nueva:
@@ -68,7 +77,7 @@ En *Ajustes → Actualizaciones* la app muestra las dos versiones, e Inicio avis
 
 ## Privacidad
 
-La app solo habla con el reloj, con [Open-Meteo](https://open-meteo.com/) (tiempo de la ciudad configurada en el reloj; no usa tu ubicación) y con GitHub Pages (para buscar versiones nuevas). Lo que lee de las notificaciones (música y llamadas) solo va al reloj. No tiene cuentas, anuncios ni analítica.
+La app solo habla con el reloj, con [Open-Meteo](https://open-meteo.com/) (tiempo de la ciudad configurada en el reloj; no usa tu ubicación) y con GitHub Pages (para buscar versiones nuevas y las novedades). El audio de las órdenes de voz solo pasa por el reconocedor de voz del propio móvil. Lo que lee de las notificaciones (música y llamadas) solo va al reloj. No tiene cuentas, anuncios ni analítica.
 
 ## Si algo falla
 

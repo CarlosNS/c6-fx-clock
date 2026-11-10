@@ -8,6 +8,7 @@ El código de este repositorio es de CarlosNS y se distribuye con la licencia [G
 |---|---|---|
 | [ESP-IDF](https://github.com/espressif/esp-idf) (Espressif), incluidos FreeRTOS, lwIP, NimBLE, mbedTLS y el controlador WiFi/Bluetooth | Apache 2.0 (y MIT/BSD en algunos componentes) | Sistema base, red, Bluetooth, HTTPS |
 | [esp_tinyusb](https://components.espressif.com/components/espressif/esp_tinyusb) (Espressif) y [TinyUSB](https://github.com/hathach/tinyusb) (Ha Thach) | Apache 2.0 y MIT | Modo USB: la microSD como disco (`src/usbdisk.c`) |
+| Controladores [es8311 y es7210](https://github.com/espressif/esp-bsp) (Espressif) | Apache 2.0 | Las secuencias de registros del altavoz y los micrófonos (`src/audio.c`), escritas a partir de ellos |
 | [FatFs](http://elm-chan.org/fsw/ff/) (ChaN), componente `fatfs` de ESP-IDF (Espressif) | BSD de 1 cláusula y Apache 2.0 | microSD en FAT y exFAT; copia con exFAT activado en `components/fatfs/` |
 | Fuente [Aileron](https://dotcolon.net/font/aileron/) (Sora Sagano), la que trae Pillow | CC0 (dominio público) | Texto pequeño de las esferas (`src/uifont.c`, generado por `tools/gen_uifont.py`) |
 | Fuente [Jersey 10](https://fonts.google.com/specimen/Jersey+10) (The Soft Type Project Authors) | [SIL Open Font License 1.1](tools/fonts/OFL-jersey10.txt) | Títulos, números y botones del sistema (`src/ui_fonts.c`, generado por `tools/make_fonts.py`) |

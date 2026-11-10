@@ -48,6 +48,8 @@ Un mensaje de un solo trozo lleva `0xC0 | id`. El receptor junta los trozos con 
 | `media` | Al tocar los controles de la app Música | `cmd`: `play`, `pause`, `next`, `prev`, `vol+` o `vol-` |
 | `call` | Al tocar los botones de una llamada | `cmd`: `reject` o `silence` |
 | `ota` | Durante una actualización por Bluetooth | `st`: `ready` (con `win`), `ack` (con `off`), `done` o `err` (con `msg`) |
+| `voice` | Al empezar y acabar una orden de voz | `st`: `start` (con `lang`, `es-ES` o `en-US`, y `rate`, 16000), `end` o `cancel` |
+| `va` | Mientras se graba, cada 100 ms | Audio: `s` número de mensaje, `p` e `i` estado del codificador (predicción e índice de paso) y `d`, IMA ADPCM de 4 bits (nibble bajo primero) en base64 |
 
 Los comandos son los mismos que en la web: ver [[Arquitectura]].
 
@@ -63,6 +65,16 @@ El móvil manda al reloj lo que pasa, con dos órdenes de texto:
 | `call end` | La llamada se contesta, se rechaza o se pierde |
 
 El título va hasta 60 bytes y el artista hasta 44, en UTF-8, sin `|` y solo con los caracteres que tienen las fuentes del reloj (ASCII, tildes, ñ, ¡¿ y algunos signos); la app quita los acentos que no tenga. Al volver a conectar, la app repite el estado actual. Las respuestas del reloj son los mensajes `media` y `call` de arriba.
+
+## Órdenes de voz
+
+Mientras se mantiene BOOT, el reloj manda `voice` `start`, unos 10 mensajes `va` por segundo (16 kHz mono de los dos micrófonos, unos 11 KB/s en base64; cada uno lleva el estado del codificador con el que empieza, así que perder uno solo pierde sus 100 ms) y `voice` `end`. La app contesta con una orden:
+
+| Orden | Significa |
+|---|---|
+| `voice ask <orden>\|<lo oído>\|<lo que hará>` | Ha entendido algo: el reloj pregunta y, si se acepta, ejecuta `<orden>` (p. ej. `alarm add 7 30 31`) |
+| `voice fail <lo oído>` | Ha oído palabras pero ninguna orden |
+| `voice err <motivo>` | `nada` (no oyó voz), `permiso`, `idioma`, `nomovil` (Android anterior al 13) u otro |
 
 ## Actualizar el firmware por Bluetooth
 

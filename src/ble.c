@@ -18,6 +18,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
 #include "lcd.h"
@@ -102,7 +103,20 @@ const char *ble_name(void) { return s_name; }
 // ---------------------------------------------------------------- sending
 
 // Sends one JSON message as a series of notifications (see the frame header in ble.h)
+// One message at a time: the app puts each one back together from its frames and expects them in a
+// row, and the voice audio (voice.c) is sent from its own task
+static SemaphoreHandle_t s_send_lock;
+static void send_msg_locked(const char *json, size_t len);
+
 static void send_msg(const char *json, size_t len)
+{
+    if (!s_send_lock) return;
+    xSemaphoreTake(s_send_lock, portMAX_DELAY);
+    send_msg_locked(json, len);
+    xSemaphoreGive(s_send_lock);
+}
+
+static void send_msg_locked(const char *json, size_t len)
 {
     uint16_t conn = s_conn;
     if (conn == BLE_HS_CONN_HANDLE_NONE || !s_subscribed || !link_secure(conn)) return;
@@ -588,6 +602,7 @@ static void host_task(void *arg)
 
 void ble_start(void)
 {
+    s_send_lock = xSemaphoreCreateMutex();
     s_queue = xQueueCreate(QUEUE_LEN, sizeof(cmd_t));
     gatt_version_check();
     const esp_timer_create_args_t t = {.callback = slow_down, .name = "ble_adv"};

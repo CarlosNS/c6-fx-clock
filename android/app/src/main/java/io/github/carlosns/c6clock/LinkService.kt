@@ -70,14 +70,27 @@ class LinkService : Service() {
         super.onCreate()
         running = true
         store = Store(this)
-        val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
-        runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(false), type) }
-            .onFailure { Log.w(TAG, "foreground refused: ${it.message}"); stopSelf() }
+        if (!foreground(true)) stopSelf()
+    }
+
+    /**
+     * Foreground as a connected device, and also as a microphone user when voice commands are allowed:
+     * Android only lets the recognizer take the watch's audio while the app counts as in use. The
+     * microphone type may be refused when started from the background; then it goes without it, and
+     * the next time the app is opened (ACTION_MIC) adds it.
+     */
+    private fun foreground(withMic: Boolean): Boolean {
+        val link = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
+        val mic = if (withMic && Build.VERSION.SDK_INT >= 30 && Voice.allowed(this)) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
+        if (mic != 0 && runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link or mic) }.isSuccess) return true
+        return runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link) }
+            .onFailure { Log.w(TAG, "foreground refused: ${it.message}") }.isSuccess
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_MIC -> { foreground(true); if (loop?.isActive == true) return START_STICKY }
             ACTION_AWAY -> { away = true; if (!Live.ready) stopSelf(); return START_NOT_STICKY }
             else -> away = false
         }
@@ -100,7 +113,7 @@ class LinkService : Service() {
             val address = store.address ?: break
             if (!Perms.canConnect(this)) break
             val l = Live.link?.takeIf { it.ready && it.address == address } ?: ClockBle(this, address)
-            l.onMessage = { text -> Live.message(text); Phone.fromClock(text) }
+            l.onMessage = { text -> if (!VoiceLink.fromClock(this, text)) { Live.message(text); Phone.fromClock(text) } }
             l.onState = { up -> Live.state(up); show(up) }
             try {
                 l.connect()
@@ -164,6 +177,7 @@ class LinkService : Service() {
         private const val NOTIFICATION_ID = 10
         private const val ACTION_STOP = "stop"
         private const val ACTION_AWAY = "away"
+        private const val ACTION_MIC = "mic"
         private const val RESYNC_MS = SyncWorker.PERIOD_MIN * 60_000L
         /** The service is alive (connected or looking for the clock): the periodic sync leaves it the link. */
         @Volatile var running = false
@@ -179,6 +193,12 @@ class LinkService : Service() {
         /** The clock went out of range: stop once the link is gone, instead of retrying for nothing. */
         fun away(c: Context) {
             runCatching { c.startService(Intent(c, LinkService::class.java).setAction(ACTION_AWAY)) }
+        }
+
+        /** The app is on screen (or the microphone was just allowed): let the service use the microphone. */
+        fun mic(c: Context) {
+            if (!running || !Voice.allowed(c)) return
+            runCatching { c.startService(Intent(c, LinkService::class.java).setAction(ACTION_MIC)) }
         }
 
         fun stop(c: Context) {

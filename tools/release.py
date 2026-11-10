@@ -105,6 +105,8 @@ def update_pages(version, notes, with_app, dry_run, first="reloj"):
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
         shutil.copy(os.path.join(WEB, OTA), tree)
+        # The what's new board of the app and the page (src/web/novedades.json, newest first)
+        shutil.copy(os.path.join(ROOT, "src", "web", "novedades.json"), tree)
         if with_app:
             shutil.copy(APK, os.path.join(tree, APP_APK))
         flasher = os.path.join(tree, "flasher")

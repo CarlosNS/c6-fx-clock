@@ -7,7 +7,7 @@
 # The watch system: Marea Solsticial toolkit, gestures, shell and apps
 list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "alarm.c" "audio.c" "phone.c"
                  "app_faces.c" "app_settings.c" "app_stopwatch.c" "app_torch.c" "app_alarms.c" "app_steps.c"
-                 "app_music.c" "app_files.c" "usbdisk.c" "batlog.c" "bleota.c" "intro.c")
+                 "app_music.c" "app_files.c" "usbdisk.c" "batlog.c" "bleota.c" "intro.c" "voice.c")
 list(APPEND srcs "board.c" "lcd_co5300.c" "i2c_bus.c" "pmu_axp2101.c" "rtc_pcf85063.c" "touch_ft3168.c" "imu_qmi8658.c")
 
 # web.pack: the page's pictures and fonts (src/web/), packed by tools/web_pack.py before each build

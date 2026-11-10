@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <!-- Weather (Open-Meteo) and the firmware manifest -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Voice commands: Android's recognizer asks for it even though the audio comes from the watch's
+         microphone (Voice.kt); the app never records with the phone's -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- New firmware notice -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- A companion app may run in the background: the periodic sync survives battery savers -->
@@ -26,9 +29,17 @@
          companion app may start from the background when the clock appears -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- The link service also counts as using the microphone, so speech from the watch can be
+         recognized with the app in the background (Voice.kt) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
     <!-- The app updates itself (AppUpdate); Android still asks the user to confirm each install -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Speech recognition of the watch's microphone (Voice.kt): Android 11+ hides the recognizer otherwise -->
+    <queries>
+        <intent><action android:name="android.speech.RecognitionService" /></intent>
+    </queries>
 
     <application
         android:allowBackup="false"
@@ -59,7 +70,7 @@
         <service
             android:name=".LinkService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|microphone" />
         <!-- Notification access (PhoneWatch): what is playing and incoming calls, for the clock -->
         <service
             android:name=".PhoneWatch"

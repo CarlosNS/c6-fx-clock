@@ -87,6 +87,12 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .swatch{display:inline-block;width:42px;height:20px;border:3px solid var(--linea)}
 #wxres{display:flex;flex-wrap:wrap;gap:6px}
 #wxres .btn{font-size:18px;min-height:40px}
+/* what's new */
+.nv .vh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.nv .vh b{font:400 24px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)}
+.nv ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.nv li{position:relative;padding-left:16px;font-size:18px}
+.nv li::before{content:"";position:absolute;left:2px;top:.5em;width:6px;height:6px;background:var(--oro2)}
 /* alarms */
 .al .head{display:flex;align-items:center;gap:12px}
 .al .open{flex:1;display:flex;flex-direction:column;background:none;border:0;padding:0;text-align:left;min-width:0}
@@ -183,6 +189,9 @@ input[type=text],input[type=password]{width:100%;min-width:0}
       <span class="tt" data-en="Settings">Ajustes</span><span class="dim" data-en="Display, language…">Pantalla, idioma…</span>
     </a>
   </div>
+  <p class="lbl" data-en="What's new">Novedades</p>
+  <div class="stack" id="news" style="gap:12px"><div class="panel dim" data-en="Loading…">Cargando…</div></div>
+  <button class="btn full hide" id="newsmore" data-en="See older versions">Ver versiones anteriores</button>
 </section>
 
 <!-- ============================================================ Esferas -->
@@ -239,6 +248,13 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <a class="row" href="#pantalla"><div class="t"><b data-en="Display">Pantalla</b><small data-en="Brightness, sleep, night mode">Brillo, apagado, modo noche</small></div><span class="go" aria-hidden="true">›</span></a>
     <a class="row" href="#hora"><div class="t"><b data-en="Time">Hora</b><small data-en="24-hour clock, seconds">Formato 24 h, segundos</small></div><span class="go" aria-hidden="true">›</span></a>
   </div>
+  <div class="hide stack" id="voicebox" style="gap:12px">
+  <p class="lbl" data-en="Voice commands">Órdenes de voz</p>
+  <div class="list">
+    <div class="row"><div class="t"><b data-en="Voice commands">Órdenes de voz</b><small data-en="Hold BOOT on the watch and speak">Mantén BOOT en el reloj y habla</small></div><input type="checkbox" class="sw" id="voice" aria-label="Órdenes de voz"></div>
+    <div class="row col"><small id="voicenote" data-en="Your phone understands it (Android 13 or later, with the Marea app) and the watch asks before doing it. For example: «alarm at seven thirty on weekdays», «show the Onyx face», «do not disturb», «brightness 50», «open the stopwatch», «turn on the flashlight».">Lo entiende tu móvil (Android 13 o posterior, con la app Marea) y el reloj pregunta antes de hacerlo. Por ejemplo: «alarma a las siete y media de lunes a viernes», «pon la esfera Ónix», «activa no molestar», «brillo al 50», «abre el cronómetro», «enciende la linterna».</small></div>
+  </div>
+  </div>
   <p class="lbl" data-en="Connection">Conexión</p>
   <div class="list">
     <a class="row" href="#movil"><div class="t"><b data-en="Phone and connection">Móvil y conexión</b><small data-en="Bluetooth, permissions, Wi-Fi">Bluetooth, permisos, WiFi</small></div><span class="pip hide" id="permpip"></span><span class="go" aria-hidden="true">›</span></a>
@@ -290,6 +306,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <div class="list">
       <div class="row"><div class="t"><b data-en="Run in the background">Funcionar en segundo plano</b><small id="appbg">--</small></div><button class="btn gold" id="appbgo" data-en="Allow">Permitir</button></div>
       <div class="row"><div class="t"><b data-en="Music and calls">Música y llamadas</b><small id="appph">--</small></div><button class="btn gold" id="appphgo" data-en="Allow">Permitir</button></div>
+      <div class="row hide" id="appmicrow"><div class="t"><b data-en="Microphone (voice commands)">Micrófono (órdenes de voz)</b><small id="appmic">--</small></div><button class="btn gold" id="appmicgo" data-en="Allow">Permitir</button></div>
     </div>
   </div>
   <p class="lbl" data-en="Watch Wi-Fi">WiFi del reloj</p>
@@ -413,7 +430,7 @@ function applyLang(){document.documentElement.lang=LANG?'en':'es';
  for(const el of document.querySelectorAll('[data-en-ph]')){if(el.dataset.esPh===undefined)el.dataset.esPh=el.placeholder;el.placeholder=LANG?el.dataset.enPh:el.dataset.esPh}
  $('langes').classList.toggle('on',!LANG);$('langen').classList.toggle('on',!!LANG);
  for(const b of document.querySelectorAll('.back'))b.setAttribute('aria-label',tr('Atrás','Back'));
- if(FX.length)buildFaces();renderAlarms();if(view==='archivos')renderFiles();if(status.ver)show(status,true);homeTiles()}
+ if(FX.length)buildFaces();renderAlarms();renderNews();if(view==='archivos')renderFiles();if(status.ver)show(status,true);homeTiles()}
 function setLang(v){if(v===LANG)return;LANG=v;try{localStorage.setItem('lang',v)}catch(e){}applyLang()}
 $('langes').onclick=()=>{lastUser=Date.now();setLang(0);send('lang 0')};
 $('langen').onclick=()=>{lastUser=Date.now();setLang(1);send('lang 1')};
@@ -471,7 +488,11 @@ for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).p
 // The slider's filled part, flat (no gradient look): a hard stop between gold and the empty track
 function fill(e){if(e.classList.contains('hue'))return;const p=(e.value-e.min)/(e.max-e.min)*100;e.style.background=`linear-gradient(90deg,var(--oro) ${p}%,var(--off) ${p}%)`}
 function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);if(e.type==='range')fill(e);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
-bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('tap','tap');bind('secs','secs');
+bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('tap','tap');
+// Voice commands: the setting lives on the watch; in the app, switching it on also asks for the microphone
+$('voice').onchange=()=>{lastUser=Date.now();const on=$('voice').checked;send('voice '+(on?1:0));status.voice=on?1:0;
+ if(L.kind==='android'){if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice();appInfo()}};
+window.voicePermission=ok=>{appInfo()};bind('secs','secs');
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
 const swatch=h=>$('chuesw').style.background=`hsl(${h} 62% 30%)`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
@@ -533,6 +554,7 @@ function show(s,relang){status=s;
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
+  if(s.voice!==undefined){$('voicebox').classList.remove('hide');$('voice').checked=!!s.voice}
   if(s.tap!==undefined){$('taprow').classList.remove('hide');if(document.activeElement!==$('tap'))$('tap').value=s.tap}
   if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}
   for(const k of['wks','nst','nen','chue','ohue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
@@ -644,11 +666,14 @@ function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.i
  $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
  $('appph').textContent=i.phone?tr('Permitido','Allowed'):tr('Falta el acceso a las notificaciones','Notification access is missing');$('appph').className=i.phone?'ok':'bad';$('appphgo').classList.toggle('hide',!!i.phone);
  $('appbg').textContent=i.background?tr('Permitido','Allowed'):tr('El sistema puede cortar la conexión','The system may cut the connection');$('appbg').className=i.background?'ok':'bad';$('appbgo').classList.toggle('hide',i.background);
- const miss=[!i.phone&&tr('Música y llamadas','Music and calls'),!i.background&&tr('Segundo plano','Background')].filter(Boolean);
+ // Android asks for the microphone to recognize speech, even though the audio is the watch's
+ const micNeeded=!!status.voice;$('appmicrow').classList.toggle('hide',!micNeeded);
+ $('appmic').textContent=i.mic?tr('Permitido','Allowed'):tr('Android lo pide para reconocer la voz del reloj (no usa el micrófono del móvil)','Android asks for it to recognize the watch’s voice (the phone’s microphone is not used)');$('appmic').className=i.mic?'ok':'bad';$('appmicgo').classList.toggle('hide',!!i.mic);
+ const miss=[!i.phone&&tr('Música y llamadas','Music and calls'),!i.background&&tr('Segundo plano','Background'),micNeeded&&!i.mic&&tr('Micrófono','Microphone')].filter(Boolean);
  $('nperm').classList.toggle('hide',!miss.length||L.needsPick);$('npermtxt').textContent=miss.join(' · ');$('permpip').classList.toggle('hide',!miss.length)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forgetrow').classList.toggle('hide',L.needsPick);$('appsyncrow').classList.remove('hide');$('appupd').classList.remove('hide');
  $('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent=tr('Sincronizando…','Syncing…');setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appmicgo').onclick=()=>ClockBridge.allowVoice();
  $('appforget').onclick=()=>{if(ask(tr('¿Olvidar este reloj?','Forget this watch?'),tr('El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','The phone and the watch will no longer be paired, and the app will not be able to control it or set its time. To use it again, tap "Find the watch" and type the code it shows.'),tr('Olvidar','Forget')))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
@@ -702,6 +727,22 @@ $('animok').onclick=()=>{const a=ALARMS.list[animFor];if(a&&a.a!==animSel){a.a=a
 // A new alarm: an hour from now, every day off (once), opened to set it up
 $('aladd').onclick=()=>{if(!ALARMS||ALARMS.list.length>=AL_MAX)return;const n=new Date(Date.now()+3600e3),a={h:n.getHours(),m:0,d:0,on:1,a:0,l:''};
  ALARMS.list.push(a);openAl=ALARMS.list.length-1;send(`alarm add ${a.h} ${a.m} ${a.d}`);renderAlarms();homeTiles();setTimeout(loadAlarms,800)};
+// ------------------------------------------------------------ what's new: every version of the watch and the app, newest first.
+// From GitHub Pages (it also lists versions not installed yet); offline, the copy that came with this page
+var NEWS=null,newsAll=false;  // var: applyLang() may draw it before this line runs
+async function loadNews(){
+ for(const u of['https://carlosns.github.io/c6-fx-clock/novedades.json',A+'novedades.json']){
+  try{const r=await fetch(u,{cache:'no-cache'});if(r.ok){NEWS=await r.json();break}}catch(e){}}
+ renderNews()}
+function renderNews(){const box=$('news');if(!NEWS){box.innerHTML=`<div class="panel dim">${tr('Sin conexión: las novedades se verán con internet.','Offline: the news will show with internet.')}</div>`;return}
+ const appV=L.kind==='android'&&window.ClockBridge?ClockBridge.appVersion():'';
+ const list=newsAll?NEWS:NEWS.slice(0,2);
+ box.innerHTML=list.map(n=>{const date=n.fecha?new Date(n.fecha+'T12:00').toLocaleDateString(LANG?'en-GB':'es-ES',{day:'numeric',month:'short',year:'numeric'}):'';
+  const mine=(status.ver===n.reloj?tr(' · en tu reloj',' · on your watch'):'')+(appV&&appV===n.app?tr(' · tu app',' · your app'):'');
+  return `<div class="panel nv"><div class="vh"><b>${tr('Reloj','Watch')} ${esc(n.reloj)}</b><span class="dim">${tr('App','App')} ${esc(n.app)} · ${esc(date)}${mine}</span></div>
+   <ul>${(LANG&&n.en?n.en:n.es).map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`}).join('');
+ $('newsmore').classList.toggle('hide',newsAll||NEWS.length<=2)}
+$('newsmore').onclick=()=>{newsAll=true;renderNews()};
 // The next alarm that will ring, by this device's clock: "Mañana 07:30"
 function nextAlarm(){if(!ALARMS)return'--';const now=new Date(),wd=(now.getDay()+6)%7,nm=now.getHours()*60+now.getMinutes();let best=null;
  for(const a of ALARMS.list){if(!a.on)continue;const t=a.h*60+a.m;
@@ -738,7 +779,7 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
 
 // ------------------------------------------------------------ start
 applyLang();route();
-loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);
+loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);loadNews();
 </script>
 </body>
 </html>

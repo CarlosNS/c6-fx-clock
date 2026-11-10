@@ -63,6 +63,13 @@ class MainActivity : ComponentActivity() {
     private val onClockMessage: (String) -> Unit = { s -> js("clockMessage", JSONObject.quote(s)) }
     private val onClockState: (Boolean) -> Unit = { up -> js("clockState", up.toString()) }
 
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        // Refused twice, Android stops asking: the app's own settings page is the only way left
+        if (!ok && !shouldShowRequestPermissionRationale(android.Manifest.permission.RECORD_AUDIO))
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        if (ok) LinkService.mic(this)
+        js("voicePermission", ok.toString())
+    }
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { connectIfPaired() }
     private val chooser = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
         val address = if (r.resultCode == RESULT_OK) associatedAddress(r.data) else null
@@ -137,7 +144,32 @@ class MainActivity : ComponentActivity() {
         // For the tests: read updates from the PC (adb reverse); never from any other host
         i?.getStringExtra("manifest")?.takeIf { it.startsWith("http://127.0.0.1:") }?.let { Firmware.manifestUrl = it }
         if (i?.getBooleanExtra("sync", false) == true) SyncWorker.runNow(this)
+        // For the tests: recognize a 16 kHz mono WAV from the app's own files folder, at real speed
+        if (i?.getBooleanExtra("voiceinfo", false) == true) VoiceSession.logSupport(this, i.getBooleanExtra("voicedl", false))
+        i?.getStringExtra("voicewav")?.let { name -> voiceTest(name, i.getStringExtra("voicelang") ?: "es-ES") }
     }
+
+    private fun voiceTest(name: String, lang: String) {
+        if (!Voice.allowed(this)) { micPermission.launch(android.Manifest.permission.RECORD_AUDIO); return }
+        val f = java.io.File(getExternalFilesDir(null), name.substringAfterLast('/'))
+        val pcm = runCatching { f.readBytes().copyOfRange(44, f.length().toInt()) }.getOrNull() ?: run { Log.w(TAG, "no $f"); return }
+        lifecycleScope.launch {
+          kotlinx.coroutines.delay(i_delay)
+          val s = VoiceSession(this@MainActivity, lang) { texts, err -> Log.i(TAG, "voice test: $texts $err") }
+          if (!s.start()) { Log.w(TAG, "voice test: not available"); return@launch }
+          withContext(Dispatchers.IO) {
+            var o = 0
+            while (o < pcm.size) {
+                val n = minOf(640, pcm.size - o)
+                s.feed(pcm.copyOfRange(o, o + n))
+                o += n
+                kotlinx.coroutines.delay(20)
+            }
+            s.end()
+          }
+        }
+    }
+    private var i_delay = 1500L
 
     // The link itself lives in LinkService and stays up with the app closed; on screen it only runs
     // at a quicker interval and the page listens to it
@@ -147,6 +179,7 @@ class MainActivity : ComponentActivity() {
         Live.listen(onClockMessage, onClockState)
         Live.link?.priority(true)
         connectIfPaired()
+        LinkService.mic(this)  // on screen: the one moment Android lets it add the microphone
     }
 
     override fun onStop() {
@@ -380,6 +413,7 @@ class MainActivity : ComponentActivity() {
             .put("every", SyncWorker.PERIOD_MIN)
             .put("permanent", LinkService.running)
             .put("phone", Phone.hasAccess(this@MainActivity))
+            .put("mic", Voice.allowed(this@MainActivity))
             .put("background", getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
             .toString()
         @JavascriptInterface fun syncNow() {
@@ -392,6 +426,7 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun forget() = runOnUiThread { this@MainActivity.forget() }
         @JavascriptInterface fun allowBackground() = runOnUiThread { this@MainActivity.allowBackground() }
         @JavascriptInterface fun allowPhone() = runOnUiThread { this@MainActivity.allowPhone() }
+        @JavascriptInterface fun allowVoice() = runOnUiThread { micPermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }
         @JavascriptInterface fun installApp() = runOnUiThread { this@MainActivity.installApp() }

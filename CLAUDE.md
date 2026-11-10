@@ -34,6 +34,8 @@
 | `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py`, `web_pack.py` (lo lanza PlatformIO), `web_previews.py` |
 | `src/sys.c`, `src/ui.c`, `src/app_*.c` | Sistema (vistas, gestos, lanzador), estilo Marea Solsticial y apps |
 | `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
+| `src/voice.c`, `android/.../Voice.kt`, `VoiceCommands.kt` | Órdenes de voz: el reloj graba (ES7210, `audio.c`) y manda IMA ADPCM; la app usa el reconocedor de Android con `EXTRA_AUDIO_SOURCE` e interpreta la frase |
+| `src/web/novedades.json` | Tablón de novedades de Inicio, de la versión más nueva a la más vieja; `release.py` lo copia a GitHub Pages. Añade una entrada en cada versión |
 
 ## Compilar, flashear y probar (Windows)
 
@@ -70,6 +72,7 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 - **Manifiesto de actualizaciones:** la entrada de Marea es `boards.s3amoled`. Las claves de arriba son de los relojes C6 (2.1.0) y **nunca** se tocan. Los C6 solo leen 1023 bytes: `release.py` lo comprueba.
 - **`project(c6-fx-demo)` no se renombra:** `ota.c` exige que la imagen nueva tenga el mismo nombre de proyecto que la instalada.
 - **HyperOS:** bloquea escaneos Bluetooth en segundo plano y mata apps; la app tiene que guiar para quitar las restricciones de batería.
+- **Reconocimiento de voz:** el de Google del POCO funciona sin internet y exige `RECORD_AUDIO` aunque el audio venga del reloj. En segundo plano solo funciona si `LinkService` es también servicio de tipo micrófono, y Android solo deja añadir ese tipo con la app en pantalla. El resultado final a veces llega vacío: se usa el último parcial. Prueba: `adb shell am start -n io.github.carlosns.c6clock/.MainActivity --es voicewav es.wav` (WAV de 16 kHz en `Android/data/<paquete>/files/`); en el reloj, `voicetest <ms>` y `mictest` por consola.
 - **Red WiFi «Merlos»:** es una red mallada. Un nodo puede asociar el reloj sin darle IP; `net.c` lo vigila.
 - **No renombres el repositorio:** los relojes y la app leen `https://carlosns.github.io/c6-fx-clock/manifest.json`.
 

@@ -99,6 +99,7 @@ static const row_t ROWS[] = {
     {R_HEAD, "GENERAL", "GENERAL"},
     {R_CHOICE, "Idioma", "Language", "lang", &g_app.lang, 0, 0, LANGS},
     {R_CHOICE, "Objetivo de pasos", "Steps goal", "goal", &g_app.step_goal, 0, 0, GOALS},
+    {R_SWITCH, "Voz (mantén BOOT)", "Voice (hold BOOT)", "voice", &g_app.voice},
     {R_HEAD, "CONEXIONES", "CONNECTIONS"},
     {R_INFO, "Bluetooth", "Bluetooth", NULL, NULL, 0, 0, NULL, info_bt},
     {R_ACTION, "Olvidar móviles", "Forget phones", NULL, NULL, 0, 0, NULL, info_forget, act_forget},

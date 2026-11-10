@@ -43,6 +43,7 @@
 #include "input.h"
 #include "pmu_axp2101.h"
 #include "intro.h"
+#include "voice.h"
 #include "steps.h"
 #include "sys.h"
 #include "ui.h"
@@ -220,21 +221,30 @@ static bool is_night(void)
 
 // Screen off: any press just wakes it. Screen on: short press = next face, long press (released
 // before 10 s) = auto-cycle on/off, held 10 s = forget every paired phone.
+// With voice commands on, holding it records one instead (voice.c) until it is let go; the
+// auto-cycle and forget-phones holds then do nothing (they stay in the settings).
 // Every press keeps the screen on for another wake_secs.
+#define VOICE_HOLD_MS 450
+
 static void poll_button(uint32_t now)
 {
-    static bool down, waking, hinted, forgot;
+    static bool down, waking, hinted, forgot, voiced;
     static uint32_t since;
     bool pressed = gpio_get_level(BOARD_PIN_BUTTON) == 0;
     if (pressed && !down) {
         down = true;
         waking = !screen_awake(now);  // a waking press does nothing else
-        hinted = forgot = false;
+        hinted = forgot = voiced = false;
         since = now;
         app_wake();
     } else if (pressed && down) {
         app_wake();
-        if (waking) return;
+        if (waking || voiced) return;
+        if (g_app.voice && now - since > VOICE_HOLD_MS && !alarm_ringing()) {
+            voiced = true;
+            voice_begin();
+            return;
+        }
         if (!hinted && now - since > FORGET_HINT_MS) {
             hinted = true;
             toast("10 S: OLVIDAR MOVILES");
@@ -247,6 +257,10 @@ static void poll_button(uint32_t now)
     } else if (!pressed && down) {
         down = false;
         app_wake();
+        if (voiced) {
+            voice_end();
+            return;
+        }
         if (waking || forgot) return;
         uint32_t held = now - since;
         if (alarm_ringing()) {

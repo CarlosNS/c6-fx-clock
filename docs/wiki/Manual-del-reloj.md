@@ -1,6 +1,6 @@
 Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus aplicaciones. Para instalarlo desde cero, ver [[Instalación]]; para la app del móvil, [[App Android]].
 
-**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
+**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Órdenes de voz](#órdenes-de-voz) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sistema.png" alt="Esfera, lanzador, ajustes rápidos y ajustes" width="820">
 
@@ -36,7 +36,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | Pantalla apagada | Pulsación | Enciende la pantalla, sin hacer nada más |
 | En la esfera | Pulsación corta | Siguiente esfera |
 | En una app o un menú | Pulsación corta | Volver |
-| En la esfera | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); se ve «AUTO: SÍ / NO» |
+| En la esfera | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); se ve «AUTO: SÍ / NO». Con las órdenes de voz activas, mantenerlo graba una orden (ver [Órdenes de voz](#órdenes-de-voz)) |
 | Suena una alarma | Pulsación | La para |
 | En cualquier momento | Mantener 3 s | Aviso «10 S: OLVIDAR MÓVILES» |
 | En cualquier momento | Mantener 10 s | **Olvida todos los móviles emparejados** |
@@ -53,6 +53,29 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | En cualquier momento | Mantener 3 s | **Apaga el reloj** (guarda los ajustes antes) |
 | Reloj apagado | Pulsación | Lo enciende |
 | Reloj colgado | Mantener 10 s | Corte de corriente forzado, como último recurso |
+
+## Órdenes de voz
+
+Se activan en *Ajustes → General → Voz (mantén BOOT)* del reloj o en *Ajustes → Órdenes de voz* de la app. Necesitan la app Marea conectada en un móvil con Android 13 o posterior.
+
+1. **Mantén BOOT.** Tras un instante sale *Un segundo* y luego *Te escucho*, con barras que se mueven con tu voz.
+2. **Habla** cerca del reloj y **suelta BOOT** al terminar (como mucho 8 segundos).
+3. El reloj manda el audio al móvil, que lo entiende en el idioma del reloj (español o inglés), sin internet si el idioma está descargado.
+4. El reloj enseña **qué ha entendido y qué va a hacer**, y pregunta *¿Lo hago?*: **Sí** lo hace, **No** lo deja.
+
+Qué entiende, por ejemplo:
+
+| Para | Di |
+|---|---|
+| Crear una alarma | «pon una alarma a las siete y media de lunes a viernes», «despiértame a las 6 y cuarto», «alarma en diez minutos», «alarma a las ocho de la tarde todos los días» |
+| Cambiar de esfera | «pon la esfera Ónix», «cambia a Arena» |
+| No molestar, WiFi, siempre encendida, modo noche, cambio automático | «activa no molestar», «apaga el wifi», «desactiva el cambio automático» |
+| Brillo y volumen | «brillo al 50», «brillo al máximo», «volumen 30» |
+| Abrir una app | «abre el cronómetro», «enciende la linterna», «abre los pasos» |
+
+En inglés: «set an alarm for seven thirty on weekdays», «show the Onyx face», «turn on do not disturb», «brightness 50», «open the stopwatch». La primera vez en inglés, el móvil puede tener que descargar el idioma: el reloj lo avisa.
+
+Con las órdenes de voz activas, mantener BOOT ya no cambia el cambio automático ni olvida los móviles (están en los ajustes).
 
 ## La pantalla
 

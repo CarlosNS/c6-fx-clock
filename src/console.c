@@ -7,6 +7,7 @@
 #include "app.h"
 #include "batlog.h"
 #include "intro.h"
+#include "voice.h"
 #include "control.h"
 #include "esp_log.h"
 #include "esp_pm.h"
@@ -76,6 +77,16 @@ static void run_line(char *line)
                                         "wdt", "deep-sleep", "brownout", "sdio", "usb", "jtag", "efuse", "pwr-glitch", "cpu-lockup"};
         int r = esp_reset_reason();
         printf("why: %s (%d)\n", r >= 0 && r < (int)(sizeof(R) / sizeof(R[0])) ? R[r] : "?", r);
+        return;
+    }
+    if (strncmp(line, "voicetest ", 10) == 0) {  // as if BOOT were held this many ms (voice commands)
+        voice_begin();
+        vTaskDelay(pdMS_TO_TICKS(atoi(line + 10)));
+        voice_end();
+        return;
+    }
+    if (strcmp(line, "mictest") == 0) {  // microphone levels for 3 s
+        voice_mictest();
         return;
     }
     if (strcmp(line, "sdinfo") == 0) {

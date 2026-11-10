@@ -49,7 +49,8 @@ static const setting_t SETTINGS[] = {
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
     {"ohue", &g_app.onix_hue, 0, 359, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
-    {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
+    {"tap", &g_app.tap_wake, 0, 2, true, NULL},
+    {"voice", &g_app.voice, 0, 1, true, NULL},      // voice commands through the phone (hold BOOT)      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
     {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb
     {"wifi", &g_app.wifi_on, 0, 1, true, on_wifi},    // the watch's own Wi-Fi radio
