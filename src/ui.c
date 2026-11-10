@@ -5,6 +5,7 @@
 #include "board.h"
 #include "clock.h"
 #include "esp_heap_caps.h"
+#include "esp_timer.h"
 
 static uint16_t *s_fb;
 
@@ -393,6 +394,8 @@ static const char *const BT_RUNE[11] = {"...#...", "...##..", ".#.#.#.", "..###.
 
 // microSD (the corner cut at the top right), the same with a "!" when it cannot be read, and the USB
 // trident; 7 x 9 like the Bluetooth rune, in 3 px blocks
+static const char *const WIFI_RUNE[11] = {".......", ".#####.", "#.....#", "..###..", ".#...#.", ".......",
+                                          "...#...", "...#...", ".......", ".......", "......."};
 static const char *const SD_RUNE[11] = {"####...", "#...#..", "#.#.##.", "#.....#", "#.....#", "#.....#",
                                         "#.....#", "#.....#", "#######", ".......", "......."};
 static const char *const SD_BAD_RUNE[11] = {"####...", "#...#..", "#..#.#.", "#..#..#", "#..#..#", "#.....#",
@@ -413,19 +416,23 @@ void ui_status_bar(void)
     clock_hhmm(t, true);
     // The top edge is straight only between the rounded corners: keep everything inside x 70..340
     ui_print_c(&ui_jersey, 3, UI_W / 2, 14, t, MS_CREMA, true);
-    // Left of the time: Bluetooth, then the microSD and a USB data link when there are. They end just
-    // before the time; at y 26 the rounded corner leaves everything from x ~50 visible
-    const char *const *icons[3];
-    uint16_t cols[3];
+    // Left of the time: Bluetooth, then the Wi-Fi, the microSD and a USB data link when there are. They
+    // end just before the time; at y 26 the rounded corner leaves everything from x ~50 visible.
+    // Bluetooth blinks while the watch looks for the phone (the main loop redraws twice a second then)
+    const char *const *icons[4];
+    uint16_t cols[4];
     int n = 0;
-    icons[n] = BT_RUNE, cols[n++] = g_app.phone_linked ? MS_VERDE : MS_PILOTO_OFF;
+    bool bt_dark = !g_app.phone_linked && (esp_timer_get_time() / 500000) % 2;
+    icons[n] = BT_RUNE, cols[n++] = g_app.phone_linked ? MS_VERDE : bt_dark ? 0 : MS_GRIS;
+    if (g_app.sta_ip[0]) icons[n] = WIFI_RUNE, cols[n++] = MS_VERDE;
     if (g_app.sd_state == SD_OK) icons[n] = SD_RUNE, cols[n++] = MS_CREMA;
     else if (g_app.sd_state == SD_BAD) icons[n] = SD_BAD_RUNE, cols[n++] = MS_CORAL;
     if (g_app.usb_data) icons[n] = USB_RUNE, cols[n++] = MS_VERDE;
     int x = UI_W / 2 - ui_print_w(&ui_jersey, 3, t) / 2 - 10 - n * 24 + 3;
     if (x > 92) x = 92;  // Bluetooth alone stays where it always was
     if (x < 54) x = 54;
-    for (int k = 0; k < n; k++) rune(icons[k], x + k * 24, cols[k]);
+    for (int k = 0; k < n; k++)
+        if (cols[k]) rune(icons[k], x + k * 24, cols[k]);
     ui_battery_pct(274, 30, g_app.bat_pct, g_app.bat_chg);
 }
 

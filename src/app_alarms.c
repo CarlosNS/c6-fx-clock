@@ -155,8 +155,8 @@ static void edit_event(const ui_event_t *e)
         if (done) {
             s_draft.on = 1;
             if (s_new && g_nalarms < ALARMS_MAX) g_alarms[g_nalarms++] = s_draft;
-            else if (!s_new) g_alarms[s_edit] = s_draft;
-        } else if (!s_new) {
+            else if (!s_new && s_edit < g_nalarms) g_alarms[s_edit] = s_draft;
+        } else if (!s_new && s_edit < g_nalarms) {  // the phone may have deleted some meanwhile
             for (int i = s_edit + 1; i < g_nalarms; i++) g_alarms[i - 1] = g_alarms[i];
             g_nalarms--;
         }

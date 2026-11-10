@@ -94,6 +94,11 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .al .time{font:400 52px/.9 'Jersey 10',system-ui,sans-serif}
 .al.offd .open{opacity:.55}
 .al .more{display:flex;flex-direction:column;gap:10px;border-top:3px solid var(--linea);padding-top:12px;margin-top:12px}
+.al input[type=time]{background:var(--noche);color:var(--crema);border:3px solid var(--linea);border-radius:0;min-height:52px;padding:0 10px;font:400 36px/1 'Jersey 10',system-ui,sans-serif;color-scheme:dark}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.days button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;min-height:44px;border:3px solid var(--linea);background:var(--noche);color:var(--gris);padding:0}
+.days button.on{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
+.btn.red{border-color:var(--coral);color:var(--coral)}
 /* files */
 .crumbs{display:flex;align-items:center;flex-wrap:wrap}
 .crumbs button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;background:none;border:0;color:var(--oro);padding:0 2px;min-height:44px}
@@ -206,7 +211,8 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 <section class="view hide" id="v-alarmas" data-parent="inicio">
   <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Alarms">Alarmas</h1></div>
   <div class="stack" id="alarms" style="gap:12px"><div class="dim" data-en="Loading…">Cargando…</div></div>
-  <p class="dim" style="margin:2px" data-en="Tap an alarm to change its label and animation. Times and days are set on the watch.">Toca una alarma para cambiar su etiqueta y su animación. La hora y los días se ponen en el reloj.</p>
+  <button class="btn full hide" id="aladd" data-en="+ New alarm">+ Nueva alarma</button>
+  <p class="dim" style="margin:2px" data-en="Tap an alarm to change its time, days, label and animation. The watch keeps up to 6.">Toca una alarma para cambiar su hora, sus días, su etiqueta y su animación. El reloj guarda hasta 6.</p>
 </section>
 
 <!-- ============================================================ Archivos -->
@@ -248,6 +254,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <div class="row col"><div class="inline" style="justify-content:space-between"><span class="tt" data-en="Brightness">Brillo</span><span class="j" style="font-size:24px" id="briv"></span></div><input type="range" id="bri" min="5" max="100"></div>
     <div class="row"><div class="t"><b data-en="Always on">Siempre encendida</b><small data-en="Uses much more battery">Gasta mucha más batería</small></div><input type="checkbox" class="sw" id="aon" aria-label="Siempre encendida"></div>
     <div class="row hide" id="raiserow"><div class="t"><b data-en="Wake on wrist raise">Encender al levantar la muñeca</b></div><input type="checkbox" class="sw" id="raise" aria-label="Encender al levantar la muñeca"></div>
+    <div class="row hide" id="taprow"><div class="t"><b data-en="Tap to wake">Tocar para encender</b><small data-en="A double tap avoids turning it on by accident">El doble toque evita encenderla sin querer</small></div><select id="tap"><option value="1" data-en="One tap">Un toque</option><option value="2" data-en="Double tap">Doble toque</option><option value="0" data-en="No">No</option></select></div>
     <div class="row" id="wksrow"><div class="t"><b data-en="Turn off after">Apagar tras</b></div><select id="wks"><option value="5">5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
   </div>
   <p class="lbl" data-en="Night mode">Modo noche</p>
@@ -464,7 +471,7 @@ for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).p
 // The slider's filled part, flat (no gradient look): a hard stop between gold and the empty track
 function fill(e){if(e.classList.contains('hue'))return;const p=(e.value-e.min)/(e.max-e.min)*100;e.style.background=`linear-gradient(90deg,var(--oro) ${p}%,var(--off) ${p}%)`}
 function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);if(e.type==='range')fill(e);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
-bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('secs','secs');
+bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('tap','tap');bind('secs','secs');
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
 const swatch=h=>$('chuesw').style.background=`hsl(${h} 62% 30%)`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
@@ -526,6 +533,7 @@ function show(s,relang){status=s;
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
+  if(s.tap!==undefined){$('taprow').classList.remove('hide');if(document.activeElement!==$('tap'))$('tap').value=s.tap}
   if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}
   for(const k of['wks','nst','nen','chue','ohue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
   if(s.chue!==undefined)swatch($('chue').value);
@@ -654,7 +662,7 @@ if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forg
  ClockBridge.checkApp()}
 
 // ------------------------------------------------------------ alarms: label, on/off and ringing animation (the watch keeps the times and days)
-const DAYS=['LMXJVSD','MTWTFSS'];
+const DAYS=['LMXJVSD','MTWTFSS'],AL_MAX=6;
 let ALARMS=null,openAl=-1,animFor=-1,animSel=0;
 const hm=a=>String(a.h).padStart(2,'0')+':'+String(a.m).padStart(2,'0');
 // The watch keeps 23 bytes of UTF-8: cut whole characters
@@ -662,20 +670,28 @@ function cut23(s){let o='';for(const ch of s){if(new TextEncoder().encode(o+ch).
 async function loadAlarms(){try{ALARMS=await L.request('alarms')}catch(e){if(view==='alarmas')setTimeout(loadAlarms,3000);return}renderAlarms();homeTiles()}
 function animName(k){return ALARMS&&ALARMS.anims[k]||'?'}
 function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
- if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas. Créalas en el reloj (app Alarmas).','No alarms. Create them on the watch (Alarms app).')}</div>`;return}
+ $('aladd').classList.toggle('hide',ALARMS.list.length>=AL_MAX);
+ if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas.','No alarms.')}</div>`;return}
  box.innerHTML=ALARMS.list.map((a,i)=>{const days=a.d?[...DAYS[LANG]].filter((c,k)=>a.d>>k&1).join(' '):tr('Una vez','Once');
   return `<div class="panel al${a.on?'':' offd'}${openAl===i?' gold':''}" data-i="${i}">
    <div class="head"><button class="open" aria-expanded="${openAl===i}"><span class="tag" style="${a.l?'':'color:var(--gris)'}">${a.l?esc(a.l):tr('Sin etiqueta','No label')}</span><span class="time">${hm(a)}</span><span class="dim">${days} · ${esc(animName(a.a))}</span></button>
    <input type="checkbox" class="sw" ${a.on?'checked':''} aria-label="${tr('Alarma de las ','Alarm at ')}${hm(a)}"></div>
-   ${openAl===i?`<div class="more"><label class="stack" style="gap:4px"><span class="dim">${tr('Etiqueta','Label')}</span><input type="text" maxlength="23" value="${esc(a.l)}" placeholder="${tr('Sin etiqueta','No label')}"></label>
+   ${openAl===i?`<div class="more"><label class="stack" style="gap:4px"><span class="dim">${tr('Hora','Time')}</span><input type="time" value="${hm(a)}" required></label>
+    <div class="stack" style="gap:4px"><span class="dim">${tr('Días (ninguno: una sola vez)','Days (none: just once)')}</span><div class="days">${[...DAYS[LANG]].map((c,k)=>`<button data-k="${k}" class="${a.d>>k&1?'on':''}" aria-pressed="${!!(a.d>>k&1)}">${c}</button>`).join('')}</div></div>
+    <label class="stack" style="gap:4px"><span class="dim">${tr('Etiqueta','Label')}</span><input type="text" maxlength="23" value="${esc(a.l)}" placeholder="${tr('Sin etiqueta','No label')}"></label>
     <button class="btn anim" style="justify-content:flex-start"><img class="prev" alt="" style="width:30px;height:37px;border:2px solid var(--linea)"><span style="flex:1;text-align:left">${tr('Animación de alarma','Alarm animation')}<br><span style="font:18px VT323,monospace;color:var(--gris)">${esc(animName(a.a))}</span></span><span class="go">›</span></button>
-    <button class="btn test">${tr('Probar en el reloj','Try it on the watch')}</button></div>`:''}</div>`}).join('');
+    <button class="btn test">${tr('Probar en el reloj','Try it on the watch')}</button>
+    <button class="btn red del">${tr('Eliminar alarma','Delete alarm')}</button></div>`:''}</div>`}).join('');
  for(const el of box.querySelectorAll('.al')){const i=+el.dataset.i,a=ALARMS.list[i];
   el.querySelector('.open').onclick=()=>{openAl=openAl===i?-1:i;renderAlarms()};
   el.querySelector('.sw').onchange=e=>{a.on=e.target.checked?1:0;send(`alarm ${i} on ${a.on}`);renderAlarms();homeTiles()};
   const t=el.querySelector('input[type=text]');if(t)t.onchange=()=>{t.value=cut23(t.value.replace(/\|/g,''));a.l=t.value;send(`alarm ${i} label ${t.value}`);renderAlarms()};
   const img=el.querySelector('.anim img');if(img)preview(img,`${A}alarm${a.a}.webp`);
   const b=el.querySelector('.anim');if(b)b.onclick=()=>animModal(i);
+  const tm=el.querySelector('input[type=time]');if(tm)tm.onchange=()=>{const v=/^(\d\d):(\d\d)/.exec(tm.value);if(!v)return;a.h=+v[1];a.m=+v[2];send(`alarm ${i} time ${a.h} ${a.m}`);renderAlarms();homeTiles()};
+  for(const d of el.querySelectorAll('.days button'))d.onclick=()=>{a.d^=1<<+d.dataset.k;send(`alarm ${i} days ${a.d}`);renderAlarms();homeTiles()};
+  const db=el.querySelector('.del');if(db)db.onclick=()=>{if(!ask(tr(`¿Eliminar la alarma de las ${hm(a)}?`,`Delete the ${hm(a)} alarm?`),a.l||tr('Se borra del reloj.','It is removed from the watch.'),tr('Eliminar','Delete')))return;
+   ALARMS.list.splice(i,1);openAl=-1;send(`alarm ${i} del`);renderAlarms();homeTiles();setTimeout(loadAlarms,800)};
   const tb=el.querySelector('.test');if(tb)tb.onclick=()=>{send(`alarm ${i} test`);tb.textContent=tr('Sonando en el reloj…','Ringing on the watch…');setTimeout(()=>tb.textContent=tr('Probar en el reloj','Try it on the watch'),3000)}}}
 function animModal(i){animFor=i;animSel=ALARMS.list[i].a;const a=ALARMS.list[i];$('manimsub').textContent=(a.l?a.l+' · ':'')+hm(a);drawAnims();$('manim').classList.remove('hide')}
 function drawAnims(){const box=$('animlist');box.innerHTML='';
@@ -683,6 +699,9 @@ function drawAnims(){const box=$('animlist');box.innerHTML='';
   b.innerHTML=`<img class="prev" alt=""><span>${esc(n)}${k===animSel?'<svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#78D6A0" d="M8 2h1v2H8v1H7v1H6v1H5v1H3V7H2V6H1V4h1v1h1v1h1V5h1V4h1V3h1V2z"/></svg>':''}</span>`;
   preview(b.querySelector('img'),`${A}alarm${k}.webp`);b.onclick=()=>{animSel=k;drawAnims()};box.appendChild(b)})}
 $('animok').onclick=()=>{const a=ALARMS.list[animFor];if(a&&a.a!==animSel){a.a=animSel;send(`alarm ${animFor} anim ${animSel}`)}closeModals();renderAlarms();homeTiles()};
+// A new alarm: an hour from now, every day off (once), opened to set it up
+$('aladd').onclick=()=>{if(!ALARMS||ALARMS.list.length>=AL_MAX)return;const n=new Date(Date.now()+3600e3),a={h:n.getHours(),m:0,d:0,on:1,a:0,l:''};
+ ALARMS.list.push(a);openAl=ALARMS.list.length-1;send(`alarm add ${a.h} ${a.m} ${a.d}`);renderAlarms();homeTiles();setTimeout(loadAlarms,800)};
 // The next alarm that will ring, by this device's clock: "Mañana 07:30"
 function nextAlarm(){if(!ALARMS)return'--';const now=new Date(),wd=(now.getDay()+6)%7,nm=now.getHours()*60+now.getMinutes();let best=null;
  for(const a of ALARMS.list){if(!a.on)continue;const t=a.h*60+a.m;

@@ -66,7 +66,8 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 
 Arriba en los menús y las apps:
 
-- a la izquierda, el símbolo de **Bluetooth**: verde con el móvil conectado, apagado sin él;
+- a la izquierda, el símbolo de **Bluetooth**: verde con el móvil conectado; sin él **parpadea** en gris mientras el reloj busca la app;
+- a su lado, el **WiFi** en verde cuando el reloj está conectado a tu red (con el WiFi apagado, o sin red, no sale);
 - a su lado, una **tarjeta** si hay microSD: crema si se lee bien, coral con **!** si responde pero no se puede leer (sin formato o con uno que el reloj no entiende). Sin tarjeta no sale nada;
 - y el **tridente USB** en verde cuando el cable va a un ordenador (lleva datos). Con un cargador no aparece; el rayo de la batería dice que carga;
 - en el centro, la **hora**;
@@ -122,6 +123,7 @@ Todas las esferas por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, 
   - Si nadie la atiende en 2 minutos, se pospone sola.
   - Con *No molestar* activo no suena, pero aparece igual.
 - Las alarmas necesitan la hora puesta y se guardan en el reloj aunque se reinicie.
+- También se crean, cambian y borran desde la app o la página (sección Alarmas).
 
 ## Pasos
 
@@ -199,6 +201,7 @@ Una lista que se desplaza con el dedo. Los **interruptores** se tocan, las **bar
 | | Se apaga a los | 5, 10, 15, 30 o 60 s, o nunca |
 | | Siempre encendida | Sí / no |
 | | Levantar la muñeca | Encender la pantalla al girar la muñeca hacia ti |
+| | Tocar para encender | Con la pantalla apagada: *un toque* la enciende, *doble* necesita dos toques seguidos (evita encenderla sin querer) o *no* (solo los botones y la muñeca) |
 | **Sonido** | Volumen | Del altavoz (alarmas y llamadas) |
 | | No molestar | Sin sonido de alarmas ni llamadas |
 | **Esferas** | Segundos | Mostrar los segundos en las esferas que los tienen |

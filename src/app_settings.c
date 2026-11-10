@@ -37,6 +37,7 @@ typedef struct {
 
 static const int WKS[] = {5, 10, 15, 30, 60, -1};
 static const int LANGS[] = {0, 1, -1};
+static const int TAPS[] = {1, 2, 0, -1};
 static const int GOALS[] = {4000, 6000, 8000, 10000, 12000, 15000, -1};
 static bool s_forget_armed;
 
@@ -62,7 +63,8 @@ static void info_bt(char *b, size_t n)
 }
 static void info_wifi(char *b, size_t n)
 {
-    if (g_app.sta_ip[0]) snprintf(b, n, "%s · %s", g_app.sta_ssid, g_app.sta_ip);
+    if (!g_app.wifi_on) snprintf(b, n, "%s", TR("apagado", "off"));
+    else if (g_app.sta_ip[0]) snprintf(b, n, "%s · %s", g_app.sta_ssid, g_app.sta_ip);
     else snprintf(b, n, "%s", g_app.sta_ssid[0] ? TR("conectando…", "connecting…") : TR("sin red", "no network"));
 }
 static void info_forget(char *b, size_t n)
@@ -86,6 +88,7 @@ static const row_t ROWS[] = {
     {R_CHOICE, "Se apaga a los", "Turns off after", "wks", &g_app.wake_secs, 0, 0, WKS},
     {R_SWITCH, "Siempre encendida", "Always on", "aon", &g_app.always_on},
     {R_SWITCH, "Levantar la muñeca", "Raise to wake", "raise", &g_app.raise_wake},
+    {R_CHOICE, "Tocar para encender", "Tap to wake", "tap", &g_app.tap_wake, 0, 0, TAPS},
     {R_HEAD, "SONIDO", "SOUND"},
     {R_SLIDER, "Volumen", "Volume", "vol", &g_app.volume, 0, 100},
     {R_SWITCH, "No molestar", "Do not disturb", "dnd", &g_app.dnd},
@@ -143,6 +146,7 @@ static void value_text(const row_t *r, char *b, size_t n)
     int v = *r->val;
     if (!strcmp(r->key, "wks")) snprintf(b, n, "%d s", v);
     else if (!strcmp(r->key, "lang")) snprintf(b, n, "%s", v ? "English" : "Español");
+    else if (!strcmp(r->key, "tap")) snprintf(b, n, "%s", v == 2 ? TR("doble", "double") : v ? TR("un toque", "one tap") : "no");
     else if (!strcmp(r->key, "goal")) snprintf(b, n, "%d.%03d", v / 1000, v % 1000);
     else snprintf(b, n, "%d %%", v);
 }

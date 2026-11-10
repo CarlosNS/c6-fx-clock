@@ -36,6 +36,12 @@
 - **Animación de encendido:** al encender el reloj desde apagado, el mar de noche se ilumina a saltos, la luna sale por detrás de la isla del faro con su reflejo y caen las letras de «Marea», hasta la pantalla de bienvenida. En los reinicios no sale.
 - **Botón PWR:** una pulsación corta apaga o enciende la pantalla (y para una alarma); mantenerlo enseña «¿Apagar?» con una barra y a los 3 s el reloj guarda todo y se apaga. El corte forzado del chip de alimentación pasa de 6 a 10 s.
 - **Orden de las actualizaciones:** si hay versión nueva del reloj y de la app a la vez, la app solo deja pulsar la que va primero (el reloj, salvo que la versión se publique con `--first app`).
+- **Alarmas desde la app (3.0.0-beta.8, app 0.7.0):** además de la etiqueta y la animación, se crean, se cambian de hora y de días y se borran desde la app o la página.
+- **Tocar para encender:** ajuste nuevo en el reloj y en la app (Pantalla). Con la pantalla apagada, *un toque* la enciende (como hasta ahora), *doble toque* pide dos seguidos para evitar encendidos sin querer, y *no* deja solo los botones y la muñeca.
+- **Barra de estado:** el Bluetooth parpadea mientras el reloj busca la app, y un icono de **WiFi** sale cuando está conectado a tu red.
+- Al elegir una esfera en la app, el reloj vuelve a la esfera aunque estuviera en un menú.
+- Arreglado (app 0.7.0): la app podía decir «conectado» sin estarlo. Android cerraba la conexión por dentro sin avisar y nada llegaba al reloj (ni el cambio de esfera); ahora la app lo detecta en unos segundos y vuelve a conectar.
+- Arreglado: el aviso de apagado con PWR se salía de su caja; la pantalla de arranque decía «conectando a …» con el WiFi apagado (no se conectaba, solo lo decía).
 - Arreglado (3.0.0-beta.7): abrir Archivos en la app podía reiniciar el reloj. La tarea de Bluetooth que lee la microSD se quedaba sin pila; ahora tiene el doble.
 - Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.

@@ -81,6 +81,7 @@ app_state_t g_app = {
     .classic_hue = 146,  // deep green
     .onix_hue = 28,      // amber
     .raise_wake = 1,
+    .tap_wake = 1,
     .volume = 70,
     .bri_override = -1,
     .step_goal = 10000,
@@ -130,12 +131,14 @@ static void draw_splash(uint32_t t)
     int dots = (int)(t / 400) % 4;
     char wait[8] = "";
     for (int i = 0; i < dots; i++) wait[i] = '.';
-    int rows = (g_app.sta_ip[0] || g_app.sta_ssid[0] ? 1 : 0) + (g_app.ap_ip[0] ? 1 : 0);
+    bool wifi = net_enabled();  // the saved network is known even with the Wi-Fi off: say nothing about it then
+    int rows = (wifi && (g_app.sta_ip[0] || g_app.sta_ssid[0]) ? 1 : 0) + (g_app.ap_ip[0] ? 1 : 0);
     ui_panel(40, 196, UI_W - 80, 104 + rows * 64, MS_PANEL, MS_LINEA, 3, true);
     ui_print_c(&ui_vt, 1, UI_W / 2, 210, TR("En la app Marea, busca:", "In the Marea app, look for:"), MS_GRIS, false);
     ui_print_c(&ui_jersey, 3, UI_W / 2, 238, ble_name()[0] ? ble_name() : wait, MS_CREMA, false);
     int y = 292;
-    if (g_app.sta_ip[0]) {
+    if (!wifi) {
+    } else if (g_app.sta_ip[0]) {
         ui_print_c(&ui_vt, 1, UI_W / 2, y, TR("En tu WiFi:", "On your Wi-Fi:"), MS_GRIS, false);
         ui_print_c(&ui_vt, 2, UI_W / 2, y + 22, g_app.sta_ip, MS_VERDE, false);
         y += 64;
@@ -334,6 +337,36 @@ static void touch_wake_arm(bool on)
     }
 }
 
+// A touch on the dark screen ("tap" setting): true when it should turn the screen on. A double tap
+// needs a second touch 60..600 ms after the first; meanwhile the loop polls quickly (touch_tap_pending)
+#define TAP2_MIN_MS 60
+#define TAP2_MAX_MS 600
+static uint32_t s_tap1;
+
+static bool touch_tap_wakes(uint32_t now)
+{
+    if (g_app.tap_wake == 1) return true;
+    if (g_app.tap_wake != 2) return false;
+    if (s_tap1 && now - s_tap1 >= TAP2_MIN_MS && now - s_tap1 <= TAP2_MAX_MS) {
+        s_tap1 = 0;
+        return true;
+    }
+    s_tap1 = now ? now : 1;
+    return false;
+}
+
+static bool touch_tap_pending(uint32_t now)
+{
+    if (s_tap1 && now - s_tap1 > TAP2_MAX_MS) s_tap1 = 0;
+    return s_tap1 != 0;
+}
+
+// A touch that did not wake the screen: listen again once the finger is off (INT high)
+static void touch_wake_rearm(void)
+{
+    if (!s_touch_irq && gpio_get_level(BOARD_TOUCH_INT) == 1) gpio_intr_enable(BOARD_TOUCH_INT);
+}
+
 static void touch_wake_init(void)
 {
     s_wake_sem = xSemaphoreCreateBinary();
@@ -470,9 +503,11 @@ static void draw_pkey_hold(uint32_t now)
     ui_veil(90, UI_H, 2);
     ui_print_c(&ui_jersey, 5, UI_W / 2, 100, TR("¿Apagar?", "Switch off?"), MS_ORO, true);
     ui_panel(48, 200, UI_W - 96, 168, MS_PANEL, MS_LINEA, 3, true);
-    ui_print_c(&ui_vt, 2, UI_W / 2, 224, TR("mantén pulsado PWR", "keep holding PWR"), MS_CREMA, false);
-    ui_bar(76, 278, UI_W - 152, 18, p < 0 ? 0 : p > 1000 ? 1000 : p, MS_ORO);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 320, TR("suéltalo para cancelar", "let go to cancel"), MS_GRIS, false);
+    // Two short lines: one of VT323 at 2x did not fit inside the box
+    ui_print_c(&ui_vt, 2, UI_W / 2, 216, TR("mantén pulsado", "keep holding"), MS_CREMA, false);
+    ui_print_c(&ui_vt, 2, UI_W / 2, 246, TR("el botón PWR", "the PWR button"), MS_CREMA, false);
+    ui_bar(76, 290, UI_W - 152, 18, p < 0 ? 0 : p > 1000 ? 1000 : p, MS_ORO);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 326, TR("suéltalo para cancelar", "let go to cancel"), MS_GRIS, false);
 }
 
 static void battery_guard(const pmu_battery_t *b)
@@ -598,12 +633,13 @@ void app_main(void)
         STAGE_MAIN(2);
         poll_button(now);
         STAGE_MAIN(3);
-        // Touch gestures; a touch on a sleeping screen only wakes it
+        // Touch gestures; a touch on a fading screen only wakes it (once dark, the touch interrupt and
+        // the "tap" setting decide)
         input_poll(now);
         ui_event_t ev;
         while (input_next(&ev)) {
-            if (ev.type == EV_DOWN && !screen_awake(now)) {
-                app_wake();
+            if (!screen_awake(now)) {
+                if (ev.type == EV_DOWN && fade > 0) app_wake();
                 input_swallow();
                 continue;
             }
@@ -668,6 +704,17 @@ void app_main(void)
             g_app.bat_full = full;
             g_app.phone_linked = linked;
         }
+        // The status bar: Bluetooth blinks while the phone is away, and the Wi-Fi rune follows the link
+        {
+            static uint32_t blink_t;
+            static bool had_ip;
+            bool ip = g_app.sta_ip[0] != 0;
+            if ((!g_app.phone_linked && now - blink_t >= 500) || ip != had_ip) {
+                blink_t = now;
+                had_ip = ip;
+                sys_dirty();
+            }
+        }
         if (!confirmed && now > CONFIRM_MS) {  // still running after a while: keep this firmware
             ota_confirm_app();
             confirmed = true;
@@ -719,11 +766,14 @@ void app_main(void)
                 ble_link_pace(false);
                 touch_wake_arm(true);
             }
-            if (s_touch_irq) {  // a touch on the sleeping screen: wake it (next pass draws)
+            if (s_touch_irq) {  // a touch on the sleeping screen: wake it (next pass draws), as the "tap" setting says
                 s_touch_irq = false;
-                app_wake();
-                input_swallow();
+                if (touch_tap_wakes(now)) {
+                    app_wake();
+                    input_swallow();
+                }
             }
+            if (!screen_awake(now)) touch_wake_rearm();
             batlog_tick(now, false, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
             if (have_imu) poll_raise(now, az);
             if (g_app.dirty) {
@@ -732,7 +782,8 @@ void app_main(void)
             }
             g_app.fps = 0;
             light_sleep_allow(!s_usb || (int32_t)(g_sleep_test_until - now) > 0);
-            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(100));  // 10 passes a second, or at once on a touch
+            // 10 passes a second, or at once on a touch; quicker while a double tap may be under way
+            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(touch_tap_pending(now) ? 10 : 100));
             last = now_ms();
             next_frame = esp_timer_get_time();
             continue;

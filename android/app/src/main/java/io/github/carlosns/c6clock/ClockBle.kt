@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
 /**
@@ -184,12 +185,37 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                     g.writeCharacteristic(c)
                 }
                 if (started) break
-                if (++tries > 100 || gatt == null) throw IllegalStateException("no se pudo enviar")
+                if (++tries > 100 || gatt == null) {
+                    // Two seconds of refusals: Android has lost the link without telling us ("no
+                    // connection" in its log) and this one would look connected for ever
+                    drop("writes refused")
+                    throw IllegalStateException("no se pudo enviar")
+                }
                 delay(20)
             }
-            val status = withTimeout(5_000) { done.await() }
+            val status = withTimeoutOrNull(5_000) { done.await() }
+            if (status == null) {  // the stack never finished the write: it will refuse every next one
+                drop("write never finished")
+                throw IllegalStateException("el reloj no responde")
+            }
             if (status != BluetoothGatt.GATT_SUCCESS) throw IllegalStateException("envío rechazado ($status)")
         }
+    }
+
+    /** Gives up on a link Android dropped silently: closes it and tells [onState], so it reconnects. */
+    fun drop(why: String) {
+        val was = ready
+        Log.w(TAG, "link lost: $why")
+        close()
+        pending?.complete(-1)
+        if (was) onState(false)
+    }
+
+    /** Android still has the link: false when its GATT stack lost it without a callback. */
+    fun alive(): Boolean {
+        val bm = context.getSystemService(BluetoothManager::class.java)
+        val dev = runCatching { bm.adapter.getRemoteDevice(address) }.getOrNull() ?: return false
+        return runCatching { bm.getConnectionState(dev, BluetoothProfile.GATT) == BluetoothProfile.STATE_CONNECTED }.getOrDefault(true)
     }
 
     /** Every whole message from the clock (also given to [onMessage]). */

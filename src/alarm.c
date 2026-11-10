@@ -85,7 +85,36 @@ size_t alarms_json(char *buf, size_t size)
 
 bool alarm_command(const char *cmd)
 {
-    int i, v, off = 0;
+    int i, v, h, m, off = 0;
+    // Created, deleted and retimed from the phone too
+    if (sscanf(cmd, "alarm add %d %d %d", &h, &m, &v) == 3) {
+        if (g_nalarms < ALARMS_MAX && h >= 0 && h < 24 && m >= 0 && m < 60) {
+            g_alarms[g_nalarms++] = (alarm_t){.h = h, .m = m, .days = v & 0x7F, .on = 1};
+            alarms_save();
+            sys_dirty();
+        }
+        return true;
+    }
+    if (sscanf(cmd, "alarm %d del%n", &i, &off) == 1 && off > 0) {
+        if (i >= 0 && i < g_nalarms && !s_ringing) {  // not while one rings: its screen points at it
+            for (int k = i + 1; k < g_nalarms; k++) g_alarms[k - 1] = g_alarms[k];
+            g_nalarms--;
+            if (s_snooze_at >= 0 && s_cur == i) s_snooze_at = -1;
+            else if (s_cur > i) s_cur--;
+            alarms_save();
+            sys_dirty();
+        }
+        return true;
+    }
+    if (sscanf(cmd, "alarm %d time %d %d", &i, &h, &m) == 3) {
+        if (i >= 0 && i < g_nalarms && h >= 0 && h < 24 && m >= 0 && m < 60)
+            g_alarms[i].h = h, g_alarms[i].m = m, alarms_save(), sys_dirty();
+        return true;
+    }
+    if (sscanf(cmd, "alarm %d days %d", &i, &v) == 2) {
+        if (i >= 0 && i < g_nalarms) g_alarms[i].days = v & 0x7F, alarms_save(), sys_dirty();
+        return true;
+    }
     if (sscanf(cmd, "alarm %d test%n", &i, &off) == 1 && off > 0) {  // ring it now (trying its animation)
         if (i >= 0 && i < g_nalarms && !s_ringing) ring(i);
         return true;

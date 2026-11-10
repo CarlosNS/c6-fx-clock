@@ -65,6 +65,8 @@ Una por mensaje (lista completa en `src/control.h`):
 | `mode ble\|update\|usb` | Reinicia en ese modo |
 | `update apply <url del manifiesto>` | Actualiza por internet |
 | `ota begin <tamaño> <sha256> <versión>` / `ota abort` | Actualización por Bluetooth desde el móvil (solo Bluetooth; ver [[Protocolo Bluetooth]]) |
+| `alarm add <h> <m> <días>` | Crea una alarma encendida (días: máscara, bit 0 = lunes; 0 = una vez) |
+| `alarm <i> time <h> <m>` / `days <máscara>` / `del` | Cambia la hora o los días de una alarma, o la borra |
 | `alarm <i> label <texto>` / `anim <n>` / `on <0\|1>` / `test` | Etiqueta, animación, encendido de una alarma, o hacerla sonar ya |
 | `unpair` | Olvida todos los móviles emparejados |
 
@@ -74,7 +76,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 
 | Clave | Rango | Significado |
 |---|---|---|
-| `fx` | 0–24 | Esfera |
+| `fx` | 0–24 | Esfera (desde la app o la página, el reloj vuelve a la esfera si estaba en un menú) |
 | `auto` | 0/1 | Cambio automático cada 30 s |
 | `fxoff` | 0–2³¹−1 | Esferas que el cambio automático se salta: máscara de bits, el bit *n* es la esfera *n* (máximo 31 esferas) |
 | `spd` | 10–300 | Velocidad de las animaciones (%) |
@@ -85,6 +87,7 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 | `aon` | 0/1 | Pantalla siempre encendida |
 | `wks` | 3–600 | Segundos que se queda encendida |
 | `raise` | 0/1 | Encender al levantar la muñeca |
+| `tap` | 0–2 | Tocar la pantalla apagada: 0 no la enciende, 1 un toque, 2 doble toque |
 | `lang` | 0/1 | Idioma: español o inglés |
 | `dnd` | 0/1 | No molestar: alarmas y llamadas sin sonido |
 | `vol` | 0–100 | Volumen del altavoz |

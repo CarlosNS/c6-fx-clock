@@ -109,6 +109,10 @@ class LinkService : Service() {
                 wait = 2_000L
                 var last = 0L
                 while (l.ready) {
+                    if (!l.alive()) {  // Android dropped it without a callback: start again
+                        l.drop("no longer connected")
+                        break
+                    }
                     if (System.currentTimeMillis() - last > RESYNC_MS) {
                         last = System.currentTimeMillis()
                         runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }

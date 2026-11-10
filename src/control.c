@@ -112,7 +112,11 @@ void app_command(const char *cmd)
         if (m >= 0) boot_mode_switch((boot_mode_t)m);
         return;
     }
-    if (sscanf(cmd, "%15s %d", key, &a) == 2) settings_set(key, a);
+    if (sscanf(cmd, "%15s %d", key, &a) == 2) {
+        settings_set(key, a);
+        // A face picked in the app or the page: show it, even if the watch was in its menus
+        if (strcmp(key, "fx") == 0 && !alarm_ringing()) sys_request("home");
+    }
 }
 
 void app_drag(int x, int y, int dx, int dy)

@@ -22,6 +22,7 @@ typedef struct {
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
     volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
     volatile int raise_wake;   // raising the wrist turns the screen on
+    volatile int tap_wake;     // touching the dark screen turns it on: 0 never, 1 one tap, 2 a double tap
     volatile int lang;         // 0 = Spanish, 1 = English
     volatile int dnd;          // do not disturb: alarms and calls show silently
     volatile int wifi_on;      // the watch's own Wi-Fi (off by default: the phone brings everything)
