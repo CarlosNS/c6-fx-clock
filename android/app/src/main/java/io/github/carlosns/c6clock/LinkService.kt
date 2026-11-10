@@ -82,7 +82,11 @@ class LinkService : Service() {
     private fun foreground(withMic: Boolean): Boolean {
         val link = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
         val mic = if (withMic && Build.VERSION.SDK_INT >= 30 && Voice.allowed(this)) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
-        if (mic != 0 && runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link or mic) }.isSuccess) return true
+        if (mic != 0) {
+            val r = runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link or mic) }
+            if (r.isSuccess) { Log.i(TAG, "foreground with the microphone"); return true }
+            Log.i(TAG, "microphone refused: ${r.exceptionOrNull()?.message}")
+        }
         return runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link) }
             .onFailure { Log.w(TAG, "foreground refused: ${it.message}") }.isSuccess
     }

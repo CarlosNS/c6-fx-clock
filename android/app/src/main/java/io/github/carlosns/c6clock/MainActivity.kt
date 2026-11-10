@@ -194,6 +194,7 @@ class MainActivity : ComponentActivity() {
         if (store.address == null || !pageReady || !Perms.canConnect(this)) return
         js("clockState", (link != null).toString())
         LinkService.start(this)
+        LinkService.mic(this)
     }
 
     /** Lets the app read the music and call notifications (the system's own screen). */
