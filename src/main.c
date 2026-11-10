@@ -44,6 +44,8 @@
 #include "pmu_axp2101.h"
 #include "intro.h"
 #include "voice.h"
+#include "find.h"
+#include "app_plug.h"
 #include "steps.h"
 #include "sys.h"
 #include "ui.h"
@@ -460,6 +462,10 @@ static uint32_t s_pkey_since;
 
 static void pkey_tap(uint32_t now)
 {
+    if (find_active()) {
+        find_stop(true);
+        return;
+    }
     if (alarm_ringing()) {
         alarm_stop();
         return;
@@ -692,6 +698,12 @@ void app_main(void)
                 if (b.usb && !usb_seen) {  // cable plugged in, or on it at boot
                     if (s_ls_on) light_sleep_allow(false);  // reconnects the console
                     else if (!first || esp_reset_reason() != ESP_RST_USB) usb_console_reconnect();
+                    // Plugged in now (not at boot): say what the cable brings, and look again in
+                    // a second, when a computer has started talking USB
+                    if (!first) {
+                        plug_notice();
+                        status_t = now - 2000;
+                    }
                 }
                 usb_seen = b.usb;
                 // A computer sends a start-of-frame every millisecond; a charger never does

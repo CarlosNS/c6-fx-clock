@@ -427,6 +427,23 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun forget() = runOnUiThread { this@MainActivity.forget() }
         @JavascriptInterface fun allowBackground() = runOnUiThread { this@MainActivity.allowBackground() }
         @JavascriptInterface fun allowPhone() = runOnUiThread { this@MainActivity.allowPhone() }
+        // Find the watch / the phone (Find.kt)
+        @JavascriptInterface fun findWatch(on: Boolean): Boolean {
+            if (on) LinkService.start(this@MainActivity)
+            return Find.watch(on)
+        }
+        @JavascriptInterface fun findInfo(): String = JSONObject()
+            .put("connected", Live.ready)
+            .put("lastSeen", store.lastSeenMs)
+            .put("ringing", Find.watchRinging)
+            .put("pending", Find.pending)
+            .put("phone", Find.phoneRinging)
+            .toString()
+        @JavascriptInterface fun readSignal() {
+            val l = Live.link?.takeIf { it.ready } ?: return js("findSignal", "null")
+            lifecycleScope.launch { js("findSignal", (runCatching { l.rssi() }.getOrNull())?.toString() ?: "null") }
+        }
+        @JavascriptInterface fun stopPhone() = Find.stopPhone(this@MainActivity, tellWatch = true)
         @JavascriptInterface fun allowVoice() = runOnUiThread { micPermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }

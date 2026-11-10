@@ -2,6 +2,7 @@
 #include "phone.h"
 #include "sys.h"
 #include "voice.h"
+#include "find.h"
 #include "board.h"
 #include "pmu_axp2101.h"
 #include <stdio.h>
@@ -40,7 +41,8 @@ void app_command(const char *cmd)
         app_wake();
 
     if (phone_command(cmd)) return;
-    if (voice_command(cmd)) return;  // the phone's answer to a voice command  // "music ..." / "call ..." from the phone app
+    if (voice_command(cmd)) return;  // the phone's answer to a voice command
+    if (find_command(cmd)) return;   // "find 1": the phone is looking for the watch  // "music ..." / "call ..." from the phone app
     if (alarm_command(cmd)) return;  // "alarm <i> label <text>" / "alarm <i> anim <n>"
     if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"...
         sys_request(cmd + 3);

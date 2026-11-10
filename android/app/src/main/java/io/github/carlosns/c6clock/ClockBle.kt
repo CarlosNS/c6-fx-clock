@@ -111,6 +111,10 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             else @Suppress("DEPRECATION") run { cccd.value = on; g.writeDescriptor(cccd) }
         }
 
+        override fun onReadRemoteRssi(g: BluetoothGatt, rssi: Int, status: Int) {
+            rssiWait?.complete(if (status == BluetoothGatt.GATT_SUCCESS) rssi else null)
+        }
+
         override fun onDescriptorWrite(g: BluetoothGatt, d: BluetoothGattDescriptor, status: Int) {
             setup.trySend(status)
         }
@@ -216,6 +220,16 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         val bm = context.getSystemService(BluetoothManager::class.java)
         val dev = runCatching { bm.adapter.getRemoteDevice(address) }.getOrNull() ?: return false
         return runCatching { bm.getConnectionState(dev, BluetoothProfile.GATT) == BluetoothProfile.STATE_CONNECTED }.getOrDefault(true)
+    }
+
+    private var rssiWait: CompletableDeferred<Int?>? = null
+
+    /** The link's signal strength in dBm (how close the watch is), or null. */
+    suspend fun rssi(): Int? = ops.withLock {
+        val g = gatt ?: return@withLock null
+        val w = CompletableDeferred<Int?>().also { rssiWait = it }
+        if (!g.readRemoteRssi()) return@withLock null
+        withTimeoutOrNull(2_000) { w.await() }
     }
 
     /** Every whole message from the clock (also given to [onMessage]). */

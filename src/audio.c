@@ -29,7 +29,7 @@ static bool s_tx_on, s_codec_on;
 static volatile bool s_mic;
 static bool mic_power(bool on);
 static TaskHandle_t s_task;
-static volatile int s_mode;      // 0 silence, 1 alarm, 2 ring, 3 beep
+static volatile int s_mode;      // 0 silence, 1 alarm, 2 ring, 3 beep, 4 find (full volume)
 static volatile int s_beep_ms;
 static bool s_ok;
 
@@ -79,6 +79,8 @@ typedef struct {
 
 static const note_t ALARM[] = {{880, 120}, {0, 60}, {880, 120}, {0, 60}, {1175, 220}, {0, 500}, {0, 0}};
 static const note_t RING[] = {{784, 400}, {659, 400}, {0, 900}, {0, 0}};
+// Find the watch: quick high chirps climbing, easy to place by ear
+static const note_t FIND[] = {{1319, 90}, {0, 40}, {1568, 90}, {0, 40}, {2093, 90}, {0, 40}, {2637, 220}, {0, 350}, {0, 0}};
 
 static void play_tone(int hz, int ms, int amp)
 {
@@ -140,14 +142,14 @@ static void task(void *arg)
             xSemaphoreGive(s_lock);
         }
         gpio_set_level(BOARD_PIN_AMP, 1);
-        set_volume(g_app.volume);
+        set_volume(mode == 4 ? 100 : g_app.volume);
         if (mode == 3) {
             play_tone(1600, s_beep_ms, 6000);
             if (s_mode == 3) s_mode = 0;
             continue;
         }
-        const note_t *m = mode == 1 ? ALARM : RING;
-        for (int i = 0; m[i].ms && s_mode == mode; i++) play_tone(m[i].hz, m[i].ms, 9000);
+        const note_t *m = mode == 1 ? ALARM : mode == 4 ? FIND : RING;
+        for (int i = 0; m[i].ms && s_mode == mode; i++) play_tone(m[i].hz, m[i].ms, mode == 4 ? 12000 : 9000);
     }
 }
 
@@ -258,11 +260,12 @@ static void start(int mode)
 
 void audio_alarm_start(void) { start(1); }
 void audio_ring_start(void) { start(2); }
+void audio_find_start(void) { start(4); }
 void audio_stop(void) { s_mode = 0; }
 
 void audio_beep(int ms)
 {
-    if (!s_ok || s_mode == 1 || s_mode == 2) return;
+    if (!s_ok || s_mode == 1 || s_mode == 2 || s_mode == 4) return;
     s_beep_ms = ms;
     start(3);
 }

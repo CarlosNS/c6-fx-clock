@@ -6,4 +6,8 @@
     <string name="link_up">Marea conectado</string>
     <string name="link_searching">Buscando el reloj…</string>
     <string name="link_text">Hora, tiempo, música y llamadas en el reloj</string>
+    <string name="channel_find">Buscar el móvil</string>
+    <string name="find_phone_title">El reloj está buscando el móvil</string>
+    <string name="find_phone_text">Pulsa Parar cuando lo encuentres</string>
+    <string name="find_stop">Parar</string>
 </resources>

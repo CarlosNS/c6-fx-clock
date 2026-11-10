@@ -39,6 +39,10 @@ class Store(context: Context) {
     var goneSinceMs: Long
         get() = p.getLong("goneSince", 0)
         set(v) = p.edit().putLong("goneSince", v).apply()
+    /** Last moment the watch was connected ("seen" on the find card). */
+    var lastSeenMs: Long
+        get() = p.getLong("lastSeen", 0)
+        set(v) = p.edit().putLong("lastSeen", v).apply()
     var lastResult: String
         get() = p.getString("lastResult", "") ?: ""
         set(v) = p.edit().putString("lastResult", v).apply()

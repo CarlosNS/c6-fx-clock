@@ -11,6 +11,7 @@
 #include "settings.h"
 #include "ui.h"
 #include "ui_icons.h"
+#include "find.h"
 
 static const app_t *const s_apps[] = {&app_faces, &app_alarms, &app_steps, &app_stopwatch,
                                       &app_music, &app_torch, &app_files, &app_settings};
@@ -180,29 +181,40 @@ static void launcher_event(const ui_event_t *e)
 #define Q_BRI_Y 104
 #define Q_BAR_X 60
 #define Q_BAR_W 290
-#define Q_TILE_Y 196
+// Five tiles: two rows of two and a wide one (find the phone) under them
+#define Q_TILE_Y 192
 #define Q_TILE_W 154
-#define Q_TILE_H 112
+#define Q_TILE_H 80
+#define Q_TILES 5
 static int s_quick_pressed = -1;
 static bool s_bri_drag;
 
+static void quick_tile_rect(int i, int *x, int *y, int *w)
+{
+    *y = Q_TILE_Y + (i / 2) * (Q_TILE_H + 10);
+    *w = i == 4 ? 2 * Q_TILE_W + 12 : Q_TILE_W;
+    *x = i == 4 ? UI_W / 2 - 6 - Q_TILE_W : i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W;
+}
+
 static int quick_tile(int x, int y)
 {
-    for (int i = 0; i < 4; i++) {
-        int tx = i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W, ty = Q_TILE_Y + (i / 2) * (Q_TILE_H + 12);
-        if (x >= tx && x < tx + Q_TILE_W && y >= ty && y < ty + Q_TILE_H) return i;
+    for (int i = 0; i < Q_TILES; i++) {
+        int tx, ty, tw;
+        quick_tile_rect(i, &tx, &ty, &tw);
+        if (x >= tx && x < tx + tw && y >= ty && y < ty + Q_TILE_H) return i;
     }
     return -1;
 }
 
 static void quick_tile_draw(int i, const char *label, const char *state, bool on, bool good)
 {
-    int x = i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W, y = Q_TILE_Y + (i / 2) * (Q_TILE_H + 12);
+    int x, y, w;
+    quick_tile_rect(i, &x, &y, &w);
     bool p = s_quick_pressed == i;
-    ui_panel(x, y, Q_TILE_W, Q_TILE_H, p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : MS_LINEA, 4, true);
-    int sc = ui_fit(&ui_jersey, 3, 2, Q_TILE_W - 16, label);
-    ui_print_c(&ui_jersey, sc, x + Q_TILE_W / 2, y + 18, label, on ? MS_ORO2 : MS_CREMA, false);
-    ui_print_c(&ui_vt, 1, x + Q_TILE_W / 2, y + 66, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
+    ui_panel(x, y, w, Q_TILE_H, p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : MS_LINEA, 4, true);
+    int sc = ui_fit(&ui_jersey, 2, 1, w - 16, label);  // 80 px tiles: room for the label and its state line
+    ui_print_c(&ui_jersey, sc, x + w / 2, y + 12, label, on ? MS_ORO2 : MS_CREMA, false);
+    ui_print_c(&ui_vt, 1, x + w / 2, y + 50, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
 }
 
 static bool quick_draw(void)
@@ -224,8 +236,12 @@ static bool quick_draw(void)
     quick_tile_draw(1, TR("Silencio", "Silent"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
     quick_tile_draw(2, TR("Siempre", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
     quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
+    quick_tile_draw(4, TR("Buscar móvil", "Find phone"),
+                    find_phone_active() ? TR("sonando: toca para parar", "ringing: tap to stop")
+                    : g_app.phone_linked ? TR("lo hace sonar", "makes it ring") : TR("sin móvil", "no phone"),
+                    find_phone_active(), false);
     // Battery
-    int by = Q_TILE_Y + 2 * (Q_TILE_H + 12) + 6;
+    int by = Q_TILE_Y + 3 * (Q_TILE_H + 10) + 4;
     if (g_app.bat_pct >= 0)
         snprintf(buf, sizeof(buf), "%d %%%s", g_app.bat_pct,
                  g_app.bat_full ? TR(" · cargada", " · full") : g_app.bat_chg ? TR(" · cargando", " · charging") : "");
@@ -268,6 +284,7 @@ static void quick_event(const ui_event_t *e)
         case 1: settings_set("dnd", !g_app.dnd); break;
         case 2: settings_set("aon", !g_app.always_on); break;
         case 3: sys_open_app(5); return;  // flashlight
+        case 4: find_phone_toggle(); break;
         default: break;
         }
         s_redraw = true;

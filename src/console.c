@@ -8,6 +8,7 @@
 #include "batlog.h"
 #include "intro.h"
 #include "voice.h"
+#include "app_plug.h"
 #include "control.h"
 #include "esp_log.h"
 #include "esp_pm.h"
@@ -83,6 +84,10 @@ static void run_line(char *line)
         voice_begin();
         vTaskDelay(pdMS_TO_TICKS(atoi(line + 10)));
         voice_end();
+        return;
+    }
+    if (strcmp(line, "plugtest") == 0) {  // the USB cable notice, without unplugging
+        plug_notice();
         return;
     }
     if (strcmp(line, "mictest") == 0) {  // microphone levels for 3 s

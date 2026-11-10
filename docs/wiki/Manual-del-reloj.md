@@ -1,6 +1,6 @@
 Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus aplicaciones. Para instalarlo desde cero, ver [[Instalación]]; para la app del móvil, [[App Android]].
 
-**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Órdenes de voz](#órdenes-de-voz) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
+**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Órdenes de voz](#órdenes-de-voz) · [Buscar](#buscar-el-reloj-y-el-móvil) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sistema.png" alt="Esfera, lanzador, ajustes rápidos y ajustes" width="820">
 
@@ -76,6 +76,15 @@ Qué entiende, por ejemplo:
 En inglés: «set an alarm for seven thirty on weekdays», «show the Onyx face», «turn on do not disturb», «brightness 50», «open the stopwatch». La primera vez en inglés, el móvil puede tener que descargar el idioma: el reloj lo avisa.
 
 Con las órdenes de voz activas, mantener BOOT ya no cambia el cambio automático ni olvida los móviles (están en los ajustes).
+
+## Buscar el reloj y el móvil
+
+- **Buscar el reloj:** en Inicio de la app, **Hacer sonar**. El reloj suena al máximo (aunque esté en *No molestar* o con el volumen bajo) y la pantalla parpadea al brillo máximo con «¡Estoy aquí!». Se para tocando la pantalla, con BOOT o PWR, desde la app (**Parar**) o solo a los 5 minutos; luego vuelve a su volumen y brillo. Mientras suena, la app dice lo cerca que está por la señal Bluetooth (*Muy cerca*, *Cerca*, *A media distancia*, *Lejos*). Solo llega hasta donde llega el Bluetooth (unos 10–30 m); si el reloj no está conectado, sonará en cuanto conecte. La app dice cuándo lo vio por última vez.
+- **Buscar el móvil:** en los ajustes rápidos, la casilla **Buscar móvil**. El móvil suena con su sonido de alarma al volumen máximo, aunque esté en silencio, y vibra, hasta que se para en el móvil (notificación o app), otra vez en la casilla o a los 5 minutos.
+
+## Al enchufar el USB
+
+La pantalla se enciende y dice unos segundos qué trae el cable: **Cargando** (con el cargador), **Cargando y con el ordenador**, **Ordenador** con la batería llena, o **Cargada**. Se quita sola o tocándola.
 
 ## La pantalla
 

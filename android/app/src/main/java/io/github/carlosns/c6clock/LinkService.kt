@@ -117,19 +117,27 @@ class LinkService : Service() {
             val address = store.address ?: break
             if (!Perms.canConnect(this)) break
             val l = Live.link?.takeIf { it.ready && it.address == address } ?: ClockBle(this, address)
-            l.onMessage = { text -> if (!VoiceLink.fromClock(this, text)) { Live.message(text); Phone.fromClock(text) } }
+            l.onMessage = { text ->
+                if (!VoiceLink.fromClock(this, text)) {
+                    Find.fromClock(this, text)
+                    Live.message(text)
+                    Phone.fromClock(text)
+                }
+            }
             l.onState = { up -> Live.state(up); show(up) }
             try {
                 l.connect()
                 mine = l
                 Live.link = l  // connect() has told the listeners already
                 wait = 2_000L
+                Find.connected(l)  // asked to ring while it was away
                 var last = 0L
                 while (l.ready) {
                     if (!l.alive()) {  // Android dropped it without a callback: start again
                         l.drop("no longer connected")
                         break
                     }
+                    store.lastSeenMs = System.currentTimeMillis()
                     if (System.currentTimeMillis() - last > RESYNC_MS) {
                         last = System.currentTimeMillis()
                         runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }

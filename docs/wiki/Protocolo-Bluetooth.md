@@ -48,6 +48,8 @@ Un mensaje de un solo trozo lleva `0xC0 | id`. El receptor junta los trozos con 
 | `media` | Al tocar los controles de la app Música | `cmd`: `play`, `pause`, `next`, `prev`, `vol+` o `vol-` |
 | `call` | Al tocar los botones de una llamada | `cmd`: `reject` o `silence` |
 | `ota` | Durante una actualización por Bluetooth | `st`: `ready` (con `win`), `ack` (con `off`), `done` o `err` (con `msg`) |
+| `find` | El reloj deja de sonar por sí mismo o en la muñeca | `st`: `off` |
+| `findphone` | La casilla *Buscar móvil* | `st`: `on` u `off` |
 | `voice` | Al empezar y acabar una orden de voz | `st`: `start` (con `lang`, `es-ES` o `en-US`, y `rate`, 16000), `end` o `cancel` |
 | `va` | Mientras se graba, cada 100 ms | Audio: `s` número de mensaje, `p` e `i` estado del codificador (predicción e índice de paso) y `d`, IMA ADPCM de 4 bits (nibble bajo primero) en base64 |
 
@@ -65,6 +67,15 @@ El móvil manda al reloj lo que pasa, con dos órdenes de texto:
 | `call end` | La llamada se contesta, se rechaza o se pierde |
 
 El título va hasta 60 bytes y el artista hasta 44, en UTF-8, sin `|` y solo con los caracteres que tienen las fuentes del reloj (ASCII, tildes, ñ, ¡¿ y algunos signos); la app quita los acentos que no tenga. Al volver a conectar, la app repite el estado actual. Las respuestas del reloj son los mensajes `media` y `call` de arriba.
+
+## Buscar
+
+| Orden | Qué hace |
+|---|---|
+| `find 1` / `find 0` | El reloj suena al máximo y parpadea / deja de hacerlo (solo, a los 5 minutos) |
+| `findphone 0` | El móvil dejó de sonar desde el propio móvil |
+
+La app mide lo cerca que está el reloj con `readRemoteRssi` de la conexión, una vez por segundo mientras suena.
 
 ## Órdenes de voz
 

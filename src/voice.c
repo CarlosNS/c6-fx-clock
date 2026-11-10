@@ -238,7 +238,9 @@ static void v_open(void) { s_drawn_state = -1; }
 static bool v_draw(uint32_t now, bool force)
 {
     int st = s_state;
-    uint32_t age = now - s_t;
+    // The loop's "now" can be a moment older than s_t (set from another task): signed
+    int32_t sage = (int32_t)(now - s_t);
+    uint32_t age = sage < 0 ? 0 : (uint32_t)sage;
     if (st == V_THINK && age > THINK_MS) {
         ble_send_json("{\"t\":\"voice\",\"st\":\"cancel\"}");
         message(TR("Sin respuesta", "No answer"), TR("el móvil no ha contestado", "the phone did not answer"));

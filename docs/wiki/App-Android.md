@@ -59,6 +59,12 @@ La conexión permanente es un servicio en primer plano, que Android respeta, per
 - **Samsung:** *Ajustes → Batería → Límites de uso en segundo plano*: que Marea no esté en «Apps en suspensión».
 - **Otros:** busca en <https://dontkillmyapp.com> las instrucciones de tu marca.
 
+## Buscar el reloj
+
+En Inicio, la tarjeta **Buscar el reloj** dice si está conectado o cuándo se vio por última vez, y **Hacer sonar** lo hace sonar y parpadear (ver [[Manual del reloj]]). Mientras suena, la señal Bluetooth dice lo cerca que está; **Parar** lo calla. Si el reloj no está a tiro, la petición espera y sonará en cuanto conecte.
+
+Al revés, la casilla **Buscar móvil** del reloj hace sonar el móvil con su sonido de alarma al máximo (también en silencio) y vibrar, con una notificación para **Parar**; la app vuelve a dejar el volumen de alarma como estaba.
+
 ## Órdenes de voz
 
 Con *Órdenes de voz* activas (en *Ajustes* de la app o del reloj), al mantener BOOT el reloj graba con sus micrófonos y manda el audio a la app. La app lo pasa al reconocimiento de voz de Android, en el idioma del reloj, y le devuelve al reloj lo que ha entendido para que pregunte antes de hacerlo (ver [[Manual del reloj]]).

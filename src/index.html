@@ -171,6 +171,11 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <span class="go" aria-hidden="true">›</span>
   </a>
 
+  <div class="panel red hide" id="nphone">
+    <div class="tt" data-en="Your watch is looking for this phone">Tu reloj está buscando este móvil</div>
+    <button class="btn full" id="nphonestop" style="margin-top:10px" data-en="Stop the sound">Parar el sonido</button>
+  </div>
+
   <div class="tiles">
     <a class="panel tile" href="#esferas">
       <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M4 1h8v1h1v12h-1v1H4v-1H3V2h1zM5 3v10h6V3zM7 5h1v3h2v1H7z"/></svg>
@@ -188,6 +193,13 @@ input[type=text],input[type=password]{width:100%;min-width:0}
       <svg width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M7 1h2v2h2V2h1v1h1v1h-1v2h2v2h-2v2h1v1h-1v1h-1v-1H9v2H7v-2H5v1H4v-1H3v-1h1V8H2V6h2V4H3V3h1V2h1v1h2zM6 6v3h4V6z"/></svg>
       <span class="tt" data-en="Settings">Ajustes</span><span class="dim" data-en="Display, language…">Pantalla, idioma…</span>
     </a>
+  </div>
+  <div class="panel hide" id="findcard">
+    <div class="inline" style="justify-content:space-between;gap:10px">
+      <div style="min-width:0"><div class="tt" data-en="Find the watch">Buscar el reloj</div><div class="dim" id="findst">--</div></div>
+      <button class="btn gold" id="findgo" style="flex:none" data-en="Ring">Hacer sonar</button>
+    </div>
+    <div class="hide" id="findsig" style="margin-top:10px;font:400 26px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)"></div>
   </div>
   <p class="lbl" data-en="What's new">Novedades</p>
   <div class="stack" id="news" style="gap:12px"><div class="panel dim" data-en="Loading…">Cargando…</div></div>
@@ -659,8 +671,8 @@ $('blego').onclick=async()=>{$('blest').textContent=tr('Elige el reloj en la lis
  try{await L.pick();$('blest').textContent='';if(L.kind==='android'){$('appcard').classList.remove('hide');appInfo()}}catch(e){$('blest').textContent=e.name==='NotFoundError'?tr('No elegiste ningún reloj','You did not pick a watch'):tr('No se pudo conectar: ','Could not connect: ')+e.message}};
 $('blecard').classList.toggle('hide',!L.needsPick);
 if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent=tr('Este navegador no tiene Web Bluetooth: usa Chrome o Edge','This browser has no Web Bluetooth: use Chrome or Edge')}
-L.start({onState:u=>{up=u;homeStatus(status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u)$('blecard').classList.add('hide');if(u){poll();if(!ALARMS)loadAlarms();if(view==='archivos')loadFiles(fpath)}},
- onMessage:m=>{if(m.t==='status')show(m)}});
+L.start({onState:u=>{up=u;renderFind();homeStatus(status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u)$('blecard').classList.add('hide');if(u){poll();if(!ALARMS)loadAlarms();if(view==='archivos')loadFiles(fpath)}},
+ onMessage:m=>{if(m.t==='status')show(m);if(m.t==='find'||m.t==='findphone')renderFind()}});
 // Android app: sync, permissions and forgetting the clock live in Kotlin
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
  $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
@@ -727,6 +739,25 @@ $('animok').onclick=()=>{const a=ALARMS.list[animFor];if(a&&a.a!==animSel){a.a=a
 // A new alarm: an hour from now, every day off (once), opened to set it up
 $('aladd').onclick=()=>{if(!ALARMS||ALARMS.list.length>=AL_MAX)return;const n=new Date(Date.now()+3600e3),a={h:n.getHours(),m:0,d:0,on:1,a:0,l:''};
  ALARMS.list.push(a);openAl=ALARMS.list.length-1;send(`alarm add ${a.h} ${a.m} ${a.d}`);renderAlarms();homeTiles();setTimeout(loadAlarms,800)};
+// ------------------------------------------------------------ find the watch (Android app only: it rings and flashes; the signal says how close)
+var findTimer=0;  // var: the link may report before this line runs
+function findInfo(){return L.kind==='android'&&window.ClockBridge&&ClockBridge.findInfo?JSON.parse(ClockBridge.findInfo()):null}
+function renderFind(){const i=findInfo();if(!i)return;$('findcard').classList.remove('hide');
+ const ago=m=>m<1?tr('hace un momento','a moment ago'):m<60?tr(`hace ${m} min`,`${m} min ago`):new Date(i.lastSeen).toLocaleString(LANG?'en-GB':'es-ES',{weekday:'short',hour:'2-digit',minute:'2-digit'});
+ $('findst').textContent=i.ringing?tr('Sonando en el reloj…','Ringing on the watch…'):i.pending?tr('Buscándolo: sonará en cuanto conecte','Looking for it: it will ring as soon as it connects')
+  :i.connected?tr('Conectado ahora','Connected now'):i.lastSeen?tr('Visto por última vez ','Last seen ')+ago(Math.round((Date.now()-i.lastSeen)/60000)):tr('Sin conectar todavía','Not connected yet');
+ $('findgo').textContent=i.ringing||i.pending?tr('Parar','Stop'):tr('Hacer sonar','Ring');$('findgo').classList.toggle('gold',!(i.ringing||i.pending));
+ $('findsig').classList.toggle('hide',!i.ringing);
+ $('nphone').classList.toggle('hide',!i.phone);
+ clearTimeout(findTimer);if(i.ringing){ClockBridge.readSignal();findTimer=setTimeout(renderFind,1000)}else if(i.pending)findTimer=setTimeout(renderFind,2000)}
+// The link's strength as words: it climbs as you get closer
+window.findSignal=d=>{if(d===null){$('findsig').textContent='';return}
+ const w=d>=-55?tr('Muy cerca','Very close'):d>=-67?tr('Cerca','Close'):d>=-80?tr('A media distancia','Some way off'):tr('Lejos','Far');
+ $('findsig').textContent=tr('Señal: ','Signal: ')+w+` (${d} dBm)`};
+$('findgo').onclick=()=>{const i=findInfo();ClockBridge.findWatch(!(i.ringing||i.pending));setTimeout(renderFind,300)};
+$('nphonestop').onclick=()=>{ClockBridge.stopPhone();setTimeout(renderFind,300)};
+setInterval(()=>{if(view==='inicio')renderFind()},15000);
+
 // ------------------------------------------------------------ what's new: every version of the watch and the app, newest first.
 // From GitHub Pages (it also lists versions not installed yet); offline, the copy that came with this page
 var NEWS=null,newsAll=false;  // var: applyLang() may draw it before this line runs
@@ -779,7 +810,7 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
 
 // ------------------------------------------------------------ start
 applyLang();route();
-loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);loadNews();
+loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);loadNews();renderFind();
 </script>
 </body>
 </html>

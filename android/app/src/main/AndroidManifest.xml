@@ -82,5 +82,6 @@
             </intent-filter>
         </service>
         <receiver android:name=".InstallResult" android:exported="false" />
+        <receiver android:name=".FindStop" android:exported="false" />
     </application>
 </manifest>

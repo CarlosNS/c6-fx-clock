@@ -65,6 +65,7 @@ Una por mensaje (lista completa en `src/control.h`):
 | `mode ble\|update\|usb` | Reinicia en ese modo |
 | `update apply <url del manifiesto>` | Actualiza por internet |
 | `ota begin <tamaño> <sha256> <versión>` / `ota abort` | Actualización por Bluetooth desde el móvil (solo Bluetooth; ver [[Protocolo Bluetooth]]) |
+| `find 1` / `find 0`, `findphone 0` | Buscar el reloj; el móvil dejó de sonar (`find.c`) |
 | `alarm add <h> <m> <días>` | Crea una alarma encendida (días: máscara, bit 0 = lunes; 0 = una vez) |
 | `alarm <i> time <h> <m>` / `days <máscara>` / `del` | Cambia la hora o los días de una alarma, o la borra |
 | `alarm <i> label <texto>` / `anim <n>` / `on <0\|1>` / `test` | Etiqueta, animación, encendido de una alarma, o hacerla sonar ya |

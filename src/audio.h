@@ -10,6 +10,8 @@ void audio_init(void);
 void audio_alarm_start(void);
 // Incoming call: a two-tone ring, repeating until audio_stop()
 void audio_ring_start(void);
+// Find the watch: climbing chirps at full volume (whatever the "vol" setting), until audio_stop()
+void audio_find_start(void);
 // Short click for a touch (25 ms) or a confirmation (60 ms)
 void audio_beep(int ms);
 void audio_stop(void);
