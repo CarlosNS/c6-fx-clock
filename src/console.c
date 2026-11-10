@@ -6,11 +6,14 @@
 #include <unistd.h>
 #include "app.h"
 #include "batlog.h"
+#include "intro.h"
 #include "control.h"
 #include "esp_log.h"
 #include "esp_pm.h"
 #include "esp_system.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "console";
 static char s_line[160];
@@ -54,6 +57,19 @@ static void run_line(char *line)
         batlog_csv(buf, sizeof(buf));
         printf("%s\nbatlog end\n", buf);
         return;
+    }
+    if (strncmp(line, "introshot ", 10) == 0) {  // one frame of the animation, held 3 s for /screenshot (the watchdog bites at 8)
+        g_app.freeze_req = true;
+        for (int i = 0; i < 100 && !g_app.frozen; i++) vTaskDelay(pdMS_TO_TICKS(5));
+        intro_frame((uint32_t)atoi(line + 10));
+        printf("introshot: drawn\n");
+        vTaskDelay(pdMS_TO_TICKS(3000));
+        g_app.freeze_req = false;
+        return;
+    }
+    if (strcmp(line, "intro") == 0) {  // see the power-on animation without cutting the power
+        intro_request();
+        esp_restart();
     }
     if (strcmp(line, "why") == 0) {  // why the watch last restarted (esp_reset_reason)
         static const char *const R[] = {"unknown", "power-on", "external", "software", "panic", "int-wdt", "task-wdt",

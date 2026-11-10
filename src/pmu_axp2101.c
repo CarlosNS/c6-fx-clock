@@ -70,6 +70,34 @@ void pmu_power_off(void)
     i2c_reg_write(AXP_ADDR, 0x10, (uint8_t)(v | 0x01));
 }
 
+// The PWR key. The AXP2101 latches its edges in IRQ status 2 (49h) when they are enabled in 41h:
+// bit0 positive edge (released), bit1 negative edge (pressed), bit2 long press, bit3 short press.
+// Writing 1 clears a bit. Its IRQ line is not used: the main loop polls (pmu_pwrkey_poll), after
+// the touch read, because an AXP2101 read just before it made nearly every touch read fail.
+#define REG_PKEY_TIME 0x27   // bits 3:2 hold-to-cut-power time: 4, 6, 8 or 10 s
+#define REG_IRQ_EN2 0x41
+#define REG_IRQ_ST2 0x49
+
+void pmu_pwrkey_init(void)
+{
+    // The watch shuts down cleanly after holding the key 3 s (main.c); the PMU's own cut, which
+    // loses whatever was not saved, moves to 10 s and stays only as a last resort for a frozen watch
+    int t = reg(REG_PKEY_TIME);
+    if (t >= 0) i2c_reg_write(AXP_ADDR, REG_PKEY_TIME, (uint8_t)(t | 0x0C));
+    int en = reg(REG_IRQ_EN2);
+    if (en >= 0) i2c_reg_write(AXP_ADDR, REG_IRQ_EN2, (uint8_t)(en | 0x0F));
+    i2c_reg_write(AXP_ADDR, REG_IRQ_ST2, 0x0F);  // forget what happened before
+}
+
+int pmu_pwrkey_poll(void)
+{
+    int st = reg(REG_IRQ_ST2);
+    if (st <= 0) return 0;
+    st &= 0x0F;
+    if (st) i2c_reg_write(AXP_ADDR, REG_IRQ_ST2, (uint8_t)st);
+    return st;
+}
+
 bool pmu_battery(pmu_battery_t *b)
 {
     int s1 = reg(REG_STATUS1), s2 = reg(REG_STATUS2);

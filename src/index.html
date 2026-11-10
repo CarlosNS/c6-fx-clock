@@ -300,6 +300,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 <!-- ============================================================ Ajustes › Actualizaciones -->
 <section class="view hide" id="v-actualizaciones" data-parent="ajustes">
   <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Updates">Actualizaciones</h1></div>
+  <div class="panel gold hide" id="updorder"></div>
   <p class="lbl" style="margin:0" data-en="Watch">Reloj</p>
   <div class="panel stack">
     <div id="updst">--</div>
@@ -562,7 +563,20 @@ function verCmp(a,b){const sp=v=>{const c=v.split('+')[0],i=c.indexOf('-');retur
  for(let i=0;i<Math.max(ap.length,bp.length);i++){const x=ap[i],y=bp[i];if(x===undefined)return-1;if(y===undefined)return 1;
   const xn=/^\d+$/.test(x),yn=/^\d+$/.test(y),d=xn&&yn?+x-+y:xn?-1:yn?1:x<y?-1:x>y?1:0;if(d)return Math.sign(d)}return 0}
 function showOffer(e){offer=e;const on=!!e;$('updgo').classList.toggle('hide',!on);$('nupd').classList.toggle('hide',!on);$('updbadge').classList.toggle('hide',!on&&!appOfferV);
- if(on){$('updgo').textContent=tr('Actualizar a la ','Update to ')+e.version;$('nupdtxt').textContent=e.version+tr(' · llega por Bluetooth',' · comes over Bluetooth')}}
+ if(on){$('updgo').textContent=tr('Actualizar a la ','Update to ')+e.version;$('nupdtxt').textContent=e.version+tr(' · llega por Bluetooth',' · comes over Bluetooth')}
+ updOrder()}
+// Both new at once: one goes first. The watch, unless the manifest says its firmware needs the new app
+// ("first":"app", tools/release.py --first app). The other one waits, with its button off.
+const appFirst=()=>!!(offer&&offer.first==='app');
+function updOrder(){const both=!!(offer&&appOfferV),wWait=both&&appFirst(),aWait=both&&!appFirst();
+ for(const id of['updgo','nupdgo'])$(id).disabled=wWait;for(const id of['appupdgo','nappgo'])$(id).disabled=aWait;
+ $('nupdgo').textContent=wWait?tr('Primero, la app','The app first'):tr('Actualizar','Update');
+ $('nappgo').textContent=aWait?tr('Después del reloj','After the watch'):tr('Actualizar la app','Update the app');
+ $('updorder').classList.toggle('hide',!both);
+ $('updorder').textContent=!both?'':appFirst()?tr('Hay dos versiones nuevas: primero la app y después el reloj, que necesita la app nueva.','Two new versions: first the app, then the watch, which needs the new app.')
+  :tr('Hay dos versiones nuevas: primero el reloj y después la app.','Two new versions: first the watch, then the app.');
+ // the one that goes first on top of the home screen
+ if(both&&appFirst())$('napp').after($('nupd'));else $('nupd').after($('napp'))}
 // The watch's entry in the manifest (or null): what to offer, only if it is newer
 function offerFrom(e,ver){
   if(!e||verCmp(e.version,ver)<=0){setUpd(e&&verCmp(e.version,ver)<0?tr(`Tienes la <b>${ver}</b>, más nueva que la publicada (${e.version})`,`You have <b>${ver}</b>, newer than the published one (${e.version})`):tr(`Tienes la última versión (<b>${ver}</b>)`,`You have the latest version (<b>${ver}</b>)`));showOffer(null);return}
@@ -577,7 +591,7 @@ async function updCheck(){setUpd(tr('Buscando…','Checking…'));showOffer(null
  catch(e){setUpd(UPD_NONET())}}
 window.clockOffer=s=>{if(s==='error'){setUpd(UPD_NONET());return}offerFrom(s&&JSON.parse(s),$('ver').textContent)};
 $('updcheck').onclick=()=>{updCheck();if(L.kind==='android')ClockBridge.checkApp()};
-function updGo(){if(!offer)return;
+function updGo(){if(!offer||(appFirst()&&appOfferV))return;
  // The app passes the image over Bluetooth (watches from 3.0.0-beta.6): no Wi-Fi needed on the watch
  if(L.kind==='android'&&ClockBridge.canUpdateClock&&ClockBridge.canUpdateClock()){
   if(!ask(tr(`¿Actualizar el reloj a la ${offer.version}?`,`Update the watch to ${offer.version}?`),tr('El móvil descarga la versión nueva y se la pasa al reloj por Bluetooth. Tarda unos minutos: deja la app abierta y el reloj cerca. Al terminar, el reloj se reinicia solo. Si algo falla, seguirá con la versión que tiene ahora.','The phone downloads the new version and passes it to the watch over Bluetooth. It takes a few minutes: keep the app open and the watch close. When it finishes, the watch restarts by itself. If anything fails, it keeps the version it has now.'),tr('Actualizar','Update')))return;
@@ -632,11 +646,11 @@ if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forg
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
  window.appOffer=s=>{const o=s&&JSON.parse(s),v=ClockBridge.appVersion();appOfferV=o&&o.version;$('appupdgo').classList.toggle('hide',!o);$('napp').classList.toggle('hide',!o);
   $('updbadge').classList.toggle('hide',!o&&!offer);
-  if(!o){$('appupdst').innerHTML=tr(`Tienes la última (<b>${v}</b>)`,`You have the latest (<b>${v}</b>)`);return}
-  $('appupdst').innerHTML=tr(`Disponible la <b>${o.version}</b> (tienes la ${v})`,`<b>${o.version}</b> is available (you have ${v})`);$('appupdgo').textContent=tr('Actualizar la app a la ','Update the app to ')+o.version;$('napptxt').textContent=o.version};
+  if(!o){$('appupdst').innerHTML=tr(`Tienes la última (<b>${v}</b>)`,`You have the latest (<b>${v}</b>)`);updOrder();return}
+  $('appupdst').innerHTML=tr(`Disponible la <b>${o.version}</b> (tienes la ${v})`,`<b>${o.version}</b> is available (you have ${v})`);$('appupdgo').textContent=tr('Actualizar la app a la ','Update the app to ')+o.version;$('napptxt').textContent=o.version;updOrder()};
  window.appUpdateState=t=>{$('appupdst').textContent=t};
  window.clockUpdateState=t=>{setUpd(esc(t))};
- $('appupdgo').onclick=$('nappgo').onclick=()=>ClockBridge.installApp();
+ $('appupdgo').onclick=$('nappgo').onclick=()=>{if(offer&&!appFirst())return;ClockBridge.installApp()};
  ClockBridge.checkApp()}
 
 // ------------------------------------------------------------ alarms: label, on/off and ringing animation (the watch keeps the times and days)

@@ -1,6 +1,6 @@
 Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus aplicaciones. Para instalarlo desde cero, ver [[Instalación]]; para la app del móvil, [[App Android]].
 
-**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
+**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sistema.png" alt="Esfera, lanzador, ajustes rápidos y ajustes" width="820">
 
@@ -10,7 +10,8 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 - **Para ir al menú principal** (el **lanzador**, con todas las apps), desliza el dedo **desde el borde de abajo de la pantalla hacia arriba** estando en la esfera. Empieza el gesto justo en el borde inferior, en su parte recta, no en una esquina.
 - Desde la esfera también se llega a los **ajustes rápidos** (deslizando desde el borde de arriba hacia abajo) y a **otras esferas** (deslizando a los lados).
 - Para **volver**, desliza desde el borde izquierdo hacia la derecha o pulsa **BOOT**.
-- El reloj tiene dos botones en el lateral: **BOOT**, el que se usa, y **RESET**, que reinicia la placa.
+- El reloj tiene botones en el lateral: **BOOT**, el de uso diario, y **PWR**, que apaga la pantalla o el reloj entero (más abajo).
+- Al encenderlo desde apagado sale una **animación de bienvenida**: el mar de noche se ilumina, la luna sale tras la isla del faro y caen las letras de «Marea». En los reinicios no sale.
 - Los textos están en español o en inglés (*Ajustes → Idioma*).
 
 ## Gestos
@@ -40,6 +41,18 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | En cualquier momento | Mantener 3 s | Aviso «10 S: OLVIDAR MÓVILES» |
 | En cualquier momento | Mantener 10 s | **Olvida todos los móviles emparejados** |
 | Modo USB | Pulsación | Vuelve al reloj |
+
+## El botón PWR
+
+| Cuándo | Gesto | Qué hace |
+|---|---|---|
+| Pantalla encendida | Pulsación corta | **Apaga la pantalla** (aunque esté en «siempre encendida», hasta que la despiertes) |
+| Pantalla apagada | Pulsación corta | La enciende |
+| Suena una alarma | Pulsación corta | La para |
+| En cualquier momento | Mantener | Sale **«¿Apagar?»** con una barra que se llena; si lo sueltas antes, no pasa nada |
+| En cualquier momento | Mantener 3 s | **Apaga el reloj** (guarda los ajustes antes) |
+| Reloj apagado | Pulsación | Lo enciende |
+| Reloj colgado | Mantener 10 s | Corte de corriente forzado, como último recurso |
 
 ## La pantalla
 

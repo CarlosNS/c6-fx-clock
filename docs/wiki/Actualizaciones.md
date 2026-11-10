@@ -19,6 +19,8 @@ Tarda unos minutos. Durante ese tiempo, deja la app abierta (la pantalla del mó
 
 Si se corta el Bluetooth, cierras la app o la imagen llega mal, el reloj lo descarta y **sigue con la versión que tenía**.
 
+**Si hay versión nueva del reloj y de la app a la vez**, la app dice cuál va primero y solo deja pulsar esa: normalmente el reloj, y la app cuando la versión del reloj la necesita (se publica con `tools/release.py --first app`). El otro botón espera con «Después del reloj» o «Primero, la app».
+
 ## Por el WiFi del reloj
 
 Es la forma de los relojes anteriores a la 3.0.0-beta.6, y la que usa la página de control abierta en un navegador. La app la elige sola cuando el reloj no sabe recibir la versión por Bluetooth.

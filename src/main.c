@@ -42,6 +42,7 @@
 #include "audio.h"
 #include "input.h"
 #include "pmu_axp2101.h"
+#include "intro.h"
 #include "steps.h"
 #include "sys.h"
 #include "ui.h"
@@ -95,13 +96,17 @@ static inline uint32_t now_ms(void)
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
+static bool s_force_off;  // the PWR key turned the screen off: even "always on" waits for the next wake
+
 void app_wake(void)
 {
+    s_force_off = false;
     g_app.wake_until = now_ms() + g_app.wake_secs * 1000;
 }
 
 static bool screen_awake(uint32_t now)
 {
+    if (s_force_off) return false;
     // A pairing passkey stays visible until the pairing ends, however long typing it takes
     return g_app.always_on || g_app.pairing_code >= 0 || sys_keep_awake() || (int32_t)(g_app.wake_until - now) > 0;
 }
@@ -361,23 +366,24 @@ static void light_sleep_allow(bool on)
 #define BAT_OFF_MV 3300   // under this for 3 readings in a row (9 s), on battery: power off
 #define BAT_LOW_PCT 10    // a warning, once per discharge
 
-void power_off_now(bool really)
+// The last screen before cutting the power (an empty battery or the PWR key held): settings saved,
+// then the PMU switches everything off. really = false shows the screen only (console test).
+static void shut_down(const char *title, const char *l1, const char *l2, const char *l3, int show_ms, bool really)
 {
-    ESP_LOGW(TAG, "Battery empty%s", really ? ": powering off" : " (test screen)");
     esp_task_wdt_reset();
     lcd_sleep(false);
     ui_begin(lcd_native_fb());
     ui_background(false);
     ui_veil(90, UI_H, 2);
-    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, TR("Batería agotada", "Battery empty"), MS_ORO, true);
+    ui_print_c(&ui_jersey, 4, UI_W / 2, 112, title, MS_ORO, true);
     ui_panel(48, 196, UI_W - 96, 150, MS_PANEL, MS_LINEA, 3, true);
-    ui_print_c(&ui_vt, 2, UI_W / 2, 222, TR("el reloj se apaga", "the watch switches off"), MS_CREMA, false);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 270, TR("cárgalo y enciéndelo", "charge it and switch it on"), MS_GRIS, false);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 294, TR("con el botón PWR", "with the PWR button"), MS_GRIS, false);
+    ui_print_c(&ui_vt, 2, UI_W / 2, 222, l1, MS_CREMA, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 270, l2, MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 294, l3, MS_GRIS, false);
     lcd_flush_native();
     lcd_set_brightness(g_app.brightness);
     settings_save();
-    vTaskDelay(pdMS_TO_TICKS(4000));
+    vTaskDelay(pdMS_TO_TICKS(show_ms));
     if (!really) {
         sys_dirty();
         return;
@@ -387,6 +393,86 @@ void power_off_now(bool really)
     pmu_power_off();
     vTaskDelay(pdMS_TO_TICKS(1000));
     esp_deep_sleep_start();  // the PMU did not cut the power: at least stop everything
+}
+
+void power_off_now(bool really)
+{
+    ESP_LOGW(TAG, "Battery empty%s", really ? ": powering off" : " (test screen)");
+    shut_down(TR("Batería agotada", "Battery empty"), TR("el reloj se apaga", "the watch switches off"),
+              TR("cárgalo y enciéndelo", "charge it and switch it on"), TR("con el botón PWR", "with the PWR button"), 4000, really);
+}
+
+// ---------------------------------------------------------------- PWR key (AXP2101, polled)
+
+// A short press turns the screen off (or on). Held, a screen asks to keep holding and fills a bar;
+// at PKEY_OFF_MS the watch saves everything and switches off. The PMU's own forced cut is at 10 s.
+#define PKEY_SHOW_MS 800
+#define PKEY_OFF_MS 3000
+static bool s_pkey_down, s_pkey_show;
+static uint32_t s_pkey_since;
+
+static void pkey_tap(uint32_t now)
+{
+    if (alarm_ringing()) {
+        alarm_stop();
+        return;
+    }
+    if (screen_awake(now)) {
+        s_force_off = true;
+        g_app.wake_until = now;
+    } else {
+        app_wake();
+    }
+}
+
+static void poll_pwrkey(uint32_t now)
+{
+    int ev = pmu_pwrkey_poll();
+    if (ev) ESP_LOGI(TAG, "PWR key: %s%s%s%s", ev & PMU_PKEY_DOWN ? "down " : "", ev & PMU_PKEY_UP ? "up " : "",
+                     ev & PMU_PKEY_SHORT ? "short " : "", ev & PMU_PKEY_LONG ? "long" : "");
+    if (ev & PMU_PKEY_DOWN) {
+        s_pkey_down = true;
+        s_pkey_since = now;
+    }
+    if (ev & PMU_PKEY_UP) {
+        if (s_pkey_down) {
+            uint32_t held = now - s_pkey_since;
+            s_pkey_down = false;
+            if (s_pkey_show) {  // let go before the end: nothing happens
+                s_pkey_show = false;
+                app_wake();
+                sys_dirty();
+            } else if (held < PKEY_SHOW_MS) {
+                pkey_tap(now);
+            }
+        }
+    } else if ((ev & PMU_PKEY_SHORT) && !s_pkey_down) {
+        pkey_tap(now);  // both edges missed between two passes
+    }
+    if (!s_pkey_down) return;
+    uint32_t held = now - s_pkey_since;
+    if (held >= PKEY_SHOW_MS) {
+        if (!s_pkey_show) ESP_LOGI(TAG, "PWR held: power-off screen");
+        s_pkey_show = true;
+        app_wake();
+    }
+    if (held >= PKEY_OFF_MS) {
+        ESP_LOGW(TAG, "PWR held %u ms: powering off", (unsigned)held);
+        shut_down(TR("Apagando", "Switching off"), TR("hasta luego", "see you soon"),
+                  TR("para encenderlo, pulsa", "to switch it on, press"), TR("el botón PWR", "the PWR button"), 1500, true);
+    }
+}
+
+static void draw_pkey_hold(uint32_t now)
+{
+    int p = (int)((now - s_pkey_since - PKEY_SHOW_MS) * 1000 / (PKEY_OFF_MS - PKEY_SHOW_MS));
+    ui_background(false);
+    ui_veil(90, UI_H, 2);
+    ui_print_c(&ui_jersey, 5, UI_W / 2, 100, TR("¿Apagar?", "Switch off?"), MS_ORO, true);
+    ui_panel(48, 200, UI_W - 96, 168, MS_PANEL, MS_LINEA, 3, true);
+    ui_print_c(&ui_vt, 2, UI_W / 2, 224, TR("mantén pulsado PWR", "keep holding PWR"), MS_CREMA, false);
+    ui_bar(76, 278, UI_W - 152, 18, p < 0 ? 0 : p > 1000 ? 1000 : p, MS_ORO);
+    ui_print_c(&ui_vt, 1, UI_W / 2, 320, TR("suéltalo para cancelar", "let go to cancel"), MS_GRIS, false);
 }
 
 static void battery_guard(const pmu_battery_t *b)
@@ -460,6 +546,8 @@ void app_main(void)
     update_boot_check();
     net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot
+    pmu_pwrkey_init();  // the PWR key: short press = screen off/on, held = switch off (poll_pwrkey)
+    if (intro_wanted()) intro_play(g_app.brightness);  // started from off: the power-on animation first
     draw_splash(0);
     lcd_set_brightness(g_app.brightness);
 
@@ -529,6 +617,7 @@ void app_main(void)
         int ax, ay, az;
         bool have_imu = imu_read(&ax, &ay, &az);
         if (have_imu) steps_feed(ax, ay, az, now);
+        poll_pwrkey(now);  // after the touch read: an AXP2101 read right before it made the touch fail
         // Once a minute: alarms, the steps day, the time in the status bar
         if (g_now.valid && g_now.m != last_min) {
             last_min = g_now.m;
@@ -666,6 +755,13 @@ void app_main(void)
             sys_dirty();
         }
         batlog_tick(now, true, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
+        if (s_pkey_show) {  // PWR held: the power-off screen over everything
+            ui_begin(lcd_native_fb());
+            draw_pkey_hold(now);
+            lcd_flush_native();
+            cur = -1;
+            goto frame_end;
+        }
         if (sys_view() != VIEW_FACE) {  // the system screens and apps: native, drawn only when they change
             uint16_t *nfb = lcd_native_fb();
             ui_begin(nfb);

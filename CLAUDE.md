@@ -64,7 +64,9 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 - **Vigilante:** si el bucle principal pasa 8 s sin avanzar, el reloj se reinicia y al arrancar dice en qué paso estaba (`hang.h`).
 - **Pantalla sin esp_lcd:** `lcd_co5300.c` habla con el panel directamente por `spi_master`. Cada fotograma es una sola escritura de píxeles con el bus tomado y el CS activo de principio a fin. El `esp_lcd_panel_io` de antes, que mezclaba órdenes por sondeo con transferencias encoladas, a veces se quedaba esperando para siempre: ese era el bloqueo del reloj.
 - **La PSRAM es lo lento:** escribir un fotograma completo de 410×502 cuesta unos 13 ms mientras la tarea de envío lo lee. Una esfera animada a pantalla completa ronda los 25–30 fps; las de fondo quieto van sobradas.
-- **El táctil a veces no responde a una lectura:** el driver conserva el último estado; los errores de `i2c.master` están silenciados.
+- **El táctil a veces no responde a una lectura:** el driver conserva el último estado; los errores de `i2c.master` están silenciados. Lo normal son unos 6 fallos por minuto (`touch: N failed reads`); muchos más indican un problema.
+- **No leas el AXP2101 justo antes del táctil:** una lectura del AXP2101 (el botón PWR, `poll_pwrkey`) colocada en el bucle justo antes de `input_poll` hacía fallar casi todas las lecturas del FT3168. Va después del acelerómetro.
+- **Panel o táctil colgados:** tras un fallo grave, el panel puede quedarse negro aunque el reloj dibuje (la captura sale bien). Reiniciar el ESP32 no basta: hace falta cortar la corriente (PWR 10 s). Pasó el 10/11/2026 tras el desbordamiento de pila de Archivos.
 - **Manifiesto de actualizaciones:** la entrada de Marea es `boards.s3amoled`. Las claves de arriba son de los relojes C6 (2.1.0) y **nunca** se tocan. Los C6 solo leen 1023 bytes: `release.py` lo comprueba.
 - **`project(c6-fx-demo)` no se renombra:** `ota.c` exige que la imagen nueva tenga el mismo nombre de proyecto que la instalada.
 - **HyperOS:** bloquea escaneos Bluetooth en segundo plano y mata apps; la app tiene que guiar para quitar las restricciones de batería.

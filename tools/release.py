@@ -11,6 +11,7 @@ gh-pages), where the watches and the app look for updates, and creates the GitHu
     python tools/release.py --notes "Qué cambia"     # version from CMakeLists.txt (PROJECT_VER)
     python tools/release.py --dry-run                # build and show the manifest, publish nothing
     python tools/release.py --no-app --no-release    # just the watch image on Pages (tests, betas)
+    python tools/release.py --first app              # this firmware needs the new app: app first
 
 Publishing needs the owner's explicit OK every time (CLAUDE.md). Needs PlatformIO, the system Python
 with esptool, the GitHub CLI logged in, and for the app JAVA_HOME (JDK 21) and
@@ -72,7 +73,7 @@ def build(with_app):
         run(gradlew, "assembleRelease", "--console=plain", cwd=os.path.join(ROOT, "android"))
 
 
-def update_pages(version, notes, with_app, dry_run):
+def update_pages(version, notes, with_app, dry_run, first="reloj"):
     """Edits the gh-pages tree in place: our entry, the app block and the installer; the rest stays."""
     tree = os.path.join(OUT, "gh-pages")
     shutil.rmtree(OUT, ignore_errors=True)
@@ -85,6 +86,10 @@ def update_pages(version, notes, with_app, dry_run):
         e = entry(version, os.path.join(WEB, OTA), OTA)
         e["notes"] = notes
         e["date"] = datetime.date.today().isoformat()
+        # Which to update first when the phone has both pending: the watch unless this firmware needs
+        # the new app ("first":"app"). The app's page follows it (index.html, updOrder)
+        if first == "app":
+            e["first"] = "app"
         m.setdefault("boards", {})[BOARD] = e
         if with_app:
             name, code = app_version()
@@ -130,12 +135,14 @@ def main():
     ap.add_argument("--no-build", action="store_true", help="use the files already built")
     ap.add_argument("--no-app", action="store_true", help="leave the Android app out")
     ap.add_argument("--no-release", action="store_true", help="only GitHub Pages, no GitHub release")
+    ap.add_argument("--first", choices=["reloj", "app"], default="reloj",
+                    help="what the phone updates first when both are new (default: the watch)")
     a = ap.parse_args()
     version = project_version()
     with_app = not a.no_app
     if not a.no_build:
         build(with_app)
-    update_pages(version, a.notes, with_app, a.dry_run)
+    update_pages(version, a.notes, with_app, a.dry_run, a.first)
     if a.dry_run:
         return
     if not a.no_release:

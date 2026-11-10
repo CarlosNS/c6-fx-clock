@@ -33,6 +33,9 @@
   - **Archivos:** para mirar la microSD desde el móvil: carpetas, tamaños y fechas (no abre ni borra).
   - **Ajustes:** Idioma (español o inglés, en el reloj y en la app a la vez), Pantalla, Hora, Móvil y conexión, Actualizaciones y Avanzado (donde pasa *Sincronizar hora*, que ya se hace sola).
   - El botón atrás del móvil recorre las secciones antes de salir.
+- **Animación de encendido:** al encender el reloj desde apagado, el mar de noche se ilumina a saltos, la luna sale por detrás de la isla del faro con su reflejo y caen las letras de «Marea», hasta la pantalla de bienvenida. En los reinicios no sale.
+- **Botón PWR:** una pulsación corta apaga o enciende la pantalla (y para una alarma); mantenerlo enseña «¿Apagar?» con una barra y a los 3 s el reloj guarda todo y se apaga. El corte forzado del chip de alimentación pasa de 6 a 10 s.
+- **Orden de las actualizaciones:** si hay versión nueva del reloj y de la app a la vez, la app solo deja pulsar la que va primero (el reloj, salvo que la versión se publique con `--first app`).
 - Arreglado (3.0.0-beta.7): abrir Archivos en la app podía reiniciar el reloj. La tarea de Bluetooth que lee la microSD se quedaba sin pila; ahora tiene el doble.
 - Arreglado (app 0.4.1): la llamada entrante desaparecía del reloj al segundo en móviles como los Xiaomi, que cambian la notificación mientras suena. Ahora se queda hasta que se contesta, cuelga quien llama, se rechaza o silencia, o se corta el Bluetooth.
 - **Esfera nueva: Ónix** (número 24). Analógica minimalista para AMOLED: negro puro, índices finos, agujas cálidas y una estela de luz como segundero. El color del acento se elige en la app (ajuste `ohue`) y el dibujo se desplaza un poco cada minuto para cuidar la pantalla.
