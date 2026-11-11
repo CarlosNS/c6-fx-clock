@@ -70,7 +70,7 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx19.png" alt="Esfera Gol" width="205">
 
-*Número 19* — Jugada de fútbol en 16 bits con un delantero inspirado en Mbappé: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados. Arriba, la grada con los focos y el marcador del estadio con la hora. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave.
+*Número 19* — Jugada de fútbol en 16 bits con un delantero con el 10: regate, salto sobre una entrada, gol por la escuadra con el portero vencido, confeti y celebración con los brazos cruzados. Arriba, la grada con los focos y el marcador del estadio con la hora, con la barra de los segundos debajo. Los jugadores son esqueletos 2D rasterizados a media resolución con sombreado y contorno, así cada pose se interpola suave.
 
 ## Arte
 
@@ -94,11 +94,17 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 *Número 12* — Cerezo en flor junto a un estanque: pétalos que caen revoloteando y ondas donde tocan el agua.
 
+### Disfruta
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx25.png" alt="Esfera Disfruta" width="205">
+
+*Número 25* — Para el tiempo libre: un prado al atardecer con la hierba y un árbol mecidos por el viento a rachas, nubes lentas, flores y semillas flotando. No tiene hora a propósito: solo pone «Disfruta» («Relax» en inglés).
+
 ### Lluvia
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx17.png" alt="Esfera Lluvia" width="205">
 
-*Número 17* — Gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea.
+*Número 17* — Gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea. Las gotas resbalan hacia donde inclines el reloj (acelerómetro) y la lluvia de fuera se inclina con él; con el reloj plano, se quedan quietas.
 
 ### Agujero negro
 
@@ -114,17 +120,17 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 *Número 9* — La hora muy grande, horas encima de minutos, sobre un espectro tenue de las redes WiFi de alrededor (escaneo en segundo plano).
 
-### Arena
+### Coloso
 
-<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx14.png" alt="Esfera Arena" width="205">
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx14.png" alt="Esfera Coloso" width="205">
 
-*Número 14* — Reloj de arena con física de granos: se vacía exactamente en un minuto y gira.
+*Número 14* — Un reloj de arena del tamaño de una torre, visto desde abajo entre dos columnas que se pierden en el cielo del desierto al atardecer; las nubes lo cruzan a media altura y una figura diminuta lo mira desde el suelo. La arena tarda una hora en caer: el montón de abajo son los minutos que han pasado. La hora, grabada en oro en la base. (Hasta la 3.0.0-beta.8 se llamaba *Arena* y era un reloj de arena de un minuto.)
 
 ### Engranajes
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx15.png" alt="Esfera Engranajes" width="205">
 
-*Número 15* — Reloj mecánico de esqueleto: engranajes que engranan, volante oscilante, agujas con segundero y la hora digital al lado.
+*Número 15* — Dentro de una torre del reloj gótica: engranajes enormes de bronce y hierro que avanzan a tirones con cada segundo, cadenas con contrapesos que bajan a lo largo de la hora, un péndulo, la esfera con números romanos y segundero, y la luz de la luna entrando por un ventanal ojival con polvo flotando. La hora también se lee abajo.
 
 ### Tiempo
 
@@ -149,6 +155,12 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx24.png" alt="Esfera Ónix" width="205">
 
 *Número 24* — Analógica minimalista hecha para la pantalla AMOLED: fondo negro puro, con esos píxeles apagados, minutería de puntos tenues, índices finos, agujas en blanco cálido y, como segundero, una estela de luz que recorre la minutería. Las agujas se mueven sin saltos. Todo el dibujo se desplaza 2 píxeles cada minuto para no marcar la pantalla. El **color del acento** (estela y centro) se elige en la app; sin segundos, la estela desaparece.
+
+### El escultor
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx26.png" alt="Esfera El escultor" width="205">
+
+*Número 26* — Tu objetivo de pasos como una escultura: un escultor talla la estatua de un corredor en un bloque de piedra. Hay once escenas, una por cada 10 % del objetivo; la talla baja por el bloque y el escultor trabaja subido al andamio. Al 100 % la estatua brilla en mármol y oro, con rayos y destellos, y el escultor lo celebra. Arriba la hora; abajo los pasos y el porcentaje. El objetivo se cambia en el reloj o en la app.
 
 ## ¿Una esfera nueva?
 

@@ -12,5 +12,8 @@ void settings_save(void);  // writes the persistent ones
 void settings_face_speed(int fx);
 // Applies "<key> <value>"; returns false if the key is unknown. Marks g_app.dirty when needed.
 bool settings_set(const char *key, int value);
+// "reset settings": every setting back to its factory value except the language (paired phones, the
+// Wi-Fi network, alarms and steps are not settings and stay)
+void settings_reset(void);
 // Appends "key":value pairs (comma separated, no braces) to buf; returns the new length
 size_t settings_json(char *buf, size_t size, size_t len);

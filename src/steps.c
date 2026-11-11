@@ -6,6 +6,10 @@
 #include <string.h>
 #include "clock.h"
 #include "esp_log.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "app.h"
+#include "esp_heap_caps.h"
 #include "nvs.h"
 
 #define MIN_GAP_MS 260     // faster than ~3.8 steps/s is not walking
@@ -96,12 +100,15 @@ void steps_minute(void)
     }
 }
 
+static void log_sample(int x, int y, int z, uint32_t now);
+
 void steps_feed(int x, int y, int z, uint32_t now)
 {
     // |a| without a square root: the largest component plus a share of the others is close enough
     int ax = x < 0 ? -x : x, ay = y < 0 ? -y : y, az = z < 0 ? -z : z;
     int mx = ax > ay ? (ax > az ? ax : az) : (ay > az ? ay : az);
     int mag = mx + (ax + ay + az - mx) * 3 / 8;
+    log_sample(x, y, z, now);
     s_avg += (mag - s_avg) / 16;
     int v = mag - s_avg;
     // A step is a peak above the threshold: rising, then falling
@@ -120,6 +127,62 @@ void steps_feed(int x, int y, int z, uint32_t now)
 }
 
 int steps_today(void) { return s_today; }
+
+// ---------------------------------------------------------------- calibration log
+// "steplog 1" ... "steplog 0": every new accelerometer sample (with the ms since the previous one) is
+// kept in PSRAM, and at the end written to /pasos/log_HHMMSS.csv with the steps the counter saw, to
+// tune the counter on a computer against steps counted by hand.
+#define LOG_MAX (21 * 60 * 20)  // 20 minutes at the accelerometer's 21 Hz
+static int16_t *s_log;          // dt, x, y, z per sample
+static int s_nlog = -1, s_log_steps;
+static uint32_t s_log_last;
+static int s_lx, s_ly, s_lz;
+
+void steps_log_start(void)
+{
+    if (!s_log) s_log = heap_caps_malloc(LOG_MAX * 4 * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    if (!s_log) return;
+    s_nlog = 0;
+    s_log_steps = s_today;
+    s_log_last = 0;
+    s_lx = s_ly = s_lz = 1 << 20;
+    ESP_LOGI(TAG, "calibration log started");
+}
+
+int steps_log_samples(void) { return s_nlog; }
+
+static void log_sample(int x, int y, int z, uint32_t now)
+{
+    if (s_nlog < 0 || s_nlog >= LOG_MAX || (x == s_lx && y == s_ly && z == s_lz)) return;  // a new sample only
+    s_lx = x, s_ly = y, s_lz = z;
+    uint32_t gap = s_log_last ? now - s_log_last : 0;
+    s_log_last = now;
+    int16_t *e = s_log + s_nlog * 4;
+    e[0] = gap > 32000 ? 32000 : (int16_t)gap, e[1] = x, e[2] = y, e[3] = z;
+    s_nlog++;
+}
+
+bool steps_log_stop(char *name, size_t n)
+{
+    if (s_nlog < 0) return false;
+    int count = s_nlog;
+    s_nlog = -1;
+    size_t cap = (size_t)count * 28 + 160;
+    char *csv = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
+    if (!csv) return false;
+    size_t len = snprintf(csv, cap, "# Marea steps log: %d samples, counter saw %d steps\ndt_ms,x_mg,y_mg,z_mg\n", count,
+                          s_today - s_log_steps);
+    for (int i = 0; i < count && len < cap; i++) {
+        const int16_t *e = s_log + i * 4;
+        len += snprintf(csv + len, cap - len, "%d,%d,%d,%d\n", e[0], e[1], e[2], e[3]);
+    }
+    snprintf(name, n, "/pasos/log_%02d%02d%02d.csv", g_now.h, g_now.m, g_now.s);
+    bool ok = sd_write_file(name, csv, len);
+    free(csv);
+    ESP_LOGI(TAG, "calibration log: %d samples, %d steps -> %s (%s)", count, s_today - s_log_steps, name, ok ? "saved" : "NOT saved");
+    return ok;
+}
+void steps_debug_set(int n) { s_today = n < 0 ? 0 : n; }
 
 int steps_day(int days_ago)
 {

@@ -322,7 +322,7 @@ static void boards(uint16_t *fb, uint32_t t, bool goal)
     int y0 = PITCH_TOP - 10;
     gfx_fill_rect(fb, 0, y0, W, 10, rgb565(10, 10, 18));
     gfx_fill_rect(fb, 0, y0 + 9, W, 1, rgb565(60, 60, 80));
-    const char *msg = goal ? "GOOOL  *  MBAPPE 10  *  " : "MAREA  *  RELOJ  *  ";
+    const char *msg = goal ? "GOOOL  *  GOOOL  *  " : "MAREA  *  RELOJ  *  ";
     int mw = gfx_text_width(msg, 1) + 6, off = (int)(t / 25 % (uint32_t)mw);
     uint16_t c = goal ? ((t / 150) & 1 ? rgb565(255, 230, 60) : rgb565(255, 255, 255)) : rgb565(90, 200, 255);
     for (int x = -off; x < W; x += mw) gfx_text_ol(fb, x, y0 + 1, msg, c, rgb565(10, 10, 18), 1, 0);
@@ -618,7 +618,7 @@ void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // Name tag over the crossed-arms pose
     if (s_front && ms < T_FADE) {
-        const char *tag = "MBAPPE 10";
+        const char *tag = "10";
         int tw = gfx_text_width(tag, 1);
         gfx_text_ol(fb, s_x - tw / 2, s_g - 66, tag, rgb565(255, 255, 255), rgb565(22, 16, 28), 1, 1);
     }
@@ -706,7 +706,7 @@ void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
 
     // Stadium scoreboard with the time, over the upper stands
     int sbw = 190, sbx = (WW - sbw) / 2;
-    gfx_darken_rect(fb, sbx, 26, sbw, 62, 6, 3);
+    gfx_darken_rect(fb, sbx, 26, sbw, 72, 6, 3);  // tall enough for the seconds bar under the digits
     gfx_fill_rect(fb, sbx + 6, 27, sbw - 12, 1, rgb565(90, 200, 255));
     const uint16_t amber[4] = {rgb565(255, 250, 220), rgb565(255, 228, 140), rgb565(255, 190, 70), rgb565(230, 130, 40)};
     char hhmm[8];
@@ -714,7 +714,7 @@ void goal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     pix_digits_draw(fb, (WW - pix_digits_width("00:00", 5)) / 2, 34, hhmm, 5, amber, rgb565(40, 16, 10));
     if (g_app.show_secs && g_now.valid) {
         int bw = 140, bx2 = (WW - bw) / 2;
-        gfx_fill_rect(fb, bx2, 80, bw, 2, rgb565(40, 40, 60));
-        gfx_fill_rect(fb, bx2, 80, (int)(bw * g_now.minute_ms / 60000), 2, amber[1]);
+        gfx_fill_rect(fb, bx2, 91, bw, 2, rgb565(40, 40, 60));
+        gfx_fill_rect(fb, bx2, 91, (int)(bw * g_now.minute_ms / 60000), 2, amber[1]);
     }
 }

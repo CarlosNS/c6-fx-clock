@@ -37,6 +37,9 @@ typedef struct {
     volatile bool touch;       // finger currently on the phone pad
     volatile int tx, ty;       // finger position on the pad, 0..1000
     volatile int bri_override; // brightness forced by an app (flashlight), -1 = none
+    // Where gravity pulls, smoothed, in mg along the screen: x to the right, y down (faces that
+    // react to how the watch is held, like Lluvia). Updated by the main loop from the accelerometer.
+    volatile int grav_x, grav_y;
     volatile bool phone_linked;  // the phone app is connected over Bluetooth
     volatile int bat_pct;        // battery level 0..100, -1 unknown (refreshed every few seconds)
     volatile bool bat_chg;       // plugged in: charging, or full on USB (the bolt shows)
@@ -70,6 +73,10 @@ void sd_check(void);
 // {"st":"ok","path":"/Música","free":B,"total":B,"list":[{"n":"Olas.mp3","d":0,"s":5200000,"m":epoch}]}.
 // st is "none" (no card), "bad" (unreadable) or "nodir". path is from the card's root ("/" = root).
 size_t sd_list_json(const char *path, char *buf, size_t size);
+// Writes a whole file on the microSD (path from the card's root, its folder made if needed); false on error
+bool sd_write_file(const char *path, const void *data, size_t len);
+// Prints a file of the microSD on the console (calibration logs)
+bool sd_print_file(const char *path);
 // Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
 void power_off_now(bool really);
 // Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it

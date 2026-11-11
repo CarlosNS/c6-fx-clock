@@ -259,6 +259,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
   <div class="list">
     <a class="row" href="#pantalla"><div class="t"><b data-en="Display">Pantalla</b><small data-en="Brightness, sleep, night mode">Brillo, apagado, modo noche</small></div><span class="go" aria-hidden="true">›</span></a>
     <a class="row" href="#hora"><div class="t"><b data-en="Time">Hora</b><small data-en="24-hour clock, seconds">Formato 24 h, segundos</small></div><span class="go" aria-hidden="true">›</span></a>
+    <div class="row hide" id="goalrow"><div class="t"><b data-en="Daily steps goal">Objetivo de pasos diario</b><small data-en="From 1,000 to 50,000">De 1.000 a 50.000</small></div><input type="number" id="goal" min="1000" max="50000" step="500" inputmode="numeric" style="width:120px;background:var(--noche);color:var(--crema);border:3px solid var(--linea);min-height:46px;padding:0 8px;font:inherit"></div>
   </div>
   <div class="hide stack" id="voicebox" style="gap:12px">
   <p class="lbl" data-en="Voice commands">Órdenes de voz</p>
@@ -363,6 +364,8 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <div class="row"><div class="t"><b data-en="Firmware">Firmware</b><small id="otainfo">--</small></div><span class="j" style="font-size:22px" id="ver">--</span></div>
     <div class="row"><div class="t"><b data-en="Performance">Rendimiento</b><small><span id="fps">--</span> fps · <span id="heap">--</span> KB <span data-en="free">libres</span></small></div></div>
     <div class="row"><div class="t"><b data-en="Debug info on screen">Info de depuración en pantalla</b><small data-en="Face name, fps and IP">Nombre de la esfera, fps e IP</small></div><input type="checkbox" class="sw" id="ovl" aria-label="Info de depuración"></div>
+    <div class="row"><div class="t"><b data-en="Reset settings">Restablecer ajustes</b><small data-en="The watch's settings back to the factory values; the language stays">Los ajustes del reloj vuelven a los de fábrica; el idioma se queda</small></div><button class="btn" id="reset" style="color:var(--coral)" data-en="Reset">Restablecer</button></div>
+    <div class="row col"><div class="t"><b data-en="Step counter calibration">Calibrar el podómetro</b><small id="slogst" data-en="Records the accelerometer to the microSD while you walk a number of steps you count yourself">Graba el acelerómetro en la microSD mientras das un número de pasos que cuentas tú</small></div><button class="btn" id="slog" data-en="Start recording">Empezar a grabar</button></div>
     <div class="row" id="moderow"><div class="t"><b data-en="Connection mode">Modo de conexión</b><small id="modetxt"></small></div><button class="btn" id="tomode">Cambiar</button></div>
     <div class="row col" id="wifionly">
       <div class="t"><b data-en="Update over Wi-Fi (file)">Actualizar por WiFi (archivo)</b><small data-en="Pick marea-ota.bin from the webflasher folder. If the new version failed to start, the watch goes back to the previous one by itself.">Elige marea-ota.bin de la carpeta webflasher. Si la versión nueva fallase al arrancar, el reloj vuelve solo a la anterior.</small></div>
@@ -504,7 +507,17 @@ bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind
 // Voice commands: the setting lives on the watch; in the app, switching it on also asks for the microphone
 $('voice').onchange=()=>{lastUser=Date.now();const on=$('voice').checked;send('voice '+(on?1:0));status.voice=on?1:0;
  if(L.kind==='android'){if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice();appInfo()}};
-window.voicePermission=ok=>{appInfo()};bind('secs','secs');
+window.voicePermission=ok=>{appInfo()};
+// Steps goal: rounded to 500 and kept within the watch's range
+$('goal').onchange=()=>{lastUser=Date.now();let v=Math.round((+$('goal').value||10000)/500)*500;v=Math.max(1000,Math.min(50000,v));$('goal').value=v;send('goal '+v);status.goal=v;homeTiles()};
+$('slog').onclick=()=>{const on=status.slog===undefined;send('steplog '+(on?1:0));status.slog=on?0:undefined;slogShow();setTimeout(poll,600)};
+function slogShow(){const on=status.slog!==undefined;$('slog').textContent=on?tr('Terminar y guardar','Stop and save'):tr('Empezar a grabar','Start recording');
+ $('slogst').textContent=on?tr(`Grabando: ${status.slog} muestras (unos ${Math.round(status.slog/21)} s)`,`Recording: ${status.slog} samples (about ${Math.round(status.slog/21)} s)`)
+  :tr('Graba el acelerómetro en la microSD mientras das un número de pasos que cuentas tú','Records the accelerometer to the microSD while you walk a number of steps you count yourself')}
+$('reset').onclick=()=>{if(!ask(tr('¿Restablecer los ajustes?','Reset the settings?'),
+ tr('Los ajustes del reloj vuelven a los de fábrica: brillo 80 %, modo noche de 23 a 7 h al 10 %, apagado a los 10 s, levantar la muñeca y un toque para encender, 24 h con segundos, volumen 70 %, sin no molestar, WiFi y voz apagados, objetivo de 10.000 pasos, todas las esferas en el cambio automático (que queda apagado), velocidad 75 % y la esfera Plasma. Se quedan el idioma, los móviles emparejados, la red WiFi, las alarmas, los pasos y la hora.',
+ 'The watch settings go back to the factory values: brightness 80 %, night mode 23 to 7 h at 10 %, off after 10 s, raise and one tap to wake, 24 h with seconds, volume 70 %, no do not disturb, Wi-Fi and voice off, a 10,000 steps goal, every face in the automatic change (which is off), speed 75 % and the Plasma face. The language, paired phones, Wi-Fi network, alarms, steps and time stay.'),
+ tr('Restablecer','Reset')))return;send('reset settings');setTimeout(poll,800)};bind('secs','secs');
 // Clasico: dial hue. The swatch mimics the dial's mid tone (same saturation as on the watch).
 const swatch=h=>$('chuesw').style.background=`hsl(${h} 62% 30%)`;
 $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+$('chue').value)};
@@ -566,6 +579,8 @@ function show(s,relang){status=s;
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
+  slogShow();
+  if(s.goal!==undefined){$('goalrow').classList.remove('hide');if(document.activeElement!==$('goal'))$('goal').value=s.goal}
   if(s.voice!==undefined){$('voicebox').classList.remove('hide');$('voice').checked=!!s.voice}
   if(s.tap!==undefined){$('taprow').classList.remove('hide');if(document.activeElement!==$('tap'))$('tap').value=s.tap}
   if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}

@@ -2,6 +2,17 @@
 
 ## Sin publicar: Marea (3.0.0)
 
+### 3.0.0-beta.9 y app 0.8.0 (en preparación)
+
+- **Esferas nuevas:** *Disfruta* (un prado mecido por el viento, sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
+- **Coloso** sustituye a *Arena*: un reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer.
+- **Engranajes**, rehecha: el interior de una torre del reloj gótica, con engranajes enormes, péndulo, cadenas y luz de luna.
+- **Lluvia** responde al acelerómetro: las gotas resbalan hacia donde inclinas el reloj.
+- **Restablecer ajustes** en el reloj y en la app, con confirmación; los valores de fábrica están en el manual.
+- **Objetivo de pasos** editable en la app, y **calibración del podómetro** (graba el acelerómetro en la microSD).
+- Arreglado: en *Aventura* la fecha y el segundero pisaban la hora; en *Gol* el segundero también, y ya no sale el nombre de un jugador real; en *Pasos* el círculo pisaba el título; en el editor de alarmas las letras de los días se salían de sus casillas; la batería salía dos veces en los ajustes rápidos.
+
+
 > **Marea: el reloj pasa a la Waveshare ESP32-S3-Touch-AMOLED-2.06.** Pantalla AMOLED táctil de 410×502, batería, reloj de hardware, acelerómetro, altavoz y microSD. El ESP32-C6 deja de mantenerse (su última versión es la 2.1.0).
 
 - **Sistema nuevo** con el estilo *Marea Solsticial*: lanzador de apps (deslizar desde abajo), ajustes rápidos (desde arriba), selector de esferas (mantener el dedo) y volver deslizando desde la izquierda o con BOOT. Textos en español o inglés.

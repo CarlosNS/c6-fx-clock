@@ -49,12 +49,12 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "SYNTHWAVE", .res = FX_WIDE, .enter = synth_enter, .render = synth_render,
      .label = "Synthwave", .group = FX_G_EFFECTS,
      .desc = "Atardecer retro de los 80: sol a franjas, rejilla de neón, palmeras y números cromados."},
-    {.name = "ARENA", .res = FX_WIDE, .enter = sand_enter, .render = sand_render,
-     .label = "Arena", .group = FX_G_CLOCKS,
-     .desc = "Reloj de arena con física de granos: se vacía exactamente en un minuto y da la vuelta."},
+    {.name = "COLOSO", .res = FX_WIDE, .enter = sand_enter, .render = sand_render,
+     .label = "Coloso", .group = FX_G_CLOCKS,
+     .desc = "Un reloj de arena del tamaño de una torre, visto desde abajo en el desierto al atardecer. La arena tarda una hora en caer; la hora, grabada en la base."},
     {.name = "ENGRANAJES", .res = FX_WIDE, .enter = gears_enter, .render = gears_render,
      .label = "Engranajes", .group = FX_G_CLOCKS,
-     .desc = "Reloj analógico mecánico: engranajes que engranan, volante oscilante y agujas con segundero."},
+     .desc = "Dentro de una torre del reloj gótica: engranajes enormes que avanzan a tirones cada segundo, cadenas, péndulo y luz de luna por el ventanal."},
     // 16: retired (Acuario, removed for good on 2026-11-07). The number stays taken.
     {.name = "RETIRED", .retired = true, .label = "", .desc = ""},
     {.name = "LLUVIA", .res = FX_WIDE, .enter = rain_enter, .render = rain_render,
@@ -80,6 +80,12 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "ONIX", .res = FX_NATIVE, .opts = "ox", .enter = onix_enter, .render = onix_render,
      .label = "Ónix", .group = FX_G_CLOCKS,
      .desc = "Analógica minimalista para AMOLED: negro puro con los píxeles apagados, índices finos, agujas cálidas y una estela de luz que recorre la minutería marcando los segundos. Se desplaza un poco cada minuto para cuidar la pantalla."},
+    {.name = "DISFRUTA", .res = FX_WIDE, .enter = relax_enter, .render = relax_render,
+     .label = "Disfruta", .group = FX_G_NATURE,
+     .desc = "Tiempo libre: un prado al atardecer con la hierba y el árbol mecidos por el viento. Sin hora, solo «Disfruta»."},
+    {.name = "EL ESCULTOR", .res = FX_WIDE, .enter = sculpt_enter, .render = sculpt_render,
+     .label = "El escultor", .group = FX_G_CLOCKS,
+     .desc = "Un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas, del bloque en bruto a la estatua de mármol y oro al cumplir el objetivo."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

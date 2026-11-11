@@ -19,9 +19,10 @@ La página tiene el estilo del reloj (*Marea Solsticial*: pixel art nocturno, co
   - **Pantalla:** brillo, siempre encendida, levantar la muñeca, tocar para encender, apagar tras y modo noche (horas y brillo).
   - **Órdenes de voz:** el interruptor y ejemplos (ver [[Manual del reloj]]). Solo funcionan con la app de Android; al activarlas, la app pide el permiso de micrófono.
   - **Hora:** formato 24 h y segundos. La hora llega sola desde el móvil.
+  - **Objetivo de pasos diario:** de 1.000 a 50.000, en saltos de 500.
   - **Móvil y conexión:** si el reloj está conectado, olvidarlo, los permisos de la app (segundo plano, música y llamadas, y micrófono si las órdenes de voz están activas) y el WiFi del reloj (interruptor y red).
   - **Actualizaciones:** versión del reloj y de la app, y botones para actualizar (ver [[Actualizaciones]]).
-  - **Avanzado:** sincronizar la hora a mano, la sincronización de la app, batería, firmware, rendimiento, información de depuración en la pantalla y actualizar subiendo un archivo (solo por WiFi).
+  - **Avanzado:** restablecer los ajustes (con una ventana que explica qué vuelve a fábrica y qué se queda), calibrar el podómetro (grabar el acelerómetro en la microSD), sincronizar la hora a mano, la sincronización de la app, batería, firmware, rendimiento, información de depuración en la pantalla y actualizar subiendo un archivo (solo por WiFi).
 
 Los nombres y las descripciones de las esferas vienen del firmware y por ahora solo están en español.
 

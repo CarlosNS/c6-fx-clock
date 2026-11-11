@@ -192,6 +192,63 @@ static size_t json_str(char *buf, size_t n, size_t size, const char *s)
     return n;
 }
 
+bool sd_write_file(const char *path, const void *data, size_t len)
+{
+    if (!s_lock) sd_check();
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine = false, ok = false;
+    int st = SD_OK;
+    if (!s_card) {
+        st = mount(false);
+        mine = st == SD_OK;
+    }
+    if (st == SD_OK) {
+        static char full[220];
+        snprintf(full, sizeof(full), MOUNT "%s", path);
+        char *slash = strrchr(full, '/');  // its folder, if it is not there yet
+        if (slash && slash > full + strlen(MOUNT)) {
+            *slash = 0;
+            mkdir(full, 0775);
+            *slash = '/';
+        }
+        FILE *f = fopen(full, "wb");
+        if (f) {
+            ok = fwrite(data, 1, len, f) == len;
+            ok = fclose(f) == 0 && ok;
+        }
+    }
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return ok;
+}
+
+bool sd_print_file(const char *path)
+{
+    if (!s_lock) sd_check();
+    if (strstr(path, "/..")) return false;
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine = false, ok = false;
+    int st = SD_OK;
+    if (!s_card) {
+        st = mount(false);
+        mine = st == SD_OK;
+    }
+    if (st == SD_OK) {
+        static char full[220], buf[256];
+        snprintf(full, sizeof(full), MOUNT "%s", path);
+        FILE *f = fopen(full, "rb");
+        if (f) {
+            size_t n;
+            while ((n = fread(buf, 1, sizeof(buf), f)) > 0) fwrite(buf, 1, n, stdout);
+            fclose(f);
+            ok = true;
+        }
+    }
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return ok;
+}
+
 size_t sd_list_json(const char *path, char *buf, size_t size)
 {
     if (!path || !*path) path = "/";

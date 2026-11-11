@@ -49,8 +49,8 @@ static const setting_t SETTINGS[] = {
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
     {"ohue", &g_app.onix_hue, 0, 359, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
-    {"tap", &g_app.tap_wake, 0, 2, true, NULL},
-    {"voice", &g_app.voice, 0, 1, true, NULL},      // voice commands through the phone (hold BOOT)      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
+    {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
+    {"voice", &g_app.voice, 0, 1, true, NULL},      // voice commands through the phone (hold BOOT)
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
     {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb
     {"wifi", &g_app.wifi_on, 0, 1, true, on_wifi},    // the watch's own Wi-Fi radio
@@ -62,8 +62,12 @@ static const setting_t SETTINGS[] = {
 
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
 
+// The factory values: whatever g_app holds before the saved settings are read (main.c's initializer)
+static int s_default[NSET];
+
 void settings_load(void)
 {
+    for (size_t i = 0; i < NSET; i++) s_default[i] = *SETTINGS[i].val;
     nvs_handle_t h;
     if (nvs_open("clock", NVS_READONLY, &h) != ESP_OK) return;
     for (size_t i = 0; i < NSET; i++) {
@@ -89,6 +93,17 @@ void settings_save(void)
     nvs_commit(h);
     nvs_close(h);
     ESP_LOGI(TAG, "Saved");
+}
+
+void settings_reset(void)
+{
+    // Every saved setting back to its factory value but the language; the faces' own speeds go too
+    for (size_t i = 0; i < NSET; i++)
+        if (SETTINGS[i].persist && strcmp(SETTINGS[i].key, "lang") != 0) settings_set(SETTINGS[i].key, s_default[i]);
+    memset(s_fx_speed, 0, sizeof(s_fx_speed));
+    settings_save();
+    g_app.dirty = false;
+    ESP_LOGI(TAG, "Settings reset");
 }
 
 bool settings_set(const char *key, int value)

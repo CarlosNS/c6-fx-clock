@@ -39,19 +39,20 @@ static void page_today(void)
     char buf[32], line[48];
     int st = steps_today(), goal = g_app.step_goal > 0 ? g_app.step_goal : 10000;
     int pm = st >= goal ? 1000 : st * 1000 / goal;
-    ring(UI_W / 2, 236, 112, pm);
+    // Under the title (it ends near y 130): centre 256, radius 100
+    ring(UI_W / 2, 256, 100, pm);
     thousands(buf, sizeof(buf), st);
     int sc = ui_fit(&ui_jersey, 6, 3, 180, buf);
-    ui_print_c(&ui_jersey, sc, UI_W / 2, 236 - sc * 9, buf, MS_ORO, true);
+    ui_print_c(&ui_jersey, sc, UI_W / 2, 256 - sc * 9, buf, MS_ORO, true);
     thousands(buf, sizeof(buf), goal);
     snprintf(line, sizeof(line), TR("de %s", "of %s"), buf);
-    ui_print_c(&ui_vt, 2, UI_W / 2, 236 + 30, line, MS_GRIS, false);
+    ui_print_c(&ui_vt, 2, UI_W / 2, 256 + 22, line, MS_GRIS, false);
     // Rough figures for an adult: 0.04 kcal and 0.75 m per step
     int kcal = st * 4 / 100, m = st * 3 / 4;
     snprintf(buf, sizeof(buf), "%d kcal", kcal);
-    ui_print(&ui_vt, 2, 72, 380, buf, MS_CREMA);
+    ui_print(&ui_vt, 2, 72, 384, buf, MS_CREMA);
     snprintf(buf, sizeof(buf), "%d,%d km", m / 1000, m % 1000 / 100);
-    ui_print_r(&ui_vt, 2, UI_W - 72, 380, buf, MS_CREMA);
+    ui_print_r(&ui_vt, 2, UI_W - 72, 384, buf, MS_CREMA);
 }
 
 #define G_X 48

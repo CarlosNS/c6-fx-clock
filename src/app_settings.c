@@ -71,6 +71,9 @@ static void info_forget(char *b, size_t n)
 {
     snprintf(b, n, "%s", s_forget_armed ? TR("toca otra vez para confirmar", "tap again to confirm") : TR("borra los emparejados", "removes paired phones"));
 }
+static bool s_reset_dlg;
+static void info_reset(char *b, size_t n) { snprintf(b, n, "%s", TR("vuelve a los valores de fábrica", "back to the factory values")); }
+static void act_reset(void) { s_reset_dlg = true; }
 static void act_forget(void)
 {
     if (!s_forget_armed) {
@@ -109,6 +112,7 @@ static const row_t ROWS[] = {
     {R_INFO, "Memoria libre", "Free memory", NULL, NULL, 0, 0, NULL, info_memory},
     {R_INFO, "Batería", "Battery", NULL, NULL, 0, 0, NULL, info_battery},
     {R_INFO, "Encendido", "Uptime", NULL, NULL, 0, 0, NULL, info_uptime},
+    {R_ACTION, "Restablecer ajustes", "Reset settings", NULL, NULL, 0, 0, NULL, info_reset, act_reset},
 };
 #define NROWS ((int)(sizeof(ROWS) / sizeof(ROWS[0])))
 #define HEAD_H 46
@@ -204,6 +208,11 @@ static bool draw(uint32_t now, bool force)
     ui_shade(0, 0, UI_W, TOP - 16, 1);
     ui_status_bar();
     ui_print_c(&ui_jersey, 4, UI_W / 2, 64, TR("Ajustes", "Settings"), MS_ORO, true);
+    if (s_reset_dlg)
+        ui_dialog(TR("¿Restablecer?", "Reset?"),
+                  TR("Los ajustes vuelven a los de fábrica. Se quedan el idioma, los móviles, la red WiFi, las alarmas y los pasos.",
+                     "Settings go back to the factory values. The language, phones, Wi-Fi network, alarms and steps stay."),
+                  TR("Cancelar", "Cancel"), TR("Restablecer", "Reset"), UI_BTN_DANGER);
     return true;
 }
 
@@ -216,6 +225,15 @@ static void slide_to(const row_t *r, int x)
 
 static void event(const ui_event_t *e)
 {
+    if (s_reset_dlg) {  // the dialog takes every touch until it is answered
+        if (e->type == EV_TAP) {
+            int hit = ui_dialog_hit(e->x, e->y, true);
+            if (hit == 2) settings_reset();
+            if (hit) s_reset_dlg = false;
+            sys_dirty();
+        }
+        return;
+    }
     switch (e->type) {
     case EV_DOWN:
         s_axis_known = s_sideways = false;

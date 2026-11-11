@@ -129,8 +129,10 @@ static void draw_edit(void)
     for (int d = 0; d < 7; d++) {
         int x = 52 + d * 44;
         bool on = s_draft.days >> d & 1;
+        // A framed box with the letter in its middle (Jersey at 3x hung below a 44 px box)
         ui_rect(x, E_DAYS_Y, 38, 44, on ? MS_ORO : MS_PANEL);
-        ui_print_c(&ui_jersey, 3, x + 19, E_DAYS_Y + 2, alarm_day_letter(d), on ? MS_NOCHE : MS_GRIS, false);
+        ui_frame(x, E_DAYS_Y, 38, 44, 2, on ? MS_ORO2 : MS_LINEA);
+        ui_print_c(&ui_jersey, 2, x + 19, E_DAYS_Y + (44 - ui_line_h(&ui_jersey, 2)) / 2, alarm_day_letter(d), on ? MS_NOCHE : MS_CREMA, false);
     }
     if (!s_new) ui_button(UI_W / 2 - 158, E_BTN_Y, 148, 64, TR("Borrar", "Delete"), UI_BTN_DANGER, false);
     ui_button(s_new ? UI_W / 2 - 74 : UI_W / 2 + 10, E_BTN_Y, 148, 64, TR("Listo", "Done"), UI_BTN_MAIN, false);

@@ -1,181 +1,123 @@
-// "Arena" (full screen, wide canvas): an hourglass with real falling-sand physics. A gate at the neck lets
-// exactly enough grains through for the top bulb to empty in one minute; when the minute
-// changes the hourglass turns over.
+// "Coloso" (full screen, wide canvas, pixel art on art.c): a colossal hourglass seen from below,
+// between two stone pillars that converge into a desert dusk sky, with clouds drifting across its
+// waist. A tiny cloaked figure at its foot looks up. The sand takes an hour to fall: the heap in the
+// near (huge) bulb is the minutes gone, the far bulb what is left. The time is carved on the base.
+#include <math.h>
 #include <stdio.h>
-#include "esp_attr.h"
-#include <string.h>
-#include "esp_attr.h"
 #include "app.h"
-#include "esp_attr.h"
+#include "art.h"
 #include "control.h"
-#include "esp_attr.h"
 #include "fx.h"
-#include "esp_attr.h"
 #include "gfx.h"
-#include "esp_attr.h"
 
-#define W WW
-#define H WH
-#define CELL 2
-#define GW 56            // grid columns (112 px wide)
-#define GH 104           // grid rows (208 px tall)
-#define GX ((W - GW * CELL) / 2)
-#define GY 94
-#define NECK (GH / 2)
-#define FLIP_MS 900
+#define CX 68
+#define NECK 56    // art y of the neck (high up: the near bulb fills the view)
+#define BASE 132   // art y where the glass meets the base
 
-EXT_RAM_BSS_ATTR static uint8_t g[GH][GW];        // 0 empty, 1..255 grain (shade)
-static uint8_t s_half[GH];       // glass half-width in cells for each row
-static int s_total, s_passed, s_last_min = -1;
-static uint32_t s_flip_t;
-static bool s_flipping;
+static uint16_t C(uint32_t v) { return rgb565(v >> 16, (v >> 8) & 255, v & 255); }
 
-static void build_glass(void)
+void sand_enter(void) { art_begin(); }
+
+static float lower_w(int y)
 {
-    for (int y = 0; y < GH; y++) {
-        int d = y < NECK ? NECK - y : y - NECK + 1;  // distance from the neck
-        int w = 1 + d * d * 26 / (NECK * NECK) + d / 3;
-        if (w > GW / 2 - 1) w = GW / 2 - 1;
-        if (y < 3 || y > GH - 4) w = GW / 2 - 1 - (y < 3 ? 3 - y : y - (GH - 4));
-        s_half[y] = w;
-    }
+    float s = (float)(y - NECK - 1) / (BASE - NECK);
+    float v = sinf(s * 3.14159f * 0.72f);
+    return 3 + 120 * sqrtf(v > 0 ? v : 0);
 }
 
-static inline bool inside(int x, int y)
+static float upper_w(int y)
 {
-    return y >= 0 && y < GH && abs(x * 2 + 1 - GW) < s_half[y] * 2;
-}
-
-// Top bulb filled up to `frac` (0..256) of its capacity, the rest piled in the bottom
-static void fill(int frac)
-{
-    memset(g, 0, sizeof(g));
-    int cap = 0;
-    for (int y = 0; y < NECK; y++)
-        for (int x = 0; x < GW; x++) cap += inside(x, y);
-    int top = cap * frac / 256, bottom = cap - top;
-    s_total = top;
-    s_passed = 0;
-    for (int y = NECK - 1; y >= 0 && top > 0; y--)  // top bulb settles at the bottom of the bulb
-        for (int x = 0; x < GW && top > 0; x++)
-            if (inside(x, y)) { g[y][x] = 160 + (fx_hash(x, y) & 63); top--; }
-    for (int y = GH - 1; y > NECK && bottom > 0; y--)
-        for (int x = 0; x < GW && bottom > 0; x++)
-            if (inside(x, y)) { g[y][x] = 160 + (fx_hash(x, y + 7) & 63); bottom--; }
-}
-
-void sand_enter(void)
-{
-    build_glass();
-    fill(g_now.valid ? 256 - (int)(g_now.minute_ms * 256 / 60000) : 256);
-    s_flipping = false;
-    s_last_min = g_now.valid ? g_now.m : -1;
-}
-
-static void step(int target)
-{
-    for (int y = GH - 2; y >= 0; y--) {
-        bool ltr = fx_hash(y, s_passed) & 1;
-        for (int i = 0; i < GW; i++) {
-            int x = ltr ? i : GW - 1 - i;
-            if (!g[y][x]) continue;
-            if (y == NECK - 1 && s_passed >= target) continue;  // the gate keeps time
-            int ny = y + 1;
-            int nx = x;
-            if (!(inside(x, ny) && !g[ny][x])) {
-                int d = (fx_hash(x, y + s_passed) & 1) ? 1 : -1;
-                if (inside(x + d, ny) && !g[ny][x + d]) nx = x + d;
-                else if (inside(x - d, ny) && !g[ny][x - d]) nx = x - d;
-                else continue;
-            }
-            g[ny][nx] = g[y][x];
-            g[y][x] = 0;
-            if (y == NECK - 1) s_passed++;
-        }
-    }
+    float s = (float)(NECK - y) / (NECK - 8);
+    float v = sinf(s * 3.14159f * 0.75f);
+    return 3 + 34 * sqrtf(v > 0 ? v : 0);
 }
 
 void sand_render(uint16_t *fb, uint32_t t, uint32_t dt)
 {
     int dx_, dy_;
     app_take_drag(&dx_, &dy_);
-
-    if (g_now.valid && g_now.m != s_last_min) {
-        s_last_min = g_now.m;
-        s_flipping = true;
-        s_flip_t = t;
+    float ts = t / 1000.0f;
+    static const uint32_t SKY[] = {0x120b2e, 0x241447, 0x432060, 0x7a3466, 0xb84d5e, 0xe57a4c, 0xf4b162};
+    uint16_t sky[7];
+    for (int i = 0; i < 7; i++) sky[i] = C(SKY[i]);
+    art_bands(sky, 7, 0, 150);
+    for (int i = 0; i < 40; i++) {  // stars in the high sky, twinkling
+        uint32_t h = fx_hash(i, 77);
+        int x = h % ART_W, y = (h >> 8) % 60;
+        if (sinf(ts * 2 + i * 1.7f) > -0.3f) art_px(x, y, (h >> 20) & 3 ? C(0x9a8fc0) : C(0xf5ebdc));
     }
-    float squash = 1;
-    if (s_flipping) {
-        uint32_t ft = t - s_flip_t;
-        if (ft >= FLIP_MS) {
-            s_flipping = false;
-            // The sand that piled at the bottom is now the top: mirror the grid
-            for (int y = 0; y < GH / 2; y++)
-                for (int x = 0; x < GW; x++) {
-                    uint8_t k = g[y][x];
-                    g[y][x] = g[GH - 1 - y][x];
-                    g[GH - 1 - y][x] = k;
-                }
-            s_total = 0;
-            for (int y = 0; y < NECK; y++)
-                for (int x = 0; x < GW; x++) s_total += g[y][x] != 0;
-            s_passed = 0;
-        } else {
-            squash = (float)(ft < FLIP_MS / 2 ? FLIP_MS / 2 - ft : ft - FLIP_MS / 2) / (FLIP_MS / 2);
+    // dunes far away, then the ground
+    for (int x = 0; x < ART_W; x++) {
+        int h = (int)(6 + sinf(x * 0.07f) * 3 + sinf(x * 0.19f + 1) * 2);
+        art_rect(x, 150 - h, 1, h, C(0xa8563f));
+        art_px(x, 150 - h, C(0xd77a52));
+    }
+    for (int y = 150; y < ART_H; y++) art_rect(0, y, ART_W, 1, y < 156 ? C(0xc98a55) : y < 162 ? C(0xb0703f) : C(0x8f5733));
+    // the pillars, converging upwards (seen from below)
+    for (int side = -1; side <= 1; side += 2)
+        for (int y = 0; y < 150; y++) {
+            float s = y / 150.0f, w = 4 + 22 * s * s;
+            float in = side < 0 ? 10 + (1 - s) * 44 : ART_W - 10 - (1 - s) * 44;
+            int x0 = (int)(side < 0 ? in - w : in);
+            int block = (int)((150 - y) / (6 + 10 * s)) & 1;
+            art_rect(x0, y, (int)w + 1, 1, block ? C(0x3c2a4a) : C(0x47324f));
+            art_px((int)(side < 0 ? in - 1 : in), y, C(0x6b4f63));  // the edge lit by the sky
         }
-    }
-    if (!s_flipping) {
-        int target = g_now.valid ? (int)((int64_t)s_total * g_now.minute_ms / 59000) : s_passed + 2;
-        for (int k = 0; k < 2; k++) step(target);
-    }
-
-    // Background: dark wooden desk with a warm lamp glow
-    for (int y = 0; y < H; y++) {
-        int f = y * 256 / H;
-        gfx_fill_rect(fb, 0, y, W, 1, rgb565(30 + f / 10, 20 + f / 14, 18 + f / 20));
-    }
-
-    // Hourglass: draw rows through a vertical squash for the turning animation
-    int cy = GY + GH;  // center of the glass in pixels
-    int half_h = GH * CELL / 2 + 14;
-    bool upside = s_flipping && (t - s_flip_t) > FLIP_MS / 2;
-    uint16_t wood = rgb565(120, 70, 36), wood_l = rgb565(170, 110, 60);
-    int ph = (int)(half_h * squash);
-    gfx_fill_rect(fb, GX - 10, cy - ph - 8, GW * CELL + 20, 8, wood_l);
-    gfx_fill_rect(fb, GX - 10, cy + ph, GW * CELL + 20, 8, wood);
-    gfx_fill_rect(fb, GX - 8, cy - ph, 5, ph * 2, wood);
-    gfx_fill_rect(fb, GX + GW * CELL + 3, cy - ph, 5, ph * 2, wood);
-
-    uint16_t glass = rgb565(140, 170, 190);
-    for (int py = cy - GH * CELL / 2 * squash; py < cy + GH * CELL / 2 * squash; py++) {
-        if (py < 0 || py >= H) continue;
-        int gy = (int)((py - cy) / (CELL * (squash < 0.05f ? 0.05f : squash))) + GH / 2;
-        if (gy < 0 || gy >= GH) continue;
-        if (upside) gy = GH - 1 - gy;
-        int hw = s_half[gy] * CELL;
-        uint16_t *row = fb + py * W;
-        int x0 = W / 2 - hw, x1 = W / 2 + hw;
-        for (int x = x0; x < x1; x++) row[x] = gfx_blend(row[x], glass, 3);
-        row[x0 - 1] = row[x1] = glass;
-        if (gy < GH / 2 - 4) row[x0 + 3] = gfx_blend(row[x0 + 3], rgb565(255, 255, 255), 8);  // reflection
-        for (int gx = 0; gx < GW; gx++) {
-            uint8_t s = g[gy][gx];
-            if (!s) continue;
-            uint16_t c = rgb565(s, s * 3 / 4, s / 3);
-            int x = GX + gx * CELL;
-            row[x] = row[x + 1] = c;
+    // caps: small and far above, wide and heavy below
+    art_rect(50, 4, 37, 4, C(0x2b1d38));
+    art_rect(50, 4, 37, 1, C(0x6b4f63));
+    art_rect(6, BASE, 125, 18, C(0x2b1d38));
+    art_rect(6, BASE, 125, 1, C(0x7c5c6e));
+    art_rect(6, BASE + 17, 125, 1, C(0x1a1024));
+    // glass and sand
+    float p = g_now.valid ? (g_now.m * 60000.0f + g_now.minute_ms) / 3600000.0f : 0.5f;
+    float hU = (1 - p) * 30, hL = 3 + p * 48, mound = 7 * (p * 3 < 1 ? p * 3 : 1);
+    for (int y = 8; y < BASE; y++) {
+        float w = y <= NECK ? upper_w(y) : lower_w(y), x0 = CX - w / 2;
+        for (int x = (int)floorf(x0); x < x0 + w; x++) {
+            float d = fabsf((float)(x - CX)) / (w / 2 + 0.01f);
+            uint16_t col = (x + y) % 3 ? C(0x26304f) : C(0x2c3860);  // glass, the dark sky behind
+            if (y <= NECK) {
+                if (y > NECK - hU + (1 - d) * 4) col = (x * 7 + y * 3) % 5 ? C(0xe0a45c) : C(0xc98a48);
+            } else if (y > BASE - hL - (1 - d) * mound) {
+                col = (x * 5 + y * 7) % 6 ? C(0xe0a45c) : C(0xf2c27a);
+            }
+            art_px(x, y, col);
         }
+        art_px((int)x0, y, C(0x8fa6d8));
+        art_px((int)(x0 + w - 1), y, C(0x5a6aa0));
+        if (y % 4 < 2) art_px((int)x0 + 3, y, C(0xb9c9f0));  // the glass catching the light
     }
-    // Falling stream through the neck
-    if (!s_flipping && s_passed < s_total) {
-        for (int y = cy; y < cy + 40; y += 2)
-            if (fx_hash(y, t / 30) & 1) fb[y * W + W / 2] = rgb565(220, 170, 80);
+    // the falling thread
+    float top = BASE - hL - mound;
+    for (int y = NECK + 1; y < top; y++)
+        if ((y + (int)(ts * 30)) % 3) art_px(CX, y, C(0xf2c27a));
+    // clouds drifting across its waist: it rises above them
+    for (int i = 0; i < 5; i++) {
+        int x = (int)fmodf(i * 41 + ts * (4 + i), ART_W + 50) - 25, y = 26 + (i % 3) * 7;
+        uint16_t c = i & 1 ? C(0xe9a17a) : C(0xd98a72);
+        for (int j = 0; j < 30; j++) art_tint(x + j, y, c, 12), art_tint(x + j, y + 1, c, 12), art_tint(x + j, y + 2, c, 12);
+        for (int j = 6; j < 22; j++) art_tint(x + j, y - 1, c, 12), art_tint(x + j, y - 2, c, 12);
+        for (int j = 3; j < 29; j++) art_tint(x + j, y + 3, C(0xa0566a), 12);
     }
+    // the tiny figure looking up, its cloak in the wind, and a long shadow
+    int fx = CX - 22, fy = 156;
+    art_rect(fx + 1, fy + 8, 14, 1, C(0x6e4227));
+    art_rect(fx, fy, 2, 1, C(0x1b1022));
+    art_rect(fx - 1, fy + 1, 3, 5, C(0x1b1022));
+    art_rect(fx + 2, fy + 2 + (sinf(ts * 3) > 0), 2, 3, C(0x7a2a3a));
+    art_rect(fx - 1, fy + 6, 1, 2, C(0x1b1022));
+    art_rect(fx + 1, fy + 6, 1, 2, C(0x1b1022));
+    for (int i = 0; i < 14; i++)  // sand blown along the ground
+        art_rect((int)fmodf(i * 37 + ts * 40, ART_W), 151 + (i * 13) % 16, 2, 1, C(0xe8b47a));
+    art_blit(fb);
 
-    clock_row_grad(fb, &font_round_m, W / 2, 6, -5, rgb565(255, 240, 210), rgb565(230, 170, 90), rgb565(40, 20, 10), 2);
-    char date[24];
-    clock_date_str(date);
-    ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, H - 16, date, rgb565(230, 200, 150), rgb565(30, 18, 10),
-            FONT_FILL | FONT_OUTLINE);
+    // The time, carved in gold on the base (full resolution)
+    static const uint16_t *gp;
+    static uint16_t gold[4];
+    if (!gp) gold[0] = rgb565(255, 244, 210), gold[1] = rgb565(250, 205, 120), gold[2] = rgb565(232, 160, 70),
+             gold[3] = rgb565(190, 110, 40), gp = gold;
+    char hhmm[8];
+    clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
+    pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, BASE * 2 + 4, hhmm, 3, gold, rgb565(30, 16, 36));
 }

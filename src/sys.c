@@ -181,10 +181,10 @@ static void launcher_event(const ui_event_t *e)
 #define Q_BRI_Y 104
 #define Q_BAR_X 60
 #define Q_BAR_W 290
-// Five tiles: two rows of two and a wide one (find the phone) under them
+// Five tiles: two rows of two and a wide one (find the phone) under them, down to y 464
 #define Q_TILE_Y 192
 #define Q_TILE_W 154
-#define Q_TILE_H 80
+#define Q_TILE_H 84
 #define Q_TILES 5
 static int s_quick_pressed = -1;
 static bool s_bri_drag;
@@ -214,7 +214,7 @@ static void quick_tile_draw(int i, const char *label, const char *state, bool on
     ui_panel(x, y, w, Q_TILE_H, p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : MS_LINEA, 4, true);
     int sc = ui_fit(&ui_jersey, 2, 1, w - 16, label);  // 80 px tiles: room for the label and its state line
     ui_print_c(&ui_jersey, sc, x + w / 2, y + 12, label, on ? MS_ORO2 : MS_CREMA, false);
-    ui_print_c(&ui_vt, 1, x + w / 2, y + 50, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
+    ui_print_c(&ui_vt, 1, x + w / 2, y + 54, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
 }
 
 static bool quick_draw(void)
@@ -240,18 +240,7 @@ static bool quick_draw(void)
                     find_phone_active() ? TR("sonando: toca para parar", "ringing: tap to stop")
                     : g_app.phone_linked ? TR("lo hace sonar", "makes it ring") : TR("sin móvil", "no phone"),
                     find_phone_active(), false);
-    // Battery
-    int by = Q_TILE_Y + 3 * (Q_TILE_H + 10) + 4;
-    if (g_app.bat_pct >= 0)
-        snprintf(buf, sizeof(buf), "%d %%%s", g_app.bat_pct,
-                 g_app.bat_full ? TR(" · cargada", " · full") : g_app.bat_chg ? TR(" · cargando", " · charging") : "");
-    else
-        snprintf(buf, sizeof(buf), "%s", TR("sin batería", "no battery"));
-    // Icon and text centred together; the bottom edge is straight only between the rounded corners
-    int sc = 60 + 14 + ui_print_w(&ui_vt, 2, buf) <= 290 ? 2 : 1;
-    int tw = ui_print_w(&ui_vt, sc, buf), bx = (UI_W - (60 + 14 + tw)) / 2;
-    ui_battery(bx, by + 4, 60, 30, g_app.bat_pct, g_app.bat_chg);
-    ui_print(&ui_vt, sc, bx + 74, by + (sc == 2 ? 0 : 8), buf, g_app.bat_chg ? MS_VERDE : MS_CREMA);
+    // (the battery is in the status bar above: no second copy down here)
     return true;
 }
 

@@ -8,6 +8,7 @@
 #include "batlog.h"
 #include "intro.h"
 #include "voice.h"
+#include "steps.h"
 #include "app_plug.h"
 #include "control.h"
 #include "esp_log.h"
@@ -84,6 +85,19 @@ static void run_line(char *line)
         voice_begin();
         vTaskDelay(pdMS_TO_TICKS(atoi(line + 10)));
         voice_end();
+        return;
+    }
+    if (strncmp(line, "stepsset ", 9) == 0) {
+        steps_debug_set(atoi(line + 9));
+        return;
+    }
+    if (strcmp(line, "grav") == 0) {  // where gravity pulls along the screen (Lluvia), mg
+        printf("grav: x %d y %d\n", g_app.grav_x, g_app.grav_y);
+        return;
+    }
+    if (strncmp(line, "sdcat ", 6) == 0) {  // print a file of the microSD (calibration logs)
+        if (!sd_print_file(line + 6)) printf("sdcat: cannot read %s\n", line + 6);
+        printf("\nsdcat end\n");
         return;
     }
     if (strcmp(line, "plugtest") == 0) {  // the USB cable notice, without unplugging

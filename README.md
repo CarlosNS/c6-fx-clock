@@ -64,8 +64,8 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 9 | WiFi | la hora en grande sobre un espectro tenue de las redes WiFi de alrededor |
 | 12 | Sakura | cerezo en flor junto a un estanque: pétalos que caen revoloteando y ondas donde tocan el agua |
 | 13 | Synthwave | sol a franjas, rejilla de neón, palmeras, números cromados |
-| 14 | Arena | reloj de arena con física de granos: se vacía exactamente en un minuto y gira |
-| 15 | Engranajes | reloj mecánico de esqueleto: engranajes que engranan, volante oscilante, agujas con segundero |
+| 14 | Coloso | reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer |
+| 15 | Engranajes | dentro de una torre del reloj gótica: engranajes que avanzan a tirones, péndulo, cadenas y luz de luna |
 | 17 | Lluvia | gotas-lente en el cristal sobre una ciudad desenfocada, hora en neón que parpadea |
 | 18 | Agujero negro | disco de acreción con efecto Doppler, lente gravitatoria y anillo de fotones; las estrellas se curvan alrededor |
 | 19 | Gol | jugada de fútbol en 16 bits: regate, salto sobre una entrada, gol por la escuadra, confeti y celebración; la hora en el marcador del estadio |
@@ -73,6 +73,8 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 22 | Clásico | reloj de vestir Art Déco: la pantalla es la caja, esfera sunburst con reflejos que se mueven (el color se elige en la app), índices y agujas dauphine doradas, fecha a las 3 y pequeño segundero a las 6 |
 | 23 | Feria de Sevilla | cuenta atrás hasta el alumbrado de la Feria de Abril (la fecha se calcula sola cada año): portada de bombillas, farolillos, toldo y traje de lunares; durante la Feria, fuegos artificiales |
 | 24 | Ónix | analógica minimalista para AMOLED: negro puro con los píxeles apagados, índices finos, agujas cálidas y una estela de luz como segundero; el color del acento se elige en la app y el dibujo se desplaza un poco cada minuto para cuidar la pantalla |
+| 25 | Disfruta | un prado al atardecer mecido por el viento, sin hora: solo «Disfruta» |
+| 26 | El escultor | un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas hasta cumplir el objetivo |
 
 Los números 10, 16 y 20 están **retirados** (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar.
 

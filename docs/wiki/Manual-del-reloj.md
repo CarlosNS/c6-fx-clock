@@ -1,6 +1,6 @@
 Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus aplicaciones. Para instalarlo desde cero, ver [[Instalación]]; para la app del móvil, [[App Android]].
 
-**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Órdenes de voz](#órdenes-de-voz) · [Buscar](#buscar-el-reloj-y-el-móvil) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
+**Índice:** [Lo básico](#lo-básico) · [Gestos](#gestos) · [Botón BOOT](#el-botón-boot) · [Botón PWR](#el-botón-pwr) · [Órdenes de voz](#órdenes-de-voz) · [Buscar](#buscar-el-reloj-y-el-móvil) · [Restablecer](#restablecer-los-ajustes) · [Pantalla](#la-pantalla) · [Barra de estado](#la-barra-de-estado) · [Ajustes rápidos](#ajustes-rápidos) · [Lanzador](#el-lanzador) · [Esferas](#esferas) · [Alarmas](#alarmas) · [Pasos](#pasos) · [Cronómetro](#cronómetro) · [Música](#música) · [Llamadas](#llamadas) · [Linterna](#linterna) · [Archivos y modo USB](#archivos-y-modo-usb) · [Ajustes](#ajustes) · [Hora y tiempo](#la-hora-y-el-tiempo) · [Batería](#la-batería) · [Conexiones](#conexiones)
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sistema.png" alt="Esfera, lanzador, ajustes rápidos y ajustes" width="820">
 
@@ -68,7 +68,7 @@ Qué entiende, por ejemplo:
 | Para | Di |
 |---|---|
 | Crear una alarma | «pon una alarma a las siete y media de lunes a viernes», «despiértame a las 6 y cuarto», «alarma en diez minutos», «alarma a las ocho de la tarde todos los días» |
-| Cambiar de esfera | «pon la esfera Ónix», «cambia a Arena» |
+| Cambiar de esfera | «pon la esfera Ónix», «cambia a Coloso» |
 | No molestar, WiFi, siempre encendida, modo noche, cambio automático | «activa no molestar», «apaga el wifi», «desactiva el cambio automático» |
 | Brillo y volumen | «brillo al 50», «brillo al máximo», «volumen 30» |
 | Abrir una app | «abre el cronómetro», «enciende la linterna», «abre los pasos» |
@@ -85,6 +85,30 @@ Con las órdenes de voz activas, mantener BOOT ya no cambia el cambio automátic
 ## Al enchufar el USB
 
 La pantalla se enciende y dice unos segundos qué trae el cable: **Cargando** (con el cargador), **Cargando y con el ordenador**, **Ordenador** con la batería llena, o **Cargada**. Se quita sola o tocándola.
+
+## Restablecer los ajustes
+
+En *Ajustes → Sistema → Restablecer ajustes* del reloj, o en la app (*Ajustes → Avanzado*), tras una ventana de confirmación. Los ajustes vuelven a los de fábrica:
+
+| Ajuste | Valor de fábrica |
+|---|---|
+| Brillo | 80 % |
+| Modo noche | Sí, de 23:00 a 07:00, al 10 % |
+| Se apaga a los | 10 s |
+| Siempre encendida | No |
+| Levantar la muñeca | Sí |
+| Tocar para encender | Un toque |
+| Formato 24 h / segundos | Sí / sí |
+| Volumen | 70 % |
+| No molestar | No |
+| WiFi del reloj | Apagado |
+| Órdenes de voz | Apagadas |
+| Objetivo de pasos | 10.000 |
+| Esfera | Plasma, con todas en el cambio automático, que queda apagado |
+| Velocidad de las esferas | 75 % en todas |
+| Color de Clásico y de Ónix | Verde y ámbar |
+
+Se conservan el **idioma**, los **móviles emparejados**, la **red WiFi** guardada, las **alarmas**, el **historial de pasos** y la **hora**.
 
 ## La pantalla
 
@@ -166,6 +190,9 @@ El acelerómetro cuenta los pasos todo el día, con la pantalla encendida o apag
 - **Hoy:** el anillo se llena hacia el **objetivo diario** (10 000 por defecto; se cambia en *Ajustes → Objetivo de pasos*), con las calorías y la distancia aproximadas (0,04 kcal y 0,75 m por paso).
 - **Desliza a la izquierda** para ver los **últimos 30 días** como barras; toca una barra para ver los pasos de ese día. Desliza a la derecha para volver a hoy.
 - La cuenta empieza de cero a medianoche.
+
+- **El objetivo** se cambia en *Ajustes → General* del reloj o en la app (*Ajustes → Objetivo de pasos diario*), de 1.000 a 50.000.
+- **Calibrar el podómetro:** en la app, *Ajustes → Avanzado → Calibrar el podómetro → Empezar a grabar*. El reloj guarda el acelerómetro en la microSD (carpeta `pasos`) hasta *Terminar y guardar*, junto con los pasos que contó. Sirve para comparar con pasos contados a mano y afinar el contador.
 
 ## Cronómetro
 

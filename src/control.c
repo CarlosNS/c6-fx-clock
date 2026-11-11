@@ -18,6 +18,7 @@
 #include "net.h"
 #include "ota.h"
 #include "settings.h"
+#include "steps.h"
 #include "update.h"
 #include "alarm.h"
 #include "esp_log.h"
@@ -90,6 +91,20 @@ void app_command(const char *cmd)
         settings_set("nst", b);
         settings_set("nen", c);
         settings_set("nbr", d);
+        return;
+    }
+    if (strcmp(cmd, "steplog 1") == 0) {  // calibration log of the step counter (steps.c)
+        steps_log_start();
+        return;
+    }
+    if (strcmp(cmd, "steplog 0") == 0) {
+        char name[48];
+        steps_log_stop(name, sizeof(name));
+        return;
+    }
+    if (strcmp(cmd, "reset settings") == 0) {  // factory settings (the language stays)
+        settings_reset();
+        sys_dirty();
         return;
     }
     if (strcmp(cmd, "unpair") == 0) {  // forget every paired phone
@@ -183,6 +198,10 @@ size_t app_status_json(char *buf, size_t size)
     if (pmu_battery(&bat) && len < size) {
         n = snprintf(buf + len, size - len, ",\"bat\":%d,\"bmv\":%d,\"chg\":%d,\"usb\":%d",
                      bat.present ? bat.percent : -1, bat.mv, bat.charging, bat.usb);
+        if (n > 0) len += n;
+    }
+    if (steps_log_samples() >= 0 && len < size) {  // a calibration log is running
+        n = snprintf(buf + len, size - len, ",\"slog\":%d", steps_log_samples());
         if (n > 0) len += n;
     }
     if (len + 1 < size) buf[len++] = '}', buf[len] = 0;

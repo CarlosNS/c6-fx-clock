@@ -672,7 +672,13 @@ void app_main(void)
         // Accelerometer: steps always, raise-to-wake while the screen is off
         int ax, ay, az;
         bool have_imu = imu_read(&ax, &ay, &az);
-        if (have_imu) steps_feed(ax, ay, az, now);
+        if (have_imu) {
+            steps_feed(ax, ay, az, now);
+            // The board's axes are x right, y up (board.h); the reading is the reaction to gravity, so
+            // gravity along the screen is (-x, +y) with y pointing down the screen
+            g_app.grav_x += (-ax - g_app.grav_x) / 6;
+            g_app.grav_y += (ay - g_app.grav_y) / 6;
+        }
         poll_pwrkey(now);  // after the touch read: an AXP2101 read right before it made the touch fail
         // Once a minute: alarms, the steps day, the time in the status bar
         if (g_now.valid && g_now.m != last_min) {
@@ -809,7 +815,8 @@ void app_main(void)
             g_app.fps = 0;
             light_sleep_allow(!s_usb || (int32_t)(g_sleep_test_until - now) > 0);
             // 10 passes a second, or at once on a touch; quicker while a double tap may be under way
-            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(touch_tap_pending(now) ? 10 : 100));
+            // ...and every 20 ms while the step counter's calibration log runs (all of the 21 Hz samples)
+            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(touch_tap_pending(now) ? 10 : steps_log_samples() >= 0 ? 20 : 100));
             last = now_ms();
             next_frame = esp_timer_get_time();
             continue;

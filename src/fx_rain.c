@@ -1,6 +1,9 @@
 // "Lluvia" (full screen, wide canvas) (portrait): a rainy night seen through a window. The city behind is out of focus
 // (bokeh lights, blurred windows); drops on the glass act as tiny lenses showing the scene
-// upside down, some slide down leaving trails; the time glows on a flickering neon sign.
+// upside down, some slide down leaving trails; the time glows on a flickering neon sign. The drops
+// slide toward wherever gravity pulls (the accelerometer, g_app.grav_*) and the rain outside slants
+// with the tilt: hold the watch flat and they stay put.
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
@@ -12,7 +15,7 @@
 #define H WH
 #define NDROPS 26
 
-typedef struct { float x, y, v; uint8_t r; } drop_t;
+typedef struct { float x, y, vx, vy; uint8_t r; } drop_t;
 static drop_t drops[NDROPS];
 static uint16_t lens[17 * 17];
 
@@ -22,7 +25,7 @@ static void reset_drop(drop_t *d, bool anywhere)
     d->x = (float)(h % W);
     d->y = anywhere ? (float)((h >> 9) % H) : -10;
     d->r = 2 + (h >> 20) % 5;
-    d->v = 0;
+    d->vx = d->vy = 0;
 }
 
 void rain_enter(void)
@@ -83,11 +86,13 @@ void rain_render(uint16_t *fb, uint32_t t, uint32_t dt)
         const uint8_t *c = bc[(h >> 24) % 5];
         gfx_glow(fb, x, y, r, rgb565(c[0], c[1], c[2]), a);
     }
-    // Rain streaks outside
+    // Rain streaks outside, slanting with the tilt (gravity across the screen)
+    int slant = g_app.grav_x * 10 / 1000;
     for (int i = 0; i < 40; i++) {
         uint32_t h = fx_hash(i, 42);
-        int x = (int)(h % (W + 40)) - 20, y = (int)((t / 2 + (h >> 8)) % (H + 40)) - 20;
-        gfx_line(fb, x, y, x + 3, y + 12, rgb565(80, 90, 120));
+        int fall = (int)((t / 2 + (h >> 8)) % (H + 40)) - 20;
+        int x = (int)(h % (W + 80)) - 40 + fall * slant / 12, y = fall;
+        gfx_line(fb, x, y, x + 3 + slant, y + 12, rgb565(80, 90, 120));
     }
 
     // Neon sign with the time (buzzing flicker now and then)
@@ -99,24 +104,32 @@ void rain_render(uint16_t *fb, uint32_t t, uint32_t dt)
     ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 108, date, rgb565(120, 230, 255), rgb565(0, 30, 60),
             FONT_FILL | FONT_OUTLINE);
 
-    // Drops on the glass
+    // Drops on the glass: big ones slide where gravity pulls along the screen, accelerate and leave
+    // tiny droplets behind. With the watch flat (little pull in the screen's plane) they stay put.
     float dts = dt / 1000.0f;
+    float gx = g_app.grav_x / 1000.0f, gy = g_app.grav_y / 1000.0f;
+    float pull = gx * gx + gy * gy;
     for (int i = 0; i < NDROPS; i++) {
         drop_t *d = &drops[i];
-        // Big drops start sliding, accelerate, and leave tiny droplets behind
-        if (d->r >= 5 || d->v > 0) {
-            d->v += 60 * dts;
-            if (d->v > 90) d->v = 90;
-            d->y += d->v * dts;
-            d->x += (fx_hash(i, t / 200) & 1 ? 0.3f : -0.3f);
-            if ((fx_hash(i, (uint32_t)d->y) & 7) == 0) {
-                int tx = (int)d->x, ty = (int)d->y - d->r - 2;
+        bool moving = d->vx * d->vx + d->vy * d->vy > 4;
+        if ((d->r >= 5 || moving) && pull > 0.04f) {
+            d->vx += 90 * gx * dts;
+            d->vy += 90 * gy * dts;
+            float sp = d->vx * d->vx + d->vy * d->vy;
+            if (sp > 90 * 90) d->vx *= 0.97f, d->vy *= 0.97f;
+            d->x += d->vx * dts + (fx_hash(i, t / 200) & 1 ? 0.3f : -0.3f) * (gy > 0.3f || gy < -0.3f);
+            d->y += d->vy * dts;
+            if ((fx_hash(i, (uint32_t)(d->x + d->y)) & 7) == 0) {
+                // the trail is left behind, against the motion
+                float m = sp > 1 ? 1.0f / (1 + (float)sqrt(sp) / (d->r + 2)) : 0;
+                int tx = (int)(d->x - d->vx * m), ty = (int)(d->y - d->vy * m);
                 if ((unsigned)tx < W && (unsigned)ty < H) fb[ty * W + tx] = rgb565(150, 160, 190);
             }
-        } else if (fx_rand() % 500 == 0) {
-            d->r++;  // drops slowly grow until they slide
+        } else {
+            d->vx *= 0.9f, d->vy *= 0.9f;  // held flat: they stop
+            if (fx_rand() % 500 == 0 && d->r < 7) d->r++;  // drops slowly grow until they slide
         }
-        if (d->y > H + 10) reset_drop(d, false);
+        if (d->y > H + 10 || d->y < -12 || d->x < -12 || d->x > W + 12) reset_drop(d, true), d->r = 2;
         draw_drop(fb, (int)d->x, (int)d->y, d->r);
     }
 }

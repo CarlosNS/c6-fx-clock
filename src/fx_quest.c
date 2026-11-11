@@ -375,14 +375,15 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     const uint16_t gold[4] = {rgb565(255, 252, 236), rgb565(255, 236, 168), rgb565(255, 204, 104), rgb565(232, 150, 64)};
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
-    pix_digits_draw(fb, (W - pix_digits_width("00:00", 5)) / 2, 30, hhmm, 5, gold, rgb565(52, 26, 40));
+    // The digits are 10 rows of 5 px (y 26..76 plus outline and shadow): the date and the seconds go under them
+    pix_digits_draw(fb, (W - pix_digits_width("00:00", 5)) / 2, 26, hhmm, 5, gold, rgb565(52, 26, 40));
     char date[32];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
     else strcpy(date, "SIN HORA");
-    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 72, date, gold[0], rgb565(52, 26, 40), FONT_FILL | FONT_OUTLINE);
+    ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 86, date, gold[0], rgb565(52, 26, 40), FONT_FILL | FONT_OUTLINE);
     if (g_app.show_secs && g_now.valid) {
         int bw = 120, bx = (W - bw) / 2;
-        gfx_fill_rect(fb, bx - 1, 93, bw + 2, 4, rgb565(52, 26, 40));
-        gfx_fill_rect(fb, bx, 94, (int)(bw * g_now.minute_ms / 60000), 2, gold[1]);
+        gfx_fill_rect(fb, bx - 1, 106, bw + 2, 4, rgb565(52, 26, 40));
+        gfx_fill_rect(fb, bx, 107, (int)(bw * g_now.minute_ms / 60000), 2, gold[1]);
     }
 }
