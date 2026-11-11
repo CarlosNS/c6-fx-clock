@@ -19,6 +19,8 @@ void steps_debug_set(int n);
 void steps_log_start(void);
 int steps_log_samples(void);
 bool steps_log_stop(char *name, size_t n);
+// Main loop: appends what was recorded to the file every 15 s
+void steps_log_tick(uint32_t now);
 // Steps of `days_ago` days back (0 = today, up to STEPS_DAYS - 1); -1 if unknown
 int steps_day(int days_ago);
 // Called once a minute by the main loop: rolls the day over at midnight and saves now and then

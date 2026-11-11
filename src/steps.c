@@ -138,15 +138,26 @@ static int s_nlog = -1, s_log_steps;
 static uint32_t s_log_last;
 static int s_lx, s_ly, s_lz;
 
+// The file grows as it records (every FLUSH_MS from the main loop), so a watch that switches off
+// halfway (an empty battery, the PWR key) keeps what it had
+#define FLUSH_MS 15000
+static char s_log_name[40];
+static int s_flushed;
+static uint32_t s_flush_t;
+
 void steps_log_start(void)
 {
     if (!s_log) s_log = heap_caps_malloc(LOG_MAX * 4 * sizeof(int16_t), MALLOC_CAP_SPIRAM);
     if (!s_log) return;
-    s_nlog = 0;
+    snprintf(s_log_name, sizeof(s_log_name), "/pasos/log_%02d%02d%02d.csv", g_now.h, g_now.m, g_now.s);
+    static const char head[] = "# Marea steps log\ndt_ms,x_mg,y_mg,z_mg\n";
+    if (!sd_write_file(s_log_name, head, sizeof(head) - 1)) ESP_LOGW(TAG, "calibration log: no microSD");
+    s_nlog = s_flushed = 0;
     s_log_steps = s_today;
     s_log_last = 0;
+    s_flush_t = 0;
     s_lx = s_ly = s_lz = 1 << 20;
-    ESP_LOGI(TAG, "calibration log started");
+    ESP_LOGI(TAG, "calibration log started: %s", s_log_name);
 }
 
 int steps_log_samples(void) { return s_nlog; }
@@ -162,26 +173,42 @@ static void log_sample(int x, int y, int z, uint32_t now)
     s_nlog++;
 }
 
-bool steps_log_stop(char *name, size_t n)
+// Appends the samples not written yet (and, at the end, a line with what the counter saw)
+static bool log_flush(bool last)
 {
-    if (s_nlog < 0) return false;
     int count = s_nlog;
-    s_nlog = -1;
-    size_t cap = (size_t)count * 28 + 160;
+    size_t cap = (size_t)(count - s_flushed) * 28 + 120;
     char *csv = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
     if (!csv) return false;
-    size_t len = snprintf(csv, cap, "# Marea steps log: %d samples, counter saw %d steps\ndt_ms,x_mg,y_mg,z_mg\n", count,
-                          s_today - s_log_steps);
-    for (int i = 0; i < count && len < cap; i++) {
+    size_t len = 0;
+    for (int i = s_flushed; i < count && len + 30 < cap; i++) {
         const int16_t *e = s_log + i * 4;
         len += snprintf(csv + len, cap - len, "%d,%d,%d,%d\n", e[0], e[1], e[2], e[3]);
     }
-    snprintf(name, n, "/pasos/log_%02d%02d%02d.csv", g_now.h, g_now.m, g_now.s);
-    bool ok = sd_write_file(name, csv, len);
+    if (last) len += snprintf(csv + len, cap - len, "# end: %d samples, counter saw %d steps\n", count, s_today - s_log_steps);
+    bool ok = sd_append_file(s_log_name, csv, len);
     free(csv);
-    ESP_LOGI(TAG, "calibration log: %d samples, %d steps -> %s (%s)", count, s_today - s_log_steps, name, ok ? "saved" : "NOT saved");
+    if (ok) s_flushed = count;
     return ok;
 }
+
+void steps_log_tick(uint32_t now)
+{
+    if (s_nlog < 0 || now - s_flush_t < FLUSH_MS) return;
+    s_flush_t = now;
+    if (s_nlog > s_flushed) log_flush(false);
+}
+
+bool steps_log_stop(char *name, size_t n)
+{
+    if (s_nlog < 0) return false;
+    bool ok = log_flush(true);
+    ESP_LOGI(TAG, "calibration log: %d samples, %d steps -> %s (%s)", s_nlog, s_today - s_log_steps, s_log_name, ok ? "saved" : "NOT saved");
+    s_nlog = -1;
+    strlcpy(name, s_log_name, n);
+    return ok;
+}
+
 void steps_debug_set(int n) { s_today = n < 0 ? 0 : n; }
 
 int steps_day(int days_ago)

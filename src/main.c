@@ -674,6 +674,7 @@ void app_main(void)
         bool have_imu = imu_read(&ax, &ay, &az);
         if (have_imu) {
             steps_feed(ax, ay, az, now);
+            steps_log_tick(now);
             // The board's axes are x right, y up (board.h); the reading is the reaction to gravity, so
             // gravity along the screen is (-x, +y) with y pointing down the screen
             g_app.grav_x += (-ax - g_app.grav_x) / 6;
