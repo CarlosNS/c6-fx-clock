@@ -142,13 +142,17 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         onMessage(text)
     }
 
-    /** Opens the link; throws on failure. Safe to call when already connected. */
-    suspend fun connect(timeoutMs: Long = 20_000) {
+    /**
+     * Opens the link; throws on failure. Safe to call when already connected. auto: Android's own
+     * background connection, which waits (as long as it takes, cheaply) and connects as soon as the
+     * watch advertises; otherwise a direct attempt that searches actively for timeoutMs.
+     */
+    suspend fun connect(timeoutMs: Long = 20_000, auto: Boolean = false) {
         if (ready) return
         val bt = context.getSystemService(BluetoothManager::class.java).adapter
         val dev: BluetoothDevice = bt.getRemoteDevice(address)
         while (setup.tryReceive().isSuccess) Unit
-        gatt = dev.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
+        gatt = dev.connectGatt(context, auto, callback, BluetoothDevice.TRANSPORT_LE)
         val status = runCatching { withTimeout(timeoutMs) { setup.receive() } }.getOrDefault(-3)
         if (status != BluetoothGatt.GATT_SUCCESS) {
             close()

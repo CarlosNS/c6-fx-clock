@@ -80,6 +80,7 @@ Con las órdenes de voz activas, mantener BOOT ya no cambia el cambio automátic
 ## Buscar el reloj y el móvil
 
 - **Buscar el reloj:** en Inicio de la app, **Hacer sonar**. El reloj suena al máximo (aunque esté en *No molestar* o con el volumen bajo) y la pantalla parpadea al brillo máximo con «¡Estoy aquí!». Se para tocando la pantalla, con BOOT o PWR, desde la app (**Parar**) o solo a los 5 minutos; luego vuelve a su volumen y brillo. Mientras suena, la app dice lo cerca que está por la señal Bluetooth (*Muy cerca*, *Cerca*, *A media distancia*, *Lejos*). Solo llega hasta donde llega el Bluetooth (unos 10–30 m); si el reloj no está conectado, sonará en cuanto conecte. La app dice cuándo lo vio por última vez.
+- **Reconectar:** la casilla **Reconectar** de los ajustes rápidos hace que el reloj se anuncie rápido durante 30 s (dice *llamando…*), para que el móvil, que lo espera en segundo plano, lo encuentre al momento. Con el móvil conectado dice *conectado*.
 - **Buscar el móvil:** en los ajustes rápidos, la casilla **Buscar móvil**. El móvil suena con su sonido de alarma al volumen máximo, aunque esté en silencio, y vibra, hasta que se para en el móvil (notificación o app), otra vez en la casilla o a los 5 minutos.
 
 ## Al enchufar el USB

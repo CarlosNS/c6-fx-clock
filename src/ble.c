@@ -446,6 +446,9 @@ static const struct ble_gatt_svc_def SERVICES[] = {
 
 static int gap_event(struct ble_gap_event *ev, void *arg);
 
+static uint32_t s_fast_until_ms;  // a longer fast spell asked for by ble_advertise_fast()
+static volatile bool s_calling;
+
 static void advertise(bool fast)
 {
     if (ble_connected()) return;
@@ -476,10 +479,23 @@ static void advertise(bool fast)
     p.itvl_max = fast ? BLE_GAP_ADV_ITVL_MS(150) : BLE_GAP_ADV_ITVL_MS(440);
     int rc = ble_gap_adv_start(s_addr_type, NULL, BLE_HS_FOREVER, &p, gap_event, NULL);
     if (rc) ESP_LOGW(TAG, "Advertising failed: %d", rc);
-    if (fast) esp_timer_start_once(s_adv_timer, FAST_ADV_MS * 1000LL);
+    if (fast) esp_timer_start_once(s_adv_timer, (s_fast_until_ms ? s_fast_until_ms : FAST_ADV_MS) * 1000LL);
+    s_fast_until_ms = 0;
 }
 
-static void slow_down(void *arg) { advertise(false); }
+static void slow_down(void *arg) { s_calling = false; advertise(false); }
+
+bool ble_advertise_fast(void)
+{
+    if (ble_connected() || !s_name[0]) return false;
+    s_fast_until_ms = 30000;
+    s_calling = true;
+    esp_timer_stop(s_adv_timer);
+    advertise(true);
+    return true;
+}
+
+bool ble_calling(void) { return s_calling && !ble_connected(); }
 
 static int gap_event(struct ble_gap_event *ev, void *arg)
 {

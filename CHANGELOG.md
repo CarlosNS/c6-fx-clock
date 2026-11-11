@@ -8,6 +8,7 @@
 - **Coloso** sustituye a *Arena*: un reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer.
 - **Engranajes**, rehecha: el interior de una torre del reloj gótica, con engranajes enormes, péndulo, cadenas y luz de luna.
 - **Lluvia** responde al acelerómetro: las gotas resbalan hacia donde inclinas el reloj.
+- **Reconexión:** tras un corte la app hace un intento directo y luego deja a Android esperando al reloj, que conecta en cuanto vuelve a anunciarse (más rápido y con menos gasto que reintentar cada minuto); al abrir la app lo intenta en el acto. Inicio enseña qué está haciendo, con un botón **Reconectar**, y el reloj tiene la casilla **Reconectar** en los ajustes rápidos (se anuncia rápido 30 s).
 - **Restablecer ajustes** en el reloj y en la app, con confirmación; los valores de fábrica están en el manual.
 - **Objetivo de pasos** editable en la app, y **calibración del podómetro** (graba el acelerómetro en la microSD).
 - Arreglado: en *Aventura* la fecha y el segundero pisaban la hora; en *Gol* el segundero también, y ya no sale el nombre de un jugador real; en *Pasos* el círculo pisaba el título; en el editor de alarmas las letras de los días se salían de sus casillas; la batería salía dos veces en los ajustes rápidos.

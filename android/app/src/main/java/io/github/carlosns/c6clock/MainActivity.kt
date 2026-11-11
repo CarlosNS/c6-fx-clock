@@ -443,6 +443,9 @@ class MainActivity : ComponentActivity() {
             val l = Live.link?.takeIf { it.ready } ?: return js("findSignal", "null")
             lifecycleScope.launch { js("findSignal", (runCatching { l.rssi() }.getOrNull())?.toString() ?: "null") }
         }
+        @JavascriptInterface fun reconnect() = LinkService.reconnect(this@MainActivity)
+        @JavascriptInterface fun linkInfo(): String = JSONObject()
+            .put("phase", Live.phase).put("notFound", Live.notFound).put("lastSeen", store.lastSeenMs).toString()
         @JavascriptInterface fun stopPhone() = Find.stopPhone(this@MainActivity, tellWatch = true)
         @JavascriptInterface fun allowVoice() = runOnUiThread { micPermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)

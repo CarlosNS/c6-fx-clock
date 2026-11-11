@@ -17,5 +17,10 @@ void ble_fast_link(void);
 void ble_link_pace(bool screen_on);
 // Forgets every paired phone (the next connection must pair again with the on-screen code)
 void ble_forget_all(void);
+// "Reconnect" from the quick settings: advertise at the fast rate for 30 s, so the phone (waiting
+// for the watch in the background) finds it within a second or two. false if already connected.
+bool ble_advertise_fast(void);
+// That fast spell is running
+bool ble_calling(void);
 // Advertised name ("Marea XXXX"); empty until the stack is up
 const char *ble_name(void);

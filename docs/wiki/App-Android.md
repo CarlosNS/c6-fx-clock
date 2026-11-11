@@ -29,11 +29,14 @@ Mientras el reloj está cerca, la app mantiene el enlace Bluetooth abierto, aunq
 |---|---|
 | El reloj aparece cerca o se enciende (Android 12+), o abres la app | Conecta y sincroniza: hora, tiempo de la ciudad del reloj, versión |
 | Mientras sigue conectada | Repite la sincronización cada 30 minutos y pasa al reloj la música y las llamadas al momento |
-| Se corta (el reloj se aleja o se reinicia) | Vuelve a conectar sola, con esperas que crecen hasta 1 minuto |
-| El reloj desaparece del todo | Deja de intentarlo hasta que Android lo vuelva a ver |
+| Se corta (el reloj se aleja o se reinicia) | Un intento directo (busca el reloj durante 20 s) y, si no lo encuentra, deja a Android **esperándolo**: en cuanto el reloj se anuncia otra vez, conecta solo, sin consultas periódicas y con poco gasto |
+| El reloj se va lejos un rato | Sigue esperándolo de la misma forma y conecta en cuanto vuelve |
+| Abres la app sin conexión | Vuelve a intentarlo en el acto |
 | Hay firmware o app nuevos | Notificación (una por versión) |
 
 Con la app en pantalla el enlace va más rápido (para la página de control); en segundo plano usa el intervalo de bajo consumo del Bluetooth.
+
+Sin conexión, Inicio dice qué está haciendo (*Buscando el reloj…*, *Esperando a que aparezca* o *No aparece: ¿está cerca y encendido?*) con un botón **Reconectar**, que cierra cualquier conexión a medias y busca el reloj en ese momento. En el reloj, la casilla **Reconectar** de los ajustes rápidos hace que se anuncie rápido durante 30 s, para que el móvil lo encuentre al instante.
 
 En *Ajustes → Avanzado*, **Sincronización del móvil** enseña cuándo fue la última y si salió bien, con el botón **Ahora** para forzar una.
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -34,6 +35,10 @@ object Live {
     private val stateListeners = CopyOnWriteArrayList<(Boolean) -> Unit>()
 
     val ready get() = link?.ready == true
+    /** "connected", "searching" (a direct attempt right now), "waiting" (Android waits for the watch to advertise) or "off". */
+    @Volatile var phase = "off"
+    /** The last direct attempt did not find it (the page says so). */
+    @Volatile var notFound = false
     /** The app is on screen: the link runs at a quick interval for the page, otherwise at low power. */
     @Volatile var visible = false
 
@@ -95,10 +100,16 @@ class LinkService : Service() {
         when (intent?.action) {
             ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
             ACTION_MIC -> { foreground(true); if (loop?.isActive == true) return START_STICKY }
-            ACTION_AWAY -> { away = true; if (!Live.ready) stopSelf(); return START_NOT_STICKY }
+            // Out of range: the background connection keeps waiting for it, cheaply, so it comes back
+            // by itself; nothing to do
+            ACTION_AWAY -> { away = true; return START_STICKY }
+            ACTION_RECONNECT -> { if (!Live.ready) restart(); return START_STICKY }
             else -> away = false
         }
-        if (loop?.isActive != true) loop = scope.launch { keep() }
+        when {
+            loop?.isActive != true -> loop = scope.launch { keep() }
+            !Live.ready && Live.phase == "waiting" -> restart()  // the app came on screen: try now
+        }
         return START_STICKY
     }
 
@@ -111,8 +122,15 @@ class LinkService : Service() {
 
     private var mine: ClockBle? = null
 
+    /**
+     * The link's life: a direct attempt first (it searches actively for 20 s), and when that fails
+     * Android's background connection, which waits for the watch without polling and connects the
+     * moment it advertises again (also when it comes back into range). Opening the app or the
+     * page's "Reconnect" (ACTION_RECONNECT) start again with a direct attempt.
+     */
     private suspend fun keep() {
-        var wait = 2_000L
+        var direct = true
+        var quickFails = 0
         while (scope.isActive) {
             val address = store.address ?: break
             if (!Perms.canConnect(this)) break
@@ -125,11 +143,15 @@ class LinkService : Service() {
                 }
             }
             l.onState = { up -> Live.state(up); show(up) }
+            val started = System.currentTimeMillis()
             try {
-                l.connect()
+                Live.phase = if (direct) "searching" else "waiting"
+                l.connect(if (direct) 20_000L else 12 * 3600_000L, auto = !direct)
                 mine = l
                 Live.link = l  // connect() has told the listeners already
-                wait = 2_000L
+                Live.phase = "connected"
+                Live.notFound = false
+                quickFails = 0
                 Find.connected(l)  // asked to ring while it was away
                 var last = 0L
                 while (l.ready) {
@@ -148,7 +170,8 @@ class LinkService : Service() {
                     delay(2_000)
                 }
             } catch (e: Exception) {
-                Log.i(TAG, "connect: ${e.message}")
+                Log.i(TAG, "connect (${if (direct) "direct" else "background"}): ${e.message}")
+                if (direct) Live.notFound = true
             } finally {
                 l.close()
                 if (Live.link === l) Live.link = null
@@ -156,11 +179,27 @@ class LinkService : Service() {
                 Live.state(false)
                 show(false)
             }
-            if (away) break
-            delay(wait)
-            wait = minOf(wait * 2, 60_000L)
+            val connected = Live.phase == "connected"
+            Live.phase = "waiting"
+            // After a drop, one direct attempt (the watch is probably still there); otherwise wait in
+            // the background. A background attempt that fails at once (Bluetooth off...) backs off.
+            direct = connected
+            quickFails = if (!direct && System.currentTimeMillis() - started < 5_000) quickFails + 1 else 0
+            delay(if (quickFails > 0) minOf(1_000L shl minOf(quickFails, 6), 60_000L) else 500L)
         }
+        Live.phase = "off"
         stopSelf()
+    }
+
+    /** Starts over with a direct attempt (the page's "Reconnect", or the app coming on screen). */
+    private fun restart() {
+        Live.notFound = false
+        val old = loop
+        loop = scope.launch {
+            old?.cancelAndJoin()
+            Live.link?.takeIf { !it.ready }?.close()
+            keep()
+        }
     }
 
     private fun show(up: Boolean) {
@@ -190,6 +229,7 @@ class LinkService : Service() {
         private const val ACTION_STOP = "stop"
         private const val ACTION_AWAY = "away"
         private const val ACTION_MIC = "mic"
+        private const val ACTION_RECONNECT = "reconnect"
         private const val RESYNC_MS = SyncWorker.PERIOD_MIN * 60_000L
         /** The service is alive (connected or looking for the clock): the periodic sync leaves it the link. */
         @Volatile var running = false
@@ -205,6 +245,14 @@ class LinkService : Service() {
         /** The clock went out of range: stop once the link is gone, instead of retrying for nothing. */
         fun away(c: Context) {
             runCatching { c.startService(Intent(c, LinkService::class.java).setAction(ACTION_AWAY)) }
+        }
+
+        /** "Reconnect" on the page: drop whatever is half open and try a direct connection now. */
+        fun reconnect(c: Context): Boolean {
+            if (Store(c).address == null || !Perms.canConnect(c)) return false
+            return runCatching {
+                ContextCompat.startForegroundService(c, Intent(c, LinkService::class.java).setAction(ACTION_RECONNECT))
+            }.isSuccess
         }
 
         /** The app is on screen (or the microphone was just allowed): let the service use the microphone. */

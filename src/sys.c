@@ -12,6 +12,7 @@
 #include "ui.h"
 #include "ui_icons.h"
 #include "find.h"
+#include "ble.h"
 
 static const app_t *const s_apps[] = {&app_faces, &app_alarms, &app_steps, &app_stopwatch,
                                       &app_music, &app_torch, &app_files, &app_settings};
@@ -181,19 +182,19 @@ static void launcher_event(const ui_event_t *e)
 #define Q_BRI_Y 104
 #define Q_BAR_X 60
 #define Q_BAR_W 290
-// Five tiles: two rows of two and a wide one (find the phone) under them, down to y 464
+// Six tiles in three rows of two, down to y 464
 #define Q_TILE_Y 192
 #define Q_TILE_W 154
 #define Q_TILE_H 84
-#define Q_TILES 5
+#define Q_TILES 6
 static int s_quick_pressed = -1;
 static bool s_bri_drag;
 
 static void quick_tile_rect(int i, int *x, int *y, int *w)
 {
     *y = Q_TILE_Y + (i / 2) * (Q_TILE_H + 10);
-    *w = i == 4 ? 2 * Q_TILE_W + 12 : Q_TILE_W;
-    *x = i == 4 ? UI_W / 2 - 6 - Q_TILE_W : i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W;
+    *w = Q_TILE_W;
+    *x = i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W;
 }
 
 static int quick_tile(int x, int y)
@@ -237,9 +238,12 @@ static bool quick_draw(void)
     quick_tile_draw(2, TR("Siempre", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
     quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
     quick_tile_draw(4, TR("Buscar móvil", "Find phone"),
-                    find_phone_active() ? TR("sonando: toca para parar", "ringing: tap to stop")
-                    : g_app.phone_linked ? TR("lo hace sonar", "makes it ring") : TR("sin móvil", "no phone"),
+                    find_phone_active() ? TR("sonando", "ringing") : g_app.phone_linked ? TR("hacer sonar", "make it ring") : TR("sin móvil", "no phone"),
                     find_phone_active(), false);
+    // Reconnect: advertise fast for 30 s so the phone picks the watch up at once
+    quick_tile_draw(5, TR("Reconectar", "Reconnect"),
+                    g_app.phone_linked ? TR("conectado", "connected") : ble_calling() ? TR("llamando…", "calling…") : TR("llamar", "call"),
+                    ble_calling(), g_app.phone_linked);
     // (the battery is in the status bar above: no second copy down here)
     return true;
 }
@@ -274,6 +278,7 @@ static void quick_event(const ui_event_t *e)
         case 2: settings_set("aon", !g_app.always_on); break;
         case 3: sys_open_app(5); return;  // flashlight
         case 4: find_phone_toggle(); break;
+        case 5: ble_advertise_fast(); break;
         default: break;
         }
         s_redraw = true;
