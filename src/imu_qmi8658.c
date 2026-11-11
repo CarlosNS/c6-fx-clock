@@ -1,5 +1,6 @@
 // imu.h for the QMI8658 on the Waveshare ESP32-S3-Touch-AMOLED-2.06 (I2C 0x6B). Accelerometer only,
-// ±4 g at 21 Hz in its low-power mode; the gyroscope stays off.
+// ±4 g at 11 Hz in its low-power mode; the gyroscope stays off. 11 Hz matches the main loop with the
+// screen off (10 passes a second), so the step counter sees the same stream with the screen on or off.
 #include "imu.h"
 #include <stdint.h>
 #include "board.h"
@@ -13,7 +14,7 @@
 #define REG_CTRL7 0x08      // bit0 accelerometer on, bit1 gyroscope on
 #define REG_AX_L 0x35       // AX, AY, AZ: 16-bit little endian
 
-#define CTRL2_4G_21HZ ((1 << 4) | 0x0D)   // ±4 g, low-power 21 Hz
+#define CTRL2_4G_11HZ ((1 << 4) | 0x0E)   // ±4 g, low-power 11 Hz
 #define LSB_PER_G 8192                     // at ±4 g
 
 static const char *TAG = "imu";
@@ -26,7 +27,7 @@ bool imu_init(void)
         ESP_LOGW(TAG, "QMI8658 not answering (id 0x%02X)", id);
         return false;
     }
-    s_ok = i2c_reg_write(IMU_ADDR, REG_CTRL1, 0x40) && i2c_reg_write(IMU_ADDR, REG_CTRL2, CTRL2_4G_21HZ) &&
+    s_ok = i2c_reg_write(IMU_ADDR, REG_CTRL1, 0x40) && i2c_reg_write(IMU_ADDR, REG_CTRL2, CTRL2_4G_11HZ) &&
            i2c_reg_write(IMU_ADDR, REG_CTRL7, 0x01);
     ESP_LOGI(TAG, "QMI8658 %s", s_ok ? "ready (accelerometer)" : "setup failed");
     return s_ok;

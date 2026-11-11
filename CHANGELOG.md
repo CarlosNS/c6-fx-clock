@@ -10,7 +10,8 @@
 - **Lluvia** responde al acelerómetro: las gotas resbalan hacia donde inclinas el reloj.
 - **Reconexión:** tras un corte la app hace un intento directo y luego deja a Android esperando al reloj, que conecta en cuanto vuelve a anunciarse (más rápido y con menos gasto que reintentar cada minuto); al abrir la app lo intenta en el acto. Inicio enseña qué está haciendo, con un botón **Reconectar**, y el reloj tiene la casilla **Reconectar** en los ajustes rápidos (se anuncia rápido 30 s).
 - **Restablecer ajustes** en el reloj y en la app, con confirmación; los valores de fábrica están en el manual.
-- **Objetivo de pasos** editable en la app, y **calibración del podómetro** (graba el acelerómetro en la microSD).
+- **Objetivo de pasos** editable en la app, y **calibración del podómetro** (graba el acelerómetro en la microSD; el archivo se guarda cada 15 s).
+- **Podómetro más preciso:** contaba de más, sobre todo andando despacio (cada paso daba dos picos) y con la pantalla apagada, cuando leía solo la mitad de las muestras. Ahora el acelerómetro da 11 muestras por segundo, encienda o no la pantalla, el umbral es más alto, la media de fondo va por tiempo y cuenta tras 8 pasos seguidos. Con grabaciones reales: de 239 a unos 195 en 200 pasos contados, y 0 en 5 minutos sentado.
 - Arreglado: en *Aventura* la fecha y el segundero pisaban la hora; en *Gol* el segundero también, y ya no sale el nombre de un jugador real; en *Pasos* el círculo pisaba el título; en el editor de alarmas las letras de los días se salían de sus casillas; la batería salía dos veces en los ajustes rápidos.
 
 

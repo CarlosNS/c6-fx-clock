@@ -1,6 +1,9 @@
-// Step counter: peaks of the acceleration magnitude (gravity taken away by a slow average), with a
-// minimum and maximum time between steps. A run only counts once it has 4 steps in a row at a walking
-// rhythm, so taps on the table and single arm moves do not add up. History: one count per day for 30
+// Step counter: peaks of the acceleration magnitude (gravity taken away by a slow average, 1.2 s), with
+// a minimum and maximum time between steps. A run only counts once it has 8 steps in a row at a walking
+// rhythm, so taps on the table and arm moves do not add up. Each accelerometer sample is used once (the
+// sensor gives 11 a second; the loop reads it faster with the screen on). Tuned on 2026-11-11 against
+// recordings (steplog) of 200 counted steps and of 5 minutes sitting: 185-196 of 200 at several paces,
+// 0 sitting; the old counter (threshold 110 mg, 4-step runs, a per-pass average) said up to 239. History: one count per day for 30
 // days, in NVS ("steps" namespace), saved every 10 minutes and at midnight.
 #include "steps.h"
 #include <string.h>
@@ -14,8 +17,9 @@
 
 #define MIN_GAP_MS 260     // faster than ~3.8 steps/s is not walking
 #define MAX_GAP_MS 2000    // slower breaks the run
-#define RUN_START 4        // steps in a row before they count
-#define THRESH_MG 110      // peak above the average
+#define RUN_START 8        // steps in a row before they count
+#define THRESH_MG 130      // peak above the average
+#define AVG_MS 1200        // time constant of the gravity average
 
 static const char *TAG = "steps";
 
@@ -26,7 +30,9 @@ typedef struct {
 
 static history_t s_hist;
 static int s_today;
-static int s_avg = 1000;           // slow average of |a| (gravity), mg
+static int s_avg16 = 1000 * 16;    // slow average of |a| (gravity), mg x 16
+static int s_px = 1 << 20, s_py, s_pz;  // the last sample (each one is used once)
+static uint32_t s_prev_t;
 static int s_prev, s_rising;
 static uint32_t s_last_step;
 static int s_run;                  // steps in the current run (counted once it reaches RUN_START)
@@ -109,8 +115,13 @@ void steps_feed(int x, int y, int z, uint32_t now)
     int mx = ax > ay ? (ax > az ? ax : az) : (ay > az ? ay : az);
     int mag = mx + (ax + ay + az - mx) * 3 / 8;
     log_sample(x, y, z, now);
-    s_avg += (mag - s_avg) / 16;
-    int v = mag - s_avg;
+    if (x == s_px && y == s_py && z == s_pz) return;  // the same sample read again
+    s_px = x, s_py = y, s_pz = z;
+    uint32_t dt = s_prev_t ? now - s_prev_t : 0;
+    s_prev_t = now;
+    if (dt > AVG_MS) dt = AVG_MS;
+    s_avg16 += (mag * 16 - s_avg16) * (int)dt / AVG_MS;
+    int v = mag - s_avg16 / 16;
     // A step is a peak above the threshold: rising, then falling
     if (v > s_prev) s_rising = 1;
     else if (s_rising && s_prev > THRESH_MG) {
