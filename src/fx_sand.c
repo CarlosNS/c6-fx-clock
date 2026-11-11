@@ -91,7 +91,7 @@ void sand_render(uint16_t *fb, uint32_t t, uint32_t dt)
     // the falling thread
     float top = BASE - hL - mound;
     for (int y = NECK + 1; y < top; y++)
-        if ((y + (int)(ts * 30)) % 3) art_px(CX, y, C(0xf2c27a));
+        if ((y - (int)(ts * 30) % 3 + 3) % 3) art_px(CX, y, C(0xf2c27a));  // the gaps move down with the sand
     // clouds drifting across its waist: it rises above them
     for (int i = 0; i < 5; i++) {
         int x = (int)fmodf(i * 41 + ts * (4 + i), ART_W + 50) - 25, y = 26 + (i % 3) * 7;

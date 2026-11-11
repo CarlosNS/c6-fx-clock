@@ -202,7 +202,9 @@ static esp_err_t screenshot_get(httpd_req_t *req)
     httpd_resp_set_type(req, "image/bmp");
     esp_err_t err = httpd_resp_send_chunk(req, (const char *)hdr, sizeof(hdr));
     static uint16_t row[LCD_PW];  // static: keeps the server task stack small
-    for (int y = 0; y < hh && err == ESP_OK; y++) {
+    // A face frozen for a screenshot must not stay frozen long: give up after 6 s on a slow link
+    int64_t t0 = esp_timer_get_time();
+    for (int y = 0; y < hh && err == ESP_OK && esp_timer_get_time() - t0 < 6000000; y++) {
         for (int x = 0; x < w; x++) {
             uint16_t p = fb[y * w + x];
             row[x] = (uint16_t)((p >> 8) | (p << 8));

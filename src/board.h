@@ -39,8 +39,11 @@
 #define BOARD_TOUCH_RST 9
 // QMI8658 accelerometer (imu_qmi8658.c). Board axis <- {chip axis 0..2, sign}, for x (right),
 // y (up) and z (out of the screen) with the screen upright.
-// z: lying flat with the screen up the chip reads z = -1 g (2026-11-07). x / y not checked yet.
-#define BOARD_IMU_MAP {{0, 1}, {1, 1}, {2, -1}}
+// z: lying flat with the screen up the chip reads z = -1 g (2026-11-07). y is the chip's x: tilting
+// the watch toward you made Lluvia's drops run left with the old map (x <- chip x, y <- chip y,
+// which with z flipped was a mirror, impossible for a mounted chip); x follows for a right-handed set
+// (2026-11-11).
+#define BOARD_IMU_MAP {{1, 1}, {0, 1}, {2, -1}}
 
 // ---- Audio (I2S) ----
 #define BOARD_I2S_MCLK 16

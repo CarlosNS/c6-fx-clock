@@ -98,7 +98,7 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx25.png" alt="Esfera Disfruta" width="205">
 
-*Número 25* — Para el tiempo libre: un prado al atardecer con la hierba y un árbol mecidos por el viento a rachas, nubes lentas, flores y semillas flotando. No tiene hora a propósito: solo pone «Disfruta» («Relax» en inglés).
+*Número 25* — Para el tiempo libre: un prado con la hierba y un árbol mecidos por el viento a rachas, nubes lentas, flores y semillas flotando. Pasa un día lento (unos 4 minutos a la velocidad de fábrica): tarde dorada, el sol se pone tras las colinas, llega la noche con luna, estrellas, luciérnagas sobre la hierba y, de vez en cuando, fuegos artificiales, y vuelve a amanecer. No tiene hora a propósito: solo pone «Disfruta» («Relax» en inglés).
 
 ### Lluvia
 

@@ -127,9 +127,10 @@ void rain_render(uint16_t *fb, uint32_t t, uint32_t dt)
             }
         } else {
             d->vx *= 0.9f, d->vy *= 0.9f;  // held flat: they stop
-            if (fx_rand() % 500 == 0 && d->r < 7) d->r++;  // drops slowly grow until they slide
+            if (fx_rand() % 150 == 0 && d->r < 7) d->r++;  // drops grow until they slide
         }
-        if (d->y > H + 10 || d->y < -12 || d->x < -12 || d->x > W + 12) reset_drop(d, true), d->r = 2;
+        // Gone off the glass: rain lands a new drop somewhere else (any size, so some slide soon)
+        if (d->y > H + 10 || d->y < -12 || d->x < -12 || d->x > W + 12) reset_drop(d, true);
         draw_drop(fb, (int)d->x, (int)d->y, d->r);
     }
 }

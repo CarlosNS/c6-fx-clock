@@ -884,7 +884,12 @@ void app_main(void)
     frame_end:
         if (g_app.freeze_req) {  // a screenshot is reading the last frame
             g_app.frozen = true;
-            while (g_app.freeze_req) vTaskDelay(pdMS_TO_TICKS(10));
+            // A slow Wi-Fi link can take longer than the watchdog's 8 s to send it: keep it fed while
+            // waiting (the screenshot gives up on its own side if the link dies)
+            while (g_app.freeze_req) {
+                esp_task_wdt_reset();
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
             g_app.frozen = false;
             last = now_ms();
             next_frame = esp_timer_get_time();
