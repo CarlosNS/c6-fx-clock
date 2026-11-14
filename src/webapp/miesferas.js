@@ -138,6 +138,7 @@ function nowStrings() {
 
 // ---------------------------------------------------------------- state
 let LOCAL = [], WATCH = null, ED = null, busy = false;
+let autoDone = false;  // faces kept only on the phone already sent on this connection (or tried)
 const box = () => $('mislist');
 
 function inject() {
@@ -151,8 +152,17 @@ function inject() {
     <button class="btn hide" id="misrest" style="flex:1">${tr('Restaurar en el reloj', 'Restore to the watch')}</button>
   </div>
   <div class="dim hide" id="misst"></div>`;
+  // While a face goes to the watch: a window over everything (nothing else can be changed meanwhile;
+  // the page's back does nothing either, see route() in index.html)
+  const m = document.createElement('div');
+  m.className = 'modal hide'; m.id = 'missend'; m.setAttribute('role', 'dialog');
+  m.innerHTML = `<div class="scrim"></div><div class="box stack" style="gap:12px">
+    <h2 id="missendt"></h2><div class="bar"><div id="missendbar" style="width:0%"></div></div>
+    <div class="dim" id="missendst"></div>
+    <div class="dim small">${tr('Deja la app abierta y el reloj cerca hasta que termine.', 'Keep the app open and the watch near until it ends.')}</div></div>`;
+  document.body.appendChild(m);
   $('misnew').onclick = () => openEditor(null);
-  $('misrest').onclick = restore;
+  $('misrest').onclick = () => restore();
   const v = document.createElement('section');
   v.className = 'view hide'; v.id = 'v-miesfera'; v.dataset.parent = 'esferas';
   v.innerHTML = `
@@ -222,10 +232,27 @@ function renderList() {
     const e = el.querySelector('.medit'); if (e) e.onclick = () => openEditor(id);
   }
 }
-function restore() {
+function sending(title, pct, text) {
+  const m = $('missend');
+  if (title === null) { m.classList.add('hide'); return; }
+  m.classList.remove('hide'); $('missendt').textContent = title;
+  $('missendbar').style.width = (pct || 0) + '%'; $('missendst').textContent = text || '';
+}
+// Every face kept on the phone (ids: only these) to the watch again
+function restore(ids, auto) {
   if (busy) return; busy = true;
-  $('misst').classList.remove('hide'); $('misst').textContent = tr('Enviando al reloj…', 'Sending to the watch…');
-  ClockBridge.customRestore();
+  const list = Array.isArray(ids) ? ids : [];
+  sending(auto ? tr('Enviando tus esferas al reloj', 'Sending your faces to the watch') : tr('Restaurando en el reloj', 'Restoring to the watch'), 0,
+    auto ? tr('Estaban guardadas solo en el móvil.', 'They were kept only on the phone.') : '');
+  ClockBridge.customRestore(list.join(','));
+}
+// Back with the watch: what was kept only on the phone (saved while it was away, or a card that
+// was changed or wiped) goes to it by itself, once per connection
+function autoSend() {
+  if (autoDone || busy || !up || !sdOk() || !WATCH.list) return;
+  const on = new Set(WATCH.list.map(f => f.id)), missing = LOCAL.filter(f => !on.has(f.id)).map(f => f.id);
+  autoDone = true;
+  if (missing.length) restore(missing, true);
 }
 
 // ---------------------------------------------------------------- the editor
@@ -470,28 +497,28 @@ async function save() {
     const t = document.createElement('canvas'); t.width = 132; t.height = 162;
     t.getContext('2d').drawImage(pcv, 0, 0, 132, 162);
     const thumb = b64(await (await blobOf(t, 0.8)).arrayBuffer());
-    $('mebar').classList.remove('hide'); $('mebar').firstElementChild.style.width = '0%';
-    $('mest').textContent = tr('Enviando al reloj…', 'Sending to the watch…');
+    $('mest').textContent = '';
+    sending(tr(`Enviando «${F.name}» al reloj`, `Sending «${F.name}» to the watch`), 0, tr('Preparando…', 'Preparing…'));
     ClockBridge.customSave(ED.id, JSON.stringify(F), main, !!F.anim, src, SRC.ext, thumb);
   } catch (e) {
-    busy = false; $('mesave').disabled = false; $('mest').textContent = e.message;
+    busy = false; $('mesave').disabled = false; $('mest').textContent = e.message; sending(null);
   }
 }
 
 // Replies from the app (MainActivity.Bridge)
 window.customReply = s => {
   const m = JSON.parse(s);
-  if (m.t === 'cust') { WATCH = m.err ? {err: m.err} : m; renderList(); if (window.curFaceRefresh) curFaceRefresh(); return; }
+  if (m.t === 'cust') { WATCH = m.err ? {err: m.err} : m; renderList(); if (window.curFaceRefresh) curFaceRefresh(); autoSend(); return; }
   if (m.t === 'save') {
-    if (m.pct !== undefined) { $('mebar').firstElementChild.style.width = m.pct + '%'; return; }
-    busy = false; $('mesave').disabled = false; $('mebar').classList.add('hide');
+    if (m.pct !== undefined) { sending($('missendt').textContent, m.pct, m.pct + ' %'); return; }
+    busy = false; $('mesave').disabled = false; $('mebar').classList.add('hide'); sending(null);
     $('mest').textContent = m.ok ? tr('Guardada en el reloj y en el móvil.', 'Saved on the watch and the phone.') : (m.msg || tr('No se pudo guardar', 'It could not be saved'));
     if (m.ok) { ED.saved = true; ED.isNew = false; ED.dirtyPic = false; $('metry').disabled = $('mesel').disabled = false; $('medel').classList.remove('hide'); }
     refresh(); return;
   }
   if (m.t === 'restore') {
-    if (m.pct !== undefined) { $('misst').textContent = tr(`Enviando al reloj… ${m.pct} %`, `Sending to the watch… ${m.pct} %`); return; }
-    busy = false;
+    if (m.pct !== undefined) { sending($('missendt').textContent, m.pct, m.pct + ' %'); return; }
+    busy = false; sending(null); $('misst').classList.remove('hide');
     $('misst').textContent = m.ok ? tr(`Restauradas ${m.n} esferas.`, `${m.n} faces restored.`) : (m.msg || tr('No se pudo restaurar', 'It could not be restored'));
     refresh();
   }
@@ -500,6 +527,8 @@ window.customReply = s => {
 inject();
 loadFonts().catch(() => {});  // ahead of time: the editor opens at once
 window.misRefresh = refresh;
+window.misReconnected = () => { autoDone = false; refresh(); };
+window.misBusy = () => busy;
 // The custom face shown now, for the page's "on the watch" cards: {name, thumb} (thumb only if the phone has it)
 window.misFaceInfo = id => {
   const l = LOCAL.find(f => f.id === id);

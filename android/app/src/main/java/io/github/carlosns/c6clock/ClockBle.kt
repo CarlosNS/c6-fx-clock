@@ -57,6 +57,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
     /** The clock takes its firmware over Bluetooth (ClockUpdate). */
     val canOta get() = ota != null
     private val ops = Mutex()
+    private val GATT_INSUFFICIENT_RESOURCES = 0x11
     private var pending: CompletableDeferred<Int>? = null  // status of the GATT operation in flight
     private val messages = MutableSharedFlow<JSONObject>(extraBufferCapacity = 32)
     private val setup = Channel<Int>(Channel.CONFLATED)
@@ -209,6 +210,9 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         ops.withLock {
             val g = gatt ?: throw IllegalStateException("sin conexión")
             c ?: throw IllegalStateException("sin conexión")
+            // The watch may answer "insufficient resources" (0x11) for a moment, while its buffers are
+            // busy sending: that write is tried again a little later, up to three times
+            for (attempt in 1..3) {
             val done = CompletableDeferred<Int>().also { pending = it }
             // The stack may be busy for a moment (its queue is full): wait and try again
             var tries = 0
@@ -234,7 +238,11 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                 drop("write never finished")
                 throw IllegalStateException("el reloj no responde")
             }
-            if (status != BluetoothGatt.GATT_SUCCESS) throw IllegalStateException("envío rechazado ($status)")
+            if (status == BluetoothGatt.GATT_SUCCESS) return@withLock
+            if (status != GATT_INSUFFICIENT_RESOURCES || attempt == 3) throw IllegalStateException("envío rechazado ($status)")
+            Log.i(TAG, "write refused for lack of resources, again in a moment")
+            delay(300)
+            }
         }
     }
 

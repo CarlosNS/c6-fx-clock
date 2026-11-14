@@ -487,10 +487,15 @@ class MainActivity : ComponentActivity() {
             }
         }
         /** Every face kept on the phone, to the watch again (a new card); replies {"t":"restore",..}. */
-        @JavascriptInterface fun customRestore() {
+        /** The faces kept on the phone to the watch again: ids "3,5" (only those) or "" (all). */
+        @JavascriptInterface fun customRestore(ids: String) {
             val l = Live.link?.takeIf { it.ready } ?: return reply(JSONObject().put("t", "restore").put("ok", false).put("msg", "sin conexión"))
             lifecycleScope.launch {
-                val dirs = CustomFaces.dir(this@MainActivity).listFiles()?.filter { it.name.toIntOrNull() != null && File(it, "face.json").exists() }.orEmpty()
+                val only = ids.split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
+                val dirs = CustomFaces.dir(this@MainActivity).listFiles()?.filter {
+                    val id = it.name.toIntOrNull()
+                    id != null && (only.isEmpty() || id in only) && File(it, "face.json").exists()
+                }.orEmpty()
                 var fail: String? = null
                 for ((i, d) in dirs.withIndex()) {
                     val r = runCatching { CustomFaces.send(l, d) { reply(JSONObject().put("t", "restore").put("pct", (i * 100 + it) / dirs.size)) } }

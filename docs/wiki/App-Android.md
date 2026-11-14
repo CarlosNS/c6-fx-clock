@@ -86,6 +86,8 @@ En *Esferas*, arriba, **Mis esferas** deja crear, cambiar y borrar esferas propi
 - **La lista** dice dónde está cada una: *en el reloj*, *solo en el móvil* o *solo en el reloj*, y cuál está *puesta*.
 - **Eliminar** la borra del reloj y del móvil.
 - **Restaurar en el reloj** vuelve a mandar todas las que guarda el móvil, por ejemplo tras cambiar o formatear la tarjeta.
+- **Enviar al reloj** se hace en una ventana con el progreso que tapa la app: mientras dura no se puede cambiar nada (ni volver atrás), para no estropear el envío.
+- **Al reconectar**, las esferas que estaban solo en el móvil (guardadas sin el reloj cerca, o tras cambiar la tarjeta) se mandan solas, una vez por conexión.
 
 ## Buscar el reloj
 

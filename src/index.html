@@ -477,7 +477,8 @@ $('langen').onclick=()=>{lastUser=Date.now();setLang(1);send('lang 1')};
 
 // ------------------------------------------------------------ views: #inicio, #esferas… (the hash keeps the back button working)
 let view='inicio';const stack=[];
-function route(){const h=(location.hash||'#inicio').slice(1);const v=$('v-'+h)?h:'inicio';
+function route(){if(window.misBusy&&misBusy()){history.replaceState(null,'','#'+view);return}  // a face is going to the watch: stay
+ const h=(location.hash||'#inicio').slice(1);const v=$('v-'+h)?h:'inicio';
  if(stack.length>1&&stack[stack.length-2]===v)stack.pop();else if(stack[stack.length-1]!==v)stack.push(v);
  view=v;for(const s of document.querySelectorAll('.view'))s.classList.toggle('hide',s.id!=='v-'+v);
  closeModals();window.scrollTo(0,0);
@@ -743,7 +744,7 @@ $('blecard').classList.toggle('hide',!L.needsPick);
 if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent=tr('Este navegador no tiene Web Bluetooth: usa Chrome o Edge','This browser has no Web Bluetooth: use Chrome or Edge')}
 L.start({onState:u=>{up=u;offline();renderFind();homeStatus(u&&status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u){$('blecard').classList.add('hide');L.needsPick=false;offline()}
  // back: everything again, as it is on the watch now (it may have changed meanwhile)
- if(u){poll();loadAlarms();if(view==='archivos')loadFiles(fpath);if(window.misRefresh)misRefresh();setTimeout(renderFind,1500)}else{tick=null;clock();renderAlarms();if(!FX.length)buildFaces()}},
+ if(u){poll();loadAlarms();if(view==='archivos')loadFiles(fpath);if(window.misReconnected)misReconnected();setTimeout(renderFind,1500)}else{tick=null;clock();renderAlarms();if(!FX.length)buildFaces()}},
  onMessage:m=>{if(m.t==='status')show(m);if(m.t==='find'||m.t==='findphone')renderFind()}});
 // ------------------------------------------------------------ without the watch
 // What needs it (and only that) is greyed out while it is not connected; a tap on it says why instead of

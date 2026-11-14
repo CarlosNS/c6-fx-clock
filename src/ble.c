@@ -18,6 +18,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "os/os_mbuf.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
@@ -45,6 +46,7 @@ static const char *TAG = "ble";
 #define HEARTBEAT_MS 30000      // status sent unasked this often while connected
 #define STATUS_GAP_MS 300       // at most one change notification this often
 #define QUEUE_LEN 16
+#define NOTIFY_RESERVE 4  // buffers notifications leave free for the ATT answers to the phone's writes
 #define FRAME_LAST 0x80
 #define FRAME_FIRST 0x40
 
@@ -129,9 +131,11 @@ static void send_msg_locked(const char *json, size_t len)
         uint8_t frame[256];
         frame[0] = id | (off == 0 ? FRAME_FIRST : 0) | (off + n >= len ? FRAME_LAST : 0);
         memcpy(frame + 1, json + off, n);
-        // The controller's buffers fill up on long messages: wait and retry
+        // The controller's buffers fill up on long messages: wait and retry. A few are always left
+        // free: the answer to a write from the phone needs one, and without it the phone's command is
+        // refused ("insufficient resources"), as happened while a status went out on a slow link
         for (int tries = 0;; tries++) {
-            struct os_mbuf *om = ble_hs_mbuf_from_flat(frame, n + 1);
+            struct os_mbuf *om = os_msys_num_free() > NOTIFY_RESERVE ? ble_hs_mbuf_from_flat(frame, n + 1) : NULL;
             int rc = om ? ble_gatts_notify_custom(conn, s_evt_handle, om) : BLE_HS_ENOMEM;
             if (rc == 0) break;
             if (s_conn != conn || tries > 200) {

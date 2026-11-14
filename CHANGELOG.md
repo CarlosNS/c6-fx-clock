@@ -9,6 +9,8 @@
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.
 - Arreglado: textos que se pisaban en Alarmas, Pasos, Cronómetro, Archivos y el lanzador.
 - **La app sin el reloj:** una barra avisa en todas las secciones; lo que necesita el reloj se ve atenuado y, al tocarlo, explica que no está conectado (antes parecía cambiarse y se perdía); Inicio enseña lo último que se supo, y al reconectar se vuelve a leer todo. Sin reloj emparejado, Inicio es la bienvenida con los pasos.
+- **Mis esferas:** el envío al reloj se ve en una ventana que bloquea la app hasta terminar; al reconectar, las que estaban solo en el móvil se mandan solas.
+- Arreglado: al conectar, el reloj podía rechazar una orden por falta de búferes (mientras mandaba su estado); ahora deja búferes libres para las órdenes y la app reintenta.
 - Arreglado: tras reiniciarse el reloj, la app podía no volver a conectar nunca (esperaba una respuesta del Bluetooth que Android no siempre da).
 - Arreglado: en la app, el campo de la hora de las alarmas se salía de la tarjeta.
 - **Alarmas de una vez, a la vista:** en la app, *Repetir* con *Una vez*, *Todos los días*, *Laborables* y *Fin de semana* además de los días sueltos; en el reloj, el editor dice en qué quedan los días (*una vez: se borra al pararla*, *laborables*…). Una alarma nueva es de una vez, en el reloj y en la app.
