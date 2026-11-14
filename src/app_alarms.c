@@ -61,7 +61,7 @@ static void draw_list(void)
         snprintf(buf, sizeof(buf), "%02d:%02d", a->h, a->m);
         ui_print(&ui_jersey, 4, X0 + 16, y + 6, buf, a->on ? MS_CREMA : MS_GRIS);
         if (a->days) days_text(a, X0 + 18, y + 54, 1);
-        else ui_print(&ui_vt, 1, X0 + 18, y + 54, TR("una vez", "once"), MS_GRIS);
+        else ui_print(&ui_vt, 1, X0 + 18, y + 54, TR("sin repetir", "no repeat"), MS_GRIS);
         if (a->label[0]) {  // the label from the phone, after the days
             char l[ALARM_LABEL_MAX + 4];
             ui_ellipsize(&ui_jersey, 2, WID - 230, a->label, l, sizeof(l));

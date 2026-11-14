@@ -3,8 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Alarms: up to ALARMS_MAX, kept in NVS. days: bit 0 = Monday ... bit 6 = Sunday; 0 = once (switched
-// off after it rings).
+// Alarms: up to ALARMS_MAX, kept in NVS. days: bit 0 = Monday ... bit 6 = Sunday; 0 = no repeat: it
+// rings once and is deleted when stopped.
 
 #define ALARMS_MAX 6
 #define SNOOZE_MIN 5

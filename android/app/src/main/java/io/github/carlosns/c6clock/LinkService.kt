@@ -39,6 +39,11 @@ object Live {
     @Volatile var phase = "off"
     /** The last direct attempt did not find it (the page says so). */
     @Volatile var notFound = false
+
+    /** The phone's Bluetooth is switched on. */
+    fun bluetoothOn(c: Context) = runCatching {
+        c.getSystemService(android.bluetooth.BluetoothManager::class.java).adapter?.isEnabled == true
+    }.getOrDefault(false)
     /** The app is on screen: the link runs at a quick interval for the page, otherwise at low power. */
     @Volatile var visible = false
 
@@ -71,11 +76,22 @@ class LinkService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // The phone's Bluetooth switched on again: try at once instead of waiting
+    private val btSwitch = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: Context, i: Intent) {
+            val st = i.getIntExtra(android.bluetooth.BluetoothAdapter.EXTRA_STATE, -1)
+            if (st == android.bluetooth.BluetoothAdapter.STATE_ON) { Log.i(TAG, "Bluetooth on"); restart() }
+            if (st == android.bluetooth.BluetoothAdapter.STATE_OFF) Log.i(TAG, "Bluetooth off")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         running = true
         store = Store(this)
         if (!foreground(true)) stopSelf()
+        ContextCompat.registerReceiver(this, btSwitch, android.content.IntentFilter(android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     /**
@@ -114,6 +130,7 @@ class LinkService : Service() {
     }
 
     override fun onDestroy() {
+        runCatching { unregisterReceiver(btSwitch) }
         running = false
         scope.cancel()
         Live.link?.takeIf { it === mine }?.let { it.close(); Live.link = null; Live.state(false) }

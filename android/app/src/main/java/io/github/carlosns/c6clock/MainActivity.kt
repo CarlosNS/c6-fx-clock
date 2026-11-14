@@ -70,6 +70,9 @@ class MainActivity : ComponentActivity() {
         if (ok) LinkService.mic(this)
         js("voicePermission", ok.toString())
     }
+    private val btEnable = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (Live.bluetoothOn(this)) LinkService.reconnect(this)
+    }
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { connectIfPaired() }
     private val chooser = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
         val address = if (r.resultCode == RESULT_OK) associatedAddress(r.data) else null
@@ -445,7 +448,13 @@ class MainActivity : ComponentActivity() {
         }
         @JavascriptInterface fun reconnect() = LinkService.reconnect(this@MainActivity)
         @JavascriptInterface fun linkInfo(): String = JSONObject()
-            .put("phase", Live.phase).put("notFound", Live.notFound).put("lastSeen", store.lastSeenMs).toString()
+            .put("phase", Live.phase).put("notFound", Live.notFound).put("lastSeen", store.lastSeenMs)
+            .put("bt", Live.bluetoothOn(this@MainActivity)).toString()
+        /** Android's dialog that asks to switch Bluetooth on (the user answers it). */
+        @JavascriptInterface fun enableBluetooth() = runOnUiThread {
+            runCatching { btEnable.launch(Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE)) }
+                .onFailure { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
+        }
         @JavascriptInterface fun stopPhone() = Find.stopPhone(this@MainActivity, tellWatch = true)
         @JavascriptInterface fun allowVoice() = runOnUiThread { micPermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)

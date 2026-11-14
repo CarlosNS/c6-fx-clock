@@ -36,7 +36,7 @@ Mientras el reloj está cerca, la app mantiene el enlace Bluetooth abierto, aunq
 
 Con la app en pantalla el enlace va más rápido (para la página de control); en segundo plano usa el intervalo de bajo consumo del Bluetooth.
 
-Sin conexión, Inicio dice qué está haciendo (*Buscando el reloj…*, *Esperando a que aparezca* o *No aparece: ¿está cerca y encendido?*) con un botón **Reconectar**, que cierra cualquier conexión a medias y busca el reloj en ese momento. En el reloj, la casilla **Reconectar** de los ajustes rápidos hace que se anuncie rápido durante 30 s, para que el móvil lo encuentre al instante.
+Sin conexión, Inicio enseña un aviso en rojo a los pocos segundos. Si el **Bluetooth del móvil está apagado**, lo dice y abre el diálogo de Android para activarlo (una vez cada vez que se abre la app, y con el botón **Activar Bluetooth**); al activarlo, la app vuelve a conectar sola. Si no, dice qué está haciendo (*Buscando el reloj…*, *Esperando a que aparezca* o *No aparece: ¿está cerca y encendido?*) con un botón **Reconectar**, que cierra cualquier conexión a medias y busca el reloj en ese momento. En el reloj, la casilla **Reconectar** de los ajustes rápidos hace que se anuncie rápido durante 30 s, para que el móvil lo encuentre al instante.
 
 En *Ajustes → Avanzado*, **Sincronización del móvil** enseña cuándo fue la última y si salió bien, con el botón **Ahora** para forzar una.
 

@@ -16,6 +16,16 @@ int g_nalarms;
 static bool s_ringing;
 static int s_cur = -1;
 static int s_snooze_at = -1;  // minute of the day the snoozed alarm rings again
+static bool s_test;           // ringing to try its animation ("alarm <i> test"): not a real one
+
+// Takes alarm i out of the list (the ones after it move up)
+static void remove_at(int i)
+{
+    for (int k = i + 1; k < g_nalarms; k++) g_alarms[k - 1] = g_alarms[k];
+    g_nalarms--;
+    alarms_save();
+    sys_dirty();
+}
 
 // Stored as "list2" (with label and animation). Watches from before kept 4-byte alarms under "list":
 // read once and carried over, with no label and the sunrise.
@@ -97,12 +107,9 @@ bool alarm_command(const char *cmd)
     }
     if (sscanf(cmd, "alarm %d del%n", &i, &off) == 1 && off > 0) {
         if (i >= 0 && i < g_nalarms && !s_ringing) {  // not while one rings: its screen points at it
-            for (int k = i + 1; k < g_nalarms; k++) g_alarms[k - 1] = g_alarms[k];
-            g_nalarms--;
             if (s_snooze_at >= 0 && s_cur == i) s_snooze_at = -1;
             else if (s_cur > i) s_cur--;
-            alarms_save();
-            sys_dirty();
+            remove_at(i);
         }
         return true;
     }
@@ -116,7 +123,7 @@ bool alarm_command(const char *cmd)
         return true;
     }
     if (sscanf(cmd, "alarm %d test%n", &i, &off) == 1 && off > 0) {  // ring it now (trying its animation)
-        if (i >= 0 && i < g_nalarms && !s_ringing) ring(i);
+        if (i >= 0 && i < g_nalarms && !s_ringing) s_test = true, ring(i);
         return true;
     }
     if (sscanf(cmd, "alarm %d on %d", &i, &v) == 2) {  // switch it on or off (the app's alarm list)
@@ -166,11 +173,8 @@ void alarms_minute(void)
         alarm_t *a = &g_alarms[i];
         if (!a->on || a->h != g_now.h || a->m != g_now.m) continue;
         if (a->days && !(a->days >> wday & 1)) continue;
-        if (!a->days) {  // once: off after ringing
-            a->on = 0;
-            alarms_save();
-        }
-        ring(i);
+        s_test = false;
+        ring(i);  // one with no repeat days goes away once it is stopped (alarm_stop)
         return;
     }
 }
@@ -196,6 +200,13 @@ void alarm_stop(void)
     s_snooze_at = -1;
     audio_stop();
     sys_alert_done();
+    // No repeat days: it was a one-off, so it is deleted now that it has rung (a snooze keeps it until then)
+    if (!s_test && s_cur >= 0 && s_cur < g_nalarms && g_alarms[s_cur].days == 0) {
+        ESP_LOGI(TAG, "one-off alarm %02d:%02d done: deleted", g_alarms[s_cur].h, g_alarms[s_cur].m);
+        remove_at(s_cur);
+        s_cur = -1;
+    }
+    s_test = false;
 }
 
 const char *alarm_day_letter(int i)

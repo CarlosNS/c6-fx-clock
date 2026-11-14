@@ -4,12 +4,14 @@
 
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
-- **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que pasa de la tarde a la noche, con luciérnagas y fuegos artificiales; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
+- **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que sigue la hora del día, con luciérnagas y fuegos artificiales de noche; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
 - **Coloso** sustituye a *Arena*: un reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer.
 - **Engranajes**, rehecha: el interior de una torre del reloj gótica, con engranajes enormes, péndulo, cadenas y luz de luna.
 - **Lluvia** responde al acelerómetro: las gotas resbalan hacia donde inclinas el reloj, y las que se van dejan sitio a gotas nuevas. (Se corrigió de paso la orientación de los ejes del acelerómetro.)
 - Arreglado: con una captura de pantalla por WiFi lenta, el reloj podía reiniciarse.
 - **Reconexión:** tras un corte la app hace un intento directo y luego deja a Android esperando al reloj, que conecta en cuanto vuelve a anunciarse (más rápido y con menos gasto que reintentar cada minuto); al abrir la app lo intenta en el acto. Inicio enseña qué está haciendo, con un botón **Reconectar**, y el reloj tiene la casilla **Reconectar** en los ajustes rápidos (se anuncia rápido 30 s).
+- **Alarmas sin repetición:** una alarma sin días suena una vez y se borra al pararla (antes solo se apagaba).
+- **Sin conexión, la app avisa:** un aviso en Inicio explica qué pasa; si el Bluetooth del móvil está apagado, pide activarlo con el diálogo de Android y reconecta en cuanto se enciende.
 - **Restablecer ajustes** en el reloj y en la app, con confirmación; los valores de fábrica están en el manual.
 - **Objetivo de pasos** editable en la app, y **calibración del podómetro** (graba el acelerómetro en la microSD; el archivo se guarda cada 15 s).
 - **Podómetro más preciso:** contaba de más, sobre todo andando despacio (cada paso daba dos picos) y con la pantalla apagada, cuando leía solo la mitad de las muestras. Ahora el acelerómetro da 11 muestras por segundo, encienda o no la pantalla, el umbral es más alto, la media de fondo va por tiempo y cuenta tras 8 pasos seguidos. Con grabaciones reales: de 239 a unos 195 en 200 pasos contados, y 0 en 5 minutos sentado.

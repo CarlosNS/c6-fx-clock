@@ -1,8 +1,8 @@
 // "Disfruta" (full screen, wide canvas, pixel art on art.c): free time. A meadow: grass and a lone tree
-// bending in a gentle, gusting wind, slow clouds, seeds drifting, flowers among the grass. A slow day
-// goes by (3 minutes at normal speed): a golden afternoon, the sun setting behind the hills, a night
-// with the moon, stars, fireflies over the grass and now and then fireworks, then dawn. No time on
-// purpose: only "Disfruta" ("Relax" in English).
+// bending in a gentle, gusting wind, slow clouds, seeds drifting, flowers among the grass. It follows
+// the real time of day, like Aventura: a blue midday, golden early mornings and evenings, the sun
+// crossing the sky and setting behind the hills, and at night the moon, stars, fireflies over the grass
+// and now and then fireworks. No time on purpose: only "Disfruta" ("Relax" in English).
 #include <math.h>
 #include <stdio.h>
 #include "app.h"
@@ -12,7 +12,6 @@
 #include "gfx.h"
 
 #define NBLADES 260
-#define CYCLE 180.0f   // seconds of animation time for the whole day
 
 static uint16_t C(uint32_t v) { return rgb565(v >> 16, (v >> 8) & 255, v & 255); }
 static int s_dark;  // 0..11: how much dusk or night darkens the land
@@ -53,13 +52,17 @@ static float wind(float x, float s)
     return (sinf(s_ts * 1.1f + x * 0.045f) * 1.6f + sinf(s_ts * 0.37f + 2) * 1.2f + sinf(s_ts * 2.3f + x * 0.2f) * 0.3f) * s;
 }
 
-// How much night it is, 0..1, at this point of the day
-static float night_at(float c)
+// How much night it is, 0..1, at this hour (the same curve as Aventura): night until 5, dawn until
+// 7:30, day until 18, dusk until 21
+static float night_at(float hf)
 {
-    if (c < 60) return 0;
-    if (c < 90) return (c - 60) / 30;
-    if (c < 160) return 1;
-    return 1 - (c - 160) / 20;
+    return hf < 5 ? 1 : hf < 7.5f ? (7.5f - hf) / 2.5f : hf < 18 ? 0 : hf < 21 ? (hf - 18) / 3 : 1;
+}
+
+// How golden the daylight is: early morning and the evening
+static float gold_at(float hf)
+{
+    return hf < 8.5f ? 1 : hf < 10 ? (10 - hf) / 1.5f : hf < 16 ? 0 : hf < 18.5f ? (hf - 16) / 2.5f : 1;
 }
 
 // One firework every 2.2 s at night: rises 0.8 s, flashes and bursts into 32 sparks that fall and fade in 1.6 s
@@ -96,13 +99,16 @@ void relax_render(uint16_t *fb, uint32_t t, uint32_t dt)
     int dx_, dy_;
     app_take_drag(&dx_, &dy_);
     s_ts = t / 1000.0f;
-    float cyc = fmodf(s_ts, CYCLE), n = night_at(cyc);
+    float hf = g_now.valid ? g_now.h + g_now.m / 60.0f + g_now.s / 3600.0f : 18.5f;
+    float n = night_at(hf), cyc = s_ts;  // cyc: animation time for the fireworks' rhythm
+    int ga = (int)(gold_at(hf) * 16);
     int na = (int)(n * 16);
     s_dark = na * 11 / 16;
-    static const uint32_t DAY[] = {0x4a6fa5, 0x6f8fbd, 0xa3b5cf, 0xe8c9a0, 0xf2b27a, 0xf59e6b};
+    static const uint32_t NOON[] = {0x3f6fb8, 0x5a8ccb, 0x7fa8d8, 0xa9c6e2, 0xc9dcea, 0xdfe9ef};
+    static const uint32_t DAY[] = {0x4a6fa5, 0x6f8fbd, 0xa3b5cf, 0xe8c9a0, 0xf2b27a, 0xf59e6b};  // golden
     static const uint32_t NIGHT[] = {0x070a22, 0x0c1233, 0x131b45, 0x1b2654, 0x243060, 0x2c3868};
     uint16_t sky[6];
-    for (int i = 0; i < 6; i++) sky[i] = gfx_blend(C(DAY[i]), C(NIGHT[i]), na);
+    for (int i = 0; i < 6; i++) sky[i] = gfx_blend(gfx_blend(C(NOON[i]), C(DAY[i]), ga), C(NIGHT[i]), na);
     art_bands(sky, 6, 0, 110);
     // stars come out
     if (n > 0.4f)
@@ -110,14 +116,14 @@ void relax_render(uint16_t *fb, uint32_t t, uint32_t dt)
             uint32_t h = fx_hash(i, 306);
             if (sinf(s_ts * 1.7f + i) > -0.2f) art_tint(h % ART_W, (h >> 8) % 95, (h >> 20) & 3 ? C(0xb8c4ff) : C(0xfff6e0), (int)((n - 0.4f) * 26));
         }
-    // the sun sinks behind the hills as evening comes; the moon rises at night
-    float sy = 92 + n * 40;
-    if (n < 0.8f) {  // set for good by full night (its halo would linger on the horizon)
+    // the sun crosses the sky from 6 to 20 (high at 13) and sinks behind the hills; the moon at night
+    float arc = (hf - 6) / 14, sy = arc > 0 && arc < 1 ? 96 - 50 * sinf(arc * 3.14159f) : 120, sx = 18 + (arc < 0 ? 0 : arc > 1 ? 1 : arc) * 64;
+    if (n < 0.8f && sy < 118) {  // set for good by full night (its halo would linger on the horizon)
         for (int r = 18; r > 6; r -= 3)
             for (int y = -r; y <= r; y++)
                 for (int x = -r; x <= r; x++)
-                    if (x * x + y * y <= r * r) art_tint(30 + x, (int)sy + y, C(0xffe2a8), 2);
-        art_disc(30, sy, 6, gfx_blend(C(0xfff1c9), C(0xff9a5a), na));
+                    if (x * x + y * y <= r * r) art_tint((int)sx + x, (int)sy + y, C(0xffe2a8), 2);
+        art_disc(sx, sy, 6, gfx_blend(C(0xfff1c9), C(0xff9a5a), ga > na ? ga : na));
     }
     if (n > 0.5f) {
         float my = 26 - (n - 0.5f) * 24;  // above the word (art y < 29)
@@ -128,7 +134,7 @@ void relax_render(uint16_t *fb, uint32_t t, uint32_t dt)
     if (n > 0.8f) {
         int k = (int)(cyc / 2.2f);
         for (int j = k - 1; j <= k; j++)
-            if (fx_hash(j, 307) % 3) firework(j, cyc - j * 2.2f);
+            if (fx_hash(j, 307) % 3 == 0) firework(j, cyc - j * 2.2f);  // one slot in three
     }
     // slow clouds (darker at night)
     uint16_t cl = gfx_blend(C(0xf7e3cf), C(0x3a4470), na), cl2 = gfx_blend(C(0xd9b9a8), C(0x262f58), na);

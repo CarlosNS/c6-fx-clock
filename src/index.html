@@ -134,7 +134,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
   <div style="display:flex;flex-direction:column;gap:2px;position:relative;margin-top:10px">
     <h1 class="j" style="margin:0;font-size:46px;line-height:1;color:var(--oro)">Marea</h1>
     <div class="inline" style="gap:8px"><span id="dot" class="pip" title="Conexión con el reloj"></span><span id="hstat">--</span><span class="dim">·</span><span id="clk">--:--:--</span></div>
-    <div class="inline hide" id="relink" style="gap:10px;margin-top:6px"><span class="dim" id="relinkst"></span><button class="btn" id="relinkgo" style="min-height:40px;font-size:20px" data-en="Reconnect">Reconectar</button></div>
+
   </div>
 
   <div class="panel hide" id="blecard">
@@ -171,6 +171,12 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <div style="flex:1;display:flex;flex-direction:column;min-width:0"><span class="dim" data-en="Now on the watch">Ahora en el reloj</span><span class="j" id="hfname" style="font-size:30px;line-height:1">--</span></div>
     <span class="go" aria-hidden="true">›</span>
   </a>
+
+  <div class="panel red hide" id="relink">
+    <div class="tt" id="relinkt" data-en="The watch is not connected">El reloj no está conectado</div>
+    <div class="dim" id="relinkst" style="margin:4px 0 10px"></div>
+    <button class="btn full" id="relinkgo" data-en="Reconnect">Reconectar</button>
+  </div>
 
   <div class="panel red hide" id="nphone">
     <div class="tt" data-en="Your watch is looking for this phone">Tu reloj está buscando este móvil</div>
@@ -590,14 +596,29 @@ function show(s,relang){status=s;
   vis()}
  $('moderow').classList.toggle('hide',BOARD==='s3amoled');$('wifionly').classList.toggle('hide',L.kind!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
  $('modetxt').textContent=MODE_TXT[s.mode]||''}
-// Android app, not connected: what the link is doing and a button to try again now
-let relinkTimer=0;
+// Android app, not connected: a card that says why and what to do. With the phone's Bluetooth off it
+// asks to switch it on (Android's own dialog, once each time the app opens); otherwise it says what
+// the link is doing and offers to try again now. It shows after a few seconds without a link, so a
+// quick reconnection on opening the app does not flash it.
+var relinkTimer=0,relinkSince=0,btAsked=false;  // var: the link may report before this line runs
 function relinkShow(){clearTimeout(relinkTimer);const box=$('relink');
- if(up||L.kind!=='android'||L.needsPick||!window.ClockBridge||!ClockBridge.linkInfo){box.classList.add('hide');return}
- const i=JSON.parse(ClockBridge.linkInfo());box.classList.remove('hide');
- $('relinkst').textContent=i.phase==='searching'?tr('Buscando el reloj…','Looking for the watch…'):i.notFound?tr('No aparece: ¿está cerca y encendido?','Not found: is it near and on?'):tr('Esperando a que aparezca','Waiting for it to show up');
- $('relinkgo').disabled=i.phase==='searching';relinkTimer=setTimeout(relinkShow,1500)}
-$('relinkgo').onclick=()=>{ClockBridge.reconnect();setTimeout(relinkShow,200)};
+ if(up||L.kind!=='android'||L.needsPick||!window.ClockBridge||!ClockBridge.linkInfo){box.classList.add('hide');relinkSince=0;return}
+ if(!relinkSince)relinkSince=Date.now();
+ const i=JSON.parse(ClockBridge.linkInfo());
+ if(i.bt===false){
+  box.classList.remove('hide');
+  $('relinkt').textContent=tr('El Bluetooth del móvil está apagado','The phone’s Bluetooth is off');
+  $('relinkst').textContent=tr('La app habla con el reloj por Bluetooth: actívalo para que se conecte.','The app talks to the watch over Bluetooth: switch it on to connect.');
+  $('relinkgo').textContent=tr('Activar Bluetooth','Turn Bluetooth on');$('relinkgo').disabled=false;
+  if(!btAsked){btAsked=true;ClockBridge.enableBluetooth()}
+ }else{
+  box.classList.toggle('hide',Date.now()-relinkSince<4000&&!i.notFound);
+  $('relinkt').textContent=tr('El reloj no está conectado','The watch is not connected');
+  $('relinkst').textContent=i.phase==='searching'?tr('Buscando el reloj…','Looking for the watch…'):i.notFound?tr('No aparece: ¿está cerca y encendido? Si está apagado, pulsa PWR.','Not found: is it near and on? If it is off, press PWR.'):tr('Esperando a que aparezca: se conectará solo en cuanto esté cerca.','Waiting for it: it will connect by itself as soon as it is near.');
+  $('relinkgo').textContent=i.phase==='searching'?tr('Buscando…','Searching…'):tr('Reconectar','Reconnect');$('relinkgo').disabled=i.phase==='searching';
+ }
+ relinkTimer=setTimeout(relinkShow,1500)}
+$('relinkgo').onclick=()=>{const i=JSON.parse(ClockBridge.linkInfo());if(i.bt===false)ClockBridge.enableBluetooth();else ClockBridge.reconnect();setTimeout(relinkShow,200)};
 function homeStatus(bat){relinkShow();$('dot').style.background=up?'var(--verde)':'var(--coral)';$('dot').classList.toggle('on',up);
  $('hstat').textContent=(up?tr('Conectado','Connected'):tr('Sin conexión','Not connected'))+(bat?' · '+tr('batería ','battery ')+bat:'');
  $('btpip').style.background=up?'var(--verde)':'var(--coral)';$('btst').textContent=up?tr('Conectado','Connected'):tr('Sin conexión','Not connected');
@@ -733,12 +754,12 @@ function animName(k){return ALARMS&&ALARMS.anims[k]||'?'}
 function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
  $('aladd').classList.toggle('hide',ALARMS.list.length>=AL_MAX);
  if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas.','No alarms.')}</div>`;return}
- box.innerHTML=ALARMS.list.map((a,i)=>{const days=a.d?[...DAYS[LANG]].filter((c,k)=>a.d>>k&1).join(' '):tr('Una vez','Once');
+ box.innerHTML=ALARMS.list.map((a,i)=>{const days=a.d?[...DAYS[LANG]].filter((c,k)=>a.d>>k&1).join(' '):tr('Sin repetir','No repeat');
   return `<div class="panel al${a.on?'':' offd'}${openAl===i?' gold':''}" data-i="${i}">
    <div class="head"><button class="open" aria-expanded="${openAl===i}"><span class="tag" style="${a.l?'':'color:var(--gris)'}">${a.l?esc(a.l):tr('Sin etiqueta','No label')}</span><span class="time">${hm(a)}</span><span class="dim">${days} · ${esc(animName(a.a))}</span></button>
    <input type="checkbox" class="sw" ${a.on?'checked':''} aria-label="${tr('Alarma de las ','Alarm at ')}${hm(a)}"></div>
    ${openAl===i?`<div class="more"><label class="stack" style="gap:4px"><span class="dim">${tr('Hora','Time')}</span><input type="time" value="${hm(a)}" required></label>
-    <div class="stack" style="gap:4px"><span class="dim">${tr('Días (ninguno: una sola vez)','Days (none: just once)')}</span><div class="days">${[...DAYS[LANG]].map((c,k)=>`<button data-k="${k}" class="${a.d>>k&1?'on':''}" aria-pressed="${!!(a.d>>k&1)}">${c}</button>`).join('')}</div></div>
+    <div class="stack" style="gap:4px"><span class="dim">${tr('Días (ninguno: suena una vez y se borra)','Days (none: rings once, then it is deleted)')}</span><div class="days">${[...DAYS[LANG]].map((c,k)=>`<button data-k="${k}" class="${a.d>>k&1?'on':''}" aria-pressed="${!!(a.d>>k&1)}">${c}</button>`).join('')}</div></div>
     <label class="stack" style="gap:4px"><span class="dim">${tr('Etiqueta','Label')}</span><input type="text" maxlength="23" value="${esc(a.l)}" placeholder="${tr('Sin etiqueta','No label')}"></label>
     <button class="btn anim" style="justify-content:flex-start"><img class="prev" alt="" style="width:30px;height:37px;border:2px solid var(--linea)"><span style="flex:1;text-align:left">${tr('Animación de alarma','Alarm animation')}<br><span style="font:18px VT323,monospace;color:var(--gris)">${esc(animName(a.a))}</span></span><span class="go">›</span></button>
     <button class="btn test">${tr('Probar en el reloj','Try it on the watch')}</button>
