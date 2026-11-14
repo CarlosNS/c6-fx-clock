@@ -369,6 +369,8 @@ static int pix_cols(int gi)
     return gi < 0 ? 2 : (int)strlen(pixglyph[gi][0]);
 }
 
+int pix_glyph_cols(char c) { return pix_cols(pix_index(c)); }
+
 int pix_digits_width(const char *s, int scale)
 {
     int w = 0;
@@ -381,6 +383,8 @@ static inline bool pix_on(int gi, int col, int row)
     if (gi < 0 || row < 0 || row >= 10 || col < 0 || col >= pix_cols(gi)) return false;
     return pixglyph[gi][row][col] == '#';
 }
+
+bool pix_glyph_on(char c, int col, int row) { return pix_on(pix_index(c), col, row); }
 
 void pix_digits_draw(uint16_t *fb, int x, int y, const char *s, int scale, const uint16_t grad[4], uint16_t outline)
 {

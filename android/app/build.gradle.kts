@@ -50,6 +50,7 @@ android {
 val copyWeb by tasks.registering(Copy::class) {
     from(rootProject.file("../src")) { include("index.html", "transport.js") }
     from(rootProject.file("../src/web")) { into("a") }  // previews and fonts, as the watch serves them at /a/
+    from(rootProject.file("../src/webapp")) { into("a") }  // the custom face editor's clock fonts (tools/font_atlas.py)
     into(layout.buildDirectory.dir("generated/web/web"))
 }
 tasks.named("preBuild") { dependsOn(copyWeb) }

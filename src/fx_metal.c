@@ -18,6 +18,7 @@ static uint16_t C(uint32_t v) { return rgb565(v >> 16, (v >> 8) & 255, v & 255);
 #define INK C(0x120c14)
 
 static float s_ts;
+bool g_metal_bare;
 
 void metal_enter(void) { art_begin(); }
 
@@ -327,6 +328,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     default: scene_pizza(); break;
     }
     art_blit(fb);
+    if (g_metal_bare) return;  // console "metalbare 1": the drawing alone, to review it
 
     // The narration box, comic style: yellow, inked, at the top (clear of the rounded corners)
     const char *cap = (g_app.lang ? CAP_EN : CAP_ES)[sc];

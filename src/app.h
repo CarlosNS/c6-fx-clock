@@ -22,6 +22,7 @@ typedef struct {
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
     volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
     volatile int raise_wake;   // raising the wrist turns the screen on
+    volatile int cust;         // the custom face "Mis esferas" shows (its folder /esferas/<n>), 0 = none
     volatile int voice;        // holding BOOT records a voice command for the phone app (voice.c)
     volatile int tap_wake;     // touching the dark screen turns it on: 0 never, 1 one tap, 2 a double tap
     volatile int lang;         // 0 = Spanish, 1 = English
@@ -78,6 +79,12 @@ bool sd_write_file(const char *path, const void *data, size_t len);
 bool sd_append_file(const char *path, const void *data, size_t len);
 // Prints a file of the microSD on the console (calibration logs)
 bool sd_print_file(const char *path);
+// The whole file in PSRAM (one spare byte at the end; free() it), NULL if missing or over max bytes
+void *sd_read_file(const char *path, size_t max, size_t *len);
+// Names in a folder of the card (files and folders, no dot-names); returns how many
+int sd_list_names(const char *path, char names[][16], int max);
+// Deletes a folder and the files in it (one level)
+bool sd_remove_dir(const char *path);
 // Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
 void power_off_now(bool really);
 // Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it

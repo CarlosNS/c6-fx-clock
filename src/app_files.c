@@ -246,6 +246,90 @@ bool sd_append_file(const char *path, const void *data, size_t len)
     return ok;
 }
 
+// Mounts the card for one operation if the Files app does not have it; returns whether it is usable
+static bool use_card(bool *mine)
+{
+    *mine = false;
+    if (s_card) return true;
+    int st = mount(false);
+    if (st != g_app.sd_state) g_app.sd_state = st, sys_dirty();
+    *mine = st == SD_OK;
+    return *mine;
+}
+
+void *sd_read_file(const char *path, size_t max, size_t *len)
+{
+    if (!s_lock) sd_check();
+    if (strstr(path, "..")) return NULL;
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine;
+    uint8_t *buf = NULL;
+    if (use_card(&mine)) {
+        static char full[220];
+        snprintf(full, sizeof(full), MOUNT "%s", path);
+        FILE *f = fopen(full, "rb");
+        if (f) {
+            fseek(f, 0, SEEK_END);
+            long n = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            if (n >= 0 && (size_t)n <= max && (buf = heap_caps_malloc(n + 1, MALLOC_CAP_SPIRAM))) {
+                if (fread(buf, 1, n, f) != (size_t)n) free(buf), buf = NULL;
+                else *len = n;
+            }
+            fclose(f);
+        }
+    }
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return buf;
+}
+
+int sd_list_names(const char *path, char names[][16], int max)
+{
+    if (!s_lock) sd_check();
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine;
+    int n = 0;
+    if (use_card(&mine)) {
+        static char full[220];
+        snprintf(full, sizeof(full), MOUNT "%s", path);
+        DIR *d = opendir(full);
+        struct dirent *e;
+        while (d && n < max && (e = readdir(d)))
+            if (e->d_name[0] != '.') strlcpy(names[n++], e->d_name, 16);
+        if (d) closedir(d);
+    }
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return n;
+}
+
+bool sd_remove_dir(const char *path)
+{
+    if (!s_lock) sd_check();
+    if (strstr(path, "..") || strlen(path) < 3) return false;
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool mine, ok = false;
+    if (use_card(&mine)) {
+        static char full[220], f[300];
+        snprintf(full, sizeof(full), MOUNT "%s", path);
+        DIR *d = opendir(full);
+        struct dirent *e;
+        while (d && (e = readdir(d)))  // one level: a custom face's own files
+            if (e->d_name[0] != '.' && strlen(full) + strlen(e->d_name) + 2 < sizeof(f)) {
+                strcpy(f, full);
+                strcat(f, "/");
+                strcat(f, e->d_name);
+                unlink(f);
+            }
+        if (d) closedir(d);
+        ok = rmdir(full) == 0;
+    }
+    if (mine) unmount();
+    xSemaphoreGive(s_lock);
+    return ok;
+}
+
 bool sd_print_file(const char *path)
 {
     if (!s_lock) sd_check();

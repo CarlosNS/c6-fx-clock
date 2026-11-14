@@ -19,6 +19,7 @@ import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import java.io.File
 import android.os.ParcelUuid
 import android.os.PowerManager
 import android.provider.Settings
@@ -70,6 +71,11 @@ class MainActivity : ComponentActivity() {
         if (ok) LinkService.mic(this)
         js("voicePermission", ok.toString())
     }
+    private var fileCallback: android.webkit.ValueCallback<Array<Uri>>? = null
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        fileCallback?.onReceiveValue(uri?.let { arrayOf(it) })
+        fileCallback = null
+    }
     private val btEnable = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (Live.bluetoothOn(this)) LinkService.reconnect(this)
     }
@@ -83,7 +89,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store(this)
-        val assets = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
+        // /mis/<id>/...: the custom faces kept on the phone (CustomFaces), for the page's editor and list
+        val assets = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .addPathHandler("/mis/", WebViewAssetLoader.InternalStoragePathHandler(this, CustomFaces.dir(this))).build()
         web = WebView(this).apply {
             setBackgroundColor(0xFF14102C.toInt())
             settings.javaScriptEnabled = true
@@ -91,6 +99,14 @@ class MainActivity : ComponentActivity() {
             webChromeClient = object : WebChromeClient() {
                 // confirm() as a native dialog, without the "the page at https://appassets… says" header;
                 // the page's ask() sends {title, body, ok}
+                // <input type=file> in the page (the custom face editor): the phone's own picker
+                override fun onShowFileChooser(view: WebView, cb: android.webkit.ValueCallback<Array<Uri>>, p: FileChooserParams): Boolean {
+                    fileCallback?.onReceiveValue(null)
+                    fileCallback = cb
+                    runCatching { pickImage.launch("image/*") }.onFailure { fileCallback = null; cb.onReceiveValue(null) }
+                    return true
+                }
+
                 override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean {
                     val q = runCatching { JSONObject(message) }.getOrNull()
                     AlertDialog.Builder(this@MainActivity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
@@ -445,6 +461,51 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun readSignal() {
             val l = Live.link?.takeIf { it.ready } ?: return js("findSignal", "null")
             lifecycleScope.launch { js("findSignal", (runCatching { l.rssi() }.getOrNull())?.toString() ?: "null") }
+        }
+        // ---- Mis esferas (CustomFaces): answers come back through window.customReply(json)
+        private fun reply(o: JSONObject) = js("customReply", JSONObject.quote(o.toString()))
+        @JavascriptInterface fun customLocal(): String = CustomFaces.local(this@MainActivity).toString()
+        /** The watch's list: {"t":"cust","sd":..,"sel":..,"list":[...]} or {"t":"cust","err":..}. */
+        @JavascriptInterface fun customWatch() {
+            val l = Live.link?.takeIf { it.ready } ?: return reply(JSONObject().put("t", "cust").put("err", "sin conexión"))
+            lifecycleScope.launch {
+                val r = runCatching { l.exchange("cust list", "cust", 8_000) { true } }
+                reply(r.getOrNull() ?: JSONObject().put("t", "cust").put("err", r.exceptionOrNull()?.message ?: "error"))
+            }
+        }
+        /** Saves a face on the phone and sends it to the watch; replies {"t":"save","pct":..} and {"t":"save","ok":..}. */
+        @JavascriptInterface fun customSave(id: Int, json: String, main: String?, anim: Boolean, source: String?, ext: String?, thumb: String?) {
+            val d = runCatching { CustomFaces.store(this@MainActivity, id, json, main, anim, source, ext, thumb) }
+                .getOrElse { return reply(JSONObject().put("t", "save").put("ok", false).put("msg", it.message)) }
+            val l = Live.link?.takeIf { it.ready }
+                ?: return reply(JSONObject().put("t", "save").put("ok", false).put("msg", "guardada en el móvil; el reloj no está conectado"))
+            lifecycleScope.launch {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                val r = runCatching { CustomFaces.send(l, d) { reply(JSONObject().put("t", "save").put("pct", it)) } }
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                reply(JSONObject().put("t", "save").put("ok", r.isSuccess).put("msg", r.exceptionOrNull()?.message ?: ""))
+            }
+        }
+        /** Every face kept on the phone, to the watch again (a new card); replies {"t":"restore",..}. */
+        @JavascriptInterface fun customRestore() {
+            val l = Live.link?.takeIf { it.ready } ?: return reply(JSONObject().put("t", "restore").put("ok", false).put("msg", "sin conexión"))
+            lifecycleScope.launch {
+                val dirs = CustomFaces.dir(this@MainActivity).listFiles()?.filter { it.name.toIntOrNull() != null && File(it, "face.json").exists() }.orEmpty()
+                var fail: String? = null
+                for ((i, d) in dirs.withIndex()) {
+                    val r = runCatching { CustomFaces.send(l, d) { reply(JSONObject().put("t", "restore").put("pct", (i * 100 + it) / dirs.size)) } }
+                    if (r.isFailure) { fail = r.exceptionOrNull()?.message; break }
+                }
+                reply(JSONObject().put("t", "restore").put("ok", fail == null).put("msg", fail ?: "").put("n", dirs.size))
+            }
+        }
+        @JavascriptInterface fun customDelete(id: Int, onWatch: Boolean) {
+            CustomFaces.delete(this@MainActivity, id)
+            if (onWatch) Live.link?.takeIf { it.ready }?.let { l -> lifecycleScope.launch { runCatching { l.send("cust del $id") } } }
+        }
+        @JavascriptInterface fun customCmd(cmd: String) {  // "cust sel N" / "cust try N"
+            if (!cmd.startsWith("cust ")) return
+            Live.link?.takeIf { it.ready }?.let { l -> lifecycleScope.launch { runCatching { l.send(cmd) } } }
         }
         @JavascriptInterface fun reconnect() = LinkService.reconnect(this@MainActivity)
         @JavascriptInterface fun linkInfo(): String = JSONObject()

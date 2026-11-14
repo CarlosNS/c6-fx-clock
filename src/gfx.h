@@ -47,6 +47,9 @@ void font_draw_grad(uint16_t *fb, const font_t *f, int x, int y, const char *s, 
 // Pixel-art clock digits (7x10 grid, "0123456789:-" and space), each grid cell = scale px.
 // Banded gradient fill (grad[0] top .. grad[3] bottom), bevel highlight, outline and translucent shadow.
 int pix_digits_width(const char *s, int scale);
+// One cell of a pixel digit (custom faces draw them their own way): columns of c, and whether a cell is on
+int pix_glyph_cols(char c);
+bool pix_glyph_on(char c, int col, int row);
 void pix_digits_draw(uint16_t *fb, int x, int y, const char *s, int scale, const uint16_t grad[4], uint16_t outline);
 // Anti-aliased proportional UI text; y = top of the line box
 int ui_width(const uifont_t *f, const char *s);

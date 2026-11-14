@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "app.h"
 #include "apps.h"
 #include "ble.h"
 #include "esp_app_desc.h"
@@ -38,11 +39,16 @@ static StreamBufferHandle_t s_sb;
 static size_t s_size;
 static volatile size_t s_rx, s_written;  // bytes received from the phone / written to flash
 static char s_sha[65], s_version[32], s_from[32], s_fail[64];
+// File mode ("file begin"): the same transfer, kept in PSRAM and written to the microSD at the end
+#define FILE_MAX (3 * 1024 * 1024)
+static bool s_file;
+static char s_path[96];
+static uint8_t *s_fbuf;
 
 static void send_state(const char *st, const char *extra)
 {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "{\"t\":\"ota\",\"st\":\"%s\"%s}", st, extra ? extra : "");
+    char buf[160];
+    snprintf(buf, sizeof(buf), "{\"t\":\"%s\",\"st\":\"%s\"%s}", s_file ? "file" : "ota", st, extra ? extra : "");
     ble_send_json(buf);
 }
 
@@ -175,6 +181,12 @@ static const app_t app_ota = {"Actualizar", "Update", icon_settings, ota_open, o
 static void fail(const char *state, const char *why)
 {
     ESP_LOGW(TAG, "Failed after %u of %u bytes: %s", (unsigned)s_written, (unsigned)s_size, why);
+    if (s_file) {  // a file: nothing to undo, no screen
+        strlcpy(s_fail, why, sizeof(s_fail));
+        s_state = ST_FAILED;
+        send_err(why);
+        return;
+    }
     ota_abort();
     strlcpy(s_fail, why, sizeof(s_fail));
     s_state = ST_FAILED;
@@ -216,7 +228,8 @@ static void writer(void *arg)
         fill += n;
         if (fill < STAGE && s_written + fill < s_size) continue;
         sha_update(&sha, stage, fill);
-        if (ota_write(stage, fill, &msg) != ESP_OK) {  // ota.c aborts on error
+        if (s_file) memcpy(s_fbuf + s_written, stage, fill);
+        else if (ota_write(stage, fill, &msg) != ESP_OK) {  // ota.c aborts on error
             fail("bad_image", msg ? msg : "error al escribir");
             ok = false;
             break;
@@ -237,7 +250,14 @@ static void writer(void *arg)
         sha_final(&sha, digest);
         for (int i = 0; i < 32; i++) sprintf(hex + 2 * i, "%02x", digest[i]);
         if (strcasecmp(hex, s_sha) != 0) fail("bad_image", "la imagen llegó dañada");
-        else if (ota_finish(&msg) != ESP_OK) fail("bad_image", msg ? msg : "no se pudo activar");
+        else if (s_file) {
+            if (!sd_write_file(s_path, s_fbuf, s_size)) fail("", "no se pudo guardar en la microSD");
+            else {
+                ESP_LOGI(TAG, "File %s saved (%u bytes)", s_path, (unsigned)s_size);
+                s_state = ST_DONE;
+                send_state("done", NULL);
+            }
+        } else if (ota_finish(&msg) != ESP_OK) fail("bad_image", msg ? msg : "no se pudo activar");
         else {
             ESP_LOGI(TAG, "Image verified, rebooting into %s", s_version);
             update_record("updated", NULL, NULL, false);
@@ -251,7 +271,10 @@ static void writer(void *arg)
     free(stage);
     vStreamBufferDeleteWithCaps(s_sb);
     s_sb = NULL;
+    free(s_fbuf);
+    s_fbuf = NULL;
     s_state = ST_IDLE;
+    s_file = false;
     vTaskDelete(NULL);
 }
 
@@ -262,6 +285,7 @@ static void begin(const char *args)
     unsigned size = 0;
     char sha[65] = "", ver[32] = "";
     if (s_state != ST_IDLE) return send_err("ya hay una actualización en curso");
+    s_file = false;
     if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no válida");
     if (size < 1024 || size > ota_max_size()) return send_err("tamaño no válido");
     if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versión");
@@ -297,8 +321,64 @@ static void begin(const char *args)
     send_state("ready", extra);
 }
 
+// "file begin <size> <sha256 hex> <path>": a file for the microSD (custom faces), only under /esferas/
+static void begin_file(const char *args)
+{
+    unsigned size = 0;
+    char sha[65] = "", path[96] = "";
+    if (s_state != ST_IDLE) return send_err("ya hay una transferencia en curso");
+    s_file = true;  // replies are "file" from here
+    const char *bad = NULL;
+    if (sscanf(args, "%u %64s %95s", &size, sha, path) != 3 || strlen(sha) != 64) bad = "orden no válida";
+    else if (strncmp(path, "/esferas/", 9) != 0 || strstr(path, "..")) bad = "ruta no permitida";
+    else if (size < 1 || size > FILE_MAX) bad = "archivo demasiado grande";
+    if (bad) {
+        send_err(bad);
+        s_file = false;
+        return;
+    }
+    if (g_app.sd_state != SD_OK) sd_check();
+    s_fbuf = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    s_sb = s_fbuf ? xStreamBufferCreateWithCaps(BUF_BYTES, 1, MALLOC_CAP_SPIRAM) : NULL;
+    if (!s_sb) {
+        free(s_fbuf);
+        s_fbuf = NULL;
+        send_err("sin memoria");
+        s_file = false;
+        return;
+    }
+    s_size = size;
+    s_rx = s_written = 0;
+    s_cancel = 0;
+    strlcpy(s_sha, sha, sizeof(s_sha));
+    strlcpy(s_path, path, sizeof(s_path));
+    s_state = ST_RECV;
+    if (xTaskCreate(writer, "blefile", 8192, NULL, 5, NULL) != pdPASS) {
+        vStreamBufferDeleteWithCaps(s_sb);
+        s_sb = NULL;
+        free(s_fbuf);
+        s_fbuf = NULL;
+        s_state = ST_IDLE;
+        send_err("sin memoria");
+        s_file = false;
+        return;
+    }
+    ble_fast_link();
+    char extra[32];
+    snprintf(extra, sizeof(extra), ",\"win\":%d", WINDOW);
+    send_state("ready", extra);
+}
+
 bool bleota_command(const char *cmd)
 {
+    if (strncmp(cmd, "file begin ", 11) == 0) {
+        begin_file(cmd + 11);
+        return true;
+    }
+    if (strcmp(cmd, "file abort") == 0) {
+        if (s_state == ST_RECV && s_file) s_cancel = 1;
+        return true;
+    }
     if (strncmp(cmd, "ota begin ", 10) == 0) {
         begin(cmd + 10);
         return true;

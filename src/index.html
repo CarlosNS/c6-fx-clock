@@ -232,6 +232,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     <div class="row"><div class="t"><b data-en="Change face by itself">Cambiar de esfera sola</b><small id="offinfo">--</small></div><input type="checkbox" class="sw" id="auto" aria-label="Cambiar de esfera sola"></div>
     <div class="row inline dim" style="min-height:0;gap:6px"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M3 2h4v1h1v1h1v2H8v1H7v1H3V7H2V6H1V4h1V3h1zM4 4v2h2V4z"/></svg><span data-en="The eye on each face puts it in or out of the automatic change">El ojo de cada esfera la incluye o la saca del cambio automático</span></div>
   </div>
+  <div id="mis" class="stack" style="gap:12px"></div>
   <div id="groups" class="stack" style="gap:12px"></div>
 </section>
 
@@ -463,7 +464,8 @@ function route(){const h=(location.hash||'#inicio').slice(1);const v=$('v-'+h)?h
  if(stack.length>1&&stack[stack.length-2]===v)stack.pop();else if(stack[stack.length-1]!==v)stack.push(v);
  view=v;for(const s of document.querySelectorAll('.view'))s.classList.toggle('hide',s.id!=='v-'+v);
  closeModals();window.scrollTo(0,0);
- if(v==='archivos')loadFiles(fpath);if(v==='alarmas')loadAlarms();if(v==='movil'||v==='avanzado')appInfo()}
+ if(v==='archivos')loadFiles(fpath);if(v==='alarmas')loadAlarms();if(v==='movil'||v==='avanzado')appInfo();
+ if(window.misView)misView(v)}
 window.addEventListener('hashchange',route);
 for(const b of document.querySelectorAll('.back'))b.onclick=()=>{const p=b.closest('.view').dataset.parent||'inicio';
  if(stack.length>1&&stack[stack.length-2]===p)history.back();else location.replace('#'+p)};
@@ -856,6 +858,8 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
 // ------------------------------------------------------------ start
 applyLang();route();
 loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);loadNews();renderFind();
+// Mis esferas (custom faces): the editor only lives in the Android app (src/webapp/miesferas.js)
+if(L.kind==='android'){const s=document.createElement('script');s.src=A+'miesferas.js';document.body.appendChild(s)}
 </script>
 </body>
 </html>

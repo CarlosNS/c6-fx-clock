@@ -100,6 +100,11 @@ static void run_line(char *line)
         printf("\nsdcat end\n");
         return;
     }
+    if (strncmp(line, "metalbare ", 10) == 0) {  // Trueno y peluches without texts or time
+        extern bool g_metal_bare;
+        g_metal_bare = atoi(line + 10);
+        return;
+    }
     if (strcmp(line, "plugtest") == 0) {  // the USB cable notice, without unplugging
         plug_notice();
         return;
