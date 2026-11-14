@@ -190,7 +190,7 @@ static bool ota_draw(uint32_t now, bool force)
 static void ota_event(const ui_event_t *e) {}
 static bool ota_keep_on(void) { return true; }
 
-static const app_t app_ota = {"Actualizar", "Update", icon_settings, ota_open, ota_draw, ota_event, NULL, ota_keep_on};
+static const app_t app_ota = {"Actualizar", "Update", icon_settings, ota_open, ota_draw, ota_event, NULL, ota_keep_on, NULL};
 
 // ---------------------------------------------------------------- writer
 

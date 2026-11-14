@@ -23,6 +23,9 @@ typedef struct app_s {
     void (*event)(const ui_event_t *e);
     void (*close)(void);              // optional
     bool (*keep_on)(void);            // optional: the screen must not turn itself off (flashlight)
+    // optional: one step back inside the app (close a dialog, leave an editor, go up a folder); true if
+    // it did, false when the app is at its first screen and back should leave it
+    bool (*back)(void);
 } app_t;
 
 extern const app_t app_faces, app_settings, app_stopwatch, app_torch, app_alarms, app_steps, app_music,

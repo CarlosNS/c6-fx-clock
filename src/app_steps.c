@@ -132,4 +132,10 @@ static void event(const ui_event_t *e)
     }
 }
 
-const app_t app_steps = {"Pasos", "Steps", icon_steps, open, draw, event, NULL, NULL};
+static bool back(void)
+{
+    if (s_page) return s_page = 0, s_sel = -1, true;  // from the month back to today
+    return false;
+}
+
+const app_t app_steps = {"Pasos", "Steps", icon_steps, open, draw, event, NULL, NULL, back};

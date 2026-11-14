@@ -113,4 +113,4 @@ static void event(const ui_event_t *e)
     sys_dirty();
 }
 
-const app_t app_stopwatch = {"Cronómetro", "Stopwatch", icon_stopwatch, NULL, draw, event, NULL, NULL};
+const app_t app_stopwatch = {"Cronómetro", "Stopwatch", icon_stopwatch, NULL, draw, event, NULL, NULL, NULL};

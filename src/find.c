@@ -116,4 +116,4 @@ static void f_close(void)
 
 static bool f_keep_on(void) { return s_finding; }
 
-static const app_t app_find = {"Buscar", "Find", NULL, f_open, f_draw, f_event, f_close, f_keep_on};
+static const app_t app_find = {"Buscar", "Find", NULL, f_open, f_draw, f_event, f_close, f_keep_on, NULL};

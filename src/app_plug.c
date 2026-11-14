@@ -64,4 +64,4 @@ static void p_event(const ui_event_t *e)
     if (e->type == EV_TAP) sys_alert_done();
 }
 
-static const app_t app_plug = {"USB", "USB", NULL, p_open, p_draw, p_event, NULL, NULL};
+static const app_t app_plug = {"USB", "USB", NULL, p_open, p_draw, p_event, NULL, NULL, NULL};

@@ -22,10 +22,12 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | Deslizar desde el **borde de abajo** hacia arriba | Abre el **lanzador** | |
 | Deslizar a **izquierda o derecha** | Esfera siguiente o anterior | Cambiar de página (por ejemplo, en Pasos) |
 | **Mantener** el dedo | Abre el selector de **Esferas** | Acciones extra (borrar en Archivos, saltos rápidos en Alarmas) |
-| Deslizar desde el **borde izquierdo** hacia la derecha | | **Volver** |
+| Deslizar desde el **borde izquierdo** hacia la derecha | | **Volver** un paso (ver abajo) |
 | Arrastrar arriba o abajo | | Desplazar listas largas |
 | Tocar | En las esferas interactivas, el dedo mueve la esfera | Botones, interruptores y filas |
 
+- **Volver** (este gesto o BOOT) va de un paso en un paso: primero cierra el diálogo o la pantalla interna en la que estés (el editor de una alarma, una carpeta, el mes en Pasos) y, desde la primera pantalla de la app, sale a donde la abriste: el lanzador, los ajustes rápidos (la Linterna) o la esfera (Esferas, si la abriste manteniendo el dedo).
+- Cada panel se cierra con el gesto contrario al que lo abrió: los ajustes rápidos, deslizando hacia arriba; el lanzador, deslizando hacia abajo (estando arriba del todo). Volver también los cierra.
 - Los gestos de borde empiezan en la parte recta del borde, no en la esquina redondeada.
 - En las **esferas interactivas** (Plasma, Cubo 3D, Túnel, Lava y Vida) el dedo mueve la esfera; deslizar desde un borde sigue abriendo los menús.
 
@@ -35,7 +37,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 |---|---|---|
 | Pantalla apagada | Pulsación | Enciende la pantalla, sin hacer nada más |
 | En la esfera | Pulsación corta | Siguiente esfera |
-| En una app o un menú | Pulsación corta | Volver |
+| En una app o un menú | Pulsación corta | Volver un paso |
 | En la esfera | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); se ve «AUTO: SÍ / NO». Con las órdenes de voz activas, mantenerlo graba una orden (ver [Órdenes de voz](#órdenes-de-voz)) |
 | Suena una alarma | Pulsación | La para |
 | En cualquier momento | Mantener 3 s | Aviso «10 S: OLVIDAR MÓVILES» |

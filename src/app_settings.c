@@ -278,4 +278,10 @@ static void event(const ui_event_t *e)
     sys_dirty();
 }
 
-const app_t app_settings = {"Ajustes", "Settings", icon_settings, open, draw, event, NULL, NULL};
+static bool back(void)
+{
+    if (s_reset_dlg) return s_reset_dlg = false, true;
+    return false;
+}
+
+const app_t app_settings = {"Ajustes", "Settings", icon_settings, open, draw, event, NULL, NULL, back};

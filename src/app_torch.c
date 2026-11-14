@@ -38,4 +38,4 @@ static void event(const ui_event_t *e)
 
 static bool keep_on(void) { return true; }
 
-const app_t app_torch = {"Linterna", "Flashlight", icon_torch, open, draw, event, close, keep_on};
+const app_t app_torch = {"Linterna", "Flashlight", icon_torch, open, draw, event, close, keep_on, NULL};

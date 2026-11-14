@@ -21,6 +21,8 @@ static const app_t *const s_apps[] = {&app_faces, &app_alarms, &app_steps, &app_
 static view_t s_view = VIEW_FACE;
 static const app_t *s_cur;      // app on screen (VIEW_APP): from the launcher or an alert
 static view_t s_back = VIEW_FACE;  // where an alert returns to
+static view_t s_from = VIEW_LAUNCHER;  // where the app on screen was opened from (back goes there)
+static bool s_alert_on;            // the app on screen is an alert (back = sys_alert_done)
 static bool s_force = true;     // the next native frame must be drawn whole
 static bool s_redraw;           // something on the current system view changed
 
@@ -47,6 +49,8 @@ void sys_open_launcher(void)
 
 void sys_open(const app_t *a)
 {
+    if (s_view != VIEW_APP) s_from = s_view;  // the launcher, quick settings or the face
+    s_alert_on = false;
     if (s_view == VIEW_APP && s_cur && s_cur->close) s_cur->close();
     s_cur = a;
     s_view = VIEW_APP;
@@ -65,11 +69,31 @@ void sys_alert(const app_t *a)
     if (s_cur == a && s_view == VIEW_APP) return;
     s_back = s_view == VIEW_APP ? VIEW_LAUNCHER : s_view;
     sys_open(a);
+    s_alert_on = true;
 }
 
 void sys_alert_done(void)
 {
     set_view(s_back == VIEW_APP ? VIEW_FACE : s_back);
+}
+
+// One step back: inside the app first (dialog, editor, folder), then out to where it was opened from;
+// from the launcher or quick settings, to the face. BOOT and the swipe in from the left edge do this.
+static void sys_back(void)
+{
+    if (s_view != VIEW_APP) {
+        sys_home();
+        return;
+    }
+    if (s_cur->back && s_cur->back()) {
+        s_force = true;
+        app_wake();
+        return;
+    }
+    if (s_alert_on) sys_alert_done();
+    else if (s_from == VIEW_QUICK) sys_open_quick();
+    else if (s_from == VIEW_FACE) sys_home();
+    else sys_open_launcher();
 }
 
 bool sys_keep_awake(void)
@@ -173,8 +197,8 @@ static void launcher_event(const ui_event_t *e)
         s_pressed = -1;
     } else if (e->type == EV_SWIPE && e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)) {
         sys_home();
-    } else if (e->type == EV_SWIPE && e->dir == DIR_DOWN && (e->edge & EDGE_TOP) && s_launch_scroll.offset == 0) {
-        sys_home();
+    } else if (e->type == EV_SWIPE && e->dir == DIR_DOWN && s_launch_scroll.offset == 0) {
+        sys_home();  // it came up from the bottom: down puts it away (once it is scrolled to the top)
     }
 }
 
@@ -284,8 +308,8 @@ static void quick_event(const ui_event_t *e)
         }
         s_redraw = true;
         break;
-    case EV_SWIPE:
-        if (!s_bri_drag && e->dir == DIR_UP) sys_home();
+    case EV_SWIPE:  // it came down from the top: up puts it away; and back, as everywhere
+        if (!s_bri_drag && (e->dir == DIR_UP || (e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)))) sys_home();
         break;
     case EV_UP:
         s_bri_drag = false;
@@ -374,7 +398,7 @@ void sys_event(const ui_event_t *e)
     case VIEW_LAUNCHER: launcher_event(e); break;
     case VIEW_APP:
         if (e->type == EV_SWIPE && e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)) {
-            sys_open_launcher();
+            sys_back();
             return;
         }
         if (s_cur->event) s_cur->event(e);
@@ -390,7 +414,7 @@ void sys_button_short(void)
         g_app.auto_cycle = 0;
         g_app.dirty = true;
         break;
-    case VIEW_APP: sys_open_launcher(); break;
+    case VIEW_APP: sys_back(); break;
     default: sys_home(); break;
     }
 }

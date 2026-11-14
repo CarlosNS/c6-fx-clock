@@ -342,7 +342,7 @@ static void v_close(void)
 
 static bool v_keep_on(void) { return s_state != V_IDLE; }
 
-static const app_t app_voice = {"Voz", "Voice", NULL, v_open, v_draw, v_event, v_close, v_keep_on};
+static const app_t app_voice = {"Voz", "Voice", NULL, v_open, v_draw, v_event, v_close, v_keep_on, NULL};
 
 // ---------------------------------------------------------------- console
 

@@ -208,7 +208,14 @@ static void event(const ui_event_t *e)
     sys_dirty();
 }
 
-const app_t app_alarms = {"Alarmas", "Alarms", icon_alarms, open, draw, event, NULL, NULL};
+static bool back(void)
+{
+    if (s_del_dlg) return s_del_dlg = false, true;  // the dialog closes
+    if (s_edit >= 0) return s_edit = -1, true;      // the editor is left without saving, like Cancel
+    return false;
+}
+
+const app_t app_alarms = {"Alarmas", "Alarms", icon_alarms, open, draw, event, NULL, NULL, back};
 
 // ---------------------------------------------------------------- ringing
 // A sunrise over the sea in pixel art (2x2 art pixels, like the system backgrounds): while the alarm
@@ -533,4 +540,4 @@ static void ring_event(const ui_event_t *e)
 
 static bool ring_keep_on(void) { return true; }
 
-const app_t app_alarm_ring = {"Alarma", "Alarm", icon_alarms, ring_open, ring_draw, ring_event, NULL, ring_keep_on};
+const app_t app_alarm_ring = {"Alarma", "Alarm", icon_alarms, ring_open, ring_draw, ring_event, NULL, ring_keep_on, NULL};

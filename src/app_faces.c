@@ -194,4 +194,4 @@ static void event(const ui_event_t *e)
     }
 }
 
-const app_t app_faces = {"Esferas", "Faces", icon_faces, open, draw, event, NULL, NULL};
+const app_t app_faces = {"Esferas", "Faces", icon_faces, open, draw, event, NULL, NULL, NULL};

@@ -101,7 +101,7 @@ static void event(const ui_event_t *e)
     g_music.version++;
 }
 
-const app_t app_music = {"Música", "Music", icon_music, NULL, draw, event, NULL, NULL};
+const app_t app_music = {"Música", "Music", icon_music, NULL, draw, event, NULL, NULL, NULL};
 
 // ---------------------------------------------------------------- incoming call
 
@@ -142,4 +142,4 @@ static void call_event(const ui_event_t *e)
 
 static bool call_keep_on(void) { return true; }
 
-const app_t app_call = {"Llamada", "Call", icon_music, call_open, call_draw, call_event, NULL, call_keep_on};
+const app_t app_call = {"Llamada", "Call", icon_music, call_open, call_draw, call_event, NULL, call_keep_on, NULL};

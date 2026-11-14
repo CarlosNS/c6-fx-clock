@@ -699,4 +699,16 @@ static void event(const ui_event_t *e)
     sys_dirty();
 }
 
-const app_t app_files = {"Archivos", "Files", icon_files, files_open, draw, event, files_close, NULL};
+static bool back(void)
+{
+    if (s_modal) return s_modal = M_NONE, true;  // a dialog closes
+    if (s_card && strcmp(s_path, MOUNT)) {       // up one folder
+        *strrchr(s_path, '/') = 0;
+        s_msg[0] = 0;
+        load();
+        return true;
+    }
+    return false;
+}
+
+const app_t app_files = {"Archivos", "Files", icon_files, files_open, draw, event, files_close, NULL, back};
