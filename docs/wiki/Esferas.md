@@ -86,6 +86,12 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 *Número 11* — Foto del Apolo 8 (NASA, 1968): Tierra 3D con continentes y nubes que giran saliendo sobre la Luna.
 
+### Trueno y peluches
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx27.png" alt="Esfera Trueno y peluches" width="205">
+
+*Número 27* — Una tira cómica de un día en la vida de una banda de thrash metal (inventada: ni nombre, ni logo, ni músicos reales), con su recuadro amarillo de narración, tinta negra y puntos de imprenta. La escena cambia con la hora: de 0 a 8 duerme en la litera abrazado a **Rosita**, su peluche rosa gigante (salen las Z); de 8 a 11, despeinado con el café humeante; de 11 a 13, peleándose con el afinador («¡Maldita cuerda!»); de 13 a 16, dos guitarras cruzadas ante el amplificador, que lanza truenos; de 16 a 19, el autobús de gira por la carretera al atardecer; de 19 a 23, el concierto, con focos que barren, el público haciendo cuernos y la hora grande en medio; y de 23 a 24, derrotado en el sofá con una porción de pizza en el suelo. Los textos van en español o inglés.
+
 ## Naturaleza y espacio
 
 ### Sakura

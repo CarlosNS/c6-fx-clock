@@ -5,6 +5,7 @@
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
 - **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que sigue la hora del día, con luciérnagas y fuegos artificiales de noche; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
+- **Trueno y peluches**, esfera nueva: una tira cómica de un día de una banda de thrash metal, con siete escenas según la hora (el peluche rosa, el café, la afinación, el ensayo, la gira, el concierto con la hora grande y la pizza).
 - **Coloso** sustituye a *Arena*: un reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer.
 - **Engranajes**, rehecha: el interior de una torre del reloj gótica, con engranajes enormes, péndulo, cadenas y luz de luna.
 - **Lluvia** responde al acelerómetro: las gotas resbalan hacia donde inclinas el reloj, y las que se van dejan sitio a gotas nuevas. (Se corrigió de paso la orientación de los ejes del acelerómetro.)

@@ -40,7 +40,7 @@ enum { FX_COMPAT, FX_WIDE, FX_NATIVE };
 #define WH LCD_WH
 #define WIDE_CORNER_R 80
 
-#define FX_COUNT 27
+#define FX_COUNT 28
 extern const fx_t fx_list[FX_COUNT];
 _Static_assert(FX_COUNT <= 31, "g_app.fx_off is a 31-bit mask: widen it before adding more faces");
 
@@ -119,6 +119,8 @@ void relax_enter(void);
 void relax_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void sculpt_enter(void);
 void sculpt_render(uint16_t *fb, uint32_t t, uint32_t dt);
+void metal_enter(void);
+void metal_render(uint16_t *fb, uint32_t t, uint32_t dt);
 
 // Scratch memory shared by faces that need big lookup tables. Only one face runs at a time:
 // a face claims it in enter() (rebuilding its tables if another face used it in between).

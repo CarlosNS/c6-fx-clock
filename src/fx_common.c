@@ -86,6 +86,9 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "EL ESCULTOR", .res = FX_WIDE, .enter = sculpt_enter, .render = sculpt_render,
      .label = "El escultor", .group = FX_G_CLOCKS,
      .desc = "Un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas, del bloque en bruto a la estatua de mármol y oro al cumplir el objetivo."},
+    {.name = "TRUENO Y PELUCHES", .res = FX_WIDE, .enter = metal_enter, .render = metal_render,
+     .label = "Trueno y peluches", .group = FX_G_ART,
+     .desc = "Tira cómica de un día en la vida de una banda de thrash metal: duermen abrazados a un peluche rosa, café, la maldita cuerda, el ensayo, la gira, el concierto y la pizza. La escena cambia con la hora."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};
