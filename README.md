@@ -75,7 +75,7 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 24 | Ónix | analógica minimalista para AMOLED: negro puro con los píxeles apagados, índices finos, agujas cálidas y una estela de luz como segundero; el color del acento se elige en la app y el dibujo se desplaza un poco cada minuto para cuidar la pantalla |
 | 25 | Disfruta | un prado al atardecer mecido por el viento, sin hora: solo «Disfruta» |
 | 26 | El escultor | un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas hasta cumplir el objetivo |
-| 27 | Trueno y peluches | tira cómica de un día de una banda de thrash metal, de dormir abrazados a un peluche rosa al concierto y la pizza; la escena cambia con la hora |
+| 27 | Trueno y peluches | un día de un guitarrista de thrash metal en pixel art de 16 bits, de dormir abrazado a un peluche rosa al concierto y la pizza; siete escenas animadas que cambian con la hora |
 | 28 | Mis esferas | la tuya: una foto o un GIF de tu galería, con la hora digital a tu gusto (fuente, tamaño, sitio, color, contorno, segundos y fecha). Se hace en la app y se guarda en la microSD |
 
 Los números 10, 16 y 20 están **retirados** (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar.

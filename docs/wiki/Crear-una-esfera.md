@@ -145,6 +145,15 @@ Para cálculos:
 
 Las esferas existentes son el mejor manual: `fx_plasma.c` (nativa, un efecto por píxel), `fx_tunnel.c` (tablas precalculadas), `fx_synth.c` (escena con perspectiva), `fx_weather.c` (esfera analógica y datos del móvil), `fx_classic.c` (reloj realista que sigue las esquinas de la pantalla) y `fx_goal.c` (una escena dibujada en su propio búfer y compuesta en la pantalla).
 
+### Escenas pintadas de antemano
+
+Para una ilustración con mucho detalle (volumen, tramado, contornos de color), lo mejor es pintarla en el PC y que el reloj solo la ponga y anime encima. Así está hecha *Trueno y peluches* (`fx_metal.c`):
+
+- `tools/metal_art.py` pinta cada escena en el lienzo de `art.c` (137×168) con formas suaves (campos de distancia unidos con suavidad, nada de rectángulos planos), las ilumina con una luz de la escena y elige el tono de una rampa de 3 a 7 colores, con un tramado de damero donde se juntan dos. Los detalles pequeños (ojos, costuras) se ponen píxel a píxel.
+- Escribe `src/fx_metal_art.h`: una paleta y cada fotograma comprimido en tramos de `<veces, color>` (unos 15–28 KB por fotograma; hay sitio de sobra en la flash). Un fotograma puede ser un *sprite*: el color `METAL_..._KEY` es transparente, y así lo que se mueve (postes, focos, fuego) va entre el fondo y lo de delante.
+- En la esfera: `art_rle()` (o `art_rle_key()` para un sprite) pone la imagen en `art`, encima se anima con `art_px`/`art_tint`, `art_blit()` la lleva a la pantalla y al final se dibuja la hora.
+- Revisa cada escena con `python tools/metal_art.py <carpeta> <escena>`, que deja una vista previa con las esquinas, y luego en el reloj con `dbgtime h m`.
+
 ## Rendimiento: 30 fps
 
 El ESP32-S3 tiene dos núcleos a 240 MHz con coma flotante. La esfera se dibuja en un núcleo mientras el otro envía el fotograma anterior a la pantalla. Hay 33 ms por fotograma, y la esfera no debería pasar de unos 25 ms de media.

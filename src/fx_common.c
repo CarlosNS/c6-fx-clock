@@ -88,7 +88,7 @@ const fx_t fx_list[FX_COUNT] = {
      .desc = "Un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas, del bloque en bruto a la estatua de mármol y oro al cumplir el objetivo."},
     {.name = "TRUENO Y PELUCHES", .res = FX_WIDE, .enter = metal_enter, .render = metal_render,
      .label = "Trueno y peluches", .group = FX_G_ART,
-     .desc = "Tira cómica de un día en la vida de una banda de thrash metal: duermen abrazados a un peluche rosa, café, la maldita cuerda, el ensayo, la gira, el concierto y la pizza. La escena cambia con la hora."},
+     .desc = "Un día de un guitarrista de thrash metal en pixel art: dormido con su peluche rosa, café al amanecer, la afinación, el garaje, la furgoneta de gira, el concierto y la pizza. La escena cambia con la hora."},
     {.name = "MIS ESFERAS", .res = FX_NATIVE, .enter = custom_enter, .render = custom_render,
      .label = "Mis esferas", .group = -1,  // not in the grid: the app lists the custom faces apart
      .desc = "La esfera personalizada que hayas elegido en la app: tu imagen o GIF de fondo y la hora a tu gusto."},

@@ -36,6 +36,7 @@
 | `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
 | `src/voice.c`, `android/.../Voice.kt`, `VoiceCommands.kt` | Órdenes de voz: el reloj graba (ES7210, `audio.c`) y manda IMA ADPCM; la app usa el reconocedor de Android con `EXTRA_AUDIO_SOURCE` e interpreta la frase |
 | `src/art.c` | Lienzo de pixel art de 137×168 (cada píxel, 2×2 del lienzo ancho) para las esferas dibujadas así: Coloso, Engranajes, Disfruta y El escultor |
+| `tools/metal_art.py`, `src/fx_metal_art.h` | Las escenas de Trueno y peluches (esfera 27) pintadas en pixel art: formas suaves con volumen, rampas de tonos, tramado y contornos; el generador escribe imágenes con paleta (RLE) y `fx_metal.c` anima encima. Vuelve a lanzarlo si cambias una escena |
 | `src/fx_custom.c`, `src/webapp/`, `android/.../CustomFaces.kt` | Mis esferas (esfera 28): fondo de la microSD y hora configurable; el editor de la app (`miesferas.js`, solo en la app) y la copia en el móvil. `tools/font_atlas.py` genera `src/webapp/fuentes.png/json` con las fuentes del firmware: regenéralo si cambias una fuente |
 | `src/web/novedades.json` | Tablón de novedades de Inicio, de la versión más nueva a la más vieja; `release.py` lo copia a GitHub Pages. Añade una entrada en cada versión |
 

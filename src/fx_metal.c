@@ -1,11 +1,12 @@
-// "Trueno y peluches" (full screen, wide canvas, pixel art on art.c): a comic strip of a day in the life
-// of a thrash metal band (a generic band in leather and long hair: no real band's name, logo or members).
-// The scene follows the hour, each with a little animation, no titles. The scenes painted by
-// tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
-//   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
-//   11-13 glaring at the clip-on tuner of his V (painted)              13-16 the garage, amp and guitars (painted)
-//   16-19 the tour van at sunset (painted)                              19-23 the show (painted): beams, crowd,
-//   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
+// "Trueno y peluches" (full screen, wide canvas, pixel art on art.c): a day in the life of a thrash metal
+// guitarist (a big, strong rocker with long hair; a generic band: no real band's name, logo or members),
+// one scene for each part of the day, no titles. Every scene is painted by tools/metal_art.py in a 16-bit
+// style (shading, dithering, coloured outlines) and kept in fx_metal_art.h; this file puts the pictures
+// up and animates on top of them:
+//   00-08 asleep hugging Rosita, the pink plush, a moonbeam    08-11 half asleep over a coffee at dawn
+//   11-13 glaring at the clip-on tuner of his red V            13-16 the garage: amp, guitars, sound waves
+//   16-19 the black tour van at sunset, with parallax          19-23 the show: beams, fire, horns up; the
+//   23-24 out cold on the old sofa, an open pizza box                time big in the middle
 #include <math.h>
 #include <stdio.h>
 #include "app.h"
@@ -16,71 +17,11 @@
 #include "gfx.h"
 
 static uint16_t C(uint32_t v) { return rgb565(v >> 16, (v >> 8) & 255, v & 255); }
-#define INK C(0x120c14)
 
 static float s_ts;
 bool g_metal_bare;
 
 void metal_enter(void) { art_begin(); }
-
-// ---- comic helpers: shapes with a black ink line around them
-
-static void ink_disc(float x, float y, float r, uint32_t c)
-{
-    art_disc(x, y, r + 1, INK);
-    art_disc(x, y, r, C(c));
-}
-
-static void ink_thick(float x0, float y0, float x1, float y1, float w, uint32_t c)
-{
-    art_thick(x0, y0, x1, y1, w + 2, INK);
-    art_thick(x0, y0, x1, y1, w, C(c));
-}
-
-static void ink_rect(int x, int y, int w, int h, uint32_t c)
-{
-    art_rect(x - 1, y - 1, w + 2, h + 2, INK);
-    art_rect(x, y, w, h, C(c));
-}
-
-static void ink_poly(const float *xy, int n, uint32_t c)
-{
-    // the outline: the same polygon nudged one pixel each way, in ink, then the fill
-    float o[32];
-    for (int d = 0; d < 4; d++) {
-        for (int i = 0; i < n; i++) o[2 * i] = xy[2 * i] + (d == 0) - (d == 1), o[2 * i + 1] = xy[2 * i + 1] + (d == 2) - (d == 3);
-        art_poly(o, n, INK);
-    }
-    art_poly(xy, n, C(c));
-}
-
-// Halftone: printed dots darkening a band of the picture
-static void halftone(int y0, int y1, uint32_t c, int alpha)
-{
-    for (int y = y0; y < y1; y += 3)
-        for (int x = (y / 3) & 1 ? 1 : 0; x < ART_W; x += 3) art_tint(x, y, C(c), alpha);
-}
-
-static void sky(const uint32_t *cols, int n, int y1)
-{
-    uint16_t b[8];
-    for (int i = 0; i < n; i++) b[i] = C(cols[i]);
-    art_bands(b, n, 0, y1);
-}
-
-// A long-haired head seen from the front: hair, face, eyes (open, sleepy or shut)
-static void head(float x, float y, int eyes, bool messy)
-{
-    ink_disc(x, y + 1, 9, 0x2a1d1a);                                    // hair behind
-    if (messy)
-        for (int i = 0; i < 7; i++) ink_thick(x, y - 4, x - 12 + i * 4, y - 13 - (i & 1) * 3, 2, 0x2a1d1a);
-    else
-        ink_rect((int)x - 9, (int)y, 18, 14, 0x2a1d1a);                 // long hair down the back
-    ink_disc(x, y + 1, 6, 0xe8b48a);                                    // face
-    art_rect((int)x - 6, (int)y - 5, 12, 3, C(0x2a1d1a));               // fringe
-    if (eyes == 0) art_px((int)x - 2, (int)y + 1, INK), art_px((int)x + 2, (int)y + 1, INK);           // open
-    else art_rect((int)x - 3, (int)y + 1, 2, 1, INK), art_rect((int)x + 2, (int)y + 1, 2, 1, INK);      // shut / sleepy
-}
 
 // A picture painted by tools/metal_art.py (fx_metal_art.h): runs of <count, palette index>
 static void art_rle(const uint16_t *pal, const uint8_t *rle, int len)
@@ -303,33 +244,18 @@ static void scene_show(uint32_t t)
     else art_rle_key(metal_show_pal, metal_show_2, sizeof metal_show_2, METAL_SHOW_KEY, 0);
 }
 
-static void scene_pizza(void)  // 23-24
+// 23-24, painted: slumped back on the old leather sofa, out cold, a can in his hand, an open pizza box
+// in front; a purple neon on the wall gives the only light. Here he breathes and the neon flickers.
+static void scene_pizza(uint32_t t)
 {
-    static const uint32_t S[] = {0x14162a, 0x1a1e34, 0x20243c};
-    sky(S, 3, 124);
-    art_rect(0, 124, ART_W, ART_H - 124, C(0x2a2228));
-    halftone(0, ART_H, 0x000000, 4);
-    // the TV's blue light flickering on everything
-    float tv = 0.6f + 0.4f * sinf(s_ts * 17) * sinf(s_ts * 5.3f);
-    ink_rect(98, 70, 30, 24, 0x0a0a14);
-    art_rect(100, 72, 26, 20, gfx_blend(C(0x203060), C(0x9ac0ff), (int)(tv * 12)));
-    // the sofa and the rocker slumped in it, hair over the face, arms hanging
-    ink_rect(10, 100, 80, 28, 0x5a2a3a);
-    ink_rect(8, 92, 12, 36, 0x6a3242), ink_rect(80, 92, 12, 36, 0x6a3242);
-    ink_poly((const float[]){30, 128, 36, 96, 62, 96, 68, 128}, 4, 0x1a1a22);
-    ink_disc(49, 88, 9, 0x2a1d1a);                                          // head bowed: all hair
-    art_rect(42, 90, 14, 8, C(0x2a1d1a));
-    ink_thick(36, 104, 30, 124, 3, 0x1a1a22), ink_thick(62, 104, 70, 124, 3, 0x1a1a22);
-    ink_disc(30, 125, 2.5f, 0xe8b48a), ink_disc(70, 125, 2.5f, 0xe8b48a);
-    ink_thick(40, 128, 38, 150, 4, 0x24242e), ink_thick(58, 128, 60, 150, 4, 0x24242e);  // legs
-    // a lonely slice of pizza on the floor, one bite gone (on the right, clear of the time below)
-    ink_poly((const float[]){92, 120, 124, 114, 112, 136}, 3, 0xf2c45a);
-    art_rect(92, 119, 32, 2, C(0xc88a3a));
-    art_disc(106, 122, 1.5f, C(0xc0302a)), art_disc(112, 127, 1.5f, C(0xc0302a)), art_disc(102, 125, 1.2f, C(0xc0302a));
-    art_disc(121, 115, 2.5f, C(0x2a2228));                                  // the bite
-    // tinted by the TV
-    for (int y = 60; y < ART_H; y++)
-        for (int x = 60; x < ART_W; x++) art_tint(x, y, C(0x6a90ff), (int)(tv * 2));
+    if (t % 4200 < 1800) art_rle(metal_pizza_pal, metal_pizza_1, sizeof metal_pizza_1);
+    else art_rle(metal_pizza_pal, metal_pizza_0, sizeof metal_pizza_0);
+    // now and then the old neon stutters: the sign and its glow dim for a few frames
+    uint32_t c = t % 7300;
+    if ((c > 5200 && c < 5280) || (c > 5400 && c < 5460) || (c > 5600 && c < 5800)) {
+        for (int y = 40; y < 84; y++)
+            for (int x = 4; x < 40; x++) art_tint(x, y, C(0x06050c), 11);
+    }
 }
 
 void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
@@ -346,7 +272,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     case 3: scene_rehearsal(t); break;
     case 4: scene_bus(t); break;
     case 5: scene_show(t); break;
-    default: scene_pizza(); break;
+    default: scene_pizza(t); break;
     }
     art_blit(fb);
     if (sc == 2) tuner_overlay(fb, t);
@@ -359,7 +285,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
             int zs = 1 + (int)(f * 2.5f);
             gfx_text_ol(fb, 92 + (int)(f * 96), 124 - (int)(f * 18), "Z", rgb565(200, 210, 255), rgb565(16, 18, 44), zs, 1);
         }
-    // The time: big in the middle of the show; elsewhere at the bottom, inked
+    // The time: big in the middle of the show; in the other scenes in the top third, clear of the picture
     static uint16_t cream[4], red[4];
     if (!cream[0]) {
         cream[0] = rgb565(255, 252, 240), cream[1] = rgb565(250, 240, 220), cream[2] = rgb565(230, 214, 190), cream[3] = rgb565(200, 180, 150);
@@ -368,6 +294,5 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
     if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 5)) / 2, 100, hhmm, 5, red, rgb565(18, 12, 20));
-    else if (sc <= 4) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
-    else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
+    else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
 }

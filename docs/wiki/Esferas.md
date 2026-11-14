@@ -90,7 +90,17 @@ El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx27.png" alt="Esfera Trueno y peluches" width="205">
 
-*Número 27* — Una tira cómica de un día en la vida de una banda de thrash metal (inventada: ni nombre, ni logo, ni músicos reales), con su recuadro amarillo de narración, tinta negra y puntos de imprenta. La escena cambia con la hora: de 0 a 8 duerme en la litera abrazado a **Rosita**, su peluche rosa gigante (salen las Z); de 8 a 11, despeinado con el café humeante; de 11 a 13, peleándose con el afinador («¡Maldita cuerda!»); de 13 a 16, dos guitarras cruzadas ante el amplificador, que lanza truenos; de 16 a 19, el autobús de gira por la carretera al atardecer; de 19 a 23, el concierto, con focos que barren, el público haciendo cuernos y la hora grande en medio; y de 23 a 24, derrotado en el sofá con una porción de pizza en el suelo. Los textos van en español o inglés.
+*Número 27* — Un día en la vida de un guitarrista de thrash metal (un rockero grande y fuerte de pelo largo; banda inventada: ni nombre, ni logo, ni músicos reales), en pixel art de 16 bits con volumen, tramado y contornos de color. La escena cambia con la hora y cada una tiene su animación:
+
+- **0–8:** duerme abrazado a **Rosita**, su osito de peluche rosa, bajo un haz de luna con polvo flotando; respira y le salen las Z.
+- **8–11:** medio dormido en la cocina, con ojeras y una taza negra entre las manos; el amanecer entra por la persiana y el vapor sube en espiral.
+- **11–13:** sentado en el amplificador, afina con cara de pocos amigos su guitarra en V; el afinador de pinza tiene la luz en rojo hasta que la cuerda queda en verde, y le resbala una gota de sudor.
+- **13–16:** el garaje del ensayo: cartones de huevos, el amplificador con sus cuatro conos, dos guitarras puntiagudas, micro, cables y pedal; del amplificador salen ondas de sonido.
+- **16–19:** la furgoneta negra de gira, con llamas pintadas y el equipo en la baca, hacia la puesta de sol; colinas, postes y rayas de la carretera pasan a distintas velocidades.
+- **19–23:** el concierto: focos rojos, ámbar y blancos que se cruzan, columnas de fuego, el público con los cuernos en alto y la hora grande en medio.
+- **23–24:** derrotado en un sofá de cuero viejo, con una lata en la mano y una caja de pizza abierta delante; solo le alumbra un neón morado que parpadea.
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx27-escenas.png" alt="Las siete escenas de Trueno y peluches" width="100%">
 
 ## Naturaleza y espacio
 
