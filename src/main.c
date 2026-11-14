@@ -650,6 +650,8 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 
+    if (!g_app.setup) sys_alert(&app_setup);  // a new watch: the first-run guide (app_setup.c)
+
     int cur = -1, frames = 0, cur_bri = -1, render_max = 0, fade = 1000;
     int64_t render_sum = 0;
     bool confirmed = false, panel_asleep = false;

@@ -51,6 +51,7 @@ static const setting_t SETTINGS[] = {
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"voice", &g_app.voice, 0, 1, true, NULL},
+    {"setup", &g_app.setup, 0, 1, true, NULL},    // first-run guide seen (app_setup.c)
     {"tips", &g_app.tips, 0, 99, true, NULL},     // edge hints shown so far (they stop at 8)
     {"cust", &g_app.cust, 0, 9999, true, NULL},     // the custom face shown by "Mis esferas"      // voice commands through the phone (hold BOOT)
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
@@ -71,12 +72,18 @@ void settings_load(void)
 {
     for (size_t i = 0; i < NSET; i++) s_default[i] = *SETTINGS[i].val;
     nvs_handle_t h;
-    if (nvs_open("clock", NVS_READONLY, &h) != ESP_OK) return;
+    if (nvs_open("clock", NVS_READONLY, &h) != ESP_OK) return;  // a new watch: the guide comes up
+    bool any = false, setup = false;
     for (size_t i = 0; i < NSET; i++) {
         int32_t v;
-        if (SETTINGS[i].persist && nvs_get_i32(h, SETTINGS[i].key, &v) == ESP_OK)
+        if (SETTINGS[i].persist && nvs_get_i32(h, SETTINGS[i].key, &v) == ESP_OK) {
             *SETTINGS[i].val = clampi(v, SETTINGS[i].min, SETTINGS[i].max);
+            any = true;
+            if (!strcmp(SETTINGS[i].key, "setup")) setup = true;
+        }
     }
+    // A watch already in use (settings saved by a version without the guide) does not get it
+    if (any && !setup) g_app.setup = 1;
     size_t n = sizeof(s_fx_speed);
     if (nvs_get_blob(h, "fxspd", s_fx_speed, &n) != ESP_OK) n = 0;
     nvs_close(h);
@@ -99,9 +106,11 @@ void settings_save(void)
 
 void settings_reset(void)
 {
-    // Every saved setting back to its factory value but the language; the faces' own speeds go too
+    // Every saved setting back to its factory value but the language and the first-run guide (seen
+    // already: it is in Settings → System); the faces' own speeds go too
     for (size_t i = 0; i < NSET; i++)
-        if (SETTINGS[i].persist && strcmp(SETTINGS[i].key, "lang") != 0) settings_set(SETTINGS[i].key, s_default[i]);
+        if (SETTINGS[i].persist && strcmp(SETTINGS[i].key, "lang") != 0 && strcmp(SETTINGS[i].key, "setup") != 0)
+            settings_set(SETTINGS[i].key, s_default[i]);
     memset(s_fx_speed, 0, sizeof(s_fx_speed));
     settings_save();
     g_app.dirty = false;

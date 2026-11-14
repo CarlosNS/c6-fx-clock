@@ -15,7 +15,6 @@
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "ota.h"
-#include "qrcode.h"
 #include "settings.h"
 #include "sys.h"
 #include "ui_icons.h"
@@ -39,7 +38,6 @@ typedef struct {
     const char *des, *den;      // a section (R_HEAD): what it holds, for the menu
 } row_t;
 
-#define APP_URL "https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk"  // tools/release.py: always the latest
 
 static const int WKS[] = {5, 10, 15, 30, 60, -1};
 static const int LANGS[] = {0, 1, -1};
@@ -80,6 +78,8 @@ static void info_forget(char *b, size_t n)
 static bool s_reset_dlg;
 static void info_reset(char *b, size_t n) { snprintf(b, n, "%s", TR("vuelve a los valores de fábrica", "back to the factory values")); }
 static void act_reset(void) { s_reset_dlg = true; }
+static void info_intro(char *b, size_t n) { snprintf(b, n, "%s", TR("idioma, gestos y la app del móvil", "language, gestures and the phone app")); }
+static void act_intro(void) { sys_alert(&app_setup); }
 static void act_forget(void)
 {
     if (!s_forget_armed) {
@@ -119,6 +119,7 @@ static const row_t ROWS[] = {
     {R_INFO, "Memoria libre", "Free memory", NULL, NULL, 0, 0, NULL, info_memory},
     {R_INFO, "Batería", "Battery", NULL, NULL, 0, 0, NULL, info_battery},
     {R_INFO, "Encendido", "Uptime", NULL, NULL, 0, 0, NULL, info_uptime},
+    {R_ACTION, "Ver la introducción", "See the introduction", NULL, NULL, 0, 0, NULL, info_intro, act_intro},
     {R_ACTION, "Restablecer ajustes", "Reset settings", NULL, NULL, 0, 0, NULL, info_reset, act_reset},
     S("App del móvil", "Phone app", "QR para descargarla", "QR to download it"),
     {R_QR, "App Marea para Android", "Marea app for Android"},
@@ -171,34 +172,6 @@ static void open(void)
     s_sec = -1;
 }
 
-// The QR code of the app's link, made once (qrcodegen, through espressif/qrcode)
-static uint8_t s_qr[45 * 45];
-static int s_qr_n;
-static void qr_got(esp_qrcode_handle_t q)
-{
-    int n = esp_qrcode_get_size(q);
-    if (n > 45) return;
-    for (int y = 0; y < n; y++)
-        for (int x = 0; x < n; x++) s_qr[y * n + x] = esp_qrcode_get_module(q, x, y);
-    s_qr_n = n;
-}
-static void draw_qr(int y)
-{
-    if (!s_qr_n) {
-        esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
-        cfg.display_func = qr_got;
-        cfg.max_qrcode_version = 6;
-        cfg.qrcode_ecc_level = ESP_QRCODE_ECC_MED;
-        esp_qrcode_generate(&cfg, APP_URL);
-    }
-    if (!s_qr_n) return;
-    int m = 216 / (s_qr_n + 4), side = m * (s_qr_n + 4), x0 = (UI_W - side) / 2;  // a quiet zone of 2 modules
-    ui_rect(x0, y, side, side, 0xFFFF);
-    for (int r = 0; r < s_qr_n; r++)
-        for (int c = 0; c < s_qr_n; c++)
-            if (s_qr[r * s_qr_n + c]) ui_rect(x0 + (c + 2) * m, y + (r + 2) * m, m, m, 0x0000);
-}
-
 static void value_text(const row_t *r, char *b, size_t n)
 {
     int v = *r->val;
@@ -231,7 +204,7 @@ static bool draw(uint32_t now, bool force)
             continue;
         }
         if (r->kind == R_QR) {  // the link to the app, to scan with the phone
-            draw_qr(y + 10);
+            ui_qr(UI_W / 2, y + 10, 216, APP_URL);
             ui_print_c(&ui_vt, 1, UI_W / 2, y + 238, TR("Escanéalo con el móvil para descargar", "Scan it with the phone to download"), MS_CREMA, false);
             ui_print_c(&ui_vt, 1, UI_W / 2, y + 260, TR("la última versión de la app Marea", "the latest Marea app"), MS_CREMA, false);
             ui_print_c(&ui_vt, 1, UI_W / 2, y + 288, TR("(no está en Play Store: Android pedirá", "(not in the Play Store: Android will ask"), MS_GRIS, false);
@@ -261,7 +234,8 @@ static bool draw(uint32_t now, bool force)
             break;
         case R_INFO:
         case R_ACTION:
-            ui_print(&ui_vt, 2, X0 + 16, y + 2, label, r->kind == R_ACTION ? (s_forget_armed ? MS_CORAL : MS_ORO2) : MS_CREMA);
+            ui_print(&ui_vt, 2, X0 + 16, y + 2, label,
+                     r->kind != R_ACTION ? MS_CREMA : s_forget_armed && r->action == act_forget ? MS_CORAL : MS_ORO2);
             r->info(buf, sizeof(buf));
             ui_print(&ui_vt, 1, X0 + 16, y + 40, buf, MS_GRIS);
             break;

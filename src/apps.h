@@ -32,6 +32,8 @@ extern const app_t app_faces, app_settings, app_stopwatch, app_torch, app_alarms
     app_files;
 // Alerts (not in the launcher)
 extern const app_t app_alarm_ring, app_call;
+// First-run guide: language, gestures, the phone app (an alert: back never leaves it by mistake)
+extern const app_t app_setup;
 
 // Shared look of an app screen: background, status bar and a title in gold
 void app_frame(const char *title, bool dusk);

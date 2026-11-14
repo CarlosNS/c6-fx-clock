@@ -88,6 +88,12 @@ void ui_dots(int cx, int y, int n, int cur);
 void ui_icon(const char *const rows[16], int x, int y, int scale);
 // Status bar: the time in the middle, Bluetooth link on the left, battery on the right
 void ui_status_bar(void);
+// QR code of `text`, black on white with a quiet zone, centred on cx, at most `side` px wide (whole
+// pixels per module). The last text's code is kept, so drawing it every frame costs nothing.
+void ui_qr(int cx, int y, int side, const char *text);
+
+// The latest Android app (tools/release.py publishes it under this fixed name)
+#define APP_URL "https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk"
 
 // ---- Background ----
 // The illustrated night sea (or dusk, for settings and pairing), generated once into PSRAM and copied

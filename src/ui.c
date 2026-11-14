@@ -6,6 +6,7 @@
 #include "clock.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
+#include "qrcode.h"
 
 static uint16_t *s_fb;
 
@@ -600,4 +601,37 @@ void ui_background_band(bool dusk, int y0, int y1)
         return;
     }
     memcpy(s_fb + y0 * UI_W, bg + y0 * UI_W, (size_t)(y1 - y0) * UI_W * 2);
+}
+
+// ---------------------------------------------------------------- QR code (espressif/qrcode)
+
+static uint8_t s_qr[45 * 45];  // up to version 7
+static int s_qr_n;
+static const char *s_qr_text;
+static void qr_got(esp_qrcode_handle_t q)
+{
+    int n = esp_qrcode_get_size(q);
+    if (n > 45) return;
+    for (int y = 0; y < n; y++)
+        for (int x = 0; x < n; x++) s_qr[y * n + x] = esp_qrcode_get_module(q, x, y);
+    s_qr_n = n;
+}
+
+void ui_qr(int cx, int y, int side, const char *text)
+{
+    if (text != s_qr_text) {
+        s_qr_n = 0;
+        s_qr_text = text;
+        esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
+        cfg.display_func = qr_got;
+        cfg.max_qrcode_version = 7;
+        cfg.qrcode_ecc_level = ESP_QRCODE_ECC_MED;
+        esp_qrcode_generate(&cfg, text);
+    }
+    if (!s_qr_n) return;
+    int m = side / (s_qr_n + 4), w = m * (s_qr_n + 4), x0 = cx - w / 2;  // a quiet zone of 2 modules
+    ui_rect(x0, y, w, w, 0xFFFF);
+    for (int r = 0; r < s_qr_n; r++)
+        for (int c = 0; c < s_qr_n; c++)
+            if (s_qr[r * s_qr_n + c]) ui_rect(x0 + (c + 2) * m, y + (r + 2) * m, m, m, 0x0000);
 }
