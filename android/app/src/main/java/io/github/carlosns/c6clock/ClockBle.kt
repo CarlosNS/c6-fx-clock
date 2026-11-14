@@ -11,6 +11,8 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -47,6 +49,11 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
     @Volatile var mtu = 23
         private set
     private var refreshed = false  // service cache already thrown away on this connection
+    // The MTU answer may never come: Android answers only one of the apps asking on the same link (after
+    // the watch restarts, several reconnect at once), and the setup must not wait on it for ever
+    @Volatile private var discovering = false
+    private var mtuWait: CompletableDeferred<Unit>? = null
+    private val main = Handler(Looper.getMainLooper())
     /** The clock takes its firmware over Bluetooth (ClockUpdate). */
     val canOta get() = ota != null
     private val ops = Mutex()
@@ -60,7 +67,15 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             Log.i(TAG, "connection state $state (status $status)")
             if (state == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
                 refreshed = false
+                discovering = false
                 g.requestMtu(Protocol.MTU)
+                main.postDelayed({
+                    if (!discovering && gatt === g) {
+                        Log.i(TAG, "no MTU answer: going on without it")
+                        discovering = true
+                        g.discoverServices()
+                    }
+                }, 2_500)
             } else {
                 val was = ready
                 ready = false
@@ -76,7 +91,11 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) this@ClockBle.mtu = mtu
-            g.discoverServices()
+            mtuWait?.complete(Unit)
+            if (!discovering) {
+                discovering = true
+                g.discoverServices()
+            }
         }
 
         override fun onServiceChanged(g: BluetoothGatt) {
@@ -163,6 +182,15 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                     else -> "No se pudo conectar ($status)"
                 },
             )
+        }
+        // Set up without the MTU answer: ask once more now that nothing else is in flight (the bigger
+        // packets matter for files and firmware), and go on whatever happens
+        if (mtu <= 23) {
+            val w = CompletableDeferred<Unit>()
+            mtuWait = w
+            if (gatt?.requestMtu(Protocol.MTU) == true) withTimeoutOrNull(2_000) { w.await() }
+            mtuWait = null
+            Log.i(TAG, "MTU $mtu")
         }
         ready = true
         onState(true)

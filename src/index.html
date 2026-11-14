@@ -101,7 +101,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .al .time{font:400 52px/.9 'Jersey 10',system-ui,sans-serif}
 .al.offd .open{opacity:.55}
 .al .more{display:flex;flex-direction:column;gap:10px;border-top:3px solid var(--linea);padding-top:12px;margin-top:12px}
-.al input[type=time]{background:var(--noche);color:var(--crema);border:3px solid var(--linea);border-radius:0;min-height:52px;padding:0 10px;font:400 36px/1 'Jersey 10',system-ui,sans-serif;color-scheme:dark}
+.al input[type=time]{background:var(--noche);color:var(--crema);border:3px solid var(--linea);border-radius:0;min-height:52px;padding:0 10px;font:400 36px/1 'Jersey 10',system-ui,sans-serif;color-scheme:dark;width:100%;min-width:0;max-width:100%;display:block}  /* Android's time field has a wide minimum of its own: keep it inside the card */
 .days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .days button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;min-height:44px;border:3px solid var(--linea);background:var(--noche);color:var(--gris);padding:0}
 .days button.on{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
@@ -127,10 +127,21 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .anims button.on{border-color:var(--verde)}
 .anims img{width:100%;aspect-ratio:274/336}
 .anims span{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font:400 24px/1 'Jersey 10',system-ui,sans-serif}
+/* without the watch: what needs it is greyed out (a tap says why), a bar on top of every section */
+body.offline [data-watch]{position:relative}
+body.offline [data-watch]>*,body.offline button[data-watch]{opacity:.4}
+body.offline [data-watch]>*{pointer-events:none}
+#offbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;margin:-4px 0 12px;padding:10px 12px;background:var(--panel);border:3px solid var(--coral);color:var(--crema);font:400 20px/1.1 'Jersey 10',system-ui,sans-serif;text-decoration:none}
+#offbar .pip{background:var(--coral);flex:none}
+#ptoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;max-width:90vw;padding:12px 16px;background:var(--panel2);border:3px solid var(--coral);color:var(--crema);font:400 20px/1.15 VT323,monospace;box-shadow:3px 3px 0 var(--sombra);pointer-events:none}
+/* no watch paired yet: home is the welcome, nothing else */
+body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
 </style>
 </head>
 <body>
 <main>
+<a id="offbar" class="hide" href="#inicio"><span class="pip"></span><span id="offbart"></span></a>
+<div id="ptoast" class="hide"></div>
 
 <!-- ============================================================ Inicio -->
 <section class="view" id="v-inicio">
@@ -144,6 +155,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
   <div class="panel hide" id="blecard">
     <div class="tt" data-en="Connect over Bluetooth">Conectar por Bluetooth</div>
     <p class="dim" style="margin:6px 0 10px" data-en="Pair the watch from here, not from the Bluetooth settings. The first time, the watch shows a 6-digit code: you have 30 seconds to type it.">Empareja el reloj desde aquí, no desde los ajustes de Bluetooth. La primera vez, el reloj enseña una clave de 6 cifras: tienes 30 segundos para escribirla.</p>
+    <ol class="dim" id="blesteps" style="margin:0 0 12px;padding-left:22px;line-height:1.35"><li data-en="Switch the watch on (PWR) and keep it near.">Enciende el reloj (PWR) y tenlo cerca.</li><li data-en="Tap «Find the watch» and pick it.">Pulsa «Buscar el reloj» y elígelo.</li><li data-en="Type the 6-digit code the watch shows.">Escribe la clave de 6 cifras que sale en el reloj.</li></ol>
     <button class="btn gold full" id="blego" data-en="Find the watch">Buscar el reloj</button>
     <div class="dim" id="blest" style="margin-top:8px"></div>
   </div>
@@ -170,9 +182,9 @@ input[type=text],input[type=password]{width:100%;min-width:0}
     </div>
   </div>
 
-  <a class="panel" href="#esferas" style="display:flex;align-items:center;gap:12px;padding:8px">
+  <a class="panel" id="hfcard" href="#esferas" style="display:flex;align-items:center;gap:12px;padding:8px">
     <img class="prev" id="hfimg" alt="" style="width:66px;height:81px;border:3px solid var(--linea)">
-    <div style="flex:1;display:flex;flex-direction:column;min-width:0"><span class="dim" data-en="Now on the watch">Ahora en el reloj</span><span class="j" id="hfname" style="font-size:30px;line-height:1">--</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0"><span class="dim" id="hfnow">Ahora en el reloj</span><span class="j" id="hfname" style="font-size:30px;line-height:1">--</span></div>
     <span class="go" aria-hidden="true">›</span>
   </a>
 
@@ -488,6 +500,7 @@ async function loadFaces(){
  for(;;){try{const r=await L.request('faces');FX=r.faces;GROUPS=r.groups;break}catch(e){await new Promise(r=>setTimeout(r,1500))}}
  buildFaces();homeTiles();if(cur>=0){const c=cur;cur=-1;setFx(c)}}
 function buildFaces(){const box=$('groups');box.innerHTML='';
+ if(!FX.length){box.innerHTML=`<div class="panel dim">${tr('La lista de esferas viene del reloj: se verá cuando se conecte.','The list of faces comes from the watch: it will show when it connects.')}</div>`;return}
  GROUPS.forEach((g,gi)=>{const items=FX.map((f,i)=>[f,i]).filter(([f])=>f.g===gi);if(!items.length)return;
   const d=document.createElement('div');d.className='stack';d.innerHTML=`<p class="lbl">${esc(LANG?GROUPS_EN[gi]||g:g)}</p><div class="fx"></div>`;
   for(const[f,i]of items){const c=document.createElement('div');c.className='fc';c.dataset.i=i;
@@ -728,8 +741,26 @@ $('blego').onclick=async()=>{$('blest').textContent=tr('Elige el reloj en la lis
  try{await L.pick();$('blest').textContent='';if(L.kind==='android'){$('appcard').classList.remove('hide');appInfo()}}catch(e){$('blest').textContent=e.name==='NotFoundError'?tr('No elegiste ningún reloj','You did not pick a watch'):tr('No se pudo conectar: ','Could not connect: ')+e.message}};
 $('blecard').classList.toggle('hide',!L.needsPick);
 if(L.kind==='ble'&&!navigator.bluetooth){$('blego').disabled=true;$('blest').textContent=tr('Este navegador no tiene Web Bluetooth: usa Chrome o Edge','This browser has no Web Bluetooth: use Chrome or Edge')}
-L.start({onState:u=>{up=u;renderFind();homeStatus(status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u)$('blecard').classList.add('hide');if(u){poll();if(!ALARMS)loadAlarms();if(view==='archivos')loadFiles(fpath)}},
+L.start({onState:u=>{up=u;offline();renderFind();homeStatus(u&&status.bat!==undefined&&status.bat>=0?status.bat+' %':'');if(L.needsPick&&u){$('blecard').classList.add('hide');L.needsPick=false;offline()}
+ // back: everything again, as it is on the watch now (it may have changed meanwhile)
+ if(u){poll();loadAlarms();if(view==='archivos')loadFiles(fpath);if(window.misRefresh)misRefresh();setTimeout(renderFind,1500)}else{tick=null;clock();renderAlarms();if(!FX.length)buildFaces()}},
  onMessage:m=>{if(m.t==='status')show(m);if(m.t==='find'||m.t==='findphone')renderFind()}});
+// ------------------------------------------------------------ without the watch
+// What needs it (and only that) is greyed out while it is not connected; a tap on it says why instead of
+// seeming to work and being lost. A bar on top of every section says so too, and leads home.
+const NEEDS_WATCH=['#v-esferas>.panel.gold','#v-esferas>.list','#groups','#alarms','#aladd','#v-archivos .list','#crumbs','#v-pantalla .list','#v-hora .list',
+ '#goalrow','#voicebox .list','#wifirow','#wedit','#wform','#updgo','#nupdgo','#sync','#ovl','#reset','#slog','#tomode','#otago','#langes','#langen'];
+for(const q of NEEDS_WATCH)for(const el of document.querySelectorAll(q)){const t=el.matches('input,select')||(el.matches('button')&&el.closest('.row'))?el.closest('.row')||el:el;t.dataset.watch=''}
+let toastT=0;
+function ptoast(t){const b=$('ptoast');b.textContent=t;b.classList.remove('hide');clearTimeout(toastT);toastT=setTimeout(()=>b.classList.add('hide'),2600)}
+document.addEventListener('click',e=>{if(up||!e.target.closest('[data-watch]'))return;e.preventDefault();e.stopPropagation();
+ ptoast(L.needsPick?tr('Primero empareja el reloj (en Inicio).','Pair the watch first (on the home screen).'):tr('El reloj no está conectado: esto se cambia cuando vuelva.','The watch is not connected: this can be changed when it is back.'))},true);
+function offline(){const off=!up;document.body.classList.toggle('offline',off);document.body.classList.toggle('nowatch',!!L.needsPick&&!up);
+ $('offbar').classList.toggle('hide',!off||view==='inicio');
+ $('offbart').textContent=L.needsPick?tr('Sin reloj emparejado · toca para emparejarlo','No watch paired · tap to pair it'):tr('Sin conexión con el reloj · reconectando…','The watch is not connected · reconnecting…');
+ $('hfnow').textContent=off?tr('La última vez en el reloj','Last seen on the watch'):tr('Ahora en el reloj','Now on the watch')}
+window.addEventListener('hashchange',offline);
+
 // Android app: sync, permissions and forgetting the clock live in Kotlin
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
  $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
@@ -764,9 +795,9 @@ let ALARMS=null,openAl=-1,animFor=-1,animSel=0;
 const hm=a=>String(a.h).padStart(2,'0')+':'+String(a.m).padStart(2,'0');
 // The watch keeps 23 bytes of UTF-8: cut whole characters
 function cut23(s){let o='';for(const ch of s){if(new TextEncoder().encode(o+ch).length>23)break;o+=ch}return o}
-async function loadAlarms(){try{ALARMS=await L.request('alarms')}catch(e){if(view==='alarmas')setTimeout(loadAlarms,3000);return}renderAlarms();homeTiles()}
+async function loadAlarms(){try{ALARMS=await L.request('alarms')}catch(e){if(up)setTimeout(loadAlarms,3000);renderAlarms();return}renderAlarms();homeTiles()}
 function animName(k){return ALARMS&&ALARMS.anims[k]||'?'}
-function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
+function renderAlarms(){const box=$('alarms');if(!ALARMS){box.innerHTML=`<div class="panel dim">${up?tr('Cargando…','Loading…'):tr('Las alarmas están en el reloj: se verán cuando se conecte.','The alarms live on the watch: they will show when it connects.')}</div>`;return}
  $('aladd').classList.toggle('hide',ALARMS.list.length>=AL_MAX);
  if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas.','No alarms.')}</div>`;return}
  box.innerHTML=ALARMS.list.map((a,i)=>{const days=daysText(a.d);
@@ -846,7 +877,7 @@ function nextAlarm(){if(!ALARMS)return'--';const now=new Date(),wd=(now.getDay()
 
 // ------------------------------------------------------------ microSD viewer (look only)
 let fpath='/',FILES=null,fbusy=false;
-async function loadFiles(p){fpath=p;FILES=null;renderFiles();
+async function loadFiles(p){fpath=p;FILES=null;if(!up){FILES={st:'off'};renderFiles();return}renderFiles();
  try{const r=await L.request('files',p);if(r.path!==undefined&&r.path!==fpath&&r.st!=='nodir')return;FILES=r;if(r.st==='nodir'&&p!=='/'){loadFiles('/');return}}catch(e){FILES={st:'err'}}
  renderFiles()}
 const fsize=b=>b<1e3?b+' B':b<1e6?Math.round(b/1e3)+' KB':b<1e9?dec1(b/1e6)+' MB':dec1(b/1e9)+' GB';  // decimal, as the watch and the card's label
@@ -857,7 +888,7 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
   const b=document.createElement('button');b.textContent=n;b.onclick=()=>loadFiles(p);$('crumbs').appendChild(b)});
  const box=$('flist');
  if(!FILES){box.innerHTML=`<div class="frow dim">${tr('Cargando…','Loading…')}</div>`;return}
- const msg={none:tr('No hay tarjeta en el reloj','There is no card in the watch'),bad:tr('La tarjeta no se puede leer. Puedes formatearla desde la app Archivos del reloj.','The card cannot be read. You can format it from the watch\'s Files app.'),err:tr('El reloj no responde','The watch does not answer')}[FILES.st];
+ const msg={none:tr('No hay tarjeta en el reloj','There is no card in the watch'),bad:tr('La tarjeta no se puede leer. Puedes formatearla desde la app Archivos del reloj.','The card cannot be read. You can format it from the watch\'s Files app.'),err:tr('El reloj no responde','The watch does not answer'),off:tr('La microSD está en el reloj: se verá cuando se conecte.','The microSD is in the watch: it will show when it connects.')}[FILES.st];
  $('sdinfo').classList.toggle('hide',FILES.st!=='ok');
  if(msg){box.innerHTML=`<div class="frow">${msg}</div>`;return}
  $('sdfree').textContent=tr(`${fsize(FILES.free)} libres de ${fsize(FILES.total)}`,`${fsize(FILES.free)} free of ${fsize(FILES.total)}`);
@@ -871,7 +902,7 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
   if(f.d)el.onclick=()=>loadFiles((fpath==='/'?'':fpath)+'/'+f.n);box.appendChild(el)}}
 
 // ------------------------------------------------------------ start
-applyLang();route();
+applyLang();route();offline();
 loadFaces();loadAlarms();poll();setInterval(poll,L.pollMs);setInterval(clock,1000);loadNews();renderFind();
 // Mis esferas (custom faces): the editor only lives in the Android app (src/webapp/miesferas.js)
 if(L.kind==='android'){const s=document.createElement('script');s.src=A+'miesferas.js';document.body.appendChild(s)}

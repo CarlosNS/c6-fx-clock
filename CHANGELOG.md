@@ -8,6 +8,9 @@
 - **Mis esferas:** en la app (*Esferas → Mis esferas*) se crean, cambian y borran esferas propias: un nombre, una foto o un GIF de la galería encuadrado a la pantalla, y la hora digital con fuente, tamaño, sitio, color, contorno o sombra, segundos y fecha, con vista previa exacta y *Probar en el reloj*. Se guardan en la microSD del reloj (hace falta una; la app avisa si no la hay) y el móvil guarda una copia para restaurarlas. Los GIF se repiten mientras la pantalla está encendida (hasta 40 fotogramas, 274×336). El reloj recibe archivos por Bluetooth a su tarjeta.
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.
 - Arreglado: textos que se pisaban en Alarmas, Pasos, Cronómetro, Archivos y el lanzador.
+- **La app sin el reloj:** una barra avisa en todas las secciones; lo que necesita el reloj se ve atenuado y, al tocarlo, explica que no está conectado (antes parecía cambiarse y se perdía); Inicio enseña lo último que se supo, y al reconectar se vuelve a leer todo. Sin reloj emparejado, Inicio es la bienvenida con los pasos.
+- Arreglado: tras reiniciarse el reloj, la app podía no volver a conectar nunca (esperaba una respuesta del Bluetooth que Android no siempre da).
+- Arreglado: en la app, el campo de la hora de las alarmas se salía de la tarjeta.
 - **Alarmas de una vez, a la vista:** en la app, *Repetir* con *Una vez*, *Todos los días*, *Laborables* y *Fin de semana* además de los días sueltos; en el reloj, el editor dice en qué quedan los días (*una vez: se borra al pararla*, *laborables*…). Una alarma nueva es de una vez, en el reloj y en la app.
 - **Tu esfera en la app:** con una de Mis esferas puesta, Inicio y Esferas enseñan su nombre y su miniatura. Mis esferas ya no entra en el cambio automático.
 - Arreglado: en la app, los nombres largos de las esferas se cortaban; en el editor de alarmas del reloj, el título pisaba las flechas.

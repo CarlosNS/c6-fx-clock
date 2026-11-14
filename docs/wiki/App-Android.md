@@ -38,6 +38,16 @@ Con la app en pantalla el enlace va más rápido (para la página de control); e
 
 Sin conexión, Inicio enseña un aviso en rojo a los pocos segundos. Si el **Bluetooth del móvil está apagado**, lo dice y abre el diálogo de Android para activarlo (una vez cada vez que se abre la app, y con el botón **Activar Bluetooth**); al activarlo, la app vuelve a conectar sola. Si no, dice qué está haciendo (*Buscando el reloj…*, *Esperando a que aparezca* o *No aparece: ¿está cerca y encendido?*) con un botón **Reconectar**, que cierra cualquier conexión a medias y busca el reloj en ese momento. En el reloj, la casilla **Reconectar** de los ajustes rápidos hace que se anuncie rápido durante 30 s, para que el móvil lo encuentre al instante.
 
+**Mientras no hay conexión:**
+
+- Una barra arriba de cada sección dice *Sin conexión con el reloj · reconectando…* y lleva a Inicio.
+- Lo que vive en el reloj (esferas, alarmas, archivos, ajustes de pantalla y hora, objetivo de pasos, voz, WiFi del reloj, actualizarlo, sincronizar, restablecer, idioma) se ve **atenuado**: tocarlo avisa de que el reloj no está conectado, en vez de parecer que se cambia y perderse.
+- Inicio enseña lo último que se supo (*La última vez en el reloj*), sin batería ni hora.
+- Sigue funcionando lo que no necesita el reloj: Mis esferas (se guardan en el móvil), *Buscar el reloj* (sonará en cuanto conecte), los permisos y las actualizaciones de la app.
+- Al volver la conexión, la app vuelve a leer todo del reloj (ajustes, alarmas, archivos, Mis esferas).
+
+**Sin reloj emparejado** (la primera vez, o después de olvidarlo), Inicio es solo la bienvenida: los pasos para emparejarlo y el botón **Buscar el reloj**.
+
 En *Ajustes → Avanzado*, **Sincronización del móvil** enseña cuándo fue la última y si salió bien, con el botón **Ahora** para forzar una.
 
 La app es la misma [[Página de control]] que sirve el reloj: Inicio con los avisos, Esferas con vistas previas, Alarmas, Archivos de la microSD y Ajustes. El botón atrás del móvil vuelve por las secciones antes de salir.
