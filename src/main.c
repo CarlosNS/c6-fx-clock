@@ -869,8 +869,12 @@ void app_main(void)
             uint16_t *nfb = lcd_native_fb();
             ui_begin(nfb);
             if (g_app.pairing_code >= 0) sys_dirty();
+            static bool was_sliding;
             bool sliding = trans_active(now);
-            if (sliding) sys_force();  // whole frames while the screen slides in (trans.c)
+            // whole frames while the screen slides in (trans.c), and one more once it has: the last
+            // slide frame stops short of the end, and a view that does not change is not drawn again
+            if (sliding || was_sliding) sys_force();
+            was_sliding = sliding;
             if (sys_draw(now)) {
                 if (sliding) trans_compose(nfb, now);
                 if (g_app.pairing_code >= 0) draw_pairing(nfb, g_app.pairing_code, now);
