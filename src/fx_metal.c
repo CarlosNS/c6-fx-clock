@@ -1,8 +1,8 @@
 // "Trueno y peluches" (full screen, wide canvas, pixel art on art.c): a comic strip of a day in the life
 // of a thrash metal band (a generic band in leather and long hair: no real band's name, logo or members).
-// The scene follows the hour, each with a little animation and a yellow narration box, comic style
-// (thick ink outlines, halftone dots):
-//   00-08 asleep in the bunk, hugging Rosita, the big pink plush      08-11 messy hair, both hands on coffee
+// The scene follows the hour, each with a little animation, no titles. The scenes painted by
+// tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
+//   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
 //   11-13 glaring at the tuner of a guitar that will not stay in tune  13-16 crossed guitars and the amp
 //   16-19 the tour bus on the road at sunset                           19-23 the show: spotlights, crowd,
 //   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "app.h"
 #include "art.h"
+#include "fx_metal_art.h"
 #include "control.h"
 #include "fx.h"
 #include "gfx.h"
@@ -81,64 +82,49 @@ static void head(float x, float y, int eyes, bool messy)
     else art_rect((int)x - 3, (int)y + 1, 2, 1, INK), art_rect((int)x + 2, (int)y + 1, 2, 1, INK);      // shut / sleepy
 }
 
-// ---- the seven scenes
-
-static void scene_sleep(void)  // 00-08
+// A picture painted by tools/metal_art.py (fx_metal_art.h): runs of <count, palette index>
+static void art_rle(const uint16_t *pal, const uint8_t *rle, int len)
 {
-    static const uint32_t S[] = {0x070a1e, 0x0c1230, 0x121a3e, 0x18224a};
-    sky(S, 4, ART_H);
-    halftone(0, ART_H, 0x000000, 5);
-    // the window with the moon
-    ink_rect(14, 26, 34, 30, 0x1e2c5a);
-    art_disc(38, 36, 5, C(0xe8e2c8));
-    art_disc(40, 34, 4, C(0x1e2c5a));
-    art_rect(30, 26, 1, 30, INK), art_rect(14, 41, 34, 1, INK);
-    for (int i = 0; i < 6; i++) art_px(17 + (int)(fx_hash(i, 501) % 28), 29 + (int)(fx_hash(i, 502) % 24), C(0xb8c4ff));
-    // the bunk: frame, mattress, blanket
-    ink_rect(8, 104, 122, 6, 0x5a3a24);
-    ink_rect(8, 92, 4, 46, 0x5a3a24), ink_rect(126, 92, 4, 46, 0x5a3a24);
-    ink_rect(12, 96, 114, 8, 0x8a8aa0);
-    // the rocker lying on his side, peaceful, hugging Rosita
-    head(30, 88, 1, false);
-    art_rect(34, 92, 4, 1, C(0xd08a6a));                                  // a little smile
-    ink_rect(36, 90, 60, 12, 0x1a1a22);                                   // black shirt / body
-    ink_rect(66, 92, 52, 10, 0x3a4a7a);                                   // the blanket over the legs
-    // Rosita: a big pink plush with round ears, squeezed in his arms
-    ink_disc(56, 84, 11, 0xff6fb5);
-    ink_disc(48, 74, 4, 0xff6fb5), ink_disc(64, 74, 4, 0xff6fb5);
-    art_disc(52, 84, 1.2f, INK), art_disc(60, 84, 1.2f, INK);
-    art_disc(56, 88, 2, C(0xffb0d8));
-    ink_thick(40, 94, 62, 90, 3, 0xe8b48a);                               // the arm around her
-    // pillow
-    ink_rect(14, 90, 14, 6, 0xd8d8e8);
+    uint16_t *d = art, *end = art + ART_W * ART_H;
+    for (int i = 0; i + 1 < len && d < end; i += 2)
+        for (int n = rle[i]; n-- && d < end;) *d++ = pal[rle[i + 1]];
 }
 
-static void scene_coffee(void)  // 08-11
+// ---- the seven scenes
+
+// 00-08, painted: the rocker asleep hugging Rosita, the moonbeam from the window across the bed. Here
+// it breathes (two frames: chest, arm and plush one pixel up) and dust floats in the beam.
+static void scene_sleep(uint32_t t)
 {
-    static const uint32_t S[] = {0xf3c58a, 0xf0b07a, 0xe89a72, 0xd88a70};
-    sky(S, 4, 110);
-    art_rect(0, 110, ART_W, ART_H - 110, C(0x8a5a3a));
-    halftone(110, ART_H, 0x000000, 3);
-    // the kitchen window, the sun just up
-    ink_rect(84, 20, 40, 40, 0xffe2a8);
-    art_disc(104, 52, 9, C(0xfff4cc));
-    art_rect(84, 46, 40, 14, C(0xc88a62));
-    art_rect(103, 20, 1, 40, INK), art_rect(84, 39, 40, 1, INK);
-    // the rocker, half awake: messy hair, leather jacket, both hands round a mug
-    ink_poly((const float[]){26, 168, 34, 104, 82, 104, 90, 168}, 4, 0x1a1a22);  // jacket
-    art_rect(56, 104, 4, 40, C(0x3a3a46));                                          // the zip
-    head(58, 86, 1, true);
-    art_rect(54, 93, 8, 1, C(0x9a5a4a));                                            // a yawn of a mouth
-    ink_thick(36, 118, 50, 126, 6, 0x1a1a22), ink_thick(80, 118, 66, 126, 6, 0x1a1a22);  // arms
-    ink_rect(50, 116, 16, 18, 0xe8e2d0);                                            // the mug
-    art_rect(66, 120, 4, 8, INK), art_rect(67, 121, 2, 6, C(0xe8e2d0));             // its handle
-    art_rect(52, 117, 12, 3, C(0x5a3420));                                          // coffee
-    ink_disc(48, 126, 3, 0xe8b48a), ink_disc(68, 128, 3, 0xe8b48a);                 // hands
-    // steam rising in wisps
-    for (int w = 0; w < 3; w++)
-        for (int k = 0; k < 14; k++) {
-            float y = 112 - k * 2 - fmodf(s_ts * 8, 6), x = 54 + w * 4 + sinf(k * 0.6f + s_ts * 3 + w) * 2;
-            art_tint((int)x, (int)y, C(0xffffff), 10 - k * 2 / 3);
+    if (t % 4000 < 1600) art_rle(metal_sleep_pal, metal_sleep_1, sizeof metal_sleep_1);
+    else art_rle(metal_sleep_pal, metal_sleep_0, sizeof metal_sleep_0);
+    // the beam, as in metal_art.py: across  s = -0.62 x + 0.78 y  in 14..50, along  a = 0.78 x + 0.62 y > 36
+    for (int i = 0; i < 22; i++) {
+        float sp = 0.6f + (fx_hash(i, 601) % 100) / 120.0f;               // art px per second
+        float a = 40 + fmodf(s_ts * sp + (fx_hash(i, 602) % 1000) / 7.0f, 130);
+        float c = 16 + (fx_hash(i, 603) % 320) / 10.0f + 2.5f * sinf(s_ts * 0.7f + i);
+        int x = (int)(a * 0.78f - c * 0.62f), y = (int)(a * 0.62f + c * 0.78f);
+        int tw = 8 + (int)(6 * sinf(s_ts * (1.3f + (i % 5) * 0.3f) + i * 2.1f));
+        art_tint(x, y, C(0xe8eeff), tw);
+    }
+}
+
+// 08-11, painted: waist up in the kitchen, half asleep, both hands round a black mug; dawn through the
+// blinds. Here he blinks now and then and the steam curls up from the mug in a see-through spiral.
+static void scene_coffee(uint32_t t)
+{
+    if (t % 5200 < 260) art_rle(metal_coffee_pal, metal_coffee_1, sizeof metal_coffee_1);
+    else art_rle(metal_coffee_pal, metal_coffee_0, sizeof metal_coffee_0);
+    for (int w = 0; w < 2; w++)
+        for (int h = 0; h < 54; h++) {
+            float ph = h * 0.19f - s_ts * 1.7f + w * 3.1f, amp = 1.5f + h * 0.13f;
+            float x = 73.5f + (w ? 3.0f : -3.0f) + sinf(ph) * amp + h * 0.12f;
+            int y = 104 - h, xi = (int)x;
+            float a = 14.0f * (1 - h / 54.0f) * (h < 5 ? h / 5.0f : 1) * (0.45f + 0.55f * cosf(ph));  // the back of each turn fades
+            uint16_t c = C(0xfff4ea);
+            art_tint(xi, y, c, (int)a);
+            art_tint(xi - 1, y, c, (int)(a * 0.55f));
+            art_tint(xi + 1, y, c, (int)(a * 0.55f));
         }
 }
 
@@ -313,14 +299,10 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     app_take_drag(&dx_, &dy_);
     s_ts = t / 1000.0f;
     int h = g_now.valid ? g_now.h : 12;
-    static const char *const CAP_ES[7] = {"ZZZ... CON ROSITA", "DESPERTANDO...", "MALDITA CUERDA!", "ENSAYO EN EL GARAJE",
-                                          "DE GIRA", "EN DIRECTO!", "Y AHORA... PIZZA"};
-    static const char *const CAP_EN[7] = {"ZZZ... WITH ROSIE", "WAKING UP...", "STUPID STRING!", "GARAGE REHEARSAL",
-                                          "ON THE ROAD", "LIVE!", "AND NOW... PIZZA"};
     int sc = h < 8 ? 0 : h < 11 ? 1 : h < 13 ? 2 : h < 16 ? 3 : h < 19 ? 4 : h < 23 ? 5 : 6;
     switch (sc) {
-    case 0: scene_sleep(); break;
-    case 1: scene_coffee(); break;
+    case 0: scene_sleep(t); break;
+    case 1: scene_coffee(t); break;
     case 2: scene_tuning(); break;
     case 3: scene_rehearsal(); break;
     case 4: scene_bus(); break;
@@ -330,18 +312,12 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     art_blit(fb);
     if (g_metal_bare) return;  // console "metalbare 1": the drawing alone, to review it
 
-    // The narration box, comic style: yellow, inked, at the top (clear of the rounded corners)
-    const char *cap = (g_app.lang ? CAP_EN : CAP_ES)[sc];
-    int cw = gfx_text_width(cap, 2) + 16, cx = (WW - cw) / 2, cy = 34;
-    gfx_fill_rect(fb, cx - 2, cy - 2, cw + 4, 24, rgb565(18, 12, 20));
-    gfx_fill_rect(fb, cx, cy, cw, 20, rgb565(250, 214, 80));
-    gfx_text(fb, cx + 8, cy + 3, cap, rgb565(18, 12, 20), 2);
-    // Zzz rising out of the bunk at night (full resolution letters)
+    // Zzz rising from his head towards the poster, below the time (full resolution letters)
     if (sc == 0)
         for (int k = 0; k < 3; k++) {
-            float f = fmodf(s_ts * 0.5f + k / 3.0f, 1.0f);
+            float f = fmodf(s_ts * 0.4f + k / 3.0f, 1.0f);
             int zs = 1 + (int)(f * 2.5f);
-            gfx_text_ol(fb, 66 + (int)(f * 40), 150 - (int)(f * 70), "Z", rgb565(200, 210, 255), rgb565(18, 12, 20), zs, 1);
+            gfx_text_ol(fb, 92 + (int)(f * 96), 124 - (int)(f * 18), "Z", rgb565(200, 210, 255), rgb565(16, 18, 44), zs, 1);
         }
     // The time: big in the middle of the show; elsewhere at the bottom, inked
     static uint16_t cream[4], red[4];
@@ -352,5 +328,6 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
     if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 6)) / 2, 112, hhmm, 6, red, rgb565(18, 12, 20));
+    else if (sc <= 1) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
     else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
 }
