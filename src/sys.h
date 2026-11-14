@@ -26,6 +26,8 @@ bool sys_keep_awake(void);
 void sys_dirty(void);
 // The next frame of the current view must be drawn whole (a slide is going on, trans.c)
 void sys_force(void);
+// A short message at the bottom of the face (main.c), e.g. the name of the face just chosen
+void sys_toast(const char *msg);
 
 void sys_home(void);
 void sys_open_quick(void);

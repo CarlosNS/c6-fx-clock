@@ -30,7 +30,7 @@ static void days_text(const alarm_t *a, int x, int y, int scale)
 {
     for (int d = 0; d < 7; d++) {
         bool on = a->days >> d & 1;
-        ui_print(&ui_vt, scale, x + d * 14 * scale, y, alarm_day_letter(d), on ? MS_ORO2 : MS_PILOTO_OFF);
+        ui_print(&ui_jersey, scale, x + d * 11 * scale, y, alarm_day_letter(d), on ? MS_ORO2 : MS_PILOTO_OFF);
     }
 }
 
@@ -63,12 +63,14 @@ static void draw_list(void)
         ui_panel(X0, y, WID, ROW - 12, MS_PANEL, a->on ? MS_ORO : MS_LINEA, 4, false);
         snprintf(buf, sizeof(buf), "%02d:%02d", a->h, a->m);
         ui_print(&ui_jersey, 4, X0 + 16, y - 8, buf, a->on ? MS_CREMA : MS_GRIS);  // capitals from y+12 to y+52
-        if (a->days) days_text(a, X0 + 18, y + 52, 1);
-        else ui_print(&ui_vt, 1, X0 + 18, y + 52, TR("sin repetir", "no repeat"), MS_GRIS);
-        if (a->label[0]) {  // the label from the phone, after the days
+        // the repeat (days or "no repeat") and the label, a line in Jersey under the time
+        int lx = X0 + 18;
+        if (a->days) days_text(a, lx, y + 46, 2), lx += 7 * 22 + 10;
+        else ui_print(&ui_jersey, 2, lx, y + 46, TR("sin repetir", "no repeat"), MS_GRIS), lx += ui_print_w(&ui_jersey, 2, TR("sin repetir", "no repeat")) + 12;
+        if (a->label[0] && X0 + WID - 96 - lx > 30) {  // the label from the phone, if there is room
             char l[ALARM_LABEL_MAX + 4];
-            ui_ellipsize(&ui_jersey, 2, WID - 230, a->label, l, sizeof(l));
-            ui_print(&ui_jersey, 2, X0 + 128, y + 50, l, a->on ? MS_ORO2 : MS_GRIS);
+            ui_ellipsize(&ui_jersey, 2, X0 + WID - 96 - lx, a->label, l, sizeof(l));
+            ui_print(&ui_jersey, 2, lx, y + 46, l, a->on ? MS_ORO2 : MS_GRIS);
         }
         ui_switch(X0 + WID - 84, y + 26, a->on);
     }

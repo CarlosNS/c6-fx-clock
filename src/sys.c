@@ -144,41 +144,56 @@ bool ui_scroll_event(ui_scroll_t *s, const ui_event_t *e)
 
 // ---------------------------------------------------------------- launcher
 
-#define L_TOP 120
-#define L_ROW 150
-#define L_TILE_W 166
-#define L_TILE_H 136
+// Three columns, three rows: the eight apps fit without scrolling (the last row has two, centred,
+// away from the rounded corners)
+#define L_TOP 118
+#define L_ROW 120
+#define L_TILE_W 122
+#define L_TILE_H 112
+#define L_COLS 3
 static int s_pressed = -1;
+// Shorter names where the full one does not fit a tile
+static const char *const L_SHORT_ES[] = {NULL, NULL, NULL, "Crono", NULL, NULL, NULL, NULL};
+static const char *const L_SHORT_EN[] = {NULL, NULL, NULL, "Timer", NULL, "Torch", NULL, NULL};
+
+static void launcher_tile(int i, int *x, int *y)
+{
+    int row = i / L_COLS, col = i % L_COLS;
+    int in_row = NAPPS - row * L_COLS < L_COLS ? NAPPS - row * L_COLS : L_COLS;
+    int span = in_row * L_TILE_W + (in_row - 1) * 6;
+    *x = (UI_W - span) / 2 + col * (L_TILE_W + 6);
+    *y = L_TOP + row * L_ROW - s_launch_scroll.offset;
+}
 
 static int launcher_hit(int x, int y)
 {
-    int yy = y - L_TOP + s_launch_scroll.offset;
-    if (y < L_TOP - 10 || yy < 0) return -1;
-    int row = yy / L_ROW, col = x < UI_W / 2 ? 0 : 1, i = row * 2 + col;
-    int tx = col ? UI_W / 2 + 4 : UI_W / 2 - 4 - L_TILE_W;
-    if (x < tx || x >= tx + L_TILE_W || yy % L_ROW >= L_TILE_H) return -1;
-    return i < NAPPS ? i : -1;
+    for (int i = 0; i < NAPPS; i++) {
+        int tx, ty;
+        launcher_tile(i, &tx, &ty);
+        if (x >= tx && x < tx + L_TILE_W && y >= ty && y < ty + L_TILE_H) return i;
+    }
+    return -1;
 }
 
 static bool launcher_draw(void)
 {
-    s_launch_scroll.view_h = UI_H - L_TOP - 30;
-    s_launch_scroll.content_h = ((NAPPS + 1) / 2) * L_ROW;
+    s_launch_scroll.view_h = UI_H - L_TOP - 20;
+    s_launch_scroll.content_h = ((NAPPS + L_COLS - 1) / L_COLS) * L_ROW;
     ui_background(false);
     ui_veil(60, UI_H, 3);
     for (int i = 0; i < NAPPS; i++) {
-        int row = i / 2, col = i % 2;
-        int x = col ? UI_W / 2 + 4 : UI_W / 2 - 4 - L_TILE_W;
-        int y = L_TOP + row * L_ROW - s_launch_scroll.offset;
+        int x, y;
+        launcher_tile(i, &x, &y);
         if (y + L_TILE_H < 60 || y > UI_H) continue;
         bool p = i == s_pressed;
         ui_panel(x, y, L_TILE_W, L_TILE_H, p ? MS_PANEL2 : MS_PANEL, p ? MS_ORO : MS_LINEA, 4, true);
-        ui_icon(s_apps[i]->icon, x + (L_TILE_W - 48) / 2, y + 18, 3);
-        const char *name = TR(s_apps[i]->name_es, s_apps[i]->name_en);
+        ui_icon(s_apps[i]->icon, x + (L_TILE_W - 48) / 2, y + 12, 3);
+        const char *sh = (g_app.lang ? L_SHORT_EN : L_SHORT_ES)[i];
+        const char *name = sh ? sh : TR(s_apps[i]->name_es, s_apps[i]->name_en);
         int sc = ui_fit(&ui_jersey, 2, 1, L_TILE_W - 6, name);
-        ui_print_c(&ui_jersey, sc, x + L_TILE_W / 2, y + 86 + (2 - sc) * 10, name, p ? MS_ORO2 : MS_CREMA, false);
+        ui_print_c(&ui_jersey, sc, x + L_TILE_W / 2, y + 64 + (2 - sc) * 10, name, p ? MS_ORO2 : MS_CREMA, false);
     }
-    // Clean band under the status bar, so tiles scroll away beneath it
+    // Clean band under the status bar
     ui_background_band(false, 0, L_TOP - 14);
     ui_shade(0, 0, UI_W, L_TOP - 14, 1);
     ui_status_bar();
@@ -409,10 +424,12 @@ static void face_event(const ui_event_t *e)
         if (s_to_face) break;
         if (e->dir == DIR_DOWN && (e->edge & EDGE_TOP)) trans_start(T_COVER_FROM_TOP), sys_open_quick();
         else if (e->dir == DIR_UP && (e->edge & EDGE_BOTTOM)) trans_start(T_COVER_FROM_BOTTOM), sys_open_launcher();
-        else if (e->dir == DIR_LEFT || e->dir == DIR_RIGHT) {
+        else if ((e->dir == DIR_LEFT || e->dir == DIR_RIGHT) && abs(e->x - e->x0) >= 100) {
+            // a deliberate stroke (a brush of the finger does not change the face), and its name shown
             g_app.fx = e->dir == DIR_LEFT ? fx_next(g_app.fx) : fx_prev(g_app.fx);
             g_app.auto_cycle = 0;
             g_app.dirty = true;
+            sys_toast(fx_list[g_app.fx].name);
         }
         break;
     case EV_LONG:
@@ -448,6 +465,7 @@ void sys_button_short(void)
         g_app.fx = fx_next(g_app.fx);
         g_app.auto_cycle = 0;
         g_app.dirty = true;
+        sys_toast(fx_list[g_app.fx].name);
         break;
     default: sys_back(); break;
     }
@@ -516,8 +534,10 @@ void sys_poll_requests(void)
                                                                                        : !strcmp(ed, "right") ? EDGE_RIGHT : 0;
         int x0 = edge == EDGE_LEFT ? 10 : edge == EDGE_RIGHT ? UI_W - 10 : UI_W / 2;
         int y0 = edge == EDGE_TOP ? 10 : edge == EDGE_BOTTOM ? UI_H - 10 : UI_H / 2;
+        int x1 = x0 + (dir == DIR_LEFT ? -150 : dir == DIR_RIGHT ? 150 : 0);  // a stroke as long as a real one
+        int y1 = y0 + (dir == DIR_UP ? -150 : dir == DIR_DOWN ? 150 : 0);
         synth(EV_DOWN, x0, y0, x0, y0, 0, edge);
-        synth(EV_SWIPE, x0, y0, x0, y0, dir, edge);
-        synth(EV_UP, x0, y0, x0, y0, 0, edge);
+        synth(EV_SWIPE, x1, y1, x0, y0, dir, edge);
+        synth(EV_UP, x1, y1, x0, y0, 0, edge);
     }
 }

@@ -22,6 +22,7 @@ typedef struct {
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
     volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
     volatile int raise_wake;   // raising the wrist turns the screen on
+    volatile int tips;         // how many times the edge hints were shown on the face (they stop at 8)
     volatile int cust;         // the custom face "Mis esferas" shows (its folder /esferas/<n>), 0 = none
     volatile int voice;        // holding BOOT records a voice command for the phone app (voice.c)
     volatile int tap_wake;     // touching the dark screen turns it on: 0 never, 1 one tap, 2 a double tap

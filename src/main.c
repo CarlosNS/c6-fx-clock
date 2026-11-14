@@ -61,7 +61,7 @@
 #define LONG_PRESS_MS 800
 #define FORGET_HINT_MS 3000   // holding BOOT this long shows the "forget phones" hint...
 #define FORGET_MS 10000       // ...and this long forgets every paired phone
-#define TOAST_MS 1500
+#define TOAST_MS 2000
 #define SAVE_DELAY_MS 3000
 #define FADE_IN_MS 150
 #define FADE_OUT_MS 400
@@ -120,6 +120,19 @@ static void toast(const char *msg)
 {
     strlcpy(s_toast, msg, sizeof(s_toast));
     s_toast_t = now_ms();
+}
+void sys_toast(const char *msg) { toast(msg); }
+
+// The first times the face comes on: two little handles at the top and bottom edges, telling that the
+// screen can be pulled down (quick settings) and up (launcher). They stop after 8 times.
+static uint32_t s_hint_until;
+static void draw_hints(uint16_t *fb, uint32_t now)
+{
+    if ((int32_t)(s_hint_until - now) <= 0) return;
+    int w = g_lcd_w / 7, x = (g_lcd_w - w) / 2, h = g_lcd_h > 400 ? 6 : 4;
+    uint16_t c = (now / 400) % 2 ? rgb565(230, 222, 200) : rgb565(160, 150, 130);
+    gfx_fill_rect(fb, x, h + 2, w, h, c);
+    gfx_fill_rect(fb, x, g_lcd_h - 2 * h - 2, w, h, c);
 }
 
 // ---- Screen helpers ----
@@ -837,6 +850,10 @@ void app_main(void)
             }
             lcd_sleep(false);
             panel_asleep = false;
+            if (g_app.tips < 8 && sys_view() == VIEW_FACE) {  // the edge hints, the first few times
+                s_hint_until = now + 3000;
+                settings_set("tips", g_app.tips + 1);
+            }
             if (use_wifi) net_power(true);
             sys_dirty();
         }
@@ -880,6 +897,7 @@ void app_main(void)
         if (ru > render_max) render_max = ru;
         if (g_app.overlay) draw_overlay(fb, cur);
         draw_toast(fb, now);
+        draw_hints(fb, now);
         int ota = ota_progress();
         if (ota >= 0) draw_ota(fb, ota);
         int code = g_app.pairing_code;

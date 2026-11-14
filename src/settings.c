@@ -51,6 +51,7 @@ static const setting_t SETTINGS[] = {
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"voice", &g_app.voice, 0, 1, true, NULL},
+    {"tips", &g_app.tips, 0, 99, true, NULL},     // edge hints shown so far (they stop at 8)
     {"cust", &g_app.cust, 0, 9999, true, NULL},     // the custom face shown by "Mis esferas"      // voice commands through the phone (hold BOOT)
     {"lang", &g_app.lang, 0, 1, true, NULL},          // 0 Spanish, 1 English
     {"dnd", &g_app.dnd, 0, 1, true, NULL},            // do not disturb

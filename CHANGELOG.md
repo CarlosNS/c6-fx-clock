@@ -8,6 +8,9 @@
 - **Mis esferas:** en la app (*Esferas → Mis esferas*) se crean, cambian y borran esferas propias: un nombre, una foto o un GIF de la galería encuadrado a la pantalla, y la hora digital con fuente, tamaño, sitio, color, contorno o sombra, segundos y fecha, con vista previa exacta y *Probar en el reloj*. Se guardan en la microSD del reloj (hace falta una; la app avisa si no la hay) y el móvil guarda una copia para restaurarlas. Los GIF se repiten mientras la pantalla está encendida (hasta 40 fotogramas, 274×336). El reloj recibe archivos por Bluetooth a su tarjeta.
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.
 - Arreglado: textos que se pisaban en Alarmas, Pasos, Cronómetro, Archivos y el lanzador.
+- **Lanzador en tres columnas:** todas las apps caben sin desplazar.
+- **Cambiar de esfera con intención:** deslizar a los lados pide un gesto decidido y la esfera nueva enseña su nombre un momento; las primeras veces, unas asas recuerdan que se puede deslizar desde arriba y desde abajo.
+- En la lista de alarmas, los días y «sin repetir» se leen más grandes.
 - **Transiciones:** las pantallas del reloj se deslizan en la dirección del gesto (ajustes rápidos desde arriba, lanzador desde abajo, apps desde la derecha).
 - **Ajustes rápidos rediseñados:** cada casilla con icono, nombre y estado; las activas, rellenas de dorado; tirador en la barra de brillo. *Siempre* pasa a *Pantalla*, *Buscar móvil* a *Buscar* y *Reconectar* a *Conectar*, todas a un mismo tamaño.
 - **Volver paso a paso:** BOOT y el gesto desde el borde izquierdo cierran primero el diálogo o la pantalla interna (editor, carpeta, mes de Pasos) y luego salen a donde se abrió la app: el lanzador, los ajustes rápidos o la esfera. Los paneles se cierran con el gesto contrario al que los abrió.

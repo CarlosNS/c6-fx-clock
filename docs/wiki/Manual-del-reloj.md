@@ -20,7 +20,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 |---|---|---|
 | Deslizar desde el **borde de arriba** hacia abajo | Abre los **ajustes rápidos** | |
 | Deslizar desde el **borde de abajo** hacia arriba | Abre el **lanzador** | |
-| Deslizar a **izquierda o derecha** | Esfera siguiente o anterior | Cambiar de página (por ejemplo, en Pasos) |
+| Deslizar a **izquierda o derecha** | Esfera siguiente o anterior (un deslizamiento decidido: un roce no la cambia); abajo sale su nombre un momento | Cambiar de página (por ejemplo, en Pasos) |
 | **Mantener** el dedo | Abre el selector de **Esferas** | Acciones extra (borrar en Archivos, saltos rápidos en Alarmas) |
 | Deslizar desde el **borde izquierdo** hacia la derecha | | **Volver** un paso (ver abajo) |
 | Arrastrar arriba o abajo | | Desplazar listas largas |
@@ -29,6 +29,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 - **Volver** (este gesto o BOOT) va de un paso en un paso: primero cierra el diálogo o la pantalla interna en la que estés (el editor de una alarma, una carpeta, el mes en Pasos) y, desde la primera pantalla de la app, sale a donde la abriste: el lanzador, los ajustes rápidos (la Linterna) o la esfera (Esferas, si la abriste manteniendo el dedo).
 - Las pantallas se deslizan en la dirección del gesto: los ajustes rápidos bajan desde arriba, el lanzador sube desde abajo y las apps entran por la derecha (y salen por ella al volver). Las alertas, como una llamada, aparecen al momento.
 - Cada panel se cierra con el gesto contrario al que lo abrió: los ajustes rápidos, deslizando hacia arriba; el lanzador, deslizando hacia abajo (estando arriba del todo). Volver también los cierra.
+- Las primeras veces que se enciende la pantalla, dos asas parpadean arriba y abajo de la esfera: recuerdan que desde ahí se abren los ajustes rápidos y el lanzador.
 - Los gestos de borde empiezan en la parte recta del borde, no en la esquina redondeada.
 - En las **esferas interactivas** (Plasma, Cubo 3D, Túnel, Lava y Vida) el dedo mueve la esfera; deslizar desde un borde sigue abriendo los menús.
 
@@ -37,7 +38,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | Cuándo | Gesto | Qué hace |
 |---|---|---|
 | Pantalla apagada | Pulsación | Enciende la pantalla, sin hacer nada más |
-| En la esfera | Pulsación corta | Siguiente esfera |
+| En la esfera | Pulsación corta | Siguiente esfera (sale su nombre un momento) |
 | En una app o un menú | Pulsación corta | Volver un paso |
 | En la esfera | Pulsación larga (más de 0,8 s) | Activa o desactiva el **cambio automático** de esfera (cada 30 s); se ve «AUTO: SÍ / NO». Con las órdenes de voz activas, mantenerlo graba una orden (ver [Órdenes de voz](#órdenes-de-voz)) |
 | Suena una alarma | Pulsación | La para |
@@ -155,7 +156,7 @@ Para cerrarlos: desliza hacia arriba, BOOT o desliza desde el borde izquierdo.
 
 ## El lanzador
 
-Es el **menú principal**. Para abrirlo, desliza desde el borde de abajo hacia arriba estando en la esfera. Muestra las apps en dos columnas; arrastra para ver las de abajo y toca una para abrirla. Para volver a la esfera: BOOT o deslizar desde el borde izquierdo.
+Es el **menú principal**. Para abrirlo, desliza desde el borde de abajo hacia arriba estando en la esfera. Muestra todas las apps de un vistazo, en tres columnas; toca una para abrirla. Para volver a la esfera: BOOT o deslizar desde el borde izquierdo.
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-launcher.png" alt="Lanzador" width="200">
 
