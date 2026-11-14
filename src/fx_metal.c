@@ -4,7 +4,7 @@
 // tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
 //   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
 //   11-13 glaring at the clip-on tuner of his V (painted)              13-16 the garage, amp and guitars (painted)
-//   16-19 the tour bus on the road at sunset                           19-23 the show: spotlights, crowd,
+//   16-19 the tour van at sunset (painted)                              19-23 the show: spotlights, crowd,
 //   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
 #include <math.h>
 #include <stdio.h>
@@ -88,6 +88,22 @@ static void art_rle(const uint16_t *pal, const uint8_t *rle, int len)
     uint16_t *d = art, *end = art + ART_W * ART_H;
     for (int i = 0; i + 1 < len && d < end; i += 2)
         for (int n = rle[i]; n-- && d < end;) *d++ = pal[rle[i + 1]];
+}
+
+// The same for a sprite: pixels of colour `key` are left as they are; `dy` moves it down
+static void art_rle_key(const uint16_t *pal, const uint8_t *rle, int len, int key, int dy)
+{
+    int p = 0;
+    for (int i = 0; i + 1 < len; i += 2) {
+        int n = rle[i], c = rle[i + 1];
+        if (c != key) {
+            for (int q = p; q < p + n; q++) {
+                int y = q / ART_W + dy;
+                if (y >= 0 && y < ART_H) art[y * ART_W + q % ART_W] = pal[c];
+            }
+        }
+        p += n;
+    }
 }
 
 // ---- the seven scenes
@@ -196,32 +212,49 @@ static void scene_rehearsal(uint32_t t)
     else art_px(42, 159, C(0x5a1010));
 }
 
-static void scene_bus(void)  // 16-19
+// 16-19, painted: the tour van with flames on its side heading into the sunset. The background is one
+// picture, the van another drawn on top; between them, at their own speeds (parallax): hills, power
+// poles with their wires and the dashes on the road. The van bounces a little and its wheels turn.
+static void scene_bus(uint32_t t)
 {
-    static const uint32_t S[] = {0x2a1a4a, 0x5a2a6a, 0xa03a6a, 0xe0645a, 0xf6a04a, 0xfacf6a};
-    sky(S, 6, 120);
-    art_disc(96, 112, 14, C(0xfff0b0));                                    // the sun on the horizon
-    for (int x = 0; x < ART_W; x++) {  // far hills, slowly passing
-        int h = (int)(10 + sinf((x + s_ts * 4) * 0.05f) * 5 + sinf((x + s_ts * 4) * 0.13f) * 2);
-        art_rect(x, 120 - h, 1, h, C(0x4a2a4a));
+    art_rle(metal_bus_pal, metal_bus_0, sizeof metal_bus_0);
+    // hills in the middle distance, scrolling slowly (the van drives left, so the world goes right)
+    float hs = s_ts * 5;
+    uint16_t hill = C(0x1e1430), hill2 = C(0x2a1c3c);
+    for (int x = 0; x < ART_W; x++) {
+        float u = x - hs;
+        int top = 97 - (int)(3 + 2.5f * sinf(u * 0.07f) + 1.8f * sinf(u * 0.19f + 1) + 1.2f * sinf(u * 0.41f));
+        for (int y = top; y < 105; y++) art_px(x, y, y == top ? hill2 : hill);
     }
-    art_rect(0, 120, ART_W, 26, C(0x2a2030));                              // the road
-    for (int i = 0; i < 6; i++) art_rect((int)fmodf(i * 28 - s_ts * 60 + 600, ART_W + 28) - 14, 132, 12, 2, C(0xf6d06a));
-    art_rect(0, 146, ART_W, ART_H - 146, C(0x6a4a3a));
-    halftone(146, ART_H, 0x000000, 4);
-    // the tour bus, side on, rocking a little on the road
-    int by = 100 + (int)(sinf(s_ts * 9) > 0.7f);
-    ink_rect(22, by, 92, 26, 0x1a1a22);
-    ink_rect(100, by + 4, 14, 12, 0x5a7aa0);                               // windscreen
-    for (int w = 0; w < 6; w++) ink_rect(26 + w * 12, by + 5, 9, 8, 0xffd27a);   // lit windows
-    art_rect(22, by + 18, 92, 2, C(0xb02a2a));                             // a red stripe
-    for (int k = 0; k < 2; k++) {                                          // wheels, turning
-        float wx = k ? 98 : 38;
-        ink_disc(wx, by + 27, 6, 0x2a2a2a);
-        float a = -s_ts * 8;
-        art_line(wx, by + 27, wx + cosf(a) * 4, by + 27 + sinf(a) * 4, C(0x8a8a8a));
+    // power poles rushing past, wires sagging between them
+    uint16_t pole = C(0x140c1c);
+    float ps = fmodf(s_ts * 34, 70);
+    for (int i = -1; i < 3; i++) {
+        int x = (int)(i * 70 + ps);
+        for (int y = 64; y < 106; y++) art_px(x, y, pole), art_px(x + 1, y, pole);
+        for (int dx = -5; dx <= 6; dx++) art_px(x + dx, 68, pole);
+        art_px(x - 5, 67, pole), art_px(x + 6, 67, pole);
+        for (int dx = 0; dx < 70; dx++) {  // the wire to the next pole
+            float f = dx / 70.0f;
+            int y = 67 + (int)(6 * 4 * f * (1 - f));
+            art_px(x + 6 + dx, y, pole);
+        }
     }
-    for (int i = 0; i < 5; i++) art_tint(16 - i * 3 - (int)fmodf(s_ts * 20, 3), by + 22 - i, C(0xd8b090), 9 - i);  // dust
+    // dashes down the middle of the road, fastest of all
+    uint16_t dash = C(0xe8dcb0);
+    float ds = fmodf(s_ts * 60, 22);
+    for (int i = -1; i < 8; i++)
+        for (int dx = 0; dx < 11; dx++)
+            for (int y = 154; y < 157; y++) art_px((int)(i * 22 + ds) + dx + (y - 154), y, dash);
+    // the van on top, bouncing on the bumps; the hubcaps turning
+    int dy = sinf(s_ts * 8.3f) > 0.75f ? -1 : 0;
+    art_rle_key(metal_bus_pal, metal_bus_1, sizeof metal_bus_1, METAL_BUS_KEY, dy);
+    static const uint8_t wheels[2][2] = {{56, 137}, {116, 137}};
+    for (int w = 0; w < 2; w++)
+        for (int k = 0; k < 3; k++) {
+            float an = -s_ts * 9 + k * 2.094f;  // rolling left: anticlockwise
+            art_px(wheels[w][0] + (int)lroundf(3 * cosf(an)), wheels[w][1] + dy + (int)lroundf(3 * sinf(an)), C(0x3a3440));
+        }
 }
 
 static void scene_show(void)  // 19-23: the time is the star
@@ -292,7 +325,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     case 1: scene_coffee(t); break;
     case 2: scene_tuning(t); break;
     case 3: scene_rehearsal(t); break;
-    case 4: scene_bus(); break;
+    case 4: scene_bus(t); break;
     case 5: scene_show(); break;
     default: scene_pizza(); break;
     }
@@ -316,6 +349,6 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
     if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 6)) / 2, 112, hhmm, 6, red, rgb565(18, 12, 20));
-    else if (sc <= 3) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
+    else if (sc <= 4) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
     else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
 }

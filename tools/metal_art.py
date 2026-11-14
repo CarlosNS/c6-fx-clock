@@ -146,6 +146,7 @@ class Scene:
         self.put(o, mask, self.shade(sdf, depth, roundness, **kw))
         return mask
 
+    bg_key = (0, 0, 0)  # what is left where nothing was drawn (KEY: transparent)
     zoom = None  # (z, px, py): the camera, for pixels placed by hand
 
     def px(self, o, pts, tone):
@@ -198,7 +199,7 @@ class Scene:
             for x in range(W):
                 o = self.obj[y, x]
                 if o < 0:
-                    c = (0, 0, 0)
+                    c = self.bg_key
                 elif self.edge[y, x] and self.outline[o] is not None and o not in self.skip:
                     c = self.outline[o]
                 else:
@@ -945,6 +946,110 @@ def scene_garage(k=0):
     return S, (CONES, PEDAL_LED)
 
 
+# ---------------------------------------------------------------- scene 5: on the road (16-19)
+
+BUS_WHEELS = [(56, 137), (116, 137)]   # wheel centres (art px), for the spinning hubcaps
+KEY = (255, 0, 255)                     # transparent colour in a sprite frame
+
+
+def scene_bus(k=0):
+    """Frame 0: the background (sky, sun, mountains, the road and the headlight beam on it).
+    Frame 1: the van alone, the rest transparent; the watch puts the moving things between the two."""
+    S = Scene(light=(0.7, -0.45, 0.55))  # the setting sun, behind on the right
+
+    sky = S.new('sky', [0x2a1a4a, 0x4a2260, 0x7a2c6a, 0xb03e64, 0xe0604e, 0xf6904a, 0xffc060, 0xffe08a])
+    sun = S.new('sun', [0xffb050, 0xffd070, 0xffe8a0, 0xfff8dc])
+    mfar = S.new('mountains_far', [0x5a2a5a, 0x6e3462, 0x84406a, 0x9a4e72])
+    mnear = S.new('mountains_near', [0x2a1638, 0x381c46, 0x482452, 0x5a2e5e])
+    road = S.new('road', [0x16141e, 0x201e2a, 0x2c2a38, 0x3a3848, 0x4a485a])
+    lit = S.new('road_lit', [0x3a3020, 0x5a4a2a, 0x806a36, 0xa88c44, 0xd0b058])
+    line = S.new('line', [0x8a8478, 0xd8d0c0, 0xf4eee0])
+    body = S.new('van', [0x0e0814, 0x1a0e24, 0x281636, 0x3a204c, 0x522c66, 0x74408a], 0x08040c)
+    glass = S.new('glass', [0x140c1e, 0x241632, 0x3a2448, 0x6a3a5a, 0xb0605a, 0xf0a070], 0x08040c)
+    chrome = S.new('chrome', [0x3a3440, 0x6a6070, 0xa49aa8, 0xdcd4dc, 0xffffff], 0x100c14)
+    lamp = S.new('lamp', [0xffd060, 0xffec9c, 0xfffbe8], 0x3a2a10)
+    tyre = S.new('tyre', [0x08080a, 0x141418, 0x222228, 0x34343c], 0x040406)
+    fl_r = S.new('flame_red', [0x7a0e10, 0xb01e18, 0xd83a1e])
+    fl_o = S.new('flame_orange', [0xd85a10, 0xf08a1e, 0xffaa30])
+    fl_y = S.new('flame_yellow', [0xffc83a, 0xffe070, 0xfff4b0])
+    gear = S.new('gear', [0x0a0a0e, 0x16161c, 0x262630, 0x3a3a46, 0x54545e], 0x050508)
+    case = S.new('case', [0x2a1810, 0x44281a, 0x643c24, 0x8a5634], 0x140a06)
+    strap = S.new('strap', [0x8a3a10, 0xc85a1a, 0xf08a30])
+    rack = S.new('rack', [0x1a1a20, 0x34343e, 0x5a5a66, 0x8a8a96], 0x08080c)
+
+    if k == 0:
+        # -- the sky: dusk above, gold at the horizon
+        S.put(sky, np.ones((H, W), bool), np.clip((YY - 4) / 96, 0, 1) * 0.98 + 0.03 * (grain(71) - 0.5))
+        S.fill(sun, ellipse(24, 88, 19, 19), depth=2, roundness=20, amb=0.6, kd=0.3)
+        for y0 in (80, 86, 91):  # bands of cloud across the sun
+            S.put(sky, (np.abs(YY - y0) < 0.8) & (ellipse(24, 88, 21, 21) < 0) & (np.abs(XX - 24 - (y0 - 86) * 2) < 18), 0.86)
+        # -- mountains: a far hazy range and a nearer darker one
+        far = 88 - 7 * np.sin(XX * 0.05 + 1) + 6 * np.clip(1 - XX / 50, 0, 1) - 5 * np.sin(XX * 0.13 + 2) - 3 * noise(72, 4)
+        S.put(mfar, YY > far, 0.35 + 0.4 * np.clip((XX - 40) / 100, 0, 1) - 0.25 * np.clip((YY - far) / 20, 0, 1))
+        near = 95 - 5 * np.sin(XX * 0.07 + 4) + 4 * np.clip(1 - XX / 50, 0, 1) - 4 * np.sin(XX * 0.17) - 2 * noise(73, 3)
+        S.put(mnear, YY > near, 0.3 + 0.3 * np.clip((XX - 60) / 80, 0, 1) - 0.2 * np.clip((YY - near) / 10, 0, 1))
+        # -- the road: asphalt, the edge line, and the headlight beam lying on it
+        S.put(road, YY > 104, 0.35 + 0.25 * np.clip((YY - 104) / 64, 0, 1) + 0.1 * (grain(74) - 0.5) - 0.1 * (grain(75) > 0.92))
+        S.put(line, (YY > 106) & (YY < 108), 0.7)
+        beam = poly([(34, 112), (34, 118), (-6, 166), (-6, 128)])
+        tv = 0.35 + 0.25 * np.clip((YY - 104) / 64, 0, 1) + 0.1 * (grain(74) - 0.5) + 0.35 * np.clip(1 - (34 - XX) / 50, 0, 1)
+        S.put(lit, (beam < -1.5) & (YY > 108), tv)
+        S.put(lit, (beam >= -1.5) & (beam < 0) & (YY > 108) & CHECK, tv - 0.15)
+        S.outlines(skip={sky, sun, mfar, mnear, road, lit, line})
+        return S, BUS_WHEELS
+
+    S.bg_key = KEY
+    # ---------------- the van, facing left, the front a little towards us
+    # roof rack and the gear strapped on it
+    S.fill(rack, capsule(52, 78, 126, 77, 1.2), depth=1, roundness=1.2, amb=0.3)
+    for x in (56, 76, 96, 120):
+        S.fill(rack, capsule(x, 77, x, 81, 0.9), depth=1, roundness=1, amb=0.3)
+    S.fill(gear, poly([(58, 62), (78, 62), (78, 76), (58, 76)]), depth=3, roundness=3)              # an amp
+    S.put(gear, (np.abs(poly([(60, 65), (76, 65), (76, 74), (60, 74)])) < 0.7), 0.7)
+    S.fill(case, smin(capsule(82, 70, 98, 70, 6.2), ellipse(98, 70, 2.5, 6.2), 1), depth=4, roundness=6)  # drum case
+    S.fill(rack, ellipse(82, 70, 2.4, 6), depth=2, roundness=2, amb=0.4)
+    S.fill(gear, poly([(102, 68), (110, 66), (126, 68), (126, 76), (110, 76), (102, 75)]), depth=3, roundness=3)  # guitar case
+    S.fill(rack, capsule(104, 71, 124, 71, 0.6), depth=0.5, roundness=0.6, amb=0.5)
+    for x in (68, 90, 114):
+        S.put(strap, (np.abs(XX - x) < 1.2) & (YY > 61) & (YY < 78) & (S.obj >= 0), 0.6)
+    # the body
+    van = poly([(48, 80), (128, 78), (133, 82), (134, 132), (42, 134), (38, 128), (38, 104), (44, 90)])
+    van = cut(van, ellipse(56, 137, 13, 12))
+    van = cut(van, ellipse(116, 137, 13, 12))
+    S.fill(body, van, depth=5, roundness=8, amb=0.22, bump=0.8 * ridge(42, 106, 134, 104, 1.2))
+    # painted flames licking back along the side
+    inside = (van < -1.5) & (XX > 40)
+    for core, (o_, scale_) in enumerate(((fl_r, 1.0), (fl_o, 0.72), (fl_y, 0.42))):
+        m = np.zeros((H, W), bool)
+        for yc, L, w in ((110, 62, 3.6), (117, 80, 4.2), (124, 56, 4.0), (130, 74, 3.0)):
+            u = (XX - 41) / (L * (0.55 + 0.45 * scale_))          # 0 at the nose, 1 at the tip
+            curve = -3.5 * u * u                                   # tips curl up as they trail back
+            m |= (u >= 0) & (u < 1) & (np.abs(YY - yc - curve) < w * scale_ * np.clip(1 - u, 0, 1) ** 0.8 + 0.4 * (core == 0))
+        S.put(o_, inside & m, 0.6 + 0.25 * np.clip(1 - (XX - 41) / 40, 0, 1))
+    # windows: the windscreen and three side windows, the sunset in them
+    for wpts in ([(48, 85), (60, 84), (60, 101), (43, 102)], [(64, 86), (82, 86), (82, 100), (64, 100)],
+                 [(86, 86), (104, 86), (104, 100), (86, 100)], [(108, 85), (126, 85), (126, 100), (108, 100)]):
+        wp = poly(wpts)
+        S.fill(glass, wp + 0.3, depth=1, roundness=2, amb=0.2,
+               tex=0.5 * np.clip((YY - 86) / 14, 0, 1) + 0.25 * (np.abs((XX - YY * 0.6) % 14 - 3) < 1.5))
+    # the front, three quarters: chrome grille, the headlight on, the bumper
+    face = poly([(31, 104), (39, 101), (39, 134), (31, 132)])
+    S.fill(body, face, depth=2, roundness=3, amb=0.3)
+    for y in range(117, 129, 2):
+        S.fill(chrome, capsule(32, y, 38, y - 0.4, 0.6), depth=0.6, roundness=0.7, amb=0.4)
+    S.fill(lamp, ellipse(35, 110, 3.2, 3.6), depth=2, roundness=3, amb=0.8)
+    S.fill(chrome, smin(capsule(28, 134, 134, 134, 2.2), ellipse(31, 133, 3.5, 2.6), 2), depth=2, roundness=2.2, amb=0.35, kd=1.1)
+    S.fill(chrome, capsule(44, 108, 47, 108, 0.8), depth=0.6, roundness=0.8, amb=0.4)  # door handle... and a mirror
+    S.fill(chrome, smin(ellipse(43, 92, 2, 3), capsule(43, 94, 46, 96, 0.6), 1), depth=1, roundness=1.5, amb=0.4)
+    # wheels: fat tyres, chrome hubcaps
+    for cx, cy in BUS_WHEELS:
+        S.fill(tyre, ellipse(cx, cy, 10, 10), depth=4, roundness=5, amb=0.2)
+        S.fill(chrome, ellipse(cx, cy, 5, 5), depth=3, roundness=4, amb=0.35, kd=1.1)
+        S.px(chrome, [(cx, cy)], 0)
+    S.outlines(skip={fl_r, fl_o, fl_y, strap})
+    return S, BUS_WHEELS
+
+
 # ---------------------------------------------------------------- output
 
 def rle(img):
@@ -978,7 +1083,7 @@ def preview(img, pal, path):
 
 
 # name, painter, frames (its argument: 0, 1, ...)
-SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2), ('garage', scene_garage, 1)]
+SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2), ('garage', scene_garage, 1), ('bus', scene_bus, 2)]
 
 
 def main():
@@ -1009,6 +1114,8 @@ def main():
             for i in range(0, len(data), 32):
                 lines.append('    ' + ', '.join(str(v) for v in data[i:i + 32]) + ',')
             lines.append('};')
+        if KEY in pal:
+            lines.append(f'#define METAL_{name.upper()}_KEY {pal.index(KEY)}')
         if name == 'tuning':  # where the tuner's little screen is, for the needle and the LED
             lines += ['#define METAL_TUNER_%s %d' % kv for kv in zip('XYWH', extra)]
         print(name, 'colours', len(pal), 'bytes', [len(rle(i)) for i in imgs])
