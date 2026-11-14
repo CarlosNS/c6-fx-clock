@@ -487,7 +487,8 @@ def scene_coffee(blink=0):
     S.fill(hair, back, depth=4, roundness=7, bump=strands, kd=0.85, amb=0.12)
 
     # -- the worn black t-shirt, a crew neck, and a faded pixel skull
-    tor = smin(capsule(28, 120, 94, 120, 15), ellipse(61, 156, 42, 30), 10)
+    # sloping shoulders and straight sides: the arms hang outside the body, nothing bulges past them
+    tor = smin(capsule(36, 115, 84, 115, 10), poly([(31, 118), (89, 118), (87, 172), (33, 172)]), 6)
     wear = 0.6 * ridge(44, 134, 52, 166, 2.2) + 0.5 * ridge(80, 132, 74, 166, 2.2) - 0.4 * ridge(60, 106, 60, 116, 2)
     S.fill(shirt, tor, depth=6, roundness=14, bump=wear, amb=0.18, tex=0.1 * (grain(44) > 0.93))
     S.fill(skin, capsule(60, 94, 60, 106, 6.5), depth=3, roundness=6, amb=0.2)    # neck
@@ -541,11 +542,14 @@ def scene_coffee(blink=0):
     S.fill(hair, capsule(75, 96, 81, 124, 4.5, 2.5), depth=3, roundness=4, bump=0.5 * np.sin(XX * 1.5), amb=0.2, kd=0.7)
 
     # -- the arms: short sleeves, elbows at his sides, forearms rising to the mug held under his chin
-    for sx, ex_, hx in ((28, 38, 63), (94, 90, 84)):  # hands at y 126
-        S.fill(shirt, ellipse(sx + (2 if sx < 60 else -2), 124, 8.5, 10.5, 0.2 if sx < 60 else -0.2), depth=4, roundness=7, amb=0.18)    # sleeve
-        up = capsule(sx + (3 if sx < 60 else -3), 130, ex_, 168, 7, 6.5)
-        fa = smin(capsule(ex_, 168, hx, 126, 7, 5), ellipse((ex_ * 2 + hx) / 3, 152, 7.5, 5.5, -1.1 if sx < 60 else 1.1), 2.5)
-        S.fill(skin, smin(up, fa, 2), depth=6, roundness=6, amb=0.2)
+    for sx, ex_, hx in ((31, 36, 63), (89, 86, 84)):  # shoulder, elbow and hand x; hands at y 126
+        o = -1 if sx < 60 else 1
+        S.fill(skin, capsule(sx, 122, ex_, 166, 6.2, 6), depth=6, roundness=6, amb=0.2)                      # upper arm
+        S.fill(shirt, smin(capsule(sx - o, 116, sx + o * 0.5, 131, 7, 6.6), ellipse(sx - o * 2, 117, 6, 5), 3),
+               depth=4, roundness=6, amb=0.18)                                                                # short sleeve
+        S.px(shirt, [(sx + k - 6, 131 + (k * o) // 6) for k in range(13)], 3)                                # its hem
+        fa = smin(capsule(ex_, 166, hx, 126, 6.6, 4.8), ellipse((ex_ * 2 + hx) / 3, 152, 7, 5.2, 1.1 * o), 2.5)
+        S.fill(skin, fa, depth=6, roundness=6, amb=0.2)                                                       # forearm
     # the mug: black, with the warm light on its rim and on the side towards the window; coffee inside
     S.fill(mug, cut(ellipse(87, 119, 5, 7), ellipse(87, 119, 2.2, 4)), depth=2, roundness=2, amb=0.3)   # handle
     mg = smin(poly([(63, 106), (84, 106), (83, 133), (64, 133)]), ellipse(73.5, 133, 9.5, 1.8), 2)
