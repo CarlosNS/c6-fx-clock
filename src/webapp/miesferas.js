@@ -193,6 +193,7 @@ function sdOk() { return WATCH && WATCH.sd === 'ok'; }
 async function refresh() {
   try { LOCAL = JSON.parse(ClockBridge.customLocal()); } catch (e) { LOCAL = []; }
   renderList();
+  if (window.curFaceRefresh) curFaceRefresh();
   if (up) ClockBridge.customWatch();
 }
 function renderList() {
@@ -480,7 +481,7 @@ async function save() {
 // Replies from the app (MainActivity.Bridge)
 window.customReply = s => {
   const m = JSON.parse(s);
-  if (m.t === 'cust') { WATCH = m.err ? {err: m.err} : m; renderList(); return; }
+  if (m.t === 'cust') { WATCH = m.err ? {err: m.err} : m; renderList(); if (window.curFaceRefresh) curFaceRefresh(); return; }
   if (m.t === 'save') {
     if (m.pct !== undefined) { $('mebar').firstElementChild.style.width = m.pct + '%'; return; }
     busy = false; $('mesave').disabled = false; $('mebar').classList.add('hide');
@@ -499,6 +500,13 @@ window.customReply = s => {
 inject();
 loadFonts().catch(() => {});  // ahead of time: the editor opens at once
 window.misRefresh = refresh;
+// The custom face shown now, for the page's "on the watch" cards: {name, thumb} (thumb only if the phone has it)
+window.misFaceInfo = id => {
+  const l = LOCAL.find(f => f.id === id);
+  if (l) return {name: l.name, thumb: `https://appassets.androidplatform.net/mis/${id}/thumb.jpg?v=${l.v || 0}`};
+  const w = WATCH && WATCH.list && WATCH.list.find(f => f.id === id);
+  return w ? {name: w.name, thumb: null} : null;
+};
 window.misView = v => { if (v === 'esferas') refresh(); if (v === 'miesfera') loop(); };
 refresh();
 })();

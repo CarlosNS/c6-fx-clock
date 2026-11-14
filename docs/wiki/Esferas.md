@@ -183,7 +183,7 @@ El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 *Número 28* — La esfera que haces tú en la app del móvil (ver [[App Android]]): de fondo, una **foto** o un **GIF** de la galería encuadrado a la pantalla, y encima la **hora digital** con la fuente, el tamaño, el sitio, el color, el contorno o la sombra, los segundos y la fecha que elijas. El GIF se repite mientras la pantalla está encendida y vuelve a empezar al encenderla; con la pantalla apagada no gasta nada.
 
 - Necesita una **microSD** en el reloj: cada esfera se guarda en `/esferas/<número>/`. Sin tarjeta, la app no deja guardarla y la esfera lo avisa.
-- Puedes tener varias; se ponen desde la app o desde la rueda de la app **Esferas** del reloj, donde salen al final. Mientras no pongas ninguna, el número 28 no sale al deslizar ni en el cambio automático.
+- Puedes tener varias; se ponen desde la app o desde la rueda de la app **Esferas** del reloj, donde salen al final. Mientras no pongas ninguna, el número 28 no sale al deslizar. No entra en el cambio automático: se pone a propósito.
 - El móvil guarda una **copia** de cada una, así que si la tarjeta se pierde o se formatea, *Restaurar en el reloj* las vuelve a mandar.
 
 ## ¿Una esfera nueva?

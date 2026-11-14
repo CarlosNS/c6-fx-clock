@@ -175,11 +175,11 @@ Una rueda con todas las esferas, por grupos (Efectos, Videojuegos, Arte, Natural
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-alarms.png" alt="Alarmas" width="200">
 
-- **La lista:** cada alarma con su hora, sus días y un interruptor para activarla o desactivarla sin borrarla. Hasta **6 alarmas**.
-- **+ Nueva:** abre el editor con la hora siguiente a la actual, de lunes a viernes.
+- **La lista:** cada alarma con su hora, cuándo se repite (*una vez*, *todos los días*, *laborables*, *fin de semana* o los días sueltos) y un interruptor para activarla o desactivarla sin borrarla. Hasta **6 alarmas**.
+- **+ Nueva:** abre el editor con la hora siguiente a la actual, para sonar **una vez**.
 - **El editor** (toca una alarma para abrirlo):
   - las **flechas** sobre y bajo las cifras suben y bajan la hora y los minutos; **mantenerlas** salta de 6 en 6 horas o de 10 en 10 minutos;
-  - los **siete días** (L M X J V S D) se marcan y desmarcan tocándolos; sin ninguno, la alarma suena **una vez** y se **borra** al pararla (si se pospone, sigue hasta que se pare);
+  - los **siete días** (L M X J V S D) se marcan y desmarcan tocándolos; encima se lee en qué quedan (*laborables*, *fin de semana*…). Sin ninguno pone *una vez: se borra al pararla*: la alarma suena **una vez** y se **borra** al pararla (si se pospone, sigue hasta que se pare);
   - **Guardar** la guarda y **Cancelar** sale sin cambiar nada. **Borrar alarma**, aparte y debajo, pregunta antes de borrarla.
 - **La animación:** mientras suena, el sol sale despacio del mar y el cielo pasa de la noche al oro; cuanto más alto está, más tiempo lleva sonando. Al posponer, el sol se hunde; al parar, termina de salir.
 - **Cuando suena:** la pantalla de la alarma **sustituye a lo que hubiera** (la esfera, un menú o una app), aunque la pantalla estuviera apagada: se enciende sola, enseña la hora y suena por el altavoz. Al pararla o posponerla, el reloj vuelve a donde estabas: a la esfera, o al lanzador si estabas en una app.

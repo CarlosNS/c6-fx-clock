@@ -34,6 +34,18 @@ static void days_text(const alarm_t *a, int x, int y, int scale)
     }
 }
 
+// The usual repeats by name (days: bit 0 = Monday), as in the app; NULL for any other set of days
+static const char *rep_name(int d)
+{
+    switch (d) {
+    case 0: return TR("una vez", "once");
+    case 127: return TR("todos los días", "every day");
+    case 31: return TR("laborables", "weekdays");
+    case 96: return TR("fin de semana", "weekend");
+    default: return NULL;
+    }
+}
+
 static void open(void)
 {
     s_edit = -1;
@@ -65,8 +77,9 @@ static void draw_list(void)
         ui_print(&ui_jersey, 4, X0 + 16, y - 8, buf, a->on ? MS_CREMA : MS_GRIS);  // capitals from y+12 to y+52
         // the repeat (days or "no repeat") and the label, a line in Jersey under the time
         int lx = X0 + 18;
-        if (a->days) days_text(a, lx, y + 46, 2), lx += 7 * 22 + 10;
-        else ui_print(&ui_jersey, 2, lx, y + 46, TR("sin repetir", "no repeat"), MS_GRIS), lx += ui_print_w(&ui_jersey, 2, TR("sin repetir", "no repeat")) + 12;
+        const char *rn = rep_name(a->days);
+        if (!rn) days_text(a, lx, y + 46, 2), lx += 7 * 22 + 10;
+        else ui_print(&ui_jersey, 2, lx, y + 46, rn, a->on ? MS_ORO2 : MS_GRIS), lx += ui_print_w(&ui_jersey, 2, rn) + 12;
         if (a->label[0] && X0 + WID - 96 - lx > 30) {  // the label from the phone, if there is room
             char l[ALARM_LABEL_MAX + 4];
             ui_ellipsize(&ui_jersey, 2, X0 + WID - 96 - lx, a->label, l, sizeof(l));
@@ -90,7 +103,7 @@ static void list_event(const ui_event_t *e)
     if (e->y < TOP || i < 0 || i >= list_rows()) return;
     if (i == g_nalarms) {
         s_new = true;
-        s_draft = (alarm_t){.h = g_now.valid ? (g_now.h + 1) % 24 : 7, .m = 0, .days = 0x1F, .on = 1};  // weekdays
+        s_draft = (alarm_t){.h = g_now.valid ? (g_now.h + 1) % 24 : 7, .m = 0, .days = 0, .on = 1};  // once, as in the app
         s_edit = i;
     } else if (e->x >= X0 + WID - 100) {
         g_alarms[i].on = !g_alarms[i].on;
@@ -106,9 +119,9 @@ static void list_event(const ui_event_t *e)
 
 #define E_DIG_Y 160
 #define E_ARROW 54
-#define E_DAYS_Y 316
-#define E_BTN_Y 376
-#define E_DEL_Y 450
+#define E_DAYS_Y 328
+#define E_BTN_Y 386
+#define E_DEL_Y 454
 #define E_DEL_H 40
 
 static void arrow(int cx, int y, bool up)
@@ -122,7 +135,8 @@ static void arrow(int cx, int y, bool up)
 static void draw_edit(void)
 {
     char buf[8];
-    app_frame(s_new ? TR("Nueva alarma", "New alarm") : TR("Alarma", "Alarm"), true);
+    app_frame(NULL, true);  // the title a size smaller, clear of the arrows above the digits
+    ui_print_c(&ui_jersey, 3, UI_W / 2, 60, s_new ? TR("Nueva alarma", "New alarm") : TR("Alarma", "Alarm"), MS_ORO, true);
     int cx_h = UI_W / 2 - 78, cx_m = UI_W / 2 + 78;
     arrow(cx_h, E_DIG_Y - 46, true);
     arrow(cx_m, E_DIG_Y - 46, true);
@@ -133,6 +147,10 @@ static void draw_edit(void)
     ui_print_c(&ui_jersey, 8, cx_m, E_DIG_Y - 20, buf, MS_CREMA, true);
     arrow(cx_h, E_DIG_Y + 110, false);
     arrow(cx_m, E_DIG_Y + 110, false);
+    // what the days amount to, above them: "once: deleted when stopped", "weekdays"...
+    const char *rn = rep_name(s_draft.days);
+    if (!s_draft.days) rn = TR("una vez: se borra al pararla", "once: deleted when stopped");
+    if (rn) ui_print_c(&ui_jersey, 2, UI_W / 2, E_DAYS_Y - 44, rn, MS_ORO2, false);
     for (int d = 0; d < 7; d++) {
         int x = 52 + d * 44;
         bool on = s_draft.days >> d & 1;

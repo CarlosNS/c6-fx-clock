@@ -771,7 +771,7 @@ void app_main(void)
             // next face not switched off in the app; if there is none, stay where we are
             for (int k = 1; k <= FX_COUNT; k++) {
                 int n = (g_app.fx + k) % FX_COUNT;
-                if (!fx_list[n].retired && !((g_app.fx_off >> n) & 1) && (n != FX_CUSTOM || g_app.cust > 0)) {
+                if (!fx_list[n].retired && !((g_app.fx_off >> n) & 1) && n != FX_CUSTOM) {  // Mis esferas: only on purpose
                     g_app.fx = n;
                     break;
                 }

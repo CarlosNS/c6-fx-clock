@@ -63,7 +63,7 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .bar{height:12px;background:var(--off);border:2px solid var(--linea)}
 .bar div{height:100%;width:0;background:var(--oro)}
 .prev{background:var(--panel2);display:block;object-fit:cover;image-rendering:pixelated}
-.prev.noimg{visibility:hidden}
+.prev.noimg{background:var(--panel2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23A89CCE' d='M0 0h9v9H0zM1 1v7h7V1zM5 2h2v2H5zM2 6h1V5h1v1h1V4h1v1h1v2H2z'/%3E%3C/svg%3E") center/36% no-repeat;object-position:-9999px 0}  /* no picture: a little photo instead of an empty box */
 /* home */
 .sky{position:absolute;left:0;top:0;width:2px;height:2px;background:var(--crema);pointer-events:none;
  box-shadow:40px 12px var(--crema),96px 30px var(--gris),150px 10px var(--crema),210px 34px var(--gris),262px 16px var(--crema),18px 30px var(--gris),300px 70px var(--gris),236px 62px var(--crema),330px 100px var(--gris)}
@@ -78,8 +78,9 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .fc.off .pick{opacity:.5}
 .fc .pick{display:flex;flex-direction:column;width:100%;padding:0;border:0;background:none;text-align:left}
 .fc .pick img{width:100%;aspect-ratio:274/336}
-.fc .pick span{font:400 19px/1 'Jersey 10',system-ui,sans-serif;padding:8px 38px 8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fc .eye{position:absolute;right:0;bottom:0;width:40px;height:36px;border:0;background:none;padding:0;display:flex;align-items:center;justify-content:center}
+/* the name gets the whole width and up to two lines; the eye sits on the corner of the picture */
+.fc .pick span{font:400 18px/1.05 'Jersey 10',system-ui,sans-serif;padding:7px 6px;min-height:calc(2.1em + 14px);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc .eye{position:absolute;right:3px;top:3px;width:34px;height:30px;border:0;background:rgba(18,12,32,.72);padding:0;display:flex;align-items:center;justify-content:center}
 #pad{width:min(52vw,190px);aspect-ratio:274/336;background:var(--noche);border:3px solid var(--linea);touch-action:none;position:relative;overflow:hidden;flex:none;
  background-image:linear-gradient(var(--panel2) 1px,transparent 1px),linear-gradient(90deg,var(--panel2) 1px,transparent 1px);background-size:20px 20px}
 #pad.land{aspect-ratio:336/274;width:min(70vw,260px)}
@@ -104,6 +105,9 @@ input[type=text],input[type=password]{width:100%;min-width:0}
 .days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .days button{font:400 22px/1 'Jersey 10',system-ui,sans-serif;min-height:44px;border:3px solid var(--linea);background:var(--noche);color:var(--gris);padding:0}
 .days button.on{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
+.reps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.reps button{font:400 20px/1 'Jersey 10',system-ui,sans-serif;min-height:42px;border:3px solid var(--linea);background:var(--noche);color:var(--crema);padding:0 4px}
+.reps button.on{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
 .btn.red{border-color:var(--coral);color:var(--coral)}
 /* files */
 .crumbs{display:flex;align-items:center;flex-wrap:wrap}
@@ -442,7 +446,8 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 const A=L.kind==='ble'?'web/':'a/';
 document.head.insertAdjacentHTML('beforeend',`<style>@font-face{font-family:'Jersey 10';src:url(${A}jersey10.ttf) format('truetype');font-display:swap}
 @font-face{font-family:'VT323';src:url(${A}vt323.ttf) format('truetype');font-display:swap}</style>`);
-function preview(img,src){img.classList.remove('noimg');img.onerror=()=>img.classList.add('noimg');img.src=src}
+function preview(img,src){if(!src){img.removeAttribute('src');img.classList.add('noimg');return}  // no picture: the placeholder, no broken-image icon
+ img.classList.remove('noimg');img.onerror=()=>{img.removeAttribute('src');img.classList.add('noimg')};img.src=src}
 
 // ------------------------------------------------------------ language (the watch's "lang" setting)
 let LANG=0;try{LANG=+localStorage.getItem('lang')||0}catch(e){}
@@ -475,7 +480,8 @@ for(const el of document.querySelectorAll('[data-close]'))el.onclick=closeModals
 // ------------------------------------------------------------ faces
 let offMask=0;
 // Retired faces (x) keep their number in the catalogue but are never shown or counted
-const liveMask=()=>FX.reduce((m,f,i)=>f.x?m:m|1<<i,0),liveCount=()=>FX.filter(f=>!f.x).length;
+// (Mis esferas, group -1, is not in the automatic change either: it is put on on purpose)
+const liveMask=()=>FX.reduce((m,f,i)=>f.x||f.g<0?m:m|1<<i,0),liveCount=()=>FX.filter(f=>!f.x&&f.g>=0).length;
 const EYE_ON='<svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M3 2h4v1h1v1h1v2H8v1H7v1H3V7H2V6H1V4h1V3h1zM4 4v2h2V4z"/></svg>';
 const EYE_OFF='<svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#A89CCE" d="M1 1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1H8V8H7V7H6V6H5V5H4V4H3V3H2V2H1zM2 4h1v2h1v1h2v1H3V7H2V6H1V5h1zM4 2h3v1h1v1h1v2H8V5H7V4H6V3H4z"/></svg>';
 async function loadFaces(){
@@ -498,8 +504,11 @@ function renderOff(){const all=liveCount();let n=0;
  $('offinfo').textContent=tr(`Cada 30 s · ${n} de ${all} incluidas`,`Every 30 s · ${n} of ${all} included`)}
 function markCur(){for(const c of document.querySelectorAll('.fc'))c.classList.toggle('on',+c.dataset.i===cur)}
 function setFx(i){cur=i;markCur();const f=FX[i];if(!f)return;
- $('cname').textContent=$('hfname').textContent=f.label;$('cdesc').textContent=f.desc;$('mfacet').textContent=f.label;
- preview($('cimg'),`${A}fx${i}.webp`);preview($('hfimg'),`${A}fx${i}.webp`);
+ // Mis esferas: the custom face on now, by its name and its thumbnail (kept on the phone, in the app)
+ let name=f.label,img=`${A}fx${i}.webp`;
+ if(f.g<0){const c=window.misFaceInfo&&misFaceInfo(status.cust);img='';if(c){name=c.name||name;img=c.thumb||''}}
+ $('cname').textContent=$('hfname').textContent=name;$('cdesc').textContent=f.desc;$('mfacet').textContent=name;
+ preview($('cimg'),img);preview($('hfimg'),img);
  $('ctouch').classList.toggle('hide',!f.hint);$('copts').classList.toggle('hide',!f.opts);$('cbtns').classList.toggle('hide',!f.hint&&!f.opts);
  $('hint').textContent=f.hint;$('pad').classList.toggle('land',f.o==='h')}
 function faceModal(what){for(const el of $('mface').querySelectorAll('[data-opts],#ownpad'))el.classList.add('hide');
@@ -566,7 +575,8 @@ $('wxgo').onclick=async()=>{const q=$('wxq').value.trim(),box=$('wxres');if(!q)r
 
 // ------------------------------------------------------------ status: polled, and pushed by the clock over Bluetooth whenever a setting changes
 async function poll(){try{show(await L.request('status'))}catch(e){}}
-let tick=null,up=false;
+let tick=null,up=false,lastCust=-1;
+window.curFaceRefresh=()=>{if(cur>=0)setFx(cur)};  // Mis esferas learnt the names (miesferas.js)
 function show(s,relang){status=s;
  if(s.lang!==undefined&&!relang&&Date.now()-lastUser>1500&&s.lang!==LANG)setLang(s.lang);
  BOARD=s.board||'s3amoled';$('fps').textContent=s.fps;$('ver').textContent=s.ver||'--';otaMax=s.otamax||0;
@@ -583,7 +593,7 @@ function show(s,relang){status=s;
   :s.sip?tr(`Conectado a <b>${esc(s.ssid)}</b> (${s.sip})`,`Connected to <b>${esc(s.ssid)}</b> (${s.sip})`):(s.ssid?tr(`Buscando ${esc(s.ssid)}…`,`Looking for ${esc(s.ssid)}…`):tr('Sin red configurada','No network set up'));
  updStatus(s);
  if(!s.tv&&!synced)synced=syncTime();wxStatus(s);
- if(Date.now()-lastUser>1500){if(s.fx!==cur)setFx(s.fx);
+ if(Date.now()-lastUser>1500){if(s.fx!==cur||(s.fx===28&&s.cust!==lastCust))setFx(s.fx);lastCust=s.cust;
   if(s.fxoff!==undefined&&s.fxoff!==offMask){offMask=s.fxoff;if(FX.length)renderOff()}
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
   for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
@@ -747,6 +757,9 @@ if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forg
 
 // ------------------------------------------------------------ alarms: label, on/off and ringing animation (the watch keeps the times and days)
 const DAYS=['LMXJVSD','MTWTFSS'],AL_MAX=6;
+// The usual repeats, by name (days: bit 0 = Monday); anything else is a list of days
+const REPS=[[0,'Una vez','Once'],[127,'Todos los días','Every day'],[31,'Laborables','Weekdays'],[96,'Fin de semana','Weekend']];
+function daysText(d){const r=REPS.find(x=>x[0]===d);return r?tr(r[1],r[2]):[...DAYS[LANG]].filter((c,k)=>d>>k&1).join(' ')}
 let ALARMS=null,openAl=-1,animFor=-1,animSel=0;
 const hm=a=>String(a.h).padStart(2,'0')+':'+String(a.m).padStart(2,'0');
 // The watch keeps 23 bytes of UTF-8: cut whole characters
@@ -756,12 +769,13 @@ function animName(k){return ALARMS&&ALARMS.anims[k]||'?'}
 function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
  $('aladd').classList.toggle('hide',ALARMS.list.length>=AL_MAX);
  if(!ALARMS.list.length){box.innerHTML=`<div class="panel dim">${tr('No hay alarmas.','No alarms.')}</div>`;return}
- box.innerHTML=ALARMS.list.map((a,i)=>{const days=a.d?[...DAYS[LANG]].filter((c,k)=>a.d>>k&1).join(' '):tr('Sin repetir','No repeat');
+ box.innerHTML=ALARMS.list.map((a,i)=>{const days=daysText(a.d);
   return `<div class="panel al${a.on?'':' offd'}${openAl===i?' gold':''}" data-i="${i}">
    <div class="head"><button class="open" aria-expanded="${openAl===i}"><span class="tag" style="${a.l?'':'color:var(--gris)'}">${a.l?esc(a.l):tr('Sin etiqueta','No label')}</span><span class="time">${hm(a)}</span><span class="dim">${days} · ${esc(animName(a.a))}</span></button>
    <input type="checkbox" class="sw" ${a.on?'checked':''} aria-label="${tr('Alarma de las ','Alarm at ')}${hm(a)}"></div>
    ${openAl===i?`<div class="more"><label class="stack" style="gap:4px"><span class="dim">${tr('Hora','Time')}</span><input type="time" value="${hm(a)}" required></label>
-    <div class="stack" style="gap:4px"><span class="dim">${tr('Días (ninguno: suena una vez y se borra)','Days (none: rings once, then it is deleted)')}</span><div class="days">${[...DAYS[LANG]].map((c,k)=>`<button data-k="${k}" class="${a.d>>k&1?'on':''}" aria-pressed="${!!(a.d>>k&1)}">${c}</button>`).join('')}</div></div>
+    <div class="stack" style="gap:6px"><span class="dim">${tr('Repetir','Repeat')}</span><div class="reps">${REPS.map(r=>`<button data-r="${r[0]}" class="${a.d===r[0]?'on':''}" aria-pressed="${a.d===r[0]}">${tr(r[1],r[2])}</button>`).join('')}</div></div>
+    <div class="stack" style="gap:4px"><span class="dim">${a.d?tr('O elige los días','Or pick the days'):tr('Suena una vez y se borra al pararla. O elige los días:','Rings once and is deleted when stopped. Or pick the days:')}</span><div class="days">${[...DAYS[LANG]].map((c,k)=>`<button data-k="${k}" class="${a.d>>k&1?'on':''}" aria-pressed="${!!(a.d>>k&1)}">${c}</button>`).join('')}</div></div>
     <label class="stack" style="gap:4px"><span class="dim">${tr('Etiqueta','Label')}</span><input type="text" maxlength="23" value="${esc(a.l)}" placeholder="${tr('Sin etiqueta','No label')}"></label>
     <button class="btn anim" style="justify-content:flex-start"><img class="prev" alt="" style="width:30px;height:37px;border:2px solid var(--linea)"><span style="flex:1;text-align:left">${tr('Animación de alarma','Alarm animation')}<br><span style="font:18px VT323,monospace;color:var(--gris)">${esc(animName(a.a))}</span></span><span class="go">›</span></button>
     <button class="btn test">${tr('Probar en el reloj','Try it on the watch')}</button>
@@ -774,6 +788,7 @@ function renderAlarms(){const box=$('alarms');if(!ALARMS)return;
   const b=el.querySelector('.anim');if(b)b.onclick=()=>animModal(i);
   const tm=el.querySelector('input[type=time]');if(tm)tm.onchange=()=>{const v=/^(\d\d):(\d\d)/.exec(tm.value);if(!v)return;a.h=+v[1];a.m=+v[2];send(`alarm ${i} time ${a.h} ${a.m}`);renderAlarms();homeTiles()};
   for(const d of el.querySelectorAll('.days button'))d.onclick=()=>{a.d^=1<<+d.dataset.k;send(`alarm ${i} days ${a.d}`);renderAlarms();homeTiles()};
+  for(const r of el.querySelectorAll('.reps button'))r.onclick=()=>{a.d=+r.dataset.r;send(`alarm ${i} days ${a.d}`);renderAlarms();homeTiles()};
   const db=el.querySelector('.del');if(db)db.onclick=()=>{if(!ask(tr(`¿Eliminar la alarma de las ${hm(a)}?`,`Delete the ${hm(a)} alarm?`),a.l||tr('Se borra del reloj.','It is removed from the watch.'),tr('Eliminar','Delete')))return;
    ALARMS.list.splice(i,1);openAl=-1;send(`alarm ${i} del`);renderAlarms();homeTiles();setTimeout(loadAlarms,800)};
   const tb=el.querySelector('.test');if(tb)tb.onclick=()=>{send(`alarm ${i} test`);tb.textContent=tr('Sonando en el reloj…','Ringing on the watch…');setTimeout(()=>tb.textContent=tr('Probar en el reloj','Try it on the watch'),3000)}}}
