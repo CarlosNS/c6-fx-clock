@@ -17,6 +17,9 @@
 #define RAD 250          // the wheel's radius: faces shrink towards the top and the bottom
 #define WID 310          // width of the face in the middle
 #define CUSTOM_MAX 24
+#define LILA MS_SWAP(0xB47F)     // the custom faces stand apart in lilac
+#define LILA_PANEL MS_SWAP(0x28E9)
+#define LILA_PANEL2 MS_SWAP(0x392D)
 
 typedef struct {
     int fx;              // face number
@@ -85,6 +88,16 @@ static void choose(const item_t *it)
     sys_home();
 }
 
+// A little photo (frame, sun, hill) marking a custom face, 2 px per dot
+static void photo_icon(int x, int y, uint16_t c)
+{
+    static const char *const rows[9] = {"#########", "#.......#", "#....##.#", "#....##.#", "#.......#",
+                                        "#..#....#", "#.###.#.#", "########"  "#", "#########"};
+    for (int r = 0; r < 9; r++)
+        for (int k = 0; rows[r][k]; k++)
+            if (rows[r][k] == '#') ui_rect(x + k * 2, y + r * 2, 2, 2, c);
+}
+
 static const char *group_name(int g)
 {
     static const char *const en[FX_G_COUNT] = {"Effects", "Video games", "Art", "Nature and space", "Clocks and tools"};
@@ -136,8 +149,11 @@ static bool draw(uint32_t now, bool force)
         int w = (int)(WID * c), x = (UI_W - w) / 2, k = wrap(j);
         const item_t *it = &s_items[k];
         bool centre = k == mid && fabsf(d) < 0.5f, cur = is_current(it);
-        ui_panel(x, y, w, ROW - 10, centre ? MS_PANEL2 : MS_PANEL, centre ? MS_ORO : cur ? MS_ORO2 : MS_LINEA, 4, centre);
-        int sc = ui_fit(&ui_jersey, centre ? 3 : 2, 2, w - 44, it->name);
+        bool mine = it->fx == FX_CUSTOM;
+        ui_panel(x, y, w, ROW - 10, mine ? (centre ? LILA_PANEL2 : LILA_PANEL) : centre ? MS_PANEL2 : MS_PANEL,
+                 centre ? MS_ORO : cur ? MS_ORO2 : mine ? LILA : MS_LINEA, 4, centre);
+        if (mine) photo_icon(x + 16, y + (ROW - 10) / 2 - 9, centre ? MS_ORO2 : LILA);
+        int sc = ui_fit(&ui_jersey, centre ? 3 : 2, 2, w - (mine ? 84 : 44), it->name);
         uint16_t col = cur ? MS_ORO2 : fabsf(d) < 1.5f ? MS_CREMA : MS_LINEA;
         ui_print_c(&ui_jersey, sc, UI_W / 2, y + (ROW - 10) / 2 - sc * 7, it->name, col, centre);
         if (it->fx != FX_CUSTOM && fx_list[it->fx].hint) ui_rect(x + w - 22, y + 23, 10, 10, MS_VERDE);
@@ -146,7 +162,7 @@ static bool draw(uint32_t now, bool force)
     ui_shade(0, 0, UI_W, TOP - 10, 1);
     ui_status_bar();
     ui_print_c(&ui_jersey, 4, UI_W / 2, 58, TR("Esferas", "Faces"), MS_ORO, true);
-    if (mid >= 0) ui_print_c(&ui_jersey, 2, UI_W / 2, 104, group_name(s_items[mid].group), MS_LINEA, false);
+    if (mid >= 0) ui_print_c(&ui_jersey, 2, UI_W / 2, 104, group_name(s_items[mid].group), s_items[mid].group < 0 ? LILA : MS_LINEA, false);
     return true;
 }
 
