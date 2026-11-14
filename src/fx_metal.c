@@ -4,7 +4,7 @@
 // tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
 //   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
 //   11-13 glaring at the clip-on tuner of his V (painted)              13-16 the garage, amp and guitars (painted)
-//   16-19 the tour van at sunset (painted)                              19-23 the show: spotlights, crowd,
+//   16-19 the tour van at sunset (painted)                              19-23 the show (painted): beams, crowd,
 //   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
 #include <math.h>
 #include <stdio.h>
@@ -257,31 +257,50 @@ static void scene_bus(uint32_t t)
         }
 }
 
-static void scene_show(void)  // 19-23: the time is the star
+// 19-23, painted: the show. The stage (truss, the band backlit, amp walls) is one picture and the crowd
+// another, horns up, in two poses. Between them the watch sweeps the beams down from the truss (red,
+// amber, white, crossing towards the middle) and fires the pyro columns at the sides; the time is big
+// in the middle, between the columns.
+static void scene_show(uint32_t t)
 {
-    art_rect(0, 0, ART_W, ART_H, C(0x060406));
-    // crossing spotlights from the rig, sweeping
-    for (int k = 0; k < 4; k++) {
-        float ox = 10 + k * 39, a = 1.57f + sinf(s_ts * (0.8f + k * 0.2f) + k * 1.7f) * 0.55f;
-        uint16_t c = k & 1 ? C(0xff2a2a) : C(0xfff4e8);
-        for (int r = 4; r < 170; r += 1) {
-            int w = r / 9;
-            for (int q = -w; q <= w; q++) art_tint((int)(ox + cosf(a) * r - sinf(a) * q), (int)(4 + sinf(a) * r + cosf(a) * q), c, 2);
-        }
-        ink_rect((int)ox - 3, 0, 6, 5, 0x3a3a3a);
-    }
-    art_rect(0, 118, ART_W, 6, C(0x5a0a0a));                                // the stage's red glow
-    halftone(0, 118, 0xff2a2a, 1);
-    // the crowd: heads and raised hands making horns, bobbing to the beat
-    for (int i = 0; i < 14; i++) {
-        float x = 4 + i * 10, bob = sinf(s_ts * 8 + i * 1.3f) > 0 ? 2 : 0;
-        art_disc(x, 140 + bob, 5, INK);
-        if (i % 2 == 0) {
-            art_thick(x + 3, 138 + bob, x + 5, 124 + bob, 2, INK);
-            art_rect((int)x + 3, 120 + (int)bob, 1, 4, INK), art_rect((int)x + 6, 120 + (int)bob, 1, 4, INK);  // the horns
+    static const uint8_t lamps[5][2] = {{18, 24}, {42, 22}, {68, 21}, {94, 22}, {119, 24}};
+    static const uint32_t cols[5] = {0xff2a2a, 0xffb040, 0xffffff, 0xffb040, 0xff2a2a};
+    art_rle(metal_show_pal, metal_show_0, sizeof metal_show_0);
+    // the beams: cones from each lamp, swinging; brighter in the middle of the cone
+    for (int b = 0; b < 5; b++) {
+        float base = (2 - b) * 0.32f;                                   // aimed across, towards the middle
+        float an = base + 0.28f * sinf(s_ts * (0.7f + b * 0.13f) + b * 1.7f);
+        float tn = tanf(an);
+        uint16_t c = C(cols[b]);
+        for (int y = lamps[b][1] + 2; y < 126; y++) {
+            float d = y - lamps[b][1], cx = lamps[b][0] + d * tn, hw = 1.5f + d * 0.13f;
+            for (int x = (int)(cx - hw); x <= (int)(cx + hw); x++) {
+                float e = fabsf(x - cx) / hw;
+                int al = (int)((1 - e * e) * (7 - d * 0.03f));
+                if (al > 0) art_tint(x, y, c, al);
+            }
         }
     }
-    art_rect(0, 144, ART_W, ART_H - 144, INK);
+    // pyro: columns of fire at the sides of the stage, roaring up in pulses
+    for (int side = 0; side < 2; side++) {
+        int cx = side ? 123 : 14;
+        float pulse = 0.5f + 0.5f * sinf(s_ts * 1.6f + side * 1.3f);
+        int hgt = 34 + (int)(30 * pulse * pulse);
+        for (int h = 0; h < hgt; h++) {
+            float f = h / (float)hgt, w = (5.5f - 3.5f * f) * (0.85f + 0.15f * sinf(s_ts * 23 + h * 0.7f));
+            float wob = 1.5f * sinf(s_ts * 11 + h * 0.31f + side) * f;
+            uint32_t col = f < 0.3f ? 0xfff2b0 : f < 0.6f ? 0xffb040 : f < 0.85f ? 0xff6a20 : 0xc02a18;
+            int y = 117 - h;
+            for (int x = (int)(cx + wob - w - 3); x <= (int)(cx + wob + w + 3); x++) {
+                float e = fabsf(x - cx - wob);
+                if (e <= w) art_px(x, y, C(col));
+                else art_tint(x, y, C(0xff8030), (int)(8 * (1 - (e - w) / 3)));  // its glow
+            }
+        }
+    }
+    // the crowd in front, arms pumping
+    if ((t / 450) % 2) art_rle_key(metal_show_pal, metal_show_1, sizeof metal_show_1, METAL_SHOW_KEY, 0);
+    else art_rle_key(metal_show_pal, metal_show_2, sizeof metal_show_2, METAL_SHOW_KEY, 0);
 }
 
 static void scene_pizza(void)  // 23-24
@@ -326,7 +345,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     case 2: scene_tuning(t); break;
     case 3: scene_rehearsal(t); break;
     case 4: scene_bus(t); break;
-    case 5: scene_show(); break;
+    case 5: scene_show(t); break;
     default: scene_pizza(); break;
     }
     art_blit(fb);
@@ -348,7 +367,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     }
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
-    if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 6)) / 2, 112, hhmm, 6, red, rgb565(18, 12, 20));
+    if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 5)) / 2, 100, hhmm, 5, red, rgb565(18, 12, 20));
     else if (sc <= 4) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
     else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
 }

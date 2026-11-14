@@ -62,7 +62,7 @@ def ellipse(cx, cy, rx, ry, ang=0.0):
 def capsule(ax, ay, bx, by, r0, r1=None):
     r1 = r0 if r1 is None else r1
     px, py, bax, bay = XX - ax, YY - ay, bx - ax, by - ay
-    h = np.clip((px * bax + py * bay) / (bax * bax + bay * bay), 0, 1)
+    h = np.clip((px * bax + py * bay) / max(bax * bax + bay * bay, 1e-6), 0, 1)
     return np.hypot(px - bax * h, py - bay * h) - (r0 + (r1 - r0) * h)
 
 
@@ -964,7 +964,7 @@ def scene_bus(k=0):
     road = S.new('road', [0x16141e, 0x201e2a, 0x2c2a38, 0x3a3848, 0x4a485a])
     lit = S.new('road_lit', [0x3a3020, 0x5a4a2a, 0x806a36, 0xa88c44, 0xd0b058])
     line = S.new('line', [0x8a8478, 0xd8d0c0, 0xf4eee0])
-    body = S.new('van', [0x0e0814, 0x1a0e24, 0x281636, 0x3a204c, 0x522c66, 0x74408a], 0x08040c)
+    body = S.new('van', [0x040406, 0x09090d, 0x111118, 0x1c1c26, 0x2c2c3a, 0x46465a], 0x020203)
     glass = S.new('glass', [0x140c1e, 0x241632, 0x3a2448, 0x6a3a5a, 0xb0605a, 0xf0a070], 0x08040c)
     chrome = S.new('chrome', [0x3a3440, 0x6a6070, 0xa49aa8, 0xdcd4dc, 0xffffff], 0x100c14)
     lamp = S.new('lamp', [0xffd060, 0xffec9c, 0xfffbe8], 0x3a2a10)
@@ -1050,6 +1050,113 @@ def scene_bus(k=0):
     return S, BUS_WHEELS
 
 
+# ---------------------------------------------------------------- scene 6: the show (19-23)
+
+SHOW_LAMPS = [(18, 24), (42, 22), (68, 21), (94, 22), (119, 24)]   # spotlights on the truss (beams start here)
+
+
+def scene_show(k=0):
+    """Frame 0: the stage (truss, backdrop, the band backlit, amps). Frames 1 and 2: the crowd in front,
+    horns up, two poses; the rest transparent. The watch adds the beams and the fire in between."""
+    S = Scene(light=(0.0, -0.8, 0.5))  # backlight from the stage
+
+    back = S.new('backdrop', [0x050308, 0x0a0610, 0x120a1c, 0x1c1028, 0x281636])
+    haze = S.new('haze', [0x1a0e26, 0x2a1438, 0x3e1c48])
+    truss = S.new('truss', [0x0e0e14, 0x1e1e28, 0x343442, 0x5a5a6a], 0x050508)
+    can = S.new('can', [0x0a0a0e, 0x1a1a22, 0x2e2e3a], 0x040406)
+    lens = S.new('lens', [0xffb060, 0xffe0a0, 0xffffff])
+    stage = S.new('stage', [0x0a080c, 0x16121a, 0x241c28, 0x3a2c3a], 0x040306)
+    sil = S.new('silhouette', [0x050307, 0x0c0810, 0x160e1c], 0x020103)
+    rim = S.new('rim', [0x7a3a5a, 0xc0604a, 0xff9a50])
+    crowd = S.new('crowd', [0x020103, 0x07040a, 0x0e0814, 0x1a1020], 0x010002)
+    crim = S.new('crowd_rim', [0x3a1830, 0x6a2a40, 0xa04a40])
+    glow = S.new('glow', [0x1a0618, 0x3a0c28, 0x6a1834, 0xa02c38, 0xd8503c, 0xff8a4a, 0xffc070])
+
+    if k == 0:
+        S.put(back, np.ones((H, W), bool), 0.15 + 0.6 * np.exp(-((XX - 68) / 60) ** 2 - ((YY - 100) / 40) ** 2)
+              + 0.08 * (noise(81, 10) - 0.5))
+        S.put(haze, (noise(82, 12) > 0.7) & CHECK & (YY > 40) & (YY < 118), 0.2)
+        # the backdrop: a faint lightning skull of no band in particular
+        S.put(back, (poly([(72, 40), (62, 60), (70, 60), (63, 80), (80, 54), (71, 54), (78, 40)]) < 0), 0.75)
+        # amp walls at the sides of the stage
+        for x0, x1 in ((2, 30), (107, 135)):
+            for y0 in (88, 104):
+                S.fill(sil, poly([(x0, y0), (x1, y0), (x1, y0 + 15), (x0, y0 + 15)]), depth=2, roundness=2, amb=0.25)
+                S.put(sil, (((XX - x0) % 7 < 1) | ((YY - y0) % 7 < 1)) & (XX > x0 + 1) & (XX < x1 - 1) & (YY > y0 + 1) & (YY < y0 + 14), 0.9)
+        # drum riser with the kit, the drummer's head and raised sticks
+        S.fill(stage, poly([(46, 108), (90, 108), (92, 120), (44, 120)]), depth=2, roundness=2)
+        S.fill(sil, smin(ellipse(68, 110, 9, 6), ellipse(56, 104, 5, 3), 2), depth=3, roundness=4)
+        S.fill(sil, ellipse(80, 104, 5, 3), depth=2, roundness=3)
+        S.fill(sil, smin(ellipse(68, 96, 4, 4.5), ellipse(68, 103, 6, 5), 2), depth=3, roundness=4)
+        S.fill(sil, capsule(64, 98, 58, 90, 0.8), depth=1, roundness=1)
+        S.fill(sil, capsule(72, 98, 79, 91, 0.8), depth=1, roundness=1)
+        for cx in (52, 86):
+            S.fill(sil, capsule(cx - 6, 95, cx + 6, 94, 0.9), depth=1, roundness=1)   # cymbals
+            S.fill(sil, capsule(cx, 95, cx, 108, 0.5), depth=1, roundness=1)
+        # the guitarist (left) headbanging, hair flying, and the bassist (right), legs apart
+        def player(x, flip, lean):
+            f = -1 if flip else 1
+            S.fill(sil, capsule(x - 3, 118, x - 1, 104, 2.4), depth=2, roundness=2)
+            S.fill(sil, capsule(x + 4, 118, x + 1, 104, 2.4), depth=2, roundness=2)
+            S.fill(sil, smin(capsule(x, 104, x + f * lean, 90, 4.5, 4), ellipse(x + f * lean, 91, 5.5, 3.5), 2), depth=3, roundness=4)
+            S.fill(sil, ellipse(x + f * (lean + 3), 86, 3.6, 4), depth=3, roundness=3)
+            S.fill(sil, smin(capsule(x + f * (lean + 3), 84, x + f * (lean + 12), 92, 2.5, 0.8),
+                             capsule(x + f * (lean + 2), 85, x + f * (lean + 10), 96, 2, 0.6), 2), depth=2, roundness=2)   # hair
+            S.fill(sil, poly([(x - f * 2, 96), (x - f * 12, 103), (x - f * 14, 99), (x - f * 4, 92)]), depth=1, roundness=1.5)  # neck
+            S.fill(sil, smin(ellipse(x + f * 2, 99, 6, 4.5, 0.4 * f), poly([(x + f * 6, 98), (x + f * 12, 104), (x + f * 8, 105)]), 1.5),
+                   depth=2, roundness=2)                                                                                     # body
+        player(36, False, 4)
+        player(101, True, 3)
+        # backlight catching the top edges of everything on stage
+        on = (S.obj == sil)
+        up = np.zeros((H, W), bool)
+        up[1:, :] = on[1:, :] & ~on[:-1, :]
+        S.put(rim, up & (YY > 80), 0.5 + 0.4 * (np.abs(XX - 68) < 40))
+        S.fill(stage, poly([(-4, 118), (140, 118), (140, 126), (-4, 126)]), depth=2, roundness=2,
+               bump=0.8 * ridge(-4, 119, 140, 119, 1))
+        # the glow spilling off the front of the stage, behind the crowd
+        S.put(glow, YY >= 126, 0.95 - np.clip((YY - 126) / 46, 0, 1) * 0.75 - 0.25 * np.clip(np.abs(XX - 68) / 80, 0, 1)
+              + 0.04 * (grain(85) - 0.5))
+        # the truss with its spotlights
+        S.fill(truss, capsule(2, 16, 135, 16, 1.2), depth=1, roundness=1.2)
+        S.fill(truss, capsule(2, 20, 135, 20, 1.2), depth=1, roundness=1.2)
+        S.put(truss, ((np.abs(((XX + YY) % 8) - 4) < 0.8) | (np.abs(((XX - YY) % 8) - 4) < 0.8)) & (YY > 16) & (YY < 20), 0.6)
+        for lx, ly in SHOW_LAMPS:
+            S.fill(can, smin(capsule(lx, ly - 4, lx, ly, 3), capsule(lx, 18, lx, ly - 3, 0.8), 1), depth=2, roundness=3)
+            S.fill(lens, ellipse(lx, ly + 0.5, 2.4, 1.3), depth=1, roundness=1.5, amb=0.7)
+        S.outlines(skip={back, haze, rim, lens, glow})
+        return S, SHOW_LAMPS
+
+    # ---------------- the crowd: heads, shoulders, arms up with the horns, against the glow
+    S.bg_key = KEY
+    rng = np.random.default_rng(84)
+    heads = [(x, 146 + int(rng.integers(-3, 4))) for x in range(-2, 142, 9)]
+    for i, (x, y) in enumerate(heads):
+        S.fill(crowd, smin(ellipse(x, y, 4.5, 5), ellipse(x, y + 12, 8.5, 8), 2.5), depth=3, roundness=4, amb=0.05, kd=0.3)
+        if (i * 7) % 3 == 0:  # long hair
+            S.fill(crowd, capsule(x - 3, y, x - 5, y + 9, 2.5, 1.5), depth=2, roundness=2)
+    for x in range(3, 140, 11):  # a second row, in front
+        y = 160 + int(rng.integers(-2, 3))
+        S.fill(crowd, smin(ellipse(x, y, 5, 5.5), ellipse(x, y + 12, 9.5, 8), 2.5), depth=3, roundness=4, amb=0.0, kd=0.2)
+    # arms up: the horns (index and little finger up), half of them pumping between the two frames
+    arms = [(8, 1), (24, -1), (40, 1), (57, 1), (80, -1), (96, 1), (113, -1), (129, 1)]
+    for i, (x, lean) in enumerate(arms):
+        up_ = (i % 2 == 0) == (k == 1)
+        top = 120 if up_ else 128
+        sx, sy = x - lean * 4, 152
+        hx, hy = x + lean * 3, top
+        S.fill(crowd, capsule(sx, sy, hx, hy + 4, 2.2, 1.8), depth=2, roundness=2)
+        S.fill(crowd, ellipse(hx, hy + 3, 2.6, 2.4), depth=2, roundness=2)                  # fist
+        S.px(crowd, [(hx - 2, hy + 1), (hx - 2, hy), (hx - 2, hy - 1), (hx - 2, hy - 2)], 2)  # index
+        S.px(crowd, [(hx + 2, hy + 1), (hx + 2, hy), (hx + 2, hy - 1)], 2)                  # little finger
+    on = S.obj == crowd
+    edge = np.zeros((H, W), bool)
+    edge[1:, :] = on[1:, :] & ~on[:-1, :]
+    S.put(crim, edge, 0.5 + 0.4 * np.exp(-((XX - 68) / 40) ** 2))
+    S.outlines(skip={crim})
+    return S, SHOW_LAMPS
+
+
 # ---------------------------------------------------------------- output
 
 def rle(img):
@@ -1083,7 +1190,7 @@ def preview(img, pal, path):
 
 
 # name, painter, frames (its argument: 0, 1, ...)
-SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2), ('garage', scene_garage, 1), ('bus', scene_bus, 2)]
+SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2), ('garage', scene_garage, 1), ('bus', scene_bus, 2), ('show', scene_show, 3)]
 
 
 def main():
