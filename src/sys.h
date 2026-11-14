@@ -24,6 +24,8 @@ bool sys_draw(uint32_t now);
 bool sys_keep_awake(void);
 // Something shown on the system screens changed (time, battery, link): redraw
 void sys_dirty(void);
+// The next frame of the current view must be drawn whole (a slide is going on, trans.c)
+void sys_force(void);
 
 void sys_home(void);
 void sys_open_quick(void);

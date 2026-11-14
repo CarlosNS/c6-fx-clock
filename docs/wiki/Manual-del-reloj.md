@@ -27,6 +27,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | Tocar | En las esferas interactivas, el dedo mueve la esfera | Botones, interruptores y filas |
 
 - **Volver** (este gesto o BOOT) va de un paso en un paso: primero cierra el diálogo o la pantalla interna en la que estés (el editor de una alarma, una carpeta, el mes en Pasos) y, desde la primera pantalla de la app, sale a donde la abriste: el lanzador, los ajustes rápidos (la Linterna) o la esfera (Esferas, si la abriste manteniendo el dedo).
+- Las pantallas se deslizan en la dirección del gesto: los ajustes rápidos bajan desde arriba, el lanzador sube desde abajo y las apps entran por la derecha (y salen por ella al volver). Las alertas, como una llamada, aparecen al momento.
 - Cada panel se cierra con el gesto contrario al que lo abrió: los ajustes rápidos, deslizando hacia arriba; el lanzador, deslizando hacia abajo (estando arriba del todo). Volver también los cierra.
 - Los gestos de borde empiezan en la parte recta del borde, no en la esquina redondeada.
 - En las **esferas interactivas** (Plasma, Cubo 3D, Túnel, Lava y Vida) el dedo mueve la esfera; deslizar desde un borde sigue abriendo los menús.
@@ -140,12 +141,15 @@ Desliza desde el borde de arriba en la esfera.
 
 | Control | Qué hace |
 |---|---|
-| **Brillo** | Arrastra la barra con el dedo |
+| **Brillo** | Arrastra la barra (o su tirador) con el dedo |
 | **WiFi** | Enciende o apaga el WiFi del reloj. Viene **apagado**: el móvil trae la hora, el tiempo y las actualizaciones por Bluetooth. Encendido dice *buscando*, *conectado* o *red propia* |
 | **Silencio** | *No molestar*: ni las alarmas ni las llamadas suenan (las alarmas se siguen mostrando) |
-| **Siempre** | Pantalla siempre encendida (gasta más batería) |
-| **Linterna** | Abre la [linterna](#linterna) |
-| Batería | Porcentaje y si está *cargando* o *cargada* |
+| **Pantalla** | *Siempre encendida* o *normal* (siempre encendida gasta más batería) |
+| **Linterna** | Abre la [linterna](#linterna); al salir vuelves aquí |
+| **Buscar** | Hace sonar el móvil (ver [Buscar el reloj y el móvil](#buscar-el-reloj-y-el-móvil)) |
+| **Conectar** | Si el móvil no está conectado, el reloj lo llama durante 30 s para que conecte en el acto |
+
+Cada casilla lleva su icono, su nombre y su estado; las que están activas se ven rellenas de dorado. La batería está en la barra de arriba.
 
 Para cerrarlos: desliza hacia arriba, BOOT o desliza desde el borde izquierdo.
 

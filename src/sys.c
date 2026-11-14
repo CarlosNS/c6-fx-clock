@@ -13,6 +13,7 @@
 #include "ui_icons.h"
 #include "find.h"
 #include "ble.h"
+#include "trans.h"
 
 static const app_t *const s_apps[] = {&app_faces, &app_alarms, &app_steps, &app_stopwatch,
                                       &app_music, &app_torch, &app_files, &app_settings};
@@ -29,6 +30,7 @@ static bool s_redraw;           // something on the current system view changed
 int sys_app_count(void) { return NAPPS; }
 view_t sys_view(void) { return s_view; }
 void sys_dirty(void) { s_redraw = true; }
+void sys_force(void) { s_force = true; }
 
 static void set_view(view_t v)
 {
@@ -81,7 +83,8 @@ void sys_alert_done(void)
 // from the launcher or quick settings, to the face. BOOT and the swipe in from the left edge do this.
 static void sys_back(void)
 {
-    if (s_view != VIEW_APP) {
+    if (s_view != VIEW_APP) {  // the panels go back the way they came
+        trans_start(s_view == VIEW_QUICK ? T_UNCOVER_UP : s_view == VIEW_LAUNCHER ? T_UNCOVER_DOWN : T_NONE);
         sys_home();
         return;
     }
@@ -90,8 +93,12 @@ static void sys_back(void)
         app_wake();
         return;
     }
-    if (s_alert_on) sys_alert_done();
-    else if (s_from == VIEW_QUICK) sys_open_quick();
+    if (s_alert_on) {
+        sys_alert_done();
+        return;
+    }
+    trans_start(T_UNCOVER_RIGHT);  // the app slides away to the right
+    if (s_from == VIEW_QUICK) sys_open_quick();
     else if (s_from == VIEW_FACE) sys_home();
     else sys_open_launcher();
 }
@@ -191,35 +198,59 @@ static void launcher_event(const ui_event_t *e)
     } else if (e->type == EV_TAP) {
         int i = launcher_hit(e->x, e->y);
         s_pressed = -1;
-        if (i >= 0) sys_open_app(i);
+        if (i >= 0) {
+            trans_start(T_COVER_FROM_RIGHT);
+            sys_open_app(i);
+        }
     } else if (e->type == EV_UP) {
         if (s_pressed >= 0) s_redraw = true;
         s_pressed = -1;
-    } else if (e->type == EV_SWIPE && e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)) {
-        sys_home();
-    } else if (e->type == EV_SWIPE && e->dir == DIR_DOWN && s_launch_scroll.offset == 0) {
-        sys_home();  // it came up from the bottom: down puts it away (once it is scrolled to the top)
+    } else if (e->type == EV_SWIPE && ((e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)) || (e->dir == DIR_DOWN && s_launch_scroll.offset == 0))) {
+        sys_back();  // it came up from the bottom: down (or back) puts it away, once scrolled to the top
     }
 }
 
 // ---------------------------------------------------------------- quick settings
 
-#define Q_BRI_Y 104
+#define Q_BRI_Y 92
 #define Q_BAR_X 60
 #define Q_BAR_W 290
-// Six tiles in three rows of two, down to y 464
-#define Q_TILE_Y 192
-#define Q_TILE_W 154
-#define Q_TILE_H 84
+#define Q_BAR_Y (Q_BRI_Y + 42)
+// Six tiles in three rows of two, down to y 456: icon, name, state
+#define Q_TILE_Y 166
+#define Q_TILE_W 156
+#define Q_TILE_H 90
 #define Q_TILES 6
 static int s_quick_pressed = -1;
 static bool s_bri_drag;
 
+// Tile icons, 16 x 16 like the apps' (palette letters in ui.c)
+static const char *const QI_WIFI[16] = {
+    "................", "....kkkkkkkk....", "..kkcccccccckk..", ".kcckkkkkkkkcck.", "kckk..kkkk..kkck",
+    ".k..kkcccckk..k.", "...kcckkkkcck...", "....kk.kk.kk....", "......kcck......", "......kcck......",
+    ".......kk.......", "................", "................", "................", "................", "................"};
+static const char *const QI_MOON[16] = {
+    "................", ".....kkkk.......", "...kkOOOk.......", "..kOOOOk........", ".kOOOOk.........",
+    ".kOOOk..........", "kOOOOk..........", "kOOOOk..........", "kOOOOOk.......k.", ".kOOOOOkk...kk..",
+    ".kOOOOOOOkkkOk..", "..kOOOOOOOOOk...", "...kkOOOOOkk....", ".....kkkkk......", "................", "................"};
+static const char *const QI_SUN[16] = {
+    ".......kk.......", ".......ok.......", "..ko...kk...ok..", "...ko......ok...", ".....kkkkkk.....",
+    "....kOOOOOOk....", "kk.kOOOOOOOOk.kk", "ook.kOOOOOOOOk.oo", "kk.kOOOOOOOOk.kk", "....kOOOOOOk....",
+    ".....kkkkkk.....", "...ko......ok...", "..ko...kk...ok..", ".......ko.......", ".......kk.......", "................"};
+static const char *const QI_PHONE[16] = {
+    "....kkkkkk......", "...kccccccck.k..", "...kckkkkkck..k.", "...kckbbbkck.k.k", "...kckbbbkck..k.",
+    "...kckbbbkck.k.k", "...kckbbbkck..k.", "...kckbbbkck.k..", "...kckkkkkck....", "...kcccoccck....",
+    "...kccccccck....", "....kkkkkkk.....", "................", "................", "................", "................"};
+static const char *const QI_BT[16] = {
+    ".......a........", ".......aa.......", ".......aaa......", "..a....aaaa.....", "...a...aa.aa....",
+    "....a..aa.aa....", ".....a.aaaa.....", "......aaaa......", ".....a.aaaa.....", "....a..aa.aa....",
+    "...a...aa.aa....", "..a....aaaa.....", ".......aaa......", ".......aa.......", ".......a........", "................"};
+
 static void quick_tile_rect(int i, int *x, int *y, int *w)
 {
-    *y = Q_TILE_Y + (i / 2) * (Q_TILE_H + 10);
+    *y = Q_TILE_Y + (i / 2) * (Q_TILE_H + 6);
     *w = Q_TILE_W;
-    *x = i % 2 ? UI_W / 2 + 6 : UI_W / 2 - 6 - Q_TILE_W;
+    *x = i % 2 ? UI_W / 2 + 4 : UI_W / 2 - 4 - Q_TILE_W;
 }
 
 static int quick_tile(int x, int y)
@@ -232,15 +263,17 @@ static int quick_tile(int x, int y)
     return -1;
 }
 
-static void quick_tile_draw(int i, const char *label, const char *state, bool on, bool good)
+// A tile: icon on top, its name, its state; an active one is filled with a warm tint so it reads at a
+// glance (and is not mistaken for the gold rim of a pressed one)
+static void quick_tile_draw(int i, const char *const *icon, const char *label, const char *state, bool on, bool good)
 {
     int x, y, w;
     quick_tile_rect(i, &x, &y, &w);
     bool p = s_quick_pressed == i;
-    ui_panel(x, y, w, Q_TILE_H, p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : MS_LINEA, 4, true);
-    int sc = ui_fit(&ui_jersey, 2, 1, w - 16, label);  // 80 px tiles: room for the label and its state line
-    ui_print_c(&ui_jersey, sc, x + w / 2, y + 12, label, on ? MS_ORO2 : MS_CREMA, false);
-    ui_print_c(&ui_vt, 1, x + w / 2, y + 54, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
+    ui_panel(x, y, w, Q_TILE_H, on ? MS_HALO_ORO : p ? MS_PANEL2 : MS_PANEL, on ? MS_ORO : p ? MS_ORO2 : MS_LINEA, 4, true);
+    ui_icon(icon, x + (w - 32) / 2, y + 6, 2);
+    ui_print_c(&ui_jersey, 2, x + w / 2, y + 30, label, on ? MS_ORO2 : MS_CREMA, false);
+    ui_print_c(&ui_vt, 1, x + w / 2, y + 60, state, good ? MS_VERDE : on ? MS_CREMA : MS_GRIS, false);
 }
 
 static bool quick_draw(void)
@@ -249,25 +282,27 @@ static bool quick_draw(void)
     ui_background(false);
     ui_veil(40, UI_H, 3);
     ui_status_bar();
-    // Brightness
+    // Brightness, with a handle on the bar
     ui_print(&ui_vt, 2, Q_BAR_X, Q_BRI_Y - 6, TR("BRILLO", "BRIGHTNESS"), MS_GRIS);
     snprintf(buf, sizeof(buf), "%d %%", g_app.brightness);
-    ui_print_r(&ui_jersey, 3, Q_BAR_X + Q_BAR_W, Q_BRI_Y - 4, buf, MS_CREMA);
-    ui_bar(Q_BAR_X, Q_BRI_Y + 46, Q_BAR_W, 22, g_app.brightness * 10, MS_ORO);
+    ui_print_r(&ui_jersey, 3, Q_BAR_X + Q_BAR_W, Q_BRI_Y - 6, buf, MS_CREMA);
+    ui_bar(Q_BAR_X, Q_BAR_Y, Q_BAR_W, 16, g_app.brightness * 10, MS_ORO);
+    int hx = Q_BAR_X + Q_BAR_W * g_app.brightness / 100;
+    ui_panel(hx - 9, Q_BAR_Y - 6, 18, 28, s_bri_drag ? MS_ORO2 : MS_CREMA, MS_ORO, 2, false);
     // Tiles
     // Wi-Fi: off by default (the phone brings everything); on, it says whether it reached the network
     const char *wst = !g_app.wifi_on ? TR("apagado", "off") : g_app.sta_ip[0] ? TR("conectado", "connected")
                                                          : g_app.ap_ip[0] ? TR("red propia", "own network") : TR("buscando", "searching");
-    quick_tile_draw(0, "WiFi", wst, g_app.wifi_on, g_app.wifi_on && g_app.sta_ip[0]);
-    quick_tile_draw(1, TR("Silencio", "Silent"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
-    quick_tile_draw(2, TR("Siempre", "Always on"), g_app.always_on ? TR("activo", "on") : TR("apagado", "off"), g_app.always_on, false);
-    quick_tile_draw(3, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
-    quick_tile_draw(4, TR("Buscar móvil", "Find phone"),
-                    find_phone_active() ? TR("sonando", "ringing") : g_app.phone_linked ? TR("hacer sonar", "make it ring") : TR("sin móvil", "no phone"),
+    quick_tile_draw(0, QI_WIFI, "WiFi", wst, g_app.wifi_on, g_app.wifi_on && g_app.sta_ip[0]);
+    quick_tile_draw(1, QI_MOON, TR("Silencio", "Silent"), g_app.dnd ? TR("activo", "on") : TR("apagado", "off"), g_app.dnd, false);
+    quick_tile_draw(2, QI_SUN, TR("Pantalla", "Screen"), g_app.always_on ? TR("siempre encendida", "always on") : TR("normal", "normal"), g_app.always_on, false);
+    quick_tile_draw(3, icon_torch, TR("Linterna", "Flashlight"), TR("abrir", "open"), false, false);
+    quick_tile_draw(4, QI_PHONE, TR("Buscar", "Find"),
+                    find_phone_active() ? TR("sonando", "ringing") : g_app.phone_linked ? TR("el móvil", "the phone") : TR("sin móvil", "no phone"),
                     find_phone_active(), false);
     // Reconnect: advertise fast for 30 s so the phone picks the watch up at once
-    quick_tile_draw(5, TR("Reconectar", "Reconnect"),
-                    g_app.phone_linked ? TR("conectado", "connected") : ble_calling() ? TR("llamando…", "calling…") : TR("llamar", "call"),
+    quick_tile_draw(5, QI_BT, TR("Conectar", "Connect"),
+                    g_app.phone_linked ? TR("conectado", "connected") : ble_calling() ? TR("llamando…", "calling…") : TR("llamar al móvil", "call the phone"),
                     ble_calling(), g_app.phone_linked);
     // (the battery is in the status bar above: no second copy down here)
     return true;
@@ -285,7 +320,7 @@ static void set_brightness_at(int x)
 
 static void quick_event(const ui_event_t *e)
 {
-    bool in_bar = e->y0 >= Q_BRI_Y && e->y0 < Q_BRI_Y + 90 && e->x0 >= Q_BAR_X - 20 && e->x0 < Q_BAR_X + Q_BAR_W + 20;
+    bool in_bar = e->y0 >= Q_BRI_Y && e->y0 < Q_BAR_Y + 30 && e->x0 >= Q_BAR_X - 20 && e->x0 < Q_BAR_X + Q_BAR_W + 20;
     switch (e->type) {
     case EV_DOWN:
         s_bri_drag = in_bar;
@@ -301,7 +336,7 @@ static void quick_event(const ui_event_t *e)
         case 0: settings_set("wifi", !g_app.wifi_on); break;
         case 1: settings_set("dnd", !g_app.dnd); break;
         case 2: settings_set("aon", !g_app.always_on); break;
-        case 3: sys_open_app(5); return;  // flashlight
+        case 3: trans_start(T_COVER_FROM_RIGHT); sys_open_app(5); return;  // flashlight
         case 4: find_phone_toggle(); break;
         case 5: ble_advertise_fast(); break;
         default: break;
@@ -309,7 +344,7 @@ static void quick_event(const ui_event_t *e)
         s_redraw = true;
         break;
     case EV_SWIPE:  // it came down from the top: up puts it away; and back, as everywhere
-        if (!s_bri_drag && (e->dir == DIR_UP || (e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)))) sys_home();
+        if (!s_bri_drag && (e->dir == DIR_UP || (e->dir == DIR_RIGHT && (e->edge & EDGE_LEFT)))) sys_back();
         break;
     case EV_UP:
         s_bri_drag = false;
@@ -372,8 +407,8 @@ static void face_event(const ui_event_t *e)
         break;
     case EV_SWIPE:
         if (s_to_face) break;
-        if (e->dir == DIR_DOWN && (e->edge & EDGE_TOP)) sys_open_quick();
-        else if (e->dir == DIR_UP && (e->edge & EDGE_BOTTOM)) sys_open_launcher();
+        if (e->dir == DIR_DOWN && (e->edge & EDGE_TOP)) trans_start(T_COVER_FROM_TOP), sys_open_quick();
+        else if (e->dir == DIR_UP && (e->edge & EDGE_BOTTOM)) trans_start(T_COVER_FROM_BOTTOM), sys_open_launcher();
         else if (e->dir == DIR_LEFT || e->dir == DIR_RIGHT) {
             g_app.fx = e->dir == DIR_LEFT ? fx_next(g_app.fx) : fx_prev(g_app.fx);
             g_app.auto_cycle = 0;
@@ -381,7 +416,7 @@ static void face_event(const ui_event_t *e)
         }
         break;
     case EV_LONG:
-        if (!s_to_face) sys_open_app(0);  // face picker
+        if (!s_to_face) trans_start(T_COVER_FROM_RIGHT), sys_open_app(0);  // face picker
         break;
     default:
         break;
@@ -414,8 +449,7 @@ void sys_button_short(void)
         g_app.auto_cycle = 0;
         g_app.dirty = true;
         break;
-    case VIEW_APP: sys_back(); break;
-    default: sys_home(); break;
+    default: sys_back(); break;
     }
 }
 

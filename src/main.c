@@ -48,6 +48,7 @@
 #include "app_plug.h"
 #include "steps.h"
 #include "sys.h"
+#include "trans.h"
 #include "ui.h"
 #include "imu.h"
 #include "lcd_co5300.h"
@@ -851,11 +852,19 @@ void app_main(void)
             uint16_t *nfb = lcd_native_fb();
             ui_begin(nfb);
             if (g_app.pairing_code >= 0) sys_dirty();
+            bool sliding = trans_active(now);
+            if (sliding) sys_force();  // whole frames while the screen slides in (trans.c)
             if (sys_draw(now)) {
+                if (sliding) trans_compose(nfb, now);
                 if (g_app.pairing_code >= 0) draw_pairing(nfb, g_app.pairing_code, now);
                 lcd_flush_native();
             }
             cur = -1;  // coming back to the face starts it again
+            goto frame_end;
+        }
+        if (trans_active(now) && trans_face_ready()) {  // back to the face: its picture slides in first
+            trans_compose_face(lcd_native_fb(), now);  // (the face was entered above, once)
+            lcd_flush_native();
             goto frame_end;
         }
         uint32_t sdt = dt * g_app.speed / 100;
