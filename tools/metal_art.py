@@ -786,6 +786,165 @@ def scene_tuning(k=0):
     return S, TUNER_SCREEN
 
 
+# ---------------------------------------------------------------- scene 4: garage rehearsal (13-16)
+
+CONES = [(19, 100), (49, 100), (19, 134), (49, 134)]   # speaker centres (art px), radius 12
+CAB = (4, 80, 64, 160)                                 # the 4x12 cabinet: x0, y0, x1, y1
+
+
+def guitar(S, body_obj, J, D, body_pts, neck_len, head_pts, colours, amb=0.28, scale=1.0):
+    """An electric guitar laid along D from its neck joint J: body polygon and headstock in guitar
+    coordinates (a along, + towards the body; p across). Returns the coordinate function."""
+    D = np.array(D, float) / np.linalg.norm(D)
+    N = np.array([-D[1], D[0]])
+    def g(a, p):
+        return J[0] + a * D[0] + p * N[0], J[1] + a * D[1] + p * N[1]
+    neck_o, hw_o, chrome_o, str_o, bind_o = colours
+    body = poly([g(a * scale, p * scale) for a, p in body_pts])
+    S.fill(body_obj, body + 0.8, depth=3, roundness=6, amb=amb, kd=0.9)
+    S.put(bind_o, (body > -0.8) & (body < 0) & (S.obj == body_obj), 0.7)
+    # chrome humbuckers with pole pieces, the bridge and the knobs
+    for a0 in (10, 20):
+        S.fill(chrome_o, capsule(*g(a0, -4.2), *g(a0, 4.2), 2.1), depth=2, roundness=2.2, amb=0.3, kd=1.1)
+        S.px(chrome_o, [g(a0, p) for p in (-3, -1.5, 0, 1.5, 3)], 4)
+    S.fill(chrome_o, capsule(*g(28, -3.6), *g(28, 3.6), 1.3), depth=1, roundness=1.4, amb=0.35)
+    S.fill(chrome_o, capsule(*g(32, -3), *g(32, 3), 0.9), depth=1, roundness=1, amb=0.35)
+    # the neck: rosewood, frets, inlays
+    S.fill(neck_o, capsule(*g(-neck_len, 0), *g(2, 0), 2.6, 3.0), depth=2, roundness=2.5, amb=0.3)
+    for k in range(10):
+        a0 = -neck_len + 2 + k * (neck_len - 4) / 10 * (1 - k * 0.035)
+        S.px(hw_o, [g(a0, p) for p in (-1, 1)], 2)
+    hs = poly([g(-neck_len - a, p) for a, p in head_pts])
+    S.fill(body_obj, hs + 0.6, depth=2, roundness=2.5, amb=amb)
+    for i in range(3):
+        S.fill(chrome_o, ellipse(*g(-neck_len - 3 - i * 3.6, -5.5 - i * 0.7), 1.3, 1.3), depth=1, roundness=1.3)
+    # thin strings from the nut to the bridge
+    for p in (-1.4, 0, 1.4):
+        S.fill(str_o, capsule(*g(-neck_len, p * 0.7), *g(28, p * 1.2), 0.26), depth=0.3, roundness=0.4, amb=-0.1)
+    return g
+
+
+def scene_garage(k=0):
+    S = Scene(light=(-0.35, -0.7, 0.6))  # the bare bulb up on the left
+
+    carton = S.new('carton', [0x1a1418, 0x2a2022, 0x3c2e2c, 0x52403a, 0x6a5448, 0x846a58])
+    floor = S.new('floor', [0x16141a, 0x222028, 0x302e36, 0x403e48, 0x54525c])
+    tolex = S.new('tolex', [0x08080a, 0x111114, 0x1c1c22, 0x2a2a32, 0x3c3c46], 0x040406)
+    piping = S.new('piping', [0x8a8270, 0xd0c6aa, 0xf4ecd4])
+    gold = S.new('gold', [0x5a4418, 0x8e6c26, 0xc89c3c, 0xf0cc6a, 0xfff0b0], 0x2a1e08)
+    knob = S.new('knob', [0x0c0c0e, 0x24242a, 0x4a4a54, 0x8a8a96], 0x060608)
+    surround = S.new('surround', [0x060608, 0x101014, 0x1c1c24, 0x2c2c38])
+    cone = S.new('cone', [0x121216, 0x1e1e24, 0x2c2c34, 0x3e3e48, 0x54545e])
+    cap = S.new('dustcap', [0x2a2a30, 0x4a4a54, 0x74747e, 0xa8a8b4])
+    metal = S.new('metal', [0x3a3a44, 0x6a6a76, 0xa4a4b0, 0xdcdce4, 0xffffff], 0x101014)
+    cable = S.new('cable', [0x08080a, 0x16161a, 0x2a2a30, 0x404048], 0x040406)
+    pedal = S.new('pedal', [0x3a0a40, 0x5c1466, 0x8a2494, 0xb444c0], 0x1a0420)
+    gblack = S.new('guitar_black', [0x060608, 0x101016, 0x1e1e2a, 0x30304a, 0x4a4a70, 0x7070a0], 0x020204)
+    gwhite = S.new('guitar_white', [0x6a6a78, 0x9898a6, 0xc4c4d0, 0xe4e4ec, 0xffffff], 0x1a1a24)
+    neck = S.new('neck', [0x1c120c, 0x2e1e14, 0x46301e, 0x604228], 0x0e0806)
+    hw = S.new('hardware', [0x0c0c10, 0x1e1e26, 0x3a3a46, 0x9a9aa6], 0x060608)
+    chrome = S.new('chrome', [0x2a2a34, 0x5a5a68, 0x9a9aa8, 0xd8d8e4, 0xffffff], 0x0a0a10)
+    strings = S.new('strings', [0x9a9aa2, 0xd0d0d8, 0xf4f4fa])
+    bindw = S.new('binding', [0x8a8a8a, 0xdcdcdc, 0xffffff])
+    bindr = S.new('binding_red', [0x6a1018, 0xb02028, 0xe04848])
+    strap = S.new('strap', [0x2a140a, 0x46220e, 0x683416, 0x8c4c22], 0x140804)
+    stand = S.new('stand', [0x0e0e12, 0x1c1c22, 0x30303a, 0x50505c], 0x060608)
+    mic = S.new('mic', [0x2a2a30, 0x5a5a64, 0x9a9aa4, 0xd4d4dc], 0x0a0a0e)
+
+    # -- the wall: egg cartons, rows of cups and bumps, lit from above
+    cups = np.cos(XX * math.pi / 5) * np.cos(YY * math.pi / 5)
+    S.put(carton, np.ones((H, W), bool),
+          S.shade(np.full((H, W), -9.0, np.float32), 1, 1, bump=2.4 * cups, amb=0.28, kd=0.7)
+          + 0.1 * (noise(61, 8) - 0.5) - np.clip((YY - 40) / 120, 0, 1) * 0.15 + 0.1 * np.clip(1 - XX / 90, 0, 1))
+    S.put(carton, ((np.abs((XX % 40) - 0.5) < 0.6) | (np.abs((YY % 40) - 0.5) < 0.6)) & CHECK, 0.15)   # where the cartons meet
+    # -- the floor: concrete
+    S.fill(floor, poly([(-4, 156), (140, 152), (140, 172), (-4, 172)]), depth=1, roundness=2,
+           tex=0.1 * (noise(62, 5) - 0.5) + 0.06 * (grain(63) - 0.5))
+
+    # -- the half stack: head on top of a 4x12 cab
+    x0, y0, x1, y1 = CAB
+    S.fill(tolex, poly([(x0, 55), (x1, 55), (x1, 77), (x0, 77)]), depth=3, roundness=3, tex=0.08 * (grain(64) - 0.5))
+    S.fill(gold, poly([(x0 + 3, 63), (x1 - 3, 63), (x1 - 3, 72), (x0 + 3, 72)]), depth=1, roundness=1.5, amb=0.4)
+    for i in range(7):
+        S.fill(knob, ellipse(x0 + 8 + i * 6.5, 67.5, 2, 2), depth=1.5, roundness=2, amb=0.35)
+        S.px(gold, [(x0 + 8 + i * 6.5, 66)], 4)
+    S.fill(piping, capsule(x0 + 18, 59, x1 - 18, 59, 1.6), depth=1, roundness=1.5, amb=0.6)   # a plain plate, no brand
+    S.px(tolex, [(x0 + 22 + i * 3, 59 - (i % 2)) for i in range(7)], 2)                     # a scribble on it
+    S.fill(tolex, capsule(x0 + 22, 54, x1 - 22, 54, 1.4), depth=1, roundness=1.4)          # handle
+    S.fill(tolex, poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)]), depth=3, roundness=3, tex=0.08 * (grain(65) - 0.5))
+    baffle = poly([(x0 + 3, y0 + 3), (x1 - 3, y0 + 3), (x1 - 3, y1 - 3), (x0 + 3, y1 - 3)])
+    S.put(tolex, baffle < 0, 0.15)
+    S.put(piping, np.abs(baffle) < 0.7, 0.6)
+    for cx, cy in CONES:
+        rr = np.hypot(XX - cx, YY - cy)
+        S.put(surround, rr < 12, 0.35 + 0.25 * np.cos(np.arctan2(YY - cy, XX - cx) + 2.3))
+        ridges = 0.25 * np.sin(rr * 2.2)
+        S.put(cone, rr < 10.2, 0.45 + 0.35 * ((cy - YY) * 0.35 + (cx - XX) * 0.2) / 10 + ridges * 0.4)
+        S.fill(cap, ellipse(cx, cy, 3.6, 3.6), depth=2.5, roundness=3.6, amb=0.3)
+        for a in range(0, 360, 90):  # mounting screws
+            S.px(metal, [(cx + 11.2 * math.cos(math.radians(a + 45)), cy + 11.2 * math.sin(math.radians(a + 45)))], 2)
+    for cx, cy in ((x0 + 1, y0 + 1), (x1 - 1, y0 + 1), (x0 + 1, y1 - 1), (x1 - 1, y1 - 1), (x0 + 1, 56), (x1 - 1, 56)):
+        S.fill(metal, ellipse(cx, cy, 2.6, 2.6), depth=2, roundness=2)
+
+    # -- cables coiled on the floor, one running to a pedal
+    def coil(cx, cy, rx, ry, turns, w, seed):
+        n = int(18 * turns)
+        pts = []
+        for i in range(n + 1):
+            t = i / 18 * 2 * math.pi
+            r = 1 + 0.12 * math.sin(t * 1.7 + seed)
+            pts.append((cx + rx * r * math.cos(t) + i * 0.08, cy + ry * r * math.sin(t)))
+        for a_, b_ in zip(pts, pts[1:]):
+            S.fill(cable, capsule(*a_, *b_, w), depth=1, roundness=w, amb=0.3)
+    coil(70, 163, 10, 2.6, 2.3, 1.1, 1)
+    S.fill(cable, capsule(48, 162, 76, 160, 1.0), depth=1, roundness=1, amb=0.3)
+    S.fill(pedal, smin(poly([(36, 155), (48, 155), (49, 167), (35, 167)]), ellipse(42, 155, 6, 1.5), 1.5), depth=2, roundness=2.5, amb=0.35)
+    S.fill(metal, ellipse(42, 163, 2.2, 1.6), depth=1.5, roundness=1.5)          # footswitch
+    for x in (38, 46):
+        S.fill(knob, ellipse(x, 157.5, 1.3, 1.1), depth=1, roundness=1.2)
+    PEDAL_LED = (42, 159)
+
+    # -- the mic stand between the amp and the guitars, the mic tilted on top
+    S.fill(stand, capsule(70, 70, 70, 146, 1.1), depth=1, roundness=1.2, amb=0.3)
+    for dx in (-8, 0, 8):
+        S.fill(stand, capsule(70, 144, 70 + dx, 152, 1.0), depth=1, roundness=1, amb=0.3)
+    S.fill(stand, ellipse(70, 104, 1.8, 1.8), depth=1.5, roundness=1.5)          # clutch
+    S.fill(mic, smin(capsule(70, 70, 67, 63, 2.2, 1.8), ellipse(66, 60.5, 3.2, 3.2), 1.5), depth=2, roundness=2.5, amb=0.35)
+    S.px(mic, [(65, 59), (67, 60), (65, 61), (67, 62)], 0)                        # its grille
+    S.fill(cable, capsule(71, 74, 73, 146, 0.7), depth=0.5, roundness=0.7)
+
+    # -- the guitars on a double stand, side by side, leaning apart: a black arrow-pointed one and a
+    #    white spiky one, both bigger than life on this little screen
+    S.fill(stand, capsule(86, 150, 124, 150, 1.4), depth=1, roundness=1.4)
+    for x in (86, 124):
+        S.fill(stand, capsule(x, 150, x + (-4 if x < 100 else 4), 162, 1.2), depth=1, roundness=1.2)
+    bodyA = [(0, 6), (14, 9), (30, 22), (40, 21), (34, 8), (44, -4), (36, -10), (24, -12), (12, -7), (0, -6)]
+    gA = guitar(S, gblack, (84, 96), (0.06, 1.0), bodyA, 40,
+                [(0, -3), (6, -5), (16, -9), (18, -6), (8, 1), (4, 3), (0, 3)], (neck, hw, chrome, strings, bindr),
+                amb=0.12, scale=1.25)
+    bodyB = [(0, -6), (10, -10), (20, -20), (24, -12), (36, -16), (32, -4), (44, 2), (34, 8), (40, 18),
+             (26, 12), (12, 9), (0, 6)]
+    gB = guitar(S, gwhite, (118, 98), (-0.10, 1.0), bodyB, 40,
+                [(0, -3), (5, -6), (16, -8), (14, -4), (19, 1), (6, 3), (0, 3)], (neck, hw, chrome, strings, bindw),
+                scale=1.2)
+    # leather straps hanging from the bottom strap buttons down to the floor, studded
+    for g_, a_end, side in ((gA, 44 * 1.25, -1), (gB, 44 * 1.2, 1)):
+        sx, sy = g_(a_end - 1, 0)
+        ex_, ey_ = sx + side * 10, 165
+        mx, my = sx + side * 2, ey_ + 2
+        prev = (sx, sy)
+        for i in range(1, 9):
+            t = i / 8
+            q = ((1 - t) ** 2 * sx + 2 * t * (1 - t) * mx + t * t * ex_, (1 - t) ** 2 * sy + 2 * t * (1 - t) * my + t * t * ey_)
+            S.fill(strap, capsule(*prev, *q, 1.7), depth=1.5, roundness=1.7, amb=0.3)
+            if i % 2 == 0:
+                S.px(metal, [q], 3)
+            prev = q
+
+    S.outlines(skip={carton, floor, piping, surround, cone, strings, bindw, bindr, chrome})
+    return S, (CONES, PEDAL_LED)
+
+
 # ---------------------------------------------------------------- output
 
 def rle(img):
@@ -819,7 +978,7 @@ def preview(img, pal, path):
 
 
 # name, painter, frames (its argument: 0, 1, ...)
-SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2)]
+SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2), ('garage', scene_garage, 1)]
 
 
 def main():

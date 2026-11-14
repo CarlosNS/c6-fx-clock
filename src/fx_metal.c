@@ -3,7 +3,7 @@
 // The scene follows the hour, each with a little animation, no titles. The scenes painted by
 // tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
 //   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
-//   11-13 glaring at the clip-on tuner of his V (painted)              13-16 crossed guitars and the amp
+//   11-13 glaring at the clip-on tuner of his V (painted)              13-16 the garage, amp and guitars (painted)
 //   16-19 the tour bus on the road at sunset                           19-23 the show: spotlights, crowd,
 //   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
 #include <math.h>
@@ -163,58 +163,37 @@ static void tuner_overlay(uint16_t *fb, uint32_t t)
         }
 }
 
-static void scene_rehearsal(void)  // 13-16
+// 13-16, painted: the garage, egg cartons on the wall, a half stack with its four speakers, two pointed
+// guitars on a stand, a mic stand, cables and a pedal. Here the speakers pump and pixel sound waves
+// ripple out from them, past the cabinet (as metal_art.py: cones at these centres, radius 12)
+static void scene_rehearsal(uint32_t t)
 {
-    static const uint32_t S[] = {0x1a3a4a, 0x22505e, 0x2a6470};
-    sky(S, 3, 128);
-    for (int y = 6; y < 128; y += 6) art_rect(0, y, ART_W, 1, C(0x153040));  // the garage door's slats
-    art_rect(0, 128, ART_W, ART_H - 128, C(0x3a3a40));
-    halftone(128, ART_H, 0x000000, 4);
-    // the amp at the back: grille, knobs, a red light that pulses with the noise
-    ink_rect(36, 62, 66, 60, 0x24242a);
-    for (int y = 76; y < 118; y += 3)
-        for (int x = 40; x < 98; x += 3) art_px(x, y, C(0x3e3e48));
-    for (int k = 0; k < 6; k++) art_disc(44 + k * 9, 68, 1.5f, C(0xd8c890));
-    art_disc(96, 68, 1.5f, sinf(s_ts * 9) > 0 ? C(0xff3a3a) : C(0x5a1a1a));
-    // two pointy electric guitars crossed in front of it: neck with strings, a body with two sharp
-    // horns, pickups and a bridge, and an angular headstock
-    for (int g = 0; g < 2; g++) {
-        float m = g ? -1 : 1, bx = g ? 107 : 30, by = 122;     // where the neck meets the body (clear of
-        float hx = bx + m * 74, hy = 38;                        // the corners and the time) and the headstock
-        float len = sqrtf((hx - bx) * (hx - bx) + (hy - by) * (hy - by)), ux = (hx - bx) / len, uy = (hy - by) / len;
-        float vx = -uy, vy = ux;                                // across the guitar
-        uint32_t col = g ? 0xe8e8f0 : 0xd02a2a;
-        ink_thick(bx, by, hx, hy, 4, 0x3a2a1e);                 // the neck
-        // the body along the neck: a big lower bout, a smaller upper one and two horns toward the neck
-        float lx = bx - ux * 14, ly = by - uy * 14;
-        art_disc(lx, ly, 15, INK), art_disc(bx - ux * 2, by - uy * 2, 11, INK);
-        for (int sd = -1; sd <= 1; sd += 2) {
-            float pts[] = {bx - ux * 6 + vx * sd * 9, by - uy * 6 + vy * sd * 9, bx + ux * 10 + vx * sd * 7, by + uy * 10 + vy * sd * 7,
-                           bx - ux * 2 + vx * sd * 3, by - uy * 2 + vy * sd * 3};
-            ink_poly(pts, 3, col);
+    static const uint8_t cones[4][2] = {{19, 100}, {49, 100}, {19, 134}, {49, 134}};
+    art_rle(metal_garage_pal, metal_garage_0, sizeof metal_garage_0);
+    float beat = fmodf(s_ts * 2.2f, 1.0f);                      // a riff at about 130 bpm
+    for (int c = 0; c < 4; c++) {
+        int cx = cones[c][0], cy = cones[c][1];
+        // the cone pumps on the beat: a flash on the dust cap
+        int fl = beat < 0.25f ? (int)(10 * (1 - beat * 4)) : 0;
+        for (int dy = -3; dy <= 3; dy++)
+            for (int dx = -3; dx <= 3; dx++)
+                if (dx * dx + dy * dy <= 10) art_tint(cx + dx, cy + dy, C(0xffe0b0), fl);
+        for (int k = 0; k < 3; k++) {                            // three rings travelling out
+            float f = fmodf(beat + k / 3.0f, 1.0f), r = 14 + f * 40;
+            int al = (int)(16 * (1 - f) + 3);
+            for (int i = 0; i < 160; i++) {                      // in dashes, wobbling
+                if ((i / 3) % 2) continue;
+                float an = i * 6.2832f / 160, rr = r + 1.5f * sinf(an * 6 + s_ts * 9);
+                for (int th = 0; th < 2; th++) {
+                    int x = cx + (int)lroundf((rr + th) * cosf(an)), y = cy + (int)lroundf((rr + th) * sinf(an));
+                    if (x >= 3 && x <= 65 && y >= 53) continue;  // only outside the amp
+                    art_tint(x, y, C(0xffd27a), al);
+                }
+            }
         }
-        art_disc(lx, ly, 14, C(col)), art_disc(bx - ux * 2, by - uy * 2, 10, C(col));
-        for (int k = 0; k < 2; k++) {  // pickups and the bridge, across
-            float px = bx - ux * (6 + k * 8), py = by - uy * (6 + k * 8);
-            art_thick(px - vx * 5, py - vy * 5, px + vx * 5, py + vy * 5, 2.5f, INK);
-        }
-        art_thick(lx - ux * 6 - vx * 4, ly - uy * 6 - vy * 4, lx - ux * 6 + vx * 4, ly - uy * 6 + vy * 4, 1.5f, C(0x9a9a9a));
-        art_line(lx - ux * 6, ly - uy * 6, hx, hy, C(0xd8d0b0));  // the strings
-        float head[] = {hx - ux * 2 - vx * 3, hy - uy * 2 - vy * 3, hx + ux * 12 - vx * 6, hy + uy * 12 - vy * 6,
-                        hx + ux * 14 + vx * 2, hy + uy * 14 + vy * 2, hx - ux * 2 + vx * 3, hy - uy * 2 + vy * 3};
-        ink_poly(head, 4, 0x1a1a1a);
     }
-    // thunder out of the amp, in beats
-    float beat = fmodf(s_ts * 2, 1.0f);
-    if (beat < 0.5f) {
-        int r = 12 + (int)(beat * 50);
-        for (int k = 0; k < 18; k++) {
-            float a = k * 6.28318f / 18;
-            art_tint((int)(69 + cosf(a) * r), (int)(96 + sinf(a) * r * 0.7f), C(0xfff07a), 14 - (int)(beat * 26));
-        }
-        ink_thick(14, 70, 22, 80, 2, 0xfff07a), ink_thick(22, 80, 16, 84, 2, 0xfff07a), ink_thick(16, 84, 26, 96, 2, 0xfff07a);
-        ink_thick(124, 70, 116, 80, 2, 0xfff07a), ink_thick(116, 80, 122, 84, 2, 0xfff07a), ink_thick(122, 84, 112, 96, 2, 0xfff07a);
-    }
+    if ((t / 400) % 2) art_px(42, 159, C(0xff3a2a));            // the pedal is on
+    else art_px(42, 159, C(0x5a1010));
 }
 
 static void scene_bus(void)  // 16-19
@@ -312,7 +291,7 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     case 0: scene_sleep(t); break;
     case 1: scene_coffee(t); break;
     case 2: scene_tuning(t); break;
-    case 3: scene_rehearsal(); break;
+    case 3: scene_rehearsal(t); break;
     case 4: scene_bus(); break;
     case 5: scene_show(); break;
     default: scene_pizza(); break;
@@ -337,6 +316,6 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
     if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 6)) / 2, 112, hhmm, 6, red, rgb565(18, 12, 20));
-    else if (sc <= 2) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
+    else if (sc <= 3) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
     else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
 }
