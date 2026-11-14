@@ -46,6 +46,8 @@ enum { FX_COMPAT, FX_WIDE, FX_NATIVE };
 // Custom faces: "cust list|sel N|try N|del N|reload N" (true if it was one), and the list as JSON
 bool custom_command(const char *cmd);
 size_t custom_list_json(char *buf, size_t size);
+// The custom faces on the card: their numbers and names (sorted by number); 0 without a card
+int custom_list(int *ids, char (*names)[32], int max);
 extern const fx_t fx_list[FX_COUNT];
 _Static_assert(FX_COUNT <= 31, "g_app.fx_off is a 31-bit mask: widen it before adding more faces");
 

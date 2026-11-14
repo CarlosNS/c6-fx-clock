@@ -450,6 +450,40 @@ bool custom_command(const char *cmd)
     return false;
 }
 
+int custom_list(int *ids, char (*names)[32], int max)
+{
+    if (g_app.sd_state != SD_OK) sd_check();
+    if (g_app.sd_state != SD_OK) return 0;
+    static char dirs[24][16];
+    int count = sd_list_names("/esferas", dirs, 24), n = 0;
+    for (int i = 0; i < count && n < max; i++) {
+        int id = atoi(dirs[i]);
+        if (id <= 0) continue;
+        char path[48];
+        size_t len;
+        snprintf(path, sizeof(path), "/esferas/%d/face.json", id);
+        char *js = (char *)sd_read_file(path, 8192, &len);
+        if (!js) continue;  // no settings yet: not a face (still arriving, or broken)
+        js[len] = 0;
+        cJSON *j = cJSON_Parse(js);
+        const char *v = j ? cJSON_GetStringValue(cJSON_GetObjectItem(j, "name")) : NULL;
+        snprintf(names[n], 32, "%s", v && *v ? v : "Sin nombre");
+        cJSON_Delete(j);
+        free(js);
+        ids[n++] = id;
+    }
+    // in order of their number, as the phone lists them
+    for (int a = 0; a < n; a++)
+        for (int b = a + 1; b < n; b++)
+            if (ids[b] < ids[a]) {
+                int t = ids[a];
+                ids[a] = ids[b], ids[b] = t;
+                char tn[32];
+                memcpy(tn, names[a], 32), memcpy(names[a], names[b], 32), memcpy(names[b], tn, 32);
+            }
+    return n;
+}
+
 size_t custom_list_json(char *buf, size_t size)
 {
     if (g_app.sd_state != SD_OK) sd_check();

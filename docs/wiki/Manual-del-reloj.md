@@ -157,12 +157,12 @@ Es el **menú principal**. Para abrirlo, desliza desde el borde de abajo hacia a
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-faces.png" alt="App Esferas" width="200">
 
-Todas las esferas por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, Relojes y útiles). Toca una para ponerla y volver a la esfera. Un cuadrito verde marca las interactivas.
+Una rueda con todas las esferas, por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, Relojes y útiles) y, al final, las tuyas de **Mis esferas** (las que hay en la microSD). La rueda da la vuelta: arrástrala arriba o abajo, sigue un poco con el impulso y se para en una esfera; la del centro sale grande, con su grupo bajo el título, y la que está puesta va en dorado. Toca cualquiera para ponerla y volver a la esfera. Un cuadrito verde marca las interactivas.
 
 - También se llega manteniendo el dedo sobre la esfera.
 - Para cambiar de esfera sin abrir la app: desliza a los lados en la esfera, o pulsa BOOT.
 - Qué esferas salen en el **cambio automático**, el color de Clásico y Ónix y la ciudad de Tiempo se eligen en la app del móvil.
-- **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj, y la que pongas desde la app sale como una esfera más (ver [[Esferas]]). No aparecen en esta lista: se eligen en la app.
+- **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj y salen al final de la rueda; también se ponen desde la app (ver [[Esferas]]).
 
 ## Alarmas
 
