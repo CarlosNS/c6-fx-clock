@@ -42,17 +42,20 @@ static void page_today(void)
     // Under the title (it ends near y 130): centre 256, radius 100
     ring(UI_W / 2, 256, 100, pm);
     thousands(buf, sizeof(buf), st);
-    int sc = ui_fit(&ui_jersey, 6, 3, 180, buf);
-    ui_print_c(&ui_jersey, sc, UI_W / 2, 256 - sc * 9, buf, MS_ORO, true);
+    // Jersey's capitals are 10 px per scale, 5 below the top of the line: the number centred a little
+    // above the middle of the ring, "of goal" under it, both narrow enough to stay inside the dots
+    int sc = ui_fit(&ui_jersey, 6, 3, 160, buf);
+    ui_print_c(&ui_jersey, sc, UI_W / 2, 244 - 10 * sc, buf, MS_ORO, true);
     thousands(buf, sizeof(buf), goal);
     snprintf(line, sizeof(line), TR("de %s", "of %s"), buf);
-    ui_print_c(&ui_vt, 2, UI_W / 2, 256 + 22, line, MS_GRIS, false);
+    ui_print_c(&ui_jersey, 2, UI_W / 2, 244 + 5 * sc - 2, line, MS_GRIS, false);
     // Rough figures for an adult: 0.04 kcal and 0.75 m per step
     int kcal = st * 4 / 100, m = st * 3 / 4;
     snprintf(buf, sizeof(buf), "%d kcal", kcal);
-    ui_print(&ui_vt, 2, 72, 384, buf, MS_CREMA);
+    ui_print_r(&ui_vt, 2, UI_W / 2 - 16, 384, buf, MS_CREMA);
+    ui_rect(UI_W / 2 - 3, 404, 6, 6, MS_GRIS);  // a dot between the two
     snprintf(buf, sizeof(buf), "%d,%d km", m / 1000, m % 1000 / 100);
-    ui_print_r(&ui_vt, 2, UI_W - 72, 384, buf, MS_CREMA);
+    ui_print(&ui_vt, 2, UI_W / 2 + 16, 384, buf, MS_CREMA);
 }
 
 #define G_X 48

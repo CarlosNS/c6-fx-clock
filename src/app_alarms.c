@@ -1,5 +1,6 @@
 // Alarms app: the list (time, repeat days, switch) and an editor (big hh:mm with arrows above and
-// below each pair of digits, the seven days, delete / done). The ringing screen is app_alarm_ring.
+// below each pair of digits, the seven days, Cancel / Save, and for an alarm that exists a separate
+// Delete that asks first). The ringing screen is app_alarm_ring.
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +15,7 @@
 #include "sys.h"
 #include "ui_icons.h"
 
-#define TOP 122
+#define TOP 136
 #define ROW 96
 #define X0 44
 #define WID 322
@@ -22,6 +23,7 @@
 static int s_edit = -1;        // alarm being edited, -1 = list
 static alarm_t s_draft;
 static bool s_new;
+static bool s_del_dlg;         // "delete this alarm?" on screen
 static ui_scroll_t s_scroll;
 
 static void days_text(const alarm_t *a, int x, int y, int scale)
@@ -35,6 +37,7 @@ static void days_text(const alarm_t *a, int x, int y, int scale)
 static void open(void)
 {
     s_edit = -1;
+    s_del_dlg = false;
     s_scroll.offset = 0;
 }
 
@@ -59,9 +62,9 @@ static void draw_list(void)
         alarm_t *a = &g_alarms[i];
         ui_panel(X0, y, WID, ROW - 12, MS_PANEL, a->on ? MS_ORO : MS_LINEA, 4, false);
         snprintf(buf, sizeof(buf), "%02d:%02d", a->h, a->m);
-        ui_print(&ui_jersey, 4, X0 + 16, y + 6, buf, a->on ? MS_CREMA : MS_GRIS);
-        if (a->days) days_text(a, X0 + 18, y + 54, 1);
-        else ui_print(&ui_vt, 1, X0 + 18, y + 54, TR("sin repetir", "no repeat"), MS_GRIS);
+        ui_print(&ui_jersey, 4, X0 + 16, y - 8, buf, a->on ? MS_CREMA : MS_GRIS);  // capitals from y+12 to y+52
+        if (a->days) days_text(a, X0 + 18, y + 52, 1);
+        else ui_print(&ui_vt, 1, X0 + 18, y + 52, TR("sin repetir", "no repeat"), MS_GRIS);
         if (a->label[0]) {  // the label from the phone, after the days
             char l[ALARM_LABEL_MAX + 4];
             ui_ellipsize(&ui_jersey, 2, WID - 230, a->label, l, sizeof(l));
@@ -102,7 +105,9 @@ static void list_event(const ui_event_t *e)
 #define E_DIG_Y 160
 #define E_ARROW 54
 #define E_DAYS_Y 316
-#define E_BTN_Y 380
+#define E_BTN_Y 376
+#define E_DEL_Y 450
+#define E_DEL_H 40
 
 static void arrow(int cx, int y, bool up)
 {
@@ -134,12 +139,35 @@ static void draw_edit(void)
         ui_frame(x, E_DAYS_Y, 38, 44, 2, on ? MS_ORO2 : MS_LINEA);
         ui_print_c(&ui_jersey, 2, x + 19, E_DAYS_Y + (44 - ui_line_h(&ui_jersey, 2)) / 2, alarm_day_letter(d), on ? MS_NOCHE : MS_CREMA, false);
     }
-    if (!s_new) ui_button(UI_W / 2 - 158, E_BTN_Y, 148, 64, TR("Borrar", "Delete"), UI_BTN_DANGER, false);
-    ui_button(s_new ? UI_W / 2 - 74 : UI_W / 2 + 10, E_BTN_Y, 148, 64, TR("Listo", "Done"), UI_BTN_MAIN, false);
+    // leave without saving on the left, save on the right; deleting is apart, below, and asks first
+    ui_button(UI_W / 2 - 158, E_BTN_Y, 148, 60, TR("Cancelar", "Cancel"), UI_BTN_SECONDARY, false);
+    ui_button(UI_W / 2 + 10, E_BTN_Y, 148, 60, TR("Guardar", "Save"), UI_BTN_MAIN, false);
+    if (!s_new) {
+        const char *del = TR("Borrar alarma", "Delete alarm");
+        int dw = ui_print_w(&ui_jersey, 2, del) + 32;
+        ui_frame(UI_W / 2 - dw / 2, E_DEL_Y, dw, E_DEL_H, 2, MS_CORAL);
+        ui_print_c(&ui_jersey, 2, UI_W / 2, E_DEL_Y + (E_DEL_H - ui_line_h(&ui_jersey, 2)) / 2, del, MS_CORAL, false);
+    }
+    if (s_del_dlg) {
+        snprintf(buf, sizeof(buf), "%02d:%02d", s_draft.h, s_draft.m);
+        ui_dialog(TR("¿Borrar la alarma?", "Delete the alarm?"), buf, TR("Cancelar", "Cancel"), TR("Borrar", "Delete"), UI_BTN_DANGER);
+    }
 }
 
 static void edit_event(const ui_event_t *e)
 {
+    if (s_del_dlg) {  // the dialog takes every touch until it is answered
+        if (e->type != EV_TAP) return;
+        int b = ui_dialog_hit(e->x, e->y, true);
+        if (b == 2 && s_edit < g_nalarms) {  // the phone may have deleted some meanwhile
+            for (int i = s_edit + 1; i < g_nalarms; i++) g_alarms[i - 1] = g_alarms[i];
+            g_nalarms--;
+            alarms_save();
+            s_edit = -1;
+        }
+        if (b) s_del_dlg = false;
+        return;
+    }
     if (e->type != EV_TAP && e->type != EV_LONG) return;
     int x = e->x, y = e->y;
     bool left = x < UI_W / 2;
@@ -152,18 +180,16 @@ static void edit_event(const ui_event_t *e)
         else s_draft.m = (s_draft.m + 60 - step % 60) % 60;
     } else if (y >= E_DAYS_Y && y < E_DAYS_Y + 44 && x >= 52 && x < 52 + 7 * 44) {
         s_draft.days ^= 1 << ((x - 52) / 44);
-    } else if (y >= E_BTN_Y && y < E_BTN_Y + 64) {
-        bool done = s_new ? (x >= UI_W / 2 - 74 && x < UI_W / 2 + 74) : x >= UI_W / 2;
-        if (done) {
+    } else if (y >= E_BTN_Y - 6 && y < E_BTN_Y + 66 && e->type == EV_TAP) {
+        if (x >= UI_W / 2) {  // Save
             s_draft.on = 1;
             if (s_new && g_nalarms < ALARMS_MAX) g_alarms[g_nalarms++] = s_draft;
             else if (!s_new && s_edit < g_nalarms) g_alarms[s_edit] = s_draft;
-        } else if (!s_new && s_edit < g_nalarms) {  // the phone may have deleted some meanwhile
-            for (int i = s_edit + 1; i < g_nalarms; i++) g_alarms[i - 1] = g_alarms[i];
-            g_nalarms--;
+            alarms_save();
         }
-        alarms_save();
-        s_edit = -1;
+        s_edit = -1;  // Cancel just leaves: the draft is dropped
+    } else if (!s_new && e->type == EV_TAP && y >= E_DEL_Y - 8 && y < E_DEL_Y + E_DEL_H + 8 && abs(x - UI_W / 2) < 110) {
+        s_del_dlg = true;
     }
 }
 

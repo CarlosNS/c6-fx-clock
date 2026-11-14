@@ -115,7 +115,7 @@ bool ui_scroll_event(ui_scroll_t *s, const ui_event_t *e)
 
 #define L_TOP 120
 #define L_ROW 150
-#define L_TILE_W 156
+#define L_TILE_W 166
 #define L_TILE_H 136
 static int s_pressed = -1;
 
@@ -124,7 +124,7 @@ static int launcher_hit(int x, int y)
     int yy = y - L_TOP + s_launch_scroll.offset;
     if (y < L_TOP - 10 || yy < 0) return -1;
     int row = yy / L_ROW, col = x < UI_W / 2 ? 0 : 1, i = row * 2 + col;
-    int tx = col ? UI_W / 2 + 6 : UI_W / 2 - 6 - L_TILE_W;
+    int tx = col ? UI_W / 2 + 4 : UI_W / 2 - 4 - L_TILE_W;
     if (x < tx || x >= tx + L_TILE_W || yy % L_ROW >= L_TILE_H) return -1;
     return i < NAPPS ? i : -1;
 }
@@ -137,14 +137,15 @@ static bool launcher_draw(void)
     ui_veil(60, UI_H, 3);
     for (int i = 0; i < NAPPS; i++) {
         int row = i / 2, col = i % 2;
-        int x = col ? UI_W / 2 + 6 : UI_W / 2 - 6 - L_TILE_W;
+        int x = col ? UI_W / 2 + 4 : UI_W / 2 - 4 - L_TILE_W;
         int y = L_TOP + row * L_ROW - s_launch_scroll.offset;
         if (y + L_TILE_H < 60 || y > UI_H) continue;
         bool p = i == s_pressed;
         ui_panel(x, y, L_TILE_W, L_TILE_H, p ? MS_PANEL2 : MS_PANEL, p ? MS_ORO : MS_LINEA, 4, true);
         ui_icon(s_apps[i]->icon, x + (L_TILE_W - 48) / 2, y + 18, 3);
         const char *name = TR(s_apps[i]->name_es, s_apps[i]->name_en);
-        ui_print_c(&ui_jersey, 2, x + L_TILE_W / 2, y + 86, name, p ? MS_ORO2 : MS_CREMA, false);
+        int sc = ui_fit(&ui_jersey, 2, 1, L_TILE_W - 6, name);
+        ui_print_c(&ui_jersey, sc, x + L_TILE_W / 2, y + 86 + (2 - sc) * 10, name, p ? MS_ORO2 : MS_CREMA, false);
     }
     // Clean band under the status bar, so tiles scroll away beneath it
     ui_background_band(false, 0, L_TOP - 14);

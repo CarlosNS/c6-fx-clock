@@ -53,11 +53,12 @@ static bool draw(uint32_t now, bool force)
     while (buf[comma] && buf[comma] != ',') comma++;
     snprintf(main_t, sizeof(main_t), "%.*s", comma, buf);
     const char *frac = buf + comma;
-    int big = comma > 5 ? 5 : 7;
+    int big = comma > 5 ? 5 : 6;
     int wm = ui_print_w(&ui_jersey, big, main_t), wf = ui_print_w(&ui_jersey, 4, frac);
-    int x = (UI_W - wm - wf) / 2;
-    ui_print_sh(&ui_jersey, big, x, 116, main_t, s_running ? MS_ORO : MS_CREMA);
-    ui_print_sh(&ui_jersey, 4, x + wm, 116 + (big - 4) * 15, frac, MS_CREMA);
+    int x = (UI_W - wm - wf) / 2, ty = 188 - 10 * big;  // capitals centred on y 188
+    ui_panel(40, 138, UI_W - 80, 100, MS_PANEL, s_running ? MS_ORO : MS_LINEA, 4, true);  // hides the moon behind
+    ui_print_sh(&ui_jersey, big, x, ty, main_t, s_running ? MS_ORO : MS_CREMA);
+    ui_print_sh(&ui_jersey, 4, x + wm, ty + (big - 4) * 15, frac, MS_CREMA);
     // Buttons: left lap / reset, right start / pause / resume
     const char *left = s_running ? TR("Vuelta", "Lap") : TR("Reiniciar", "Reset");
     const char *right = s_running ? TR("Pausa", "Pause") : e ? TR("Seguir", "Resume") : TR("Iniciar", "Start");

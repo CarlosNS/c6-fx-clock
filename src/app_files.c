@@ -2,7 +2,7 @@
 // components/fatfs). Folders first, then files with their size, in alphabetical order; long names are
 // cut with "…" and a scroll bar shows where the list is. Tap a folder to enter it, ".." to go up; tap
 // a file for a dialog with its whole name, size and Delete; long press deletes (files, empty folders).
-// USB restarts the watch as a USB drive for the computer (usbdisk.c) and Format wipes the card as
+// USB restarts the watch as a USB drive for the computer (usbdisk.c) and More… > Format wipes the card as
 // exFAT, each after a dialog. sd_check() tells the status bar whether there is a card.
 #include <dirent.h>
 #include <errno.h>
@@ -45,7 +45,7 @@ EXT_RAM_BSS_ATTR static struct {  // PSRAM: 64 long names
 } s_ent[MAX_ENT];
 static int s_n;
 static ui_scroll_t s_scroll;
-enum { M_NONE, M_FILE, M_DELETE, M_USB, M_FORMAT };
+enum { M_NONE, M_FILE, M_DELETE, M_USB, M_FORMAT, M_MORE };
 static int s_modal = M_NONE;  // dialog on screen
 static int s_sel = -1;        // entry the dialog is about
 static char s_msg[48];
@@ -513,6 +513,11 @@ static void draw_modal(void)
                      "unplugged."),
                   TR("Cancelar", "Cancel"), TR("Reiniciar", "Restart"), UI_BTN_MAIN);
         break;
+    case M_MORE:  // the rare and dangerous things, one step away from the list
+        ui_dialog(TR("Más opciones", "More options"),
+                  TR("Formatear la tarjeta borra todo lo que tiene.", "Formatting the card erases everything on it."),
+                  TR("Cerrar", "Close"), TR("Formatear", "Format"), UI_BTN_DANGER);
+        break;
     case M_FORMAT:
         ui_dialog(TR("¿Formatear?", "Format?"),
                   TR("Se borra todo lo que hay en la tarjeta. Queda en exFAT, que leen ordenadores y móviles.",
@@ -543,12 +548,12 @@ static void draw_list(void)
             size_text(buf, sizeof(buf), s_ent[i].size);
             int size_w = ui_print_w(&ui_vt, 1, buf) + 14;
             if (name_w <= room - size_w) {
-                ui_print_r(&ui_vt, 1, X0 + WID - 14, y + 18, buf, MS_GRIS);
+                ui_print_r(&ui_vt, 1, X0 + WID - 14, y + (ROW - 8 - 25) / 2 + 1, buf, MS_GRIS);
                 room -= size_w;
             }
         }
         ui_ellipsize(&ui_jersey, 2, room, name, shown, sizeof(shown));
-        ui_print(&ui_jersey, 2, X0 + 16, y + 14, shown, s_ent[i].dir ? MS_ORO2 : MS_CREMA);
+        ui_print(&ui_jersey, 2, X0 + 16, y + (ROW - 8 - 40) / 2, shown, s_ent[i].dir ? MS_ORO2 : MS_CREMA);  // centred
     }
     if (!s_n) ui_print_c(&ui_vt, 2, UI_W / 2, TOP + 40, TR("vacía", "empty"), MS_GRIS, false);
     // scroll bar: where the visible part sits in the whole list (only when it does not all fit)
@@ -571,7 +576,7 @@ static void draw_list(void)
     ui_rect(0, UI_H - BAR, UI_W, BAR, MS_NOCHE);
     ui_print_c(&ui_vt, 1, UI_W / 2, UI_H - BAR + 6, s_msg[0] ? s_msg : buf, s_msg[0] ? MS_ORO2 : MS_GRIS, false);
     ui_button(UI_W / 2 - BTN_W - 6, BTN_Y, BTN_W, BTN_H, "USB", UI_BTN_SECONDARY, false);
-    ui_button(UI_W / 2 + 6, BTN_Y, BTN_W, BTN_H, TR("Formatear", "Format"), UI_BTN_SECONDARY, false);
+    ui_button(UI_W / 2 + 6, BTN_Y, BTN_W, BTN_H, TR("Más…", "More…"), UI_BTN_SECONDARY, false);
 }
 
 static bool draw(uint32_t now, bool force)
@@ -649,6 +654,8 @@ static void modal_event(const ui_event_t *e)
         } else if (m == M_USB) {
             files_close();
             boot_mode_switch(BOOT_USB);  // does not return
+        } else if (m == M_MORE) {
+            s_modal = M_FORMAT;  // and it still asks once more
         } else if (m == M_FORMAT) {
             format_card();
         }
@@ -669,7 +676,7 @@ static void event(const ui_event_t *e)
     if (!s_card) return;
     ui_scroll_event(&s_scroll, e);
     if (e->type == EV_TAP && e->y >= UI_H - BAR) {
-        if (e->y >= BTN_Y - 10) s_modal = e->x < UI_W / 2 ? M_USB : M_FORMAT;
+        if (e->y >= BTN_Y - 10) s_modal = e->x < UI_W / 2 ? M_USB : M_MORE;
     } else if (e->type == EV_TAP) {
         int i = hit(e->y);
         if (i < 0) return;
