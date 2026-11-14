@@ -45,6 +45,22 @@ static bool s_file;
 static char s_path[96];
 static uint8_t *s_fbuf;
 
+// The stream buffer between the host task and the writer: made once and reused (emptied at each start).
+// It is never deleted: ESP-IDF 5.5.0's vStreamBufferDeleteWithCaps() deletes it as a semaphore and then
+// frees its memory a second time (the heap assert after the first finished file transfer).
+static StreamBufferHandle_t sb_get(void)
+{
+    static StaticStreamBuffer_t ctl;
+    static uint8_t *store;
+    static StreamBufferHandle_t sb;
+    if (!sb) {
+        if (!store) store = heap_caps_malloc(BUF_BYTES + 1, MALLOC_CAP_SPIRAM);
+        if (store) sb = xStreamBufferCreateStatic(BUF_BYTES, 1, store, &ctl);
+    }
+    if (sb) xStreamBufferReset(sb);
+    return sb;
+}
+
 static void send_state(const char *st, const char *extra)
 {
     char buf[160];
@@ -199,13 +215,15 @@ static void fail(const char *state, const char *why)
 
 static void writer(void *arg)
 {
-    uint8_t *stage = heap_caps_malloc(STAGE, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    // a file is gathered straight into its PSRAM buffer; firmware goes to flash through an internal stage
+    uint8_t *stage = s_file ? NULL : heap_caps_malloc(STAGE, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    bool file_done = false;
     sha256_t sha;
     sha_init(&sha);
     size_t fill = 0, last_ack = 0;
     int64_t last_data = esp_timer_get_time();
     const char *msg = NULL;
-    bool ok = stage != NULL;
+    bool ok = s_file || stage != NULL;
     if (!ok) fail("bad_image", "sin memoria");
     while (ok && s_written < s_size) {
         if (s_cancel) {
@@ -215,7 +233,8 @@ static void writer(void *arg)
         }
         size_t want = STAGE - fill;
         if (want > s_size - s_written - fill) want = s_size - s_written - fill;
-        size_t n = xStreamBufferReceive(s_sb, stage + fill, want, pdMS_TO_TICKS(500));
+        uint8_t *dst = s_file ? s_fbuf + s_written : stage;
+        size_t n = xStreamBufferReceive(s_sb, dst + fill, want, pdMS_TO_TICKS(500));
         int64_t now = esp_timer_get_time();
         if (!n) {
             if (now - last_data > IDLE_LIMIT_US) {
@@ -227,9 +246,8 @@ static void writer(void *arg)
         last_data = now;
         fill += n;
         if (fill < STAGE && s_written + fill < s_size) continue;
-        sha_update(&sha, stage, fill);
-        if (s_file) memcpy(s_fbuf + s_written, stage, fill);
-        else if (ota_write(stage, fill, &msg) != ESP_OK) {  // ota.c aborts on error
+        sha_update(&sha, dst, fill);
+        if (!s_file && ota_write(stage, fill, &msg) != ESP_OK) {  // ota.c aborts on error
             fail("bad_image", msg ? msg : "error al escribir");
             ok = false;
             break;
@@ -254,8 +272,7 @@ static void writer(void *arg)
             if (!sd_write_file(s_path, s_fbuf, s_size)) fail("", "no se pudo guardar en la microSD");
             else {
                 ESP_LOGI(TAG, "File %s saved (%u bytes)", s_path, (unsigned)s_size);
-                s_state = ST_DONE;
-                send_state("done", NULL);
+                file_done = true;  // said once everything is put away (below)
             }
         } else if (ota_finish(&msg) != ESP_OK) fail("bad_image", msg ? msg : "no se pudo activar");
         else {
@@ -268,13 +285,16 @@ static void writer(void *arg)
             esp_restart();
         }
     }
+    // Put everything away before saying "done" or going idle: the phone starts the next file as soon
+    // as it hears it, and that transfer's buffers must not be the ones freed here
     free(stage);
-    vStreamBufferDeleteWithCaps(s_sb);
     s_sb = NULL;
+    if (s_file) sd_hold(false);
     free(s_fbuf);
     s_fbuf = NULL;
-    s_state = ST_IDLE;
     s_file = false;
+    s_state = ST_IDLE;
+    if (file_done) ble_send_json("{\"t\":\"file\",\"st\":\"done\"}");  // touches no shared state: the next file may already be starting
     vTaskDelete(NULL);
 }
 
@@ -289,10 +309,9 @@ static void begin(const char *args)
     if (sscanf(args, "%u %64s %31s", &size, sha, ver) != 3 || strlen(sha) != 64) return send_err("orden no válida");
     if (size < 1024 || size > ota_max_size()) return send_err("tamaño no válido");
     if (strcmp(ver, esp_app_get_description()->version) == 0) return send_err("el reloj ya tiene esa versión");
-    s_sb = xStreamBufferCreateWithCaps(BUF_BYTES, 1, MALLOC_CAP_SPIRAM);
+    s_sb = sb_get();
     if (!s_sb) return send_err("sin memoria");
     if (ota_begin(size) != ESP_OK) {
-        vStreamBufferDeleteWithCaps(s_sb);
         s_sb = NULL;
         return send_err("no se pudo preparar la memoria");
     }
@@ -307,7 +326,6 @@ static void begin(const char *args)
     // 8 KB: esp_ota_end() verifies the whole image and needs a deep stack (4 KB overflowed at the end)
     if (xTaskCreate(writer, "bleota", 8192, NULL, 5, NULL) != pdPASS) {
         ota_abort();
-        vStreamBufferDeleteWithCaps(s_sb);
         s_sb = NULL;
         s_state = ST_IDLE;
         update_record("bad_image", NULL, NULL, false);
@@ -337,12 +355,18 @@ static void begin_file(const char *args)
         s_file = false;
         return;
     }
-    if (g_app.sd_state != SD_OK) sd_check();
+    // the card first, while there is internal RAM to mount it; it stays mounted until the end
+    if (!sd_hold(true)) {
+        send_err("el reloj no tiene microSD");
+        s_file = false;
+        return;
+    }
     s_fbuf = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
-    s_sb = s_fbuf ? xStreamBufferCreateWithCaps(BUF_BYTES, 1, MALLOC_CAP_SPIRAM) : NULL;
+    s_sb = s_fbuf ? sb_get() : NULL;
     if (!s_sb) {
         free(s_fbuf);
         s_fbuf = NULL;
+        sd_hold(false);
         send_err("sin memoria");
         s_file = false;
         return;
@@ -353,11 +377,11 @@ static void begin_file(const char *args)
     strlcpy(s_sha, sha, sizeof(s_sha));
     strlcpy(s_path, path, sizeof(s_path));
     s_state = ST_RECV;
-    if (xTaskCreate(writer, "blefile", 8192, NULL, 5, NULL) != pdPASS) {
-        vStreamBufferDeleteWithCaps(s_sb);
+    if (xTaskCreate(writer, "blefile", 6144, NULL, 5, NULL) != pdPASS) {
         s_sb = NULL;
         free(s_fbuf);
         s_fbuf = NULL;
+        sd_hold(false);
         s_state = ST_IDLE;
         send_err("sin memoria");
         s_file = false;

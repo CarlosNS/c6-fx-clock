@@ -6,7 +6,8 @@
 //   anim.bin   "MAN1", u16 frames, u16 0, then per frame u16 delay ms, u16 0, u32 offset, u32 size, then the
 //              JPEG frames, 274 x 336 each (enlarged x1.5 on screen)
 // The app crops and encodes everything; the watch only decodes (TJpgDec in ROM) and draws the time. An
-// animation plays once each time the screen comes on (10 s at most) and then rests on its first frame.
+// animation loops while the screen is on (with it off nothing is drawn, so it costs nothing then), and
+// starts from its first frame each time the screen comes on.
 //
 // The time is drawn by the same rules as the app's preview (src/index.html, drawTime) from the same font
 // data, so what the editor shows is what the watch shows: glyph alpha into a mask, then an outline or a
@@ -36,7 +37,6 @@
 #define H FH
 #define AW 274   // animation frames
 #define AH 336
-#define ANIM_MAX_MS 10000
 
 static const char *TAG = "custom";
 
@@ -377,16 +377,17 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
         return;
     }
     if (s_anim) {
-        // The screen was off (no frames for a while): play it once more from the start
+        // The screen was off (no frames for a while): from the first frame again; then round and round
         if (now - s_last_render > 500) s_anim_t0 = now;
-        uint32_t el = now - s_anim_t0, acc = 0;
+        uint32_t total = 0;
+        for (int k = 0; k < s_nframes; k++) total += s_anim[8 + k * 12] | s_anim[9 + k * 12] << 8;
+        uint32_t el = total ? (now - s_anim_t0) % total : 0, acc = 0;
         int k = 0;
-        for (; k < s_nframes; k++) {
+        for (; k < s_nframes - 1; k++) {
             uint32_t d = s_anim[8 + k * 12] | s_anim[9 + k * 12] << 8;
             if (el < acc + d) break;
             acc += d;
         }
-        if (k >= s_nframes || el > ANIM_MAX_MS) k = 0;  // once through: rest on the first frame
         show_frame(k);
     }
     s_last_render = now;

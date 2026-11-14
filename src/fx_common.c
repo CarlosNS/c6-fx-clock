@@ -176,7 +176,7 @@ int fx_next(int from)
 {
     for (int k = 1; k <= FX_COUNT; k++) {
         int n = (from + k) % FX_COUNT;
-        if (!fx_list[n].retired) return n;
+        if (!fx_list[n].retired && (n != FX_CUSTOM || g_app.cust > 0)) return n;  // Mis esferas: only with one chosen
     }
     return 0;
 }
@@ -185,7 +185,7 @@ int fx_prev(int from)
 {
     for (int k = 1; k <= FX_COUNT; k++) {
         int n = (from - k + FX_COUNT) % FX_COUNT;
-        if (!fx_list[n].retired) return n;
+        if (!fx_list[n].retired && (n != FX_CUSTOM || g_app.cust > 0)) return n;  // Mis esferas: only with one chosen
     }
     return 0;
 }

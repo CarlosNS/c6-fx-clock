@@ -1,4 +1,4 @@
-El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla.
+El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT**, en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
@@ -6,7 +6,7 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.
 - Los números 10, 16 y 20 están **retirados**: eran esferas eliminadas (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar. Si un reloj tenía elegida una de ellas, muestra la siguiente.
 
-Índice: [Efectos](#efectos) · [Videojuegos](#videojuegos) · [Arte](#arte) · [Naturaleza y espacio](#naturaleza-y-espacio) · [Relojes y útiles](#relojes-y-útiles)
+Índice: [Efectos](#efectos) · [Videojuegos](#videojuegos) · [Arte](#arte) · [Naturaleza y espacio](#naturaleza-y-espacio) · [Relojes y útiles](#relojes-y-útiles) · [Mis esferas](#mis-esferas)
 
 ## Efectos
 
@@ -167,6 +167,14 @@ El reloj trae **22 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx26.png" alt="Esfera El escultor" width="205">
 
 *Número 26* — Tu objetivo de pasos como una escultura: un escultor talla la estatua de un corredor en un bloque de piedra. Hay once escenas, una por cada 10 % del objetivo; la talla baja por el bloque y el escultor trabaja subido al andamio. Al 100 % la estatua brilla en mármol y oro, con rayos y destellos, y el escultor lo celebra. Arriba la hora; abajo los pasos y el porcentaje. El objetivo se cambia en el reloj o en la app.
+
+## Mis esferas
+
+*Número 28* — La esfera que haces tú en la app del móvil (ver [[App Android]]): de fondo, una **foto** o un **GIF** de la galería encuadrado a la pantalla, y encima la **hora digital** con la fuente, el tamaño, el sitio, el color, el contorno o la sombra, los segundos y la fecha que elijas. El GIF se repite mientras la pantalla está encendida y vuelve a empezar al encenderla; con la pantalla apagada no gasta nada.
+
+- Necesita una **microSD** en el reloj: cada esfera se guarda en `/esferas/<número>/`. Sin tarjeta, la app no deja guardarla y la esfera lo avisa.
+- Puedes tener varias, pero en el reloj se ve **la que hayas puesto** desde la app. Mientras no pongas ninguna, el número 28 no sale al deslizar ni en el cambio automático.
+- El móvil guarda una **copia** de cada una, así que si la tarjeta se pierde o se formatea, *Restaurar en el reloj* las vuelve a mandar.
 
 ## ¿Una esfera nueva?
 

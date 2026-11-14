@@ -36,6 +36,7 @@
 | `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
 | `src/voice.c`, `android/.../Voice.kt`, `VoiceCommands.kt` | Órdenes de voz: el reloj graba (ES7210, `audio.c`) y manda IMA ADPCM; la app usa el reconocedor de Android con `EXTRA_AUDIO_SOURCE` e interpreta la frase |
 | `src/art.c` | Lienzo de pixel art de 137×168 (cada píxel, 2×2 del lienzo ancho) para las esferas dibujadas así: Coloso, Engranajes, Disfruta y El escultor |
+| `src/fx_custom.c`, `src/webapp/`, `android/.../CustomFaces.kt` | Mis esferas (esfera 28): fondo de la microSD y hora configurable; el editor de la app (`miesferas.js`, solo en la app) y la copia en el móvil. `tools/font_atlas.py` genera `src/webapp/fuentes.png/json` con las fuentes del firmware: regenéralo si cambias una fuente |
 | `src/web/novedades.json` | Tablón de novedades de Inicio, de la versión más nueva a la más vieja; `release.py` lo copia a GitHub Pages. Añade una entrada en cada versión |
 
 ## Compilar, flashear y probar (Windows)
@@ -62,6 +63,8 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 
 - **Esquinas redondeadas:** radio de unos 120 px (`BOARD_LCD_CORNER_R`), y los 2 px exteriores de cada borde pueden no verse. Ten en cuenta siempre esa zona perdida al colocar cualquier cosa.
 - **RAM interna:** es lo que se agota (unos 70 KB libres con WiFi y Bluetooth a la vez). Lo grande va a la PSRAM, incluidos los búferes de WiFi, NimBLE y TLS.
+- **microSD y RAM interna:** el driver de la tarjeta necesita memoria DMA; si le das un búfer en PSRAM, pide uno interno tan grande como toda la transferencia, y con el Bluetooth en marcha quedan unos 20 KB. Lee y escribe archivos grandes a trozos con `s_io` (`app_files.c`, `sd_read_file`/`sd_write_file`) y monta la tarjeta antes de reservar memoria (`sd_hold`).
+- **Fallo de ESP-IDF 5.5.0:** `vStreamBufferDeleteWithCaps` libera dos veces (llama a `vSemaphoreDelete` y luego libera otra vez) y corrompe el montón. No la uses: `bleota.c` tiene un stream buffer estático que se reutiliza (`sb_get`).
 - **Doble búfer:** `fb` trae el fotograma de hace dos, así que cada esfera debe repintar todos los píxeles.
 - **La caché de datos de 64 KB del S3 cuelga la placa al arrancar:** no la actives.
 - **Vigilante:** si el bucle principal pasa 8 s sin avanzar, el reloj se reinicia y al arrancar dice en qué paso estaba (`hang.h`).

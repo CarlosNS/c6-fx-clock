@@ -5,6 +5,7 @@
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
 - **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que sigue la hora del día, con luciérnagas y fuegos artificiales de noche; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
+- **Mis esferas:** en la app (*Esferas → Mis esferas*) se crean, cambian y borran esferas propias: un nombre, una foto o un GIF de la galería encuadrado a la pantalla, y la hora digital con fuente, tamaño, sitio, color, contorno o sombra, segundos y fecha, con vista previa exacta y *Probar en el reloj*. Se guardan en la microSD del reloj (hace falta una; la app avisa si no la hay) y el móvil guarda una copia para restaurarlas. Los GIF se repiten mientras la pantalla está encendida (hasta 40 fotogramas, 274×336). El reloj recibe archivos por Bluetooth a su tarjeta.
 - **Trueno y peluches**, esfera nueva: una tira cómica de un día de una banda de thrash metal, con siete escenas según la hora (el peluche rosa, el café, la afinación, el ensayo, la gira, el concierto con la hora grande y la pizza).
 - **Coloso** sustituye a *Arena*: un reloj de arena del tamaño de una torre visto desde abajo; la arena tarda una hora en caer.
 - **Engranajes**, rehecha: el interior de una torre del reloj gótica, con engranajes enormes, péndulo, cadenas y luz de luna.

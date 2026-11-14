@@ -72,6 +72,8 @@ Una por mensaje (lista completa en `src/control.h`):
 | `alarm <i> time <h> <m>` / `days <máscara>` / `del` | Cambia la hora o los días de una alarma, o la borra |
 | `alarm <i> label <texto>` / `anim <n>` / `on <0\|1>` / `test` | Etiqueta, animación, encendido de una alarma, o hacerla sonar ya |
 | `unpair` | Olvida todos los móviles emparejados |
+| `cust list` / `sel <n>` / `try <n>` / `del <n>` / `reload <n>` | Mis esferas: lista de la microSD, poner una (0 = ninguna), enseñarla 8 s, borrarla, volver a leerla tras recibirla |
+| `file begin <tamaño> <sha256> <ruta>` / `file abort` | Un archivo a `/esferas/` de la microSD (solo Bluetooth; ver [[Protocolo Bluetooth]]) |
 
 Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get files <ruta>`, `shot` (captura de pantalla) y `sync done` (fin de una sincronización). Ver [[Protocolo Bluetooth]]. Por WiFi, lo mismo son las peticiones `GET` de [[Página de control]].
 
@@ -106,6 +108,8 @@ Añadir un ajuste es **una línea** en la tabla de `settings.c`: se guarda en NV
 
 Cada esfera es un `src/fx_*.c` con una función que dibuja un fotograma completo, y una entrada en `fx_list` (`src/fx_common.c`) con su nombre, grupo, lienzo, descripción, si es interactiva y sus ajustes propios. La app y la web construyen su menú a partir de ese catálogo (`get faces` o `GET /faces`), así que una esfera nueva aparece sola. Ver [[Crear una esfera]].
 
+**Mis esferas** (`fx_custom.c`, número 28, grupo -1 para que no salga en la lista del reloj) dibuja la esfera propia elegida (ajuste `cust`). Lee de la microSD `/esferas/<n>/face.json` (con cJSON) y el fondo: `bg.jpg` de 410×502, o `anim.bin` («MAN1», una tabla con la duración, la posición y el tamaño de cada fotograma, y los fotogramas JPEG de 274×336, que se amplían ×1,5). Los JPEG se descodifican con el TJpgDec de la ROM. La hora se dibuja con las mismas fuentes y las mismas reglas que la vista previa de la app (`src/webapp/miesferas.js`): el alfa de cada glifo a una máscara, el contorno (dilatándola) o la sombra, y el color encima. `tools/font_atlas.py` saca las fuentes del firmware a `src/webapp/fuentes.png` y `fuentes.json` para el editor.
+
 ## Modos de arranque (`bootmode.c`)
 
 - **Normal** (`ble` o `wifi`, que significan lo mismo): WiFi y Bluetooth a la vez.
@@ -128,6 +132,7 @@ Kotlin, con la misma página de control (`src/index.html`, `src/transport.js` y 
 - el enlace Bluetooth (`ClockBle`), que mantiene abierto un servicio en primer plano (`LinkService`) mientras el reloj está cerca;
 - detectar el reloj cerca (`ClockPresence`), que arranca ese servicio;
 - la música y las llamadas (`PhoneWatch`, un lector de notificaciones, y `Phone`, que habla con el reloj);
-- la sincronización periódica de reserva con WorkManager (`SyncWorker`) y actualizarse (`AppUpdate`).
+- la sincronización periódica de reserva con WorkManager (`SyncWorker`) y actualizarse (`AppUpdate`);
+- Mis esferas (`CustomFaces`): la copia de cada esfera en el móvil (`files/esferas/<n>/`, que la página lee en `/mis/`), el selector de imágenes y el envío de archivos al reloj. El editor (`src/webapp/miesferas.js`) solo se copia en la app, no en el firmware.
 
 La página habla con Kotlin por `window.ClockBridge`.

@@ -62,6 +62,21 @@ La conexión permanente es un servicio en primer plano, que Android respeta, per
 - **Samsung:** *Ajustes → Batería → Límites de uso en segundo plano*: que Marea no esté en «Apps en suspensión».
 - **Otros:** busca en <https://dontkillmyapp.com> las instrucciones de tu marca.
 
+## Mis esferas
+
+En *Esferas*, arriba, **Mis esferas** deja crear, cambiar y borrar esferas propias. Es solo de la app (no está en la página por WiFi) y necesita una **microSD** en el reloj; sin ella, la app lo avisa y no deja guardar.
+
+1. **+ Nueva esfera** (o *Editar* en una que ya tengas) y ponle un **nombre**.
+2. **Elegir imagen o GIF** abre la galería del móvil. En *Encuadrar fondo*, arrastra para mover y pellizca para acercar; las esquinas oscurecidas son lo que tapa la pantalla redondeada.
+3. En *La hora*: **fuente** (Redonda, Segmentos, Caligráfica, Píxel o Jersey), **tamaño**, **color**, **contorno** o **sombra** (o nada) para que se lea sobre cualquier fondo, y si lleva **segundos** y **fecha**. Con *Mover la hora* se arrastra a donde quieras; cerca del centro se centra sola.
+4. La vista previa es exactamente lo que verá el reloj. **Probar en el reloj** la enseña 8 segundos sin guardar nada.
+5. **Guardar en el reloj** la manda por Bluetooth (unos segundos una foto; un GIF, hasta un minuto) y guarda una copia en el móvil. **Ponerla** la deja como esfera del reloj.
+
+- **Los GIF** se reducen a 274×336 píxeles (en el reloj se ven a pantalla completa, algo menos nítidos que una foto), hasta 40 fotogramas y unos 10 por segundo; si el GIF tiene más, la app avisa de que se ha reducido. Como mucho ocupan 3 MB. Se repiten mientras la pantalla está encendida.
+- **La lista** dice dónde está cada una: *en el reloj*, *solo en el móvil* o *solo en el reloj*, y cuál está *puesta*.
+- **Eliminar** la borra del reloj y del móvil.
+- **Restaurar en el reloj** vuelve a mandar todas las que guarda el móvil, por ejemplo tras cambiar o formatear la tarjeta.
+
 ## Buscar el reloj
 
 En Inicio, la tarjeta **Buscar el reloj** dice si está conectado o cuándo se vio por última vez, y **Hacer sonar** lo hace sonar y parpadear (ver [[Manual del reloj]]). Mientras suena, la señal Bluetooth dice lo cerca que está; **Parar** lo calla. Si el reloj no está a tiro, la petición espera y sonará en cuanto conecte.

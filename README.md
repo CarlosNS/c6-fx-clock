@@ -76,6 +76,7 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 25 | Disfruta | un prado al atardecer mecido por el viento, sin hora: solo «Disfruta» |
 | 26 | El escultor | un escultor talla la estatua de un corredor según tus pasos de hoy: once escenas hasta cumplir el objetivo |
 | 27 | Trueno y peluches | tira cómica de un día de una banda de thrash metal, de dormir abrazados a un peluche rosa al concierto y la pizza; la escena cambia con la hora |
+| 28 | Mis esferas | la tuya: una foto o un GIF de tu galería, con la hora digital a tu gusto (fuente, tamaño, sitio, color, contorno, segundos y fecha). Se hace en la app y se guarda en la microSD |
 
 Los números 10, 16 y 20 están **retirados** (El grito, Acuario y Cuento) y no se vuelven a usar, para que ningún reloj cambie de esfera al actualizar.
 
@@ -88,6 +89,7 @@ App Android **Marea** (Android 10 o superior), con la misma página de control q
 - **Conexión permanente:** mientras el reloj está cerca, la app se queda conectada por Bluetooth (con un aviso fijo de Android, como cualquier app de reloj). Al conectar le pone la hora y el tiempo de su ciudad, y lo repite cada 30 minutos. Si el reloj se aleja o se apaga, la app vuelve a conectar sola cuando reaparece.
 - **Música y llamadas:** con el permiso de leer notificaciones, el reloj muestra lo que suena en cualquier app de música (y la controla: reproducir, pausa, pistas y volumen) y avisa de las llamadas entrantes, que se pueden rechazar o silenciar desde la muñeca. No pide permisos de teléfono ni de contactos.
 - **Con el estilo del reloj:** Inicio con los avisos y la esfera que se ve; Esferas con vista previa de cada una (y un ojo para sacarla del cambio automático); Alarmas que se crean, cambian y borran, con etiqueta, interruptor y animación; **órdenes de voz** (mantén BOOT y habla: el móvil lo entiende y el reloj pregunta antes de hacerlo); **buscar el reloj** (suena y parpadea, y la app dice lo cerca que está) y, desde el reloj, **buscar el móvil**; un tablón de **novedades**; Archivos para mirar la microSD; Ajustes con idioma (español o inglés, en el reloj y en la app) y **actualizaciones** del reloj y de la propia app por internet.
+- **Mis esferas:** crea esferas con una foto o un GIF de la galería, encuádralas a la pantalla y elige cómo se ve la hora, con vista previa exacta. Se guardan en la microSD del reloj y con copia en el móvil para restaurarlas.
 - Se empareja una vez, con la clave de 6 cifras que aparece en el reloj.
 
 ## Instalar y actualizar

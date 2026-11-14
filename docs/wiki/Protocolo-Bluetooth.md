@@ -98,6 +98,22 @@ El móvil descarga la imagen (`marea-ota.bin`, del manifiesto) y se la pasa al r
 
 `ota abort` cancela. También cancelan que se corte el enlace, un trozo fuera de orden o 20 s sin datos. En todos esos casos el reloj sigue con su versión. La app lo hace en `ClockUpdate.kt`, y `tools/ble_ota.py` lo hace desde el PC.
 
+## Archivos a la microSD (Mis esferas)
+
+Las esferas propias de la app llegan igual que el firmware, por la característica **Firmware**, en «modo archivo» (`bleota.c`):
+
+1. Orden `file begin <tamaño> <sha256 en hex> <ruta>`. Solo se aceptan rutas dentro de `/esferas/` y hasta 3 MB. El reloj monta la tarjeta (y la deja montada hasta el final), reserva el archivo en la PSRAM y responde `{"t":"file","st":"ready","win":N}`, o `{"t":"file","st":"err","msg":…}` (por ejemplo, `el reloj no tiene microSD`).
+2. Trozos `<desplazamiento, 4 bytes little-endian><datos>` y `{"t":"file","st":"ack","off":N}`, como en la actualización.
+3. Con todo recibido, comprueba el SHA-256, escribe el archivo en la microSD (creando las carpetas) y manda `{"t":"file","st":"done"}`.
+
+`file abort` cancela. La app manda primero la imagen (`bg.jpg`, o `anim.bin` para un GIF) y después `face.json`, y termina con `cust reload <número>`. Las órdenes `cust …` están en [[Arquitectura]]. La lista que guarda el reloj llega con `cust list`:
+
+```json
+{"t":"cust","sd":"ok","sel":2,"list":[{"id":1,"name":"Playa"},{"id":2,"name":"Gato"}]}
+```
+
+`sd` es `ok`, `none` (sin tarjeta) o `bad` (no se puede leer).
+
 ## Una sincronización
 
 La app la hace al conectar y cada 30 minutos mientras sigue conectada:

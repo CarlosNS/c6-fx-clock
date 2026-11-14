@@ -5,6 +5,7 @@
 // USB restarts the watch as a USB drive for the computer (usbdisk.c) and Format wipes the card as
 // exFAT, each after a dialog. sd_check() tells the status bar whether there is a card.
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -192,6 +193,44 @@ static size_t json_str(char *buf, size_t n, size_t size, const char *s)
     return n;
 }
 
+// Whole files to and from PSRAM go through this internal (DMA-capable) buffer 4 KB at a time: handed a
+// PSRAM buffer, the SD driver asks for an internal bounce buffer as big as the whole transfer, and with
+// the ~20 KB of internal RAM left while Bluetooth runs that fails (and once left the heap corrupt)
+static uint8_t s_io[4096];
+static int s_hold;  // sd_hold(): the card stays mounted between operations
+static bool s_files_open;  // the Files app has it mounted
+
+static bool io_write(FILE *f, const uint8_t *data, size_t len)
+{
+    for (size_t off = 0; off < len;) {
+        size_t n = len - off < sizeof(s_io) ? len - off : sizeof(s_io);
+        memcpy(s_io, data + off, n);
+        if (fwrite(s_io, 1, n, f) != n) return false;
+        off += n;
+    }
+    return true;
+}
+
+bool sd_hold(bool on)
+{
+    if (!s_lock) sd_check();
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    if (on) {
+        if (!s_card) {
+            int st = mount(false);
+            if (st != g_app.sd_state) g_app.sd_state = st, sys_dirty();
+            if (st == SD_OK) s_hold++;
+        } else {
+            s_hold++;
+        }
+    } else if (s_hold > 0 && --s_hold == 0 && !s_files_open) {
+        unmount();
+    }
+    bool ok = s_card != NULL;
+    xSemaphoreGive(s_lock);
+    return ok;
+}
+
 bool sd_write_file(const char *path, const void *data, size_t len)
 {
     if (!s_lock) sd_check();
@@ -205,19 +244,20 @@ bool sd_write_file(const char *path, const void *data, size_t len)
     if (st == SD_OK) {
         static char full[220];
         snprintf(full, sizeof(full), MOUNT "%s", path);
-        char *slash = strrchr(full, '/');  // its folder, if it is not there yet
-        if (slash && slash > full + strlen(MOUNT)) {
-            *slash = 0;
+        // its folders, every level that is not there yet
+        for (char *p = full + strlen(MOUNT) + 1; (p = strchr(p, '/')); p++) {
+            *p = 0;
             mkdir(full, 0775);
-            *slash = '/';
+            *p = '/';
         }
         FILE *f = fopen(full, "wb");
         if (f) {
-            ok = fwrite(data, 1, len, f) == len;
+            ok = io_write(f, data, len);
             ok = fclose(f) == 0 && ok;
         }
+        if (!ok) ESP_LOGW(TAG, "write %s (%u bytes) failed: errno %d %s", full, (unsigned)len, errno, strerror(errno));
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return ok;
 }
@@ -237,11 +277,11 @@ bool sd_append_file(const char *path, const void *data, size_t len)
         snprintf(full, sizeof(full), MOUNT "%s", path);
         FILE *f = fopen(full, "ab");
         if (f) {
-            ok = fwrite(data, 1, len, f) == len;
+            ok = io_write(f, data, len);
             ok = fclose(f) == 0 && ok;
         }
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return ok;
 }
@@ -273,13 +313,18 @@ void *sd_read_file(const char *path, size_t max, size_t *len)
             long n = ftell(f);
             fseek(f, 0, SEEK_SET);
             if (n >= 0 && (size_t)n <= max && (buf = heap_caps_malloc(n + 1, MALLOC_CAP_SPIRAM))) {
-                if (fread(buf, 1, n, f) != (size_t)n) free(buf), buf = NULL;
+                size_t off = 0, got;
+                while (off < (size_t)n && (got = fread(s_io, 1, (size_t)n - off < sizeof(s_io) ? (size_t)n - off : sizeof(s_io), f)) > 0) {
+                    memcpy(buf + off, s_io, got);
+                    off += got;
+                }
+                if (off != (size_t)n) free(buf), buf = NULL;
                 else *len = n;
             }
             fclose(f);
         }
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return buf;
 }
@@ -299,7 +344,7 @@ int sd_list_names(const char *path, char names[][16], int max)
             if (e->d_name[0] != '.') strlcpy(names[n++], e->d_name, 16);
         if (d) closedir(d);
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return n;
 }
@@ -325,7 +370,7 @@ bool sd_remove_dir(const char *path)
         if (d) closedir(d);
         ok = rmdir(full) == 0;
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return ok;
 }
@@ -352,7 +397,7 @@ bool sd_print_file(const char *path)
             ok = true;
         }
     }
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return ok;
 }
@@ -406,7 +451,7 @@ size_t sd_list_json(const char *path, char *buf, size_t size)
         n += snprintf(buf + n, size - n, ",\"list\":[]");
     }
     if (n + 2 < size) buf[n++] = '}', buf[n] = 0;
-    if (mine) unmount();
+    if (mine && !s_hold) unmount();
     xSemaphoreGive(s_lock);
     return n < size ? n : size - 1;
 }
@@ -419,6 +464,7 @@ static void files_open(void)
     if (!s_lock) sd_check();
     xSemaphoreTake(s_lock, portMAX_DELAY);
     if (!s_card) g_app.sd_state = mount(false);
+    s_files_open = true;
     xSemaphoreGive(s_lock);
     if (s_card) load();
 }
@@ -426,7 +472,8 @@ static void files_open(void)
 static void files_close(void)
 {
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    unmount();
+    s_files_open = false;
+    if (!s_hold) unmount();  // a transfer may be using it
     xSemaphoreGive(s_lock);
 }
 

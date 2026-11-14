@@ -162,6 +162,7 @@ Todas las esferas por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, 
 - También se llega manteniendo el dedo sobre la esfera.
 - Para cambiar de esfera sin abrir la app: desliza a los lados en la esfera, o pulsa BOOT.
 - Qué esferas salen en el **cambio automático**, el color de Clásico y Ónix y la ciudad de Tiempo se eligen en la app del móvil.
+- **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj, y la que pongas desde la app sale como una esfera más (ver [[Esferas]]). No aparecen en esta lista: se eligen en la app.
 
 ## Alarmas
 

@@ -76,6 +76,9 @@ void sd_check(void);
 size_t sd_list_json(const char *path, char *buf, size_t size);
 // Writes a whole file on the microSD (path from the card's root, its folder made if needed); false on error
 bool sd_write_file(const char *path, const void *data, size_t len);
+// Keeps the card mounted from now (true) until the matching sd_hold(false): a transfer mounts it before
+// it takes memory, while there is still internal RAM for it; false if there is no usable card
+bool sd_hold(bool on);
 bool sd_append_file(const char *path, const void *data, size_t len);
 // Prints a file of the microSD on the console (calibration logs)
 bool sd_print_file(const char *path);

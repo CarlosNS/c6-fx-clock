@@ -9,7 +9,7 @@
 (function () {
 'use strict';
 const WN = 410, HN = 502, WA = 274, HA = 336, CORNER = 120;
-const MAX_FRAMES = 40, MIN_DELAY = 100, ANIM_MAX = 10000;
+const MAX_FRAMES = 40, MIN_DELAY = 100;
 const FONTS = [
   {id: 'round', es: 'Redonda', en: 'Rounded', aa: ['round_s', 'round_m', 'round_xl', 'round_xxl']},
   {id: 'seg', es: 'Segmentos', en: 'Segments', aa: ['seg_s', 'seg_m', 'seg_xl', 'seg_xxl']},
@@ -287,7 +287,7 @@ async function loadSource(blob, ext, keepCrop) {
   }
   const dur = fr.reduce((a, f) => a + f.delay, 0);
   $('meinfo').textContent = fr.length > 1
-    ? tr(`GIF: ${fr.length} fotogramas, ${(dur / 1000).toFixed(1)} s`, `GIF: ${fr.length} frames, ${(dur / 1000).toFixed(1)} s`) + (SRC.cut ? tr(' (reducido)', ' (reduced)') : '') + (dur > ANIM_MAX ? tr(' · en el reloj, como mucho 10 s', ' · up to 10 s on the watch') : '') + tr(' · se anima al encender la pantalla', ' · it plays when the screen comes on')
+    ? tr(`GIF: ${fr.length} fotogramas, ${(dur / 1000).toFixed(1)} s`, `GIF: ${fr.length} frames, ${(dur / 1000).toFixed(1)} s`) + (SRC.cut ? tr(' (reducido)', ' (reduced)') : '') + tr(' · se repite mientras la pantalla está encendida', ' · it loops while the screen is on')
     : tr(`Imagen de ${SRC.w}×${SRC.h}`, `Picture ${SRC.w}×${SRC.h}`);
   frame = 0; frameT = performance.now();
 }
