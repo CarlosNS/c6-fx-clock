@@ -29,8 +29,8 @@ function loadFonts() { return fontsP || (fontsP = fetchFonts().catch(e => { font
 async function fetchFonts() {
   const fd = await (await fetch(A + 'fuentes.json')).json();
   const img = new Image();
-  img.src = A + 'fuentes.png';
-  await img.decode();
+  // the load event, not decode(): decode() can wait for ever on a page that is not on screen
+  await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('fuentes.png')); img.src = A + 'fuentes.png'; });
   const c = document.createElement('canvas');
   c.width = img.width; c.height = img.height;
   const x = c.getContext('2d');
@@ -43,6 +43,7 @@ async function fetchFonts() {
 
 // ---------------------------------------------------------------- the time, exactly as fx_custom.c
 let M = null;  // mask WN*HN
+let DATE_AT = null;  // where the date was last laid out: [centre x, top, width, height]
 function mput(x, y, a) { if (x >= 0 && x < WN && y >= 0 && y < HN && a > M[y * WN + x]) M[y * WN + x] = a; }
 function utf(s) { return Array.from(s); }
 // font index 0..4 as in the firmware, -1 = VT323 (the date); returns [width, height]
@@ -92,21 +93,23 @@ function buildMask(F, hhmm, ss, date) {
   const left = F.x - Math.trunc(total / 2);
   textRun(fi, F.size, left, F.y, hhmm, true);
   if (F.secs) textRun(fi, ssize, left + w1 + gap, F.y + h1 - h2, ss, true);
-  let bottom = F.y + h1, wd = 0;
+  let bottom = F.y + h1, top = F.y, wd = 0, dcx = F.x;
   const ds = h1 >= 100 ? 2 : 1;
-  if (F.date) {
+  if (F.date) {  // under the time, or where it was moved
     let hd; [wd, hd] = textRun(-1, ds, 0, 0, date, false);
-    const dy = bottom + Math.max(4, Math.trunc(h1 / 12));
-    textRun(-1, ds, F.x - Math.trunc(wd / 2), dy, date, true);
-    bottom = dy + hd;
+    let dy = bottom + Math.max(4, Math.trunc(h1 / 12));
+    if (F.dx != null) { dcx = F.dx; dy = F.dy; }
+    textRun(-1, ds, dcx - Math.trunc(wd / 2), dy, date, true);
+    DATE_AT = [dcx, dy, wd, hd];
+    bottom = Math.max(bottom, dy + hd); top = Math.min(top, dy);
   }
   const m = 8;
   let bx0 = Math.max(0, left - m - 6), bx1 = Math.min(WN, left + total + m + 6);
   if (F.date) {
-    if (F.x - Math.trunc(wd / 2) - m < bx0) bx0 = Math.max(0, F.x - Math.trunc(wd / 2) - m);
-    if (F.x + Math.trunc(wd / 2) + m > bx1) bx1 = Math.min(WN, F.x + Math.trunc(wd / 2) + m);
+    if (dcx - Math.trunc(wd / 2) - m < bx0) bx0 = Math.max(0, dcx - Math.trunc(wd / 2) - m);
+    if (dcx + Math.trunc(wd / 2) + m > bx1) bx1 = Math.min(WN, dcx + Math.trunc(wd / 2) + m);
   }
-  return [bx0, Math.max(0, F.y - m), bx1, Math.min(HN, bottom + m + 6)];
+  return [bx0, Math.max(0, top - m), bx1, Math.min(HN, bottom + m + 6)];
 }
 // Paints the mask onto RGBA pixels (WN x HN): outline or shadow, then the fill
 function drawText(F, px, box) {
@@ -185,8 +188,10 @@ function drawHands(ctx, F, d) {
 function buildDateMask(F, date) {
   M = new Uint8Array(WN * HN);
   const [wd, hd] = textRun(-1, 2, 0, 0, date, false);
-  const cx = F.clock === 'analog' ? F.ax : WN / 2, cy = F.clock === 'analog' ? F.ay + Math.trunc(radiusOf(F) * 42 / 100) : HN / 2 - Math.trunc(hd / 2);
+  let cx = F.clock === 'analog' ? F.ax : WN / 2, cy = F.clock === 'analog' ? F.ay + Math.trunc(radiusOf(F) * 42 / 100) : HN / 2 - Math.trunc(hd / 2);
+  if (F.dx != null) { cx = F.dx; cy = F.dy; }  // moved
   textRun(-1, 2, cx - Math.trunc(wd / 2), cy, date, true);
+  DATE_AT = [cx, cy, wd, hd];
   const m = 8;
   return [Math.max(0, cx - Math.trunc(wd / 2) - m), Math.max(0, cy - m), Math.min(WN, cx + Math.trunc(wd / 2) + m), Math.min(HN, cy + hd + m)];
 }
@@ -230,14 +235,14 @@ function inject() {
   <div class="list"><label class="row col"><span class="dim">${tr('Nombre', 'Name')}</span><input type="text" id="mename" maxlength="30"></label></div>
   <div class="panel stack" style="gap:10px;align-items:center">
     <canvas id="mecv" width="${WN}" height="${HN}" style="width:min(82vw,300px);aspect-ratio:${WN}/${HN};border-radius:24%;background:#000;touch-action:none;image-rendering:pixelated"></canvas>
-    <div class="seg" role="group"><button id="memcrop" class="on">${tr('Encuadrar fondo', 'Frame the picture')}</button><button id="memtime">${tr('Mover la hora', 'Move the time')}</button></div>
+    <div class="seg" role="group"><button id="memcrop" class="on">${tr('Encuadrar fondo', 'Frame the picture')}</button><button id="memtime">${tr('Mover la hora', 'Move the time')}</button><button id="memdate">${tr('Mover la fecha', 'Move the date')}</button></div>
     <div class="dim small" id="mehint"></div>
     <input type="file" id="mefile" accept="image/*" class="hide">
     <button class="btn full" id="mepick">${tr('Elegir imagen o GIF', 'Pick a picture or GIF')}</button>
     <div class="dim small" id="meinfo"></div>
   </div>
-  <p class="lbl">${tr('Tramos del día', 'Stretches of the day')}</p>
-  <div class="panel stack" style="gap:10px">
+  <div class="list"><div class="row"><div class="t"><b>${tr('Tramos del día', 'Stretches of the day')}</b><small>${tr('Otra imagen según la hora', 'Another picture by the time of day')}</small></div><input type="checkbox" class="sw" id="meslotsw"></div></div>
+  <div class="panel stack hide" id="meslotbox" style="gap:10px">
     <div class="inline" id="meslots" style="gap:6px;flex-wrap:wrap"></div>
     <div class="inline" style="gap:8px;flex-wrap:wrap">
       <label class="inline" style="gap:6px"><span class="dim">${tr('Desde', 'From')}</span><input type="time" id="mefrom" style="background:var(--noche);color:var(--crema);border:3px solid var(--linea);min-height:42px;padding:0 6px;font:inherit;color-scheme:dark"></label>
@@ -358,7 +363,7 @@ let mode = 'crop', frame = 0, frameT = 0, raf = 0;
 
 async function openEditor(id) {
   const f = id && LOCAL.find(l => l.id === id);
-  ED = {id: id || Math.max(0, ...idsKnown()) + 1, isNew: !id, F: defaults(), saved: !!id, slots: [{key: 0, from: 0, SRC: null, T: null, dirty: true}], cur: 0};
+  ED = {id: id || Math.max(0, ...idsKnown()) + 1, isNew: !id, F: defaults(), saved: !!id, slots: [{key: 0, from: 0, SRC: null, T: null, dirty: true}], cur: 0, useSlots: false, tried: false};
   SRC = null;
   location.hash = '#miesfera';
   await loadFonts();
@@ -376,11 +381,13 @@ async function openEditor(id) {
         sl.SRC = SRC; sl.T = T;
       }
       ED.cur = 0; SRC = ED.slots[0].SRC; T = ED.slots[0].T || T;
+      ED.useSlots = ED.slots.length > 1;
     } catch (e) { $('mest').textContent = tr('No se pudo abrir: ', 'Could not open it: ') + e.message; }
   }
   $('medt').textContent = ED.isNew ? tr('Nueva esfera', 'New face') : tr('Editar esfera', 'Edit face');
   $('medel').classList.toggle('hide', ED.isNew);
   syncControls();
+  syncSlots();
   pickSlot(0);
   setMode('crop');
   loop();
@@ -435,13 +442,19 @@ function syncControls() {
   for (const b of document.querySelectorAll('#v-miesfera [data-fx]')) b.classList.toggle('on', +b.dataset.fx === F.fx);
   $('mesecs').checked = !!F.secs; $('medate').checked = !!F.date;
   $('mest').textContent = ''; $('mebar').classList.add('hide');
-  $('metry').disabled = $('mesel').disabled = !ED.saved;
+  $('mesel').disabled = !ED.saved; $('metry').disabled = false;
 }
+function syncSlots() {
+  $('meslotsw').checked = ED.useSlots; $('meslotbox').classList.toggle('hide', !ED.useSlots);
+  if (!ED.useSlots && ED.cur) pickSlot(0);
+}
+const usedSlots = () => ED.useSlots ? ED.slots : ED.slots.slice(0, 1);
 function syncClock() {
   for (const b of document.querySelectorAll('#v-miesfera [data-clock]')) b.classList.toggle('on', b.dataset.clock === ED.F.clock);
   $('mefontrow').classList.toggle('hide', ED.F.clock !== 'digital');
   $('memtime').classList.toggle('hide', ED.F.clock === 'edge');
-  if (ED.F.clock === 'edge' && mode === 'time') setMode('crop');
+  $('memdate').classList.toggle('hide', !ED.F.date);
+  if ((ED.F.clock === 'edge' && mode === 'time') || (!ED.F.date && mode === 'date')) setMode('crop');
 }
 function setSizeRange() {
   if (ED.F.clock !== 'digital') {  // analog: four sizes (the radius, or the thickness of the edge hands)
@@ -457,11 +470,12 @@ function setSizeRange() {
   const h = fd.aa ? FD[fd.aa[ED.F.size]].h : fd.id === 'pix' ? 10 * (ED.F.size + 2) : FD.jersey.h * (ED.F.size + 2);
   $('mesizev').textContent = h + ' px';
 }
-function changed() { ED.saved = false; $('metry').disabled = $('mesel').disabled = true; }
+function changed() { ED.saved = false; $('mesel').disabled = true; }
 function setMode(m) {
   mode = m;
-  $('memcrop').classList.toggle('on', m === 'crop'); $('memtime').classList.toggle('on', m === 'time');
-  $('mehint').textContent = m === 'crop' ? tr('Arrastra para mover y pellizca para acercar. Lo de fuera de las esquinas no se ve.', 'Drag to move, pinch to zoom. Outside the corners does not show.')
+  $('memcrop').classList.toggle('on', m === 'crop'); $('memtime').classList.toggle('on', m === 'time'); $('memdate').classList.toggle('on', m === 'date');
+  $('mehint').textContent = m === 'date' ? tr('Arrastra la fecha; se centra sola cerca del medio.', 'Drag the date; it snaps to the middle.')
+    : m === 'crop' ? tr('Arrastra para mover y pellizca para acercar. Lo de fuera de las esquinas no se ve.', 'Drag to move, pinch to zoom. Outside the corners does not show.')
     : ED.F.clock === 'analog' ? tr('Arrastra el reloj; se centra solo cerca del medio.', 'Drag the clock; it snaps to the middle.')
     : tr('Arrastra la hora; se centra sola cerca del medio.', 'Drag the time; it snaps to the middle.');
 }
@@ -469,6 +483,8 @@ function setMode(m) {
 function bindEditor() {
   $('memcrop').onclick = () => setMode('crop');
   $('memtime').onclick = () => setMode('time');
+  $('memdate').onclick = () => setMode('date');
+  $('meslotsw').onchange = () => { ED.useSlots = $('meslotsw').checked; syncSlots(); changed(); };
   $('mepick').onclick = () => $('mefile').click();
   $('mefile').onchange = async () => {
     const file = $('mefile').files[0]; if (!file) return;
@@ -499,9 +515,9 @@ function bindEditor() {
     keepSlot(); ED.slots.push(sl); ED.slots.sort((a, b) => a.from - b.from); pickSlot(ED.slots.indexOf(sl)); changed();
   };
   $('medrop').onclick = () => { if (ED.cur === 0) return; ED.slots.splice(ED.cur, 1); ED.cur = 0; SRC = ED.slots[0].SRC; T = ED.slots[0].T; pickSlot(Math.max(0, ED.cur)); changed(); };
-  $('medate').onchange = () => { ED.F.date = $('medate').checked ? 1 : 0; changed(); };
+  $('medate').onchange = () => { ED.F.date = $('medate').checked ? 1 : 0; syncClock(); changed(); };
   $('mesave').onclick = save;
-  $('metry').onclick = () => ClockBridge.customCmd('cust try ' + ED.id);
+  $('metry').onclick = tryIt;
   $('mesel').onclick = () => { ClockBridge.customCmd('cust sel ' + ED.id); status.fx = 28; if (WATCH) WATCH.sel = ED.id; };
   $('medel').onclick = () => {
     if (!ask(tr('¿Eliminar esta esfera?', 'Delete this face?'), tr('Se borra del reloj y del móvil.', 'It is deleted from the watch and the phone.'), tr('Eliminar', 'Delete'))) return;
@@ -511,12 +527,20 @@ function bindEditor() {
   const cv = $('mecv'), pts = new Map();
   let start = null;
   const toCanvas = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * WN / r.width, (e.clientY - r.top) * HN / r.height]; };
-  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, toCanvas(e)); start = null; ED.F._x = ED.F.x; ED.F._ax = ED.F.ax; ED.F._ay = ED.F.ay; };
+  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, toCanvas(e)); start = null; ED.F._x = ED.F.x; ED.F._ax = ED.F.ax; ED.F._ay = ED.F.ay; ED.F._dx = ED.F.dx; };
   cv.onpointerup = cv.onpointercancel = e => { pts.delete(e.pointerId); start = null; };
   cv.onpointermove = e => {
     if (!pts.has(e.pointerId)) return;
     const prev = pts.get(e.pointerId), p = toCanvas(e);
     pts.set(e.pointerId, p);
+    if (mode === 'date') {
+      if (pts.size !== 1 || !DATE_AT) return;
+      if (ED.F.dx == null) { ED.F.dx = DATE_AT[0]; ED.F.dy = DATE_AT[1]; ED.F._dx = ED.F.dx; }
+      ED.F._dx = (ED.F._dx ?? ED.F.dx) + p[0] - prev[0];
+      ED.F.dx = Math.abs(ED.F._dx - WN / 2) < 8 ? WN / 2 : Math.max(0, Math.min(WN, Math.round(ED.F._dx)));
+      ED.F.dy = Math.max(0, Math.min(HN - 20, Math.round(ED.F.dy + p[1] - prev[1])));
+      changed(); return;
+    }
     if (mode === 'time') {
       if (pts.size !== 1) return;
       if (ED.F.clock === 'analog') {  // the dial's centre, snapping to the middle both ways
@@ -580,6 +604,7 @@ function compose(k, withGuides) {
     out.save(); out.fillStyle = 'rgba(0,0,0,.6)';
     out.beginPath(); out.rect(0, 0, WN, HN); out.roundRect(2, 2, WN - 4, HN - 4, CORNER); out.fill('evenodd'); out.restore();
     if (mode === 'time' && (ED.F.clock === 'analog' ? ED.F.ax : ED.F.x) === WN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(WN / 2, 0, 1, HN); }
+    if (mode === 'date' && ED.F.dx === WN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(WN / 2, 0, 1, HN); }
     if (mode === 'time' && ED.F.clock === 'analog' && ED.F.ay === HN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(0, HN / 2, WN, 1); }
   }
 }
@@ -623,6 +648,36 @@ async function buildMain() {
   return b64(out);
 }
 const norm = t => (t || '').trim().toLocaleLowerCase();
+const onWatchNow = () => !!(WATCH && WATCH.list && WATCH.list.some(w => w.id === ED.id));
+// Try it on the watch for a while: the saved face if nothing changed; otherwise what is on screen goes
+// to a temporary face there (/esferas/999), so the saved one is not touched until Save
+async function tryIt() {
+  if (busy) return;
+  keepSlot();
+  if (ED.saved && onWatchNow()) { ClockBridge.customCmd('cust try ' + ED.id); $('mest').textContent = tr('En el reloj durante 8 segundos.', 'On the watch for 8 seconds.'); return; }
+  const why = picProblem();
+  if (why) { $('mest').textContent = why; return; }
+  if (!up) { $('mest').textContent = tr('El reloj no está conectado.', 'The watch is not connected.'); return; }
+  busy = true;
+  const keepCur = ED.cur;
+  try {
+    sending(tr('Probando en el reloj', 'Trying it on the watch'), 0, tr('Preparando… (no se guarda nada)', 'Preparing… (nothing is saved)'));
+    const F = {...ED.F}; delete F._x; delete F._ax; delete F._ay; delete F._dx; delete F.anim;
+    if (F.dx == null) { delete F.dx; delete F.dy; }
+    const files = {}, slots = [];
+    const used = usedSlots();
+    for (let k = 0; k < used.length; k++) {
+      pickSlot(k);
+      const anim = SRC.frames.length > 1, pic = `${anim ? 'anim' : 'bg'}_${k}.${anim ? 'bin' : 'jpg'}`;
+      files[pic] = await buildMain();
+      slots.push({from: k ? used[k].from : 0, pic});
+    }
+    F.slots = slots;
+    pickSlot(keepCur);
+    ED.tried = true;
+    ClockBridge.customTry(JSON.stringify(F), JSON.stringify(files));
+  } catch (e) { busy = false; sending(null); $('mest').textContent = e.message; }
+}
 // What would stop it being saved, or ''
 function problem() {
   const name = norm(ED.F.name);
@@ -631,9 +686,12 @@ function problem() {
   if ((typeof FX !== 'undefined' ? FX : []).some(f => !f.x && f.g >= 0 && norm(f.label) === name)) return tr('Ya hay una esfera de serie con ese nombre.', 'A built-in face already has that name.');
   const mine = [...LOCAL, ...(WATCH && WATCH.list ? WATCH.list : [])].filter(f => f.id !== ED.id);
   if (mine.some(f => norm(f.name) === name)) return tr('Ya tienes otra esfera con ese nombre.', 'You already have another face with that name.');
-  const empty = ED.slots.find(sl => !sl.SRC && !sl.pic);
+  return picProblem();
+}
+function picProblem() {
+  const empty = usedSlots().find(sl => !sl.SRC && !sl.pic);
   if (empty) return tr(`El tramo de las ${hhmmOf(empty.from)} no tiene imagen.`, `The ${hhmmOf(empty.from)} stretch has no picture.`);
-  if (new Set(ED.slots.map(sl => sl.from)).size !== ED.slots.length) return tr('Dos tramos empiezan a la misma hora.', 'Two stretches start at the same time.');
+  if (new Set(usedSlots().map(sl => sl.from)).size !== usedSlots().length) return tr('Dos tramos empiezan a la misma hora.', 'Two stretches start at the same time.');
   return '';
 }
 async function save() {
@@ -646,9 +704,15 @@ async function save() {
   const keepCur = ED.cur;
   try {
     $('mest').textContent = tr('Preparando…', 'Preparing…');
-    const F = {...ED.F}; delete F._x; delete F._ax; delete F._ay; delete F.anim;
+    const F = {...ED.F}; delete F._x; delete F._ax; delete F._ay; delete F._dx; delete F.anim;
+    if (F.dx == null) { delete F.dx; delete F.dy; }
     F.name = F.name.trim();
+    if (onWatchNow() && !ED.isNew && !ask(tr('¿Sobrescribir la esfera?', 'Overwrite the face?'),
+      tr(`Se cambia «${F.name}» en el reloj y en el móvil por lo que estás viendo.`, `«${F.name}» on the watch and the phone is replaced with what you see.`), tr('Sobrescribir', 'Overwrite'))) {
+      busy = false; $('mesave').disabled = false; $('mest').textContent = ''; return;
+    }
     const files = {}, slots = [];
+    if (!ED.useSlots) ED.slots = ED.slots.slice(0, 1);
     for (let k = 0; k < ED.slots.length; k++) {
       const sl = ED.slots[k];
       pickSlot(k);
@@ -670,8 +734,7 @@ async function save() {
     pickSlot(keepCur);
     $('mest').textContent = '';
     sending(tr(`Enviando «${F.name}» al reloj`, `Sending «${F.name}» to the watch`), 0, tr('Preparando…', 'Preparing…'));
-    const onWatch = !!(WATCH && WATCH.list && WATCH.list.some(w => w.id === ED.id));
-    ClockBridge.customSave(ED.id, JSON.stringify(F), JSON.stringify(files), !onWatch);
+    ClockBridge.customSave(ED.id, JSON.stringify(F), JSON.stringify(files), !onWatchNow());
   } catch (e) {
     busy = false; $('mesave').disabled = false; $('mest').textContent = e.message; sending(null);
   }
@@ -688,6 +751,12 @@ window.customReply = s => {
     if (m.ok || /móvil/.test(m.msg || '')) for (const sl of ED.slots) sl.dirty = false;  // kept on the phone at least
     if (m.ok) { ED.saved = true; ED.isNew = false; $('metry').disabled = $('mesel').disabled = false; $('medel').classList.remove('hide'); }
     refresh(); return;
+  }
+  if (m.t === 'try') {
+    if (m.pct !== undefined) { sending($('missendt').textContent, m.pct, m.pct + ' %'); return; }
+    busy = false; sending(null);
+    $('mest').textContent = m.ok ? tr('En el reloj durante 8 segundos. No se ha guardado nada.', 'On the watch for 8 seconds. Nothing was saved.') : (m.msg || tr('No se pudo probar', 'It could not be tried'));
+    return;
   }
   if (m.t === 'restore') {
     if (m.pct !== undefined) { sending($('missendt').textContent, m.pct, m.pct + ' %'); return; }
@@ -709,6 +778,9 @@ window.misFaceInfo = id => {
   const w = WATCH && WATCH.list && WATCH.list.find(f => f.id === id);
   return w ? {name: w.name, thumb: null} : null;
 };
-window.misView = v => { if (v === 'esferas') refresh(); if (v === 'miesfera') loop(); };
+window.misView = v => {
+  if (v !== 'miesfera' && ED && ED.tried) { ED.tried = false; ClockBridge.customCmd('cust del 999'); }  // the trial is not kept
+  if (v === 'esferas') refresh(); if (v === 'miesfera') loop();
+};
 refresh();
 })();

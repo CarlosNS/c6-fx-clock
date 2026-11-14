@@ -2,6 +2,7 @@
 // on the microSD in /esferas/<id>/:
 //   face.json  {"name":..,"clock":"digital|analog|edge","font":"round|seg|nib|pix|jersey","size":n,
 //               "x":cx,"y":top (digital),"ax":cx,"ay":cy (analog centre),"color":"#rrggbb",
+//               "dx":cx,"dy":top (the date where it was moved; -1 or absent: in its usual place),
 //               "fx":0 none|1 outline|2 shadow,"secs":0|1,"date":0|1,
 //               "slots":[{"from":minutes,"pic":"bg_0.jpg"|"anim_1.bin"},...]}
 //              The slots are the stretches of the day, sorted, the first from 0: each one shows its
@@ -49,9 +50,11 @@
 static const char *TAG = "custom";
 
 #define SLOTS_MAX 8
+#define CUSTOM_TRY_ID 999  // /esferas/999: what the editor sends to try before saving (never listed)
 typedef struct {
     int font, size, x, y, fx, secs, date, anim;
     int clock, ax, ay;                   // 0 digital, 1 classic hands, 2 hands from the edge; analog centre
+    int dx, dy;                          // the date moved there (centre, top); dx < 0: in its usual place
     int nslots, from[SLOTS_MAX];         // the stretches of the day (minutes), each until the next
     char pic[SLOTS_MAX][32];
     uint8_t r, g, b;
@@ -232,22 +235,24 @@ static void build_mask(const char *hhmm, const char *ss, const char *date)
     int left = f->x - total / 2;
     text_run(f->font, f->size, left, f->y, hhmm, true, &h1);
     if (f->secs) text_run(f->font, ssize, left + w1 + gap, f->y + h1 - h2, ss, true, &h2);
-    int bottom = f->y + h1;
-    if (f->date) {
-        int ds = h1 >= 100 ? 2 : 1, wd = text_run(-1, ds, 0, 0, date, false, &hd);
+    int bottom = f->y + h1, top = f->y, dcx = f->x, wd = 0;
+    if (f->date) {  // under the time, or where it was moved
+        int ds = h1 >= 100 ? 2 : 1;
+        wd = text_run(-1, ds, 0, 0, date, false, &hd);
         int dy = bottom + (h1 / 12 > 4 ? h1 / 12 : 4);
-        text_run(-1, ds, f->x - wd / 2, dy, date, true, &hd);
-        bottom = dy + hd;
+        if (f->dx >= 0) dcx = f->dx, dy = f->dy;
+        text_run(-1, ds, dcx - wd / 2, dy, date, true, &hd);
+        if (dy + hd > bottom) bottom = dy + hd;
+        if (dy < top) top = dy;
     }
     int m = 8;  // room for the pad of the glyphs, the outline and the shadow
     s_bx0 = left - m - 6 < 0 ? 0 : left - m - 6;
     s_bx1 = left + total + m + 6 > W ? W : left + total + m + 6;
     if (f->date) {
-        int wd = text_run(-1, h1 >= 100 ? 2 : 1, 0, 0, date, false, &hd);
-        if (f->x - wd / 2 - m < s_bx0) s_bx0 = f->x - wd / 2 - m < 0 ? 0 : f->x - wd / 2 - m;
-        if (f->x + wd / 2 + m > s_bx1) s_bx1 = f->x + wd / 2 + m > W ? W : f->x + wd / 2 + m;
+        if (dcx - wd / 2 - m < s_bx0) s_bx0 = dcx - wd / 2 - m < 0 ? 0 : dcx - wd / 2 - m;
+        if (dcx + wd / 2 + m > s_bx1) s_bx1 = dcx + wd / 2 + m > W ? W : dcx + wd / 2 + m;
     }
-    s_by0 = f->y - m < 0 ? 0 : f->y - m;
+    s_by0 = top - m < 0 ? 0 : top - m;
     s_by1 = bottom + m + 6 > H ? H : bottom + m + 6;
 }
 
@@ -355,6 +360,7 @@ static void build_date_mask(const char *date)
     const face_t *f = &s_face;
     int hd, wd = text_run(-1, 2, 0, 0, date, false, &hd);
     int cx = f->clock == 1 ? f->ax : W / 2, cy = f->clock == 1 ? f->ay + (100 + 30 * f->size) * 42 / 100 : H / 2 - hd / 2;
+    if (f->dx >= 0) cx = f->dx, cy = f->dy;  // moved
     text_run(-1, 2, cx - wd / 2, cy, date, true, &hd);
     int m = 8;
     s_bx0 = cx - wd / 2 - m < 0 ? 0 : cx - wd / 2 - m;
@@ -443,6 +449,8 @@ static bool load(int id)
     f.clock = ck && !strcmp(ck, "analog") ? 1 : ck && !strcmp(ck, "edge") ? 2 : 0;
     f.ax = (v = cJSON_GetObjectItem(j, "ax")) ? v->valueint : W / 2;
     f.ay = (v = cJSON_GetObjectItem(j, "ay")) ? v->valueint : H / 2;
+    f.dx = (v = cJSON_GetObjectItem(j, "dx")) && cJSON_IsNumber(v) ? v->valueint : -1;
+    f.dy = (v = cJSON_GetObjectItem(j, "dy")) && cJSON_IsNumber(v) ? v->valueint : -1;
     cJSON *sl = cJSON_GetObjectItem(j, "slots");
     for (int k = 0; cJSON_IsArray(sl) && k < cJSON_GetArraySize(sl) && f.nslots < SLOTS_MAX; k++) {
         cJSON *e = cJSON_GetArrayItem(sl, k);
@@ -611,7 +619,7 @@ int custom_list(int *ids, char (*names)[32], int max)
     int count = sd_list_names("/esferas", dirs, 24), n = 0;
     for (int i = 0; i < count && n < max; i++) {
         int id = atoi(dirs[i]);
-        if (id <= 0) continue;
+        if (id <= 0 || id == CUSTOM_TRY_ID) continue;  // not the editor's trial
         char path[48];
         size_t len;
         snprintf(path, sizeof(path), "/esferas/%d/face.json", id);
@@ -647,7 +655,7 @@ size_t custom_list_json(char *buf, size_t size)
     int first = 1;
     for (int i = 0; i < count && n + 80 < size; i++) {
         int id = atoi(names[i]);
-        if (id <= 0) continue;
+        if (id <= 0 || id == CUSTOM_TRY_ID) continue;  // not the editor's trial
         char path[48], nm[48] = "";
         size_t len;
         snprintf(path, sizeof(path), "/esferas/%d/face.json", id);

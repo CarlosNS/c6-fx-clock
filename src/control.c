@@ -34,12 +34,15 @@ void app_command(const char *cmd)
 {
     int a, b, c, d, e, f, g;
     long long epoch;
-    // Using the web page keeps the screen on, but not what the phone pushes by itself (time, weather,
-    // the song playing): with the permanent link that lit the screen many times a day for nothing.
-    // An incoming call opens its own alert, which wakes the screen.
-    if (strncmp(cmd, "time ", 5) != 0 && strncmp(cmd, "wx ", 3) != 0 && strncmp(cmd, "music ", 6) != 0 &&
-        strncmp(cmd, "call ", 5) != 0)
-        app_wake();
+    // Changing something from the phone or the page wakes the screen, to show it; what the phone
+    // pushes or asks by itself does not (time, weather, the song playing, the sync, the status, the
+    // lists the app reads each time it comes on screen, files going to the card): with the permanent
+    // link that lit the screen many times a day for nothing. An incoming call opens its own alert.
+    static const char *const QUIET[] = {"time ", "wx ", "music ", "call ", "get ", "sync ", "cust list", "file "};
+    bool quiet = false;
+    for (unsigned i = 0; i < sizeof(QUIET) / sizeof(QUIET[0]); i++)
+        if (strncmp(cmd, QUIET[i], strlen(QUIET[i])) == 0) quiet = true;
+    if (!quiet) app_wake();
 
     if (phone_command(cmd)) return;
     if (voice_command(cmd)) return;  // the phone's answer to a voice command

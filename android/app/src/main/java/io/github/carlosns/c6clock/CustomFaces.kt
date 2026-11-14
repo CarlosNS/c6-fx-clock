@@ -56,8 +56,11 @@ object CustomFaces {
      * Stores a face on the phone; returns its folder. [files] maps file names (pictures, sources, the
      * thumbnail) to base64; files of stretches no longer in the face are removed.
      */
-    fun store(c: Context, id: Int, json: String, files: JSONObject): File {
-        val d = File(dir(c), id.toString()).apply { mkdirs() }
+    fun store(c: Context, id: Int, json: String, files: JSONObject): File = storeIn(File(dir(c), id.toString()), json, files)
+
+    /** The same into any folder (a trial goes to a temporary one, not kept with the faces). */
+    fun storeIn(d: File, json: String, files: JSONObject): File {
+        d.mkdirs()
         val j = JSONObject(json)
         File(d, "face.json").writeText(json)
         for (name in files.keys()) {
@@ -73,8 +76,7 @@ object CustomFaces {
     fun delete(c: Context, id: Int) = File(dir(c), id.toString()).deleteRecursively()
 
     /** Sends a stored face to the watch (its pictures, or only [only], then the settings); [progress] 0..100. */
-    suspend fun send(link: ClockBle, d: File, only: Set<String>? = null, progress: (Int) -> Unit) {
-        val id = d.name
+    suspend fun send(link: ClockBle, d: File, only: Set<String>? = null, id: String = d.name, progress: (Int) -> Unit) {
         val json = File(d, "face.json").readBytes()
         val pics = pictures(JSONObject(String(json))).filter { only == null || it in only }.map { File(d, it) }.filter { it.exists() }
         val sizes = pics.map { it.length() }

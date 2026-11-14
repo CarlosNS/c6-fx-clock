@@ -9,6 +9,8 @@
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.
 - Arreglado: textos que se pisaban en Alarmas, Pasos, Cronómetro, Archivos y el lanzador.
 - **La app sin el reloj:** una barra avisa en todas las secciones; lo que necesita el reloj se ve atenuado y, al tocarlo, explica que no está conectado (antes parecía cambiarse y se perdía); Inicio enseña lo último que se supo, y al reconectar se vuelve a leer todo. Sin reloj emparejado, Inicio es la bienvenida con los pasos.
+- **Mis esferas:** los tramos del día van tras un interruptor; la fecha también se puede mover; **Probar en el reloj** funciona sin guardar (manda lo que ves a una esfera temporal y no toca la guardada), y guardar encima de una que ya estaba pide confirmación.
+- **El reloj ya no se enciende al abrir la app:** las consultas que la app hace sola (estado, alarmas, lista de esferas, sincronización, archivos) no despiertan la pantalla; cambiar algo desde la app, sí.
 - **Mis esferas, más completas:** tramos del día (cada uno con su imagen o GIF; cubren todo el día), reloj analógico clásico o con agujas que salen del borde además del digital, y nombre obligatorio que no puede repetir el de otra esfera.
 - **Mis esferas:** el envío al reloj se ve en una ventana que bloquea la app hasta terminar; al reconectar, las que estaban solo en el móvil se mandan solas.
 - Arreglado: al conectar, el reloj podía rechazar una orden por falta de búferes (mientras mandaba su estado); ahora deja búferes libres para las órdenes y la app reintenta.

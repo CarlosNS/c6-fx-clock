@@ -492,6 +492,24 @@ class MainActivity : ComponentActivity() {
                 reply(JSONObject().put("t", "save").put("ok", r.isSuccess).put("msg", r.exceptionOrNull()?.message ?: ""))
             }
         }
+        /**
+         * A trial before saving: the face's files go to the watch's /esferas/999 (never listed there) and
+         * it shows it for a while; nothing is kept on the phone. Replies {"t":"try","pct"|"ok",..}.
+         */
+        @JavascriptInterface fun customTry(json: String, files: String) {
+            val l = Live.link?.takeIf { it.ready } ?: return reply(JSONObject().put("t", "try").put("ok", false).put("msg", "el reloj no está conectado"))
+            lifecycleScope.launch {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                val r = runCatching {
+                    val d = File(cacheDir, "prueba").apply { deleteRecursively() }
+                    CustomFaces.storeIn(d, json, JSONObject(files))
+                    CustomFaces.send(l, d, null, "999") { reply(JSONObject().put("t", "try").put("pct", it)) }
+                    l.send("cust try 999")
+                }
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                reply(JSONObject().put("t", "try").put("ok", r.isSuccess).put("msg", r.exceptionOrNull()?.message ?: ""))
+            }
+        }
         /** Every face kept on the phone, to the watch again (a new card); replies {"t":"restore",..}. */
         /** The faces kept on the phone to the watch again: ids "3,5" (only those) or "" (all). */
         @JavascriptInterface fun customRestore(ids: String) {

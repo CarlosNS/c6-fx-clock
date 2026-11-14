@@ -78,14 +78,15 @@ En *Esferas*, arriba, **Mis esferas** deja crear, cambiar y borrar esferas propi
 
 1. **+ Nueva esfera** (o *Editar* en una que ya tengas) y ponle un **nombre**: es obligatorio y no puede repetir el de ninguna esfera, ni de serie ni tuya.
 2. **Elegir imagen o GIF** abre la galería del móvil. En *Encuadrar fondo*, arrastra para mover y pellizca para acercar; las esquinas oscurecidas son lo que tapa la pantalla redondeada.
-3. **Tramos del día** (opcional): con **+ Tramo** la esfera cambia de imagen a lo largo del día, como *Trueno y peluches*. Cada tramo tiene su hora de inicio (*Desde*) y su propia imagen o GIF con su encuadre: elige el tramo y luego su imagen. El primero empieza a las 00:00 y cada uno dura hasta que empieza el siguiente, así que todo el día queda cubierto; un tramo sin imagen sale marcado con «!» y no deja guardar. Hasta 8 tramos.
+3. **Tramos del día** (opcional, con su interruptor; apagado, la sección no aparece y la esfera usa una sola imagen): con **+ Tramo** la esfera cambia de imagen a lo largo del día, como *Trueno y peluches*. Cada tramo tiene su hora de inicio (*Desde*) y su propia imagen o GIF con su encuadre: elige el tramo y luego su imagen. El primero empieza a las 00:00 y cada uno dura hasta que empieza el siguiente, así que todo el día queda cubierto; un tramo sin imagen sale marcado con «!» y no deja guardar. Hasta 8 tramos.
 4. En *La hora*, el **reloj**:
    - **Digital:** **fuente** (Redonda, Segmentos, Caligráfica, Píxel o Jersey), **tamaño** y sitio (*Mover la hora*).
+   - Con la **fecha** marcada, *Mover la fecha* la lleva a donde quieras (si no la mueves, va en su sitio: bajo la hora, bajo el centro del clásico o en el centro con el de borde).
    - **Clásico:** agujas desde el centro, con marcas y segundero; el tamaño cambia el radio y *Mover la hora* lo coloca donde quieras.
    - **Borde:** las agujas salen del borde de la pantalla hacia el centro sin llegar, para que se vea el fondo; el segundero es un punto que recorre el borde. El tamaño cambia su grosor.
    - En los tres: **color**, **contorno** o **sombra** (o nada) para que se lea sobre cualquier fondo, **segundos** y **fecha**.
-5. La vista previa es exactamente lo que verá el reloj. **Probar en el reloj** la enseña 8 segundos sin guardar nada.
-6. **Guardar en el reloj** la manda por Bluetooth (unos segundos una foto; un GIF, hasta un minuto; al cambiar una esfera solo se mandan las imágenes que cambiaron) y guarda una copia en el móvil. **Ponerla** la deja como esfera del reloj.
+5. La vista previa es exactamente lo que verá el reloj. **Probar en el reloj** la enseña 8 segundos sin guardar nada: si has cambiado algo, se manda a una esfera temporal del reloj (no aparece en ninguna lista y se borra al salir del editor), así la que tenías guardada no se toca; si no has cambiado nada, enseña la guardada. Si sales sin guardar, los cambios se pierden.
+6. **Guardar en el reloj** la manda por Bluetooth (unos segundos una foto; un GIF, hasta un minuto; al cambiar una esfera solo se mandan las imágenes que cambiaron) y guarda una copia en el móvil. Si cambias una que ya estaba en el reloj, pregunta antes de sobrescribirla. **Ponerla** la deja como esfera del reloj.
 
 - **Los GIF** se reducen a 274×336 píxeles (en el reloj se ven a pantalla completa, algo menos nítidos que una foto), hasta 40 fotogramas y unos 10 por segundo; si el GIF tiene más, la app avisa de que se ha reducido. Como mucho ocupan 3 MB. Se repiten mientras la pantalla está encendida.
 - **La lista** dice dónde está cada una: *en el reloj*, *solo en el móvil* o *solo en el reloj*, y cuál está *puesta*.
