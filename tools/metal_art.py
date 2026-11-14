@@ -1159,11 +1159,10 @@ def scene_show(k=0):
 
 # ---------------------------------------------------------------- scene 7: after the show, pizza (23-24)
 
-NEON_BOX = (8, 44, 34, 80)   # the neon sign on the left wall (x0, y0, x1, y1), for its flicker
 
 
 def scene_pizza(breath=0):
-    S = Scene(light=(-0.85, -0.25, 0.45))  # a purple-blue neon on the left wall, nothing else
+    S = Scene(light=(0.75, -0.15, 0.6))  # a TV off to the right, the only light: dim and bluish
     b = -breath
 
     wall = S.new('wall', [0x06050c, 0x0b0914, 0x120e1e, 0x1a142a, 0x241c3a])
@@ -1186,14 +1185,9 @@ def scene_pizza(breath=0):
     pep = S.new('pepperoni', [0x5a0a0c, 0x8e1616, 0xc02a22, 0xe25a40], 0x2a0406)
     rimc = S.new('rim', [0x5a2a9a, 0x8a50d8, 0xc8a0ff])
 
-    # -- the room: a dark wall, the floor; a neon lightning bolt on the left wall
-    S.put(wall, np.ones((H, W), bool), 0.25 + 0.55 * np.exp(-((XX - 18) / 40) ** 2 - ((YY - 62) / 40) ** 2) + 0.05 * (noise(91, 8) - 0.5))
+    # -- the room: a dark wall lit faintly from the TV on the right, the floor
+    S.put(wall, np.ones((H, W), bool), 0.2 + 0.5 * np.exp(-((XX - 140) / 60) ** 2 - ((YY - 90) / 50) ** 2) + 0.05 * (noise(91, 8) - 0.5))
     S.put(floor, YY > 140, 0.4 - np.clip((YY - 140) / 30, 0, 1) * 0.2 + 0.05 * (grain(92) - 0.5))
-    bolt = [(26, 46), (14, 62), (22, 62), (12, 78), (32, 58), (24, 58), (32, 46)]
-    pb = poly(bolt)
-    S.put(neon, (np.abs(pb) < 1.6), 0.4)
-    S.put(neon, (np.abs(pb) < 0.7), 0.95)
-    S.put(wall, (np.abs(pb) >= 1.6) & (np.abs(pb) < 5) & (S.obj == wall), 0.85)   # its glow on the wall
 
     # -- the old leather sofa, front on: backrest cushions, arms, seat; cracked, taped, split
     crack = 0.9 * (np.abs(np.sin(XX * 0.9 + 3 * noise(93, 3)) * np.sin(YY * 0.7 + 3 * noise(94, 4))) > 0.93)
@@ -1223,22 +1217,24 @@ def scene_pizza(breath=0):
     S.fill(shirt, tor, depth=6, roundness=12, bump=0.6 * ridge(56, 108, 62, 126, 2) + 0.5 * ridge(80, 108, 74, 126, 2), amb=0.15)
     S.fill(skin, capsule(68, 90, 68, 100 + b, 6.5), depth=4, roundness=6, amb=0.18)          # neck
     S.put(shirt, (np.abs(ellipse(68, 100 + b, 9, 5)) < 1) & (YY > 100 + b), 0.55)
-    # his left arm (on the left) flung along the top of the backrest, the hand hanging over the end
-    S.fill(skin, smin(capsule(46, 104 + b, 30, 84, 7.5, 6.5), ellipse(39, 95, 7.5, 6, -0.9), 3), depth=6, roundness=7, amb=0.16)
-    S.fill(shirt, ellipse(45, 103 + b, 7.5, 7, -0.8), depth=4, roundness=6, amb=0.15)        # sleeve
-    S.fill(skin, smin(capsule(30, 84, 22, 90, 5.8, 4.5), ellipse(26, 87, 4.5, 4, -0.6), 2), depth=5, roundness=6, amb=0.14)
-    S.fill(skin, smin(ellipse(20, 94, 3.8, 5), capsule(19, 98, 19, 101, 1.4), 1.5), depth=3, roundness=3, amb=0.16)   # the hand hanging limp
-    # his right arm (on the right) down on the armrest, a can dangling from his fingers
+    # his left arm (on the left) hanging limp off the seat towards the floor
+    S.fill(shirt, ellipse(45, 104 + b, 7.5, 7, -0.3), depth=4, roundness=6, amb=0.15)        # sleeve
+    S.fill(skin, smin(capsule(44, 108 + b, 38, 128, 6.8, 6), ellipse(42, 116, 6.5, 7.5, 0.2), 3), depth=6, roundness=7, amb=0.14)
+    S.fill(skin, smin(capsule(38, 128, 34, 146, 5.6, 4.2), ellipse(37, 134, 5, 6, 0.1), 2), depth=5, roundness=6, amb=0.15)
+    S.fill(skin, smin(ellipse(33, 150, 4, 5), capsule(32, 154, 31, 158, 1.4), 1.5), depth=3, roundness=3, amb=0.16)
+    # his right arm (on the right) lying slack along the armrest, the hand drooping over its end
     S.fill(shirt, ellipse(91, 103 + b, 7.5, 7, 0.8), depth=4, roundness=6, amb=0.15)
-    S.fill(skin, smin(capsule(92, 106 + b, 106, 118, 7.5, 6.5), ellipse(98, 111, 7.5, 6, 0.9), 3), depth=6, roundness=7, amb=0.14)
-    S.fill(skin, smin(capsule(106, 118, 124, 114, 5.8, 4.5), ellipse(112, 117, 5, 4, -0.2), 2), depth=5, roundness=6, amb=0.16)
-    S.fill(can, smin(poly([(126, 114), (133, 114), (133, 128), (126, 128)]), ellipse(129.5, 114, 3.5, 1.2), 1), depth=3, roundness=3.5, amb=0.3)
-    S.fill(skin, ellipse(127, 113, 4, 3.5), depth=3, roundness=3, amb=0.2)
+    S.fill(skin, smin(capsule(92, 106 + b, 106, 116, 7.5, 6.5), ellipse(98, 110, 7.5, 6, 0.9), 3), depth=6, roundness=7, amb=0.14)
+    S.fill(skin, smin(capsule(106, 116, 122, 108, 5.8, 4.5), ellipse(112, 113, 5, 4, -0.3), 2), depth=5, roundness=6, amb=0.16)
+    S.fill(skin, smin(ellipse(126, 110, 3.8, 3.4, 0.6), capsule(128, 112, 130, 117, 1.4), 1.5), depth=3, roundness=3, amb=0.18)
+    # the can, dropped on the floor by the sofa
+    S.fill(can, smin(poly([(122, 152), (132, 156), (130, 161), (120, 157)]), ellipse(131, 158.5, 1.5, 2.6, 0.4), 1), depth=3, roundness=3, amb=0.3)
+
     # the head fallen back and to the side on the backrest, out cold: eyes shut, mouth open, the hair
     # falling over half his face
     hcx, hcy = 70, 85
-    S.fill(hair, smin(ellipse(68, 76, 19, 9, -0.2), capsule(52, 78, 42, 92, 6, 3), 4), depth=3, roundness=5,
-           bump=0.5 * np.sin(XX * 1.3 + 2 * noise(95, 5)), amb=0.12)                              # spread on the backrest
+    S.fill(hair, smin(ellipse(hcx + 3, hcy - 1, 13, 13.5, 0.25), ellipse(hcx + 1, hcy + 10, 12, 8), 3), depth=3, roundness=5,
+           bump=0.5 * np.sin(XX * 1.3 + 2 * noise(95, 5)), amb=0.12)                              # behind the head
     # the face, drawn by hand: lit from the neon on the left, eyes shut, mouth hanging open, a day's
     # stubble, a lock of hair over his left eye (on our right)
     FACE = ["....hhhhhhhhhh....",
@@ -1263,6 +1259,9 @@ def scene_pizza(breath=0):
             ".s55s4s4s4s4s3s...",
             "..s5s4s4s4s43s....",
             "....s4s44s4s......"]
+    FACE = [row[::-1] for row in FACE]  # lit from the right now: the bright side and the lock swap over
+    FACE = [' ' * ((21 - r) // 4) + row for r, row in enumerate(FACE)]  # the head lolls over to one side
+    FACE = [row.replace(' ', '.') for row in FACE]
     fx0, fy0 = hcx - 9, hcy - 11
     for r, row in enumerate(FACE):
         for c, ch in enumerate(row):
@@ -1281,8 +1280,13 @@ def scene_pizza(breath=0):
     for r, row in enumerate(FACE):
         for c, ch in enumerate(row):
             if ch not in '.h':
-                if c == 0 or row[c - 1] in '.' or c == len(row) - 1 or row[c + 1] == '.':
-                    S.px(skin, [(fx0 + c, fy0 + r)], 1 if c > 8 else 2)
+                if c == 0 or row[c - 1] == '.' or c == len(row) - 1 or row[c + 1] == '.':
+                    S.px(skin, [(fx0 + c, fy0 + r)], 1 if c < 9 else 2)
+    # the long loose hair falling either side of the face onto the shoulders and chest
+    for sgn in (-1, 1):
+        S.fill(hair, smin(capsule(hcx + 4 + sgn * 9.5, hcy - 6, hcx + 1 + sgn * 11.5, hcy + 12, 4.2, 3.6),
+                          capsule(hcx + sgn * 11.5, hcy + 12, hcx + sgn * 15, hcy + 30, 3.6, 2.2), 2),
+               depth=3, roundness=4, bump=0.6 * np.sin(XX * 1.5 + noise(97 + sgn, 3) * 2), amb=0.12, kd=0.7)
 
     # -- the pizza box in front, open: two slices left, crumbs and grease
     S.fill(card, poly([(20, 132), (100, 132), (101, 135), (19, 135)]), depth=1, roundness=1, amb=0.3)         # the lid's edge, folded back
@@ -1315,17 +1319,8 @@ def scene_pizza(breath=0):
     slice_((62, 150), (22, 140), (28, 164), 98)
     slice_((64, 154), (98, 142), (104, 164), 99)
 
-    # -- the neon's rim light: the left edges of everything in front catch it
-    front = (S.obj == leather) | (S.obj == skin) | (S.obj == shirt) | (S.obj == hair) | (S.obj == jeans) | (S.obj == boot) | (S.obj == can)
-    left = np.zeros((H, W), bool)
-    left[:, 1:] = front[:, 1:] & (S.obj[:, 1:] != S.obj[:, :-1])
-    top = np.zeros((H, W), bool)
-    top[1:, :] = front[1:, :] & (S.obj[1:, :] != S.obj[:-1, :])
-    S.put(rimc, (left | top & (XX < 60)) & (YY < 140), 0.55)
-    S.put(rimc, left & (XX < 40) & (YY < 140), 0.95)
-
     S.outlines(skip={wall, neon, floor, tape, stuffing, mouth, grease, rimc})
-    return S, NEON_BOX
+    return S, None
 
 
 # ---------------------------------------------------------------- output

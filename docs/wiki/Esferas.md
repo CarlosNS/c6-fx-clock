@@ -98,7 +98,7 @@ El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 - **13–16:** el garaje del ensayo: cartones de huevos, el amplificador con sus cuatro conos, dos guitarras puntiagudas, micro, cables y pedal; del amplificador salen ondas de sonido.
 - **16–19:** la furgoneta negra de gira, con llamas pintadas y el equipo en la baca, hacia la puesta de sol; colinas, postes y rayas de la carretera pasan a distintas velocidades.
 - **19–23:** el concierto: focos rojos, ámbar y blancos que se cruzan, columnas de fuego, el público con los cuernos en alto y la hora grande en medio.
-- **23–24:** derrotado en un sofá de cuero viejo, con una lata en la mano y una caja de pizza abierta delante; solo le alumbra un neón morado que parpadea.
+- **23–24:** derrotado en un sofá de cuero viejo, con la cabeza caída, un brazo colgando y la lata en el suelo, y una caja de pizza abierta delante; solo le alumbra una tele fuera de plano, con su parpadeo azulado.
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx27-escenas.png" alt="Las siete escenas de Trueno y peluches" width="100%">
 

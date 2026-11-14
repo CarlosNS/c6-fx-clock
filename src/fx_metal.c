@@ -6,7 +6,7 @@
 //   00-08 asleep hugging Rosita, the pink plush, a moonbeam    08-11 half asleep over a coffee at dawn
 //   11-13 glaring at the clip-on tuner of his red V            13-16 the garage: amp, guitars, sound waves
 //   16-19 the black tour van at sunset, with parallax          19-23 the show: beams, fire, horns up; the
-//   23-24 out cold on the old sofa, an open pizza box                time big in the middle
+//   23-24 out cold on the old sofa by the TV, pizza                  time big in the middle
 #include <math.h>
 #include <stdio.h>
 #include "app.h"
@@ -244,18 +244,24 @@ static void scene_show(uint32_t t)
     else art_rle_key(metal_show_pal, metal_show_2, sizeof metal_show_2, METAL_SHOW_KEY, 0);
 }
 
-// 23-24, painted: slumped back on the old leather sofa, out cold, a can in his hand, an open pizza box
-// in front; a purple neon on the wall gives the only light. Here he breathes and the neon flickers.
+// 23-24, painted: slumped back on the old leather sofa, out cold, his head lolling, an open pizza box in
+// front, a can on the floor. The only light is a TV off to the right: here it flickers bluish over
+// the room, stronger on his side, and now and then the picture cuts. He breathes.
 static void scene_pizza(uint32_t t)
 {
     if (t % 4200 < 1800) art_rle(metal_pizza_pal, metal_pizza_1, sizeof metal_pizza_1);
     else art_rle(metal_pizza_pal, metal_pizza_0, sizeof metal_pizza_0);
-    // now and then the old neon stutters: the sign and its glow dim for a few frames
-    uint32_t c = t % 7300;
-    if ((c > 5200 && c < 5280) || (c > 5400 && c < 5460) || (c > 5600 && c < 5800)) {
-        for (int y = 40; y < 84; y++)
-            for (int x = 4; x < 40; x++) art_tint(x, y, C(0x06050c), 11);
-    }
+    uint32_t shot = t / 2600;                                       // the TV changes shot every few seconds
+    int base = 1 + fx_hash(shot, 701) % 3;
+    int fl = base + (int)(1.2f * sinf(s_ts * 13) + 0.8f * sinf(s_ts * 31));
+    uint16_t tv = (fx_hash(shot, 702) & 1) ? C(0x5a7aff) : C(0x8ab0ff);
+    if (fl < 0) fl = 0;
+    for (int y = 0; y < ART_H; y++)
+        for (int x = 0; x < ART_W; x++) {  // stronger towards the TV, a dithered ramp (no bands)
+            int a16 = fl * 16 + x * 40 / ART_W, al = a16 >> 4;
+            if ((a16 & 15) > 7 && ((x + y) & 1)) al++;
+            art_tint(x, y, tv, al);
+        }
 }
 
 void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
