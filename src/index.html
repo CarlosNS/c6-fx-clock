@@ -134,6 +134,16 @@ body.offline [data-watch]>*{pointer-events:none}
 #offbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;margin:-4px 0 12px;padding:10px 12px;background:var(--panel);border:3px solid var(--coral);color:var(--crema);font:400 20px/1.1 'Jersey 10',system-ui,sans-serif;text-decoration:none}
 #offbar .pip{background:var(--coral);flex:none}
 #ptoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;max-width:90vw;padding:12px 16px;background:var(--panel2);border:3px solid var(--coral);color:var(--crema);font:400 20px/1.15 VT323,monospace;box-shadow:3px 3px 0 var(--sombra);pointer-events:none}
+/* first run (the guide, Android app) */
+#v-intro{position:relative}
+.ihead{margin:10px 0 0;font:400 46px/1 'Jersey 10',system-ui,sans-serif;color:var(--oro)}
+.ilead{margin:0;font-size:21px;line-height:1.2}
+.idots{display:flex;gap:8px;justify-content:center;margin-top:6px}
+.idots i{width:12px;height:12px;border:3px solid var(--linea)}
+.idots i.on{background:var(--oro);border-color:var(--oro)}
+.iseg{width:100%}.iseg button{flex:1}
+.isteps{margin:0;padding-left:24px;line-height:1.25}.isteps li{margin:4px 0}
+.ilink{background:none;border:0;color:var(--gris);text-decoration:underline;min-height:44px}
 /* no watch paired yet: home is the welcome, nothing else */
 body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
 </style>
@@ -272,6 +282,79 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
   <p class="dim" style="margin:2px" data-en="Only for looking: folders open, files do not.">Solo para mirar: las carpetas se abren, los archivos no.</p>
 </section>
 
+<!-- ============================================================ First run (Android app): the guide -->
+<section class="view hide" id="v-intro">
+  <div class="sky" aria-hidden="true"></div><div class="moon" aria-hidden="true"></div>
+  <div class="idots" id="idots" aria-hidden="true"></div>
+
+  <div class="istep stack" data-i="0">
+    <h1 class="ihead">Marea</h1>
+    <p class="ilead" data-en="Your watch and this phone stay linked over Bluetooth while they are near each other: the time, the weather, music, calls and alarms just get there, with no Wi-Fi.">Tu reloj y este móvil se quedan conectados por Bluetooth mientras están cerca: la hora, el tiempo, la música, las llamadas y las alarmas llegan solos, sin WiFi.</p>
+    <p class="lbl">Idioma · Language</p>
+    <div class="seg iseg" role="group" aria-label="Idioma"><button id="ilanges">Español</button><button id="ilangen">English</button></div>
+    <button class="btn gold full" data-inext data-en="Start">Empezar</button>
+    <button class="ilink" data-iskip data-en="I know it already: skip">Ya la conozco: saltar</button>
+  </div>
+
+  <div class="istep stack hide" data-i="1">
+    <h1 class="ihead" data-en="Pair the watch">Empareja el reloj</h1>
+    <ol class="isteps">
+      <li data-en="Switch the watch on (PWR) and keep it near the phone.">Enciende el reloj (PWR) y tenlo cerca del móvil.</li>
+      <li data-en="Tap «Find the watch», allow «Nearby devices» if Android asks, and pick your watch («Marea» and four letters).">Pulsa «Buscar el reloj», permite «Dispositivos cercanos» si Android lo pide y elige tu reloj («Marea» y cuatro letras).</li>
+      <li data-en="Type the 6-digit code the watch shows. You have 30 seconds.">Escribe la clave de 6 cifras que sale en el reloj. Tienes 30 segundos.</li>
+    </ol>
+    <div class="panel hide" id="ipaired"><div class="tt ok" id="ipairedt"></div></div>
+    <button class="btn gold full" id="ipick" data-en="Find the watch">Buscar el reloj</button>
+    <div class="dim" id="ipickst" role="status"></div>
+    <div class="panel red hide stack" id="ihelp">
+      <div class="tt" data-en="Not there, or it failed?">¿No aparece o falla?</div>
+      <ul class="isteps dim">
+        <li data-en="Bluetooth must be on, and the watch near and switched on.">El Bluetooth tiene que estar encendido, y el reloj cerca y encendido.</li>
+        <li data-en="If the watch was used with another phone, or you installed the app again: on the watch, Settings → Connections → Forget phones (tap it twice), then search again.">Si el reloj estaba con otro móvil o has vuelto a instalar la app: en el reloj, Ajustes → Conexiones → Olvidar móviles (tócalo dos veces) y vuelve a buscarlo.</li>
+        <li data-en="The code lasts 30 seconds: if it ran out, search again and type the new one.">La clave dura 30 segundos: si se acabó, vuelve a buscar y escribe la nueva.</li>
+      </ul>
+      <button class="btn hide" id="ibton" data-en="Switch Bluetooth on">Encender el Bluetooth</button>
+    </div>
+    <button class="btn full" data-inext id="ipairnext" data-en="Later">Más tarde</button>
+  </div>
+
+  <div class="istep stack hide" data-i="2">
+    <h1 class="ihead" data-en="Keep it linked">Que no se corte</h1>
+    <p class="ilead" data-en="To save battery, Android closes apps you are not using. If it closes Marea, the watch is left without the time, notices or music.">Android cierra las apps que no estás usando para ahorrar batería. Si cierra Marea, el reloj se queda sin hora, sin avisos y sin música.</p>
+    <div class="list">
+      <div class="row"><div class="t"><b data-en="Run in the background">Funcionar en segundo plano</b><small id="ibg">--</small></div><button class="btn gold" id="ibggo" data-en="Allow">Permitir</button></div>
+      <div class="row hide" id="ixrow"><div class="t"><b data-en="Xiaomi, Redmi, POCO">Xiaomi, Redmi, POCO</b><small data-en="On Marea's page: switch «Autostart» on and set «Battery saver» to «No restrictions»">En la página de Marea: activa «Inicio automático» y pon «Ahorro de batería» en «Sin restricciones»</small></div><button class="btn gold" id="ixgo" data-en="Open">Abrir</button></div>
+      <div class="row hide" id="inotrow"><div class="t"><b data-en="Notifications">Notificaciones</b><small id="inot">--</small></div><button class="btn gold" id="inotgo" data-en="Allow">Permitir</button></div>
+    </div>
+    <button class="btn gold full" data-inext data-en="Next">Siguiente</button>
+  </div>
+
+  <div class="istep stack hide" data-i="3">
+    <h1 class="ihead" data-en="Extras">Extras</h1>
+    <p class="ilead" data-en="Optional: they can be switched on later in Settings → Phone and connection.">Opcionales: se pueden activar luego en Ajustes → Móvil y conexión.</p>
+    <div class="list">
+      <div class="row"><div class="t"><b data-en="Music and calls">Música y llamadas</b><small id="iph">--</small></div><button class="btn gold" id="iphgo" data-en="Allow">Permitir</button></div>
+      <div class="row hide" id="ivoicerow" data-watch><div class="t"><b data-en="Voice commands">Órdenes de voz</b><small data-en="Hold BOOT on the watch and speak (Android 13 or later)">Mantén BOOT en el reloj y habla (Android 13 o posterior)</small></div><input type="checkbox" class="sw" id="ivoice" aria-label="Órdenes de voz"></div>
+    </div>
+    <button class="btn gold full" data-inext data-en="Next">Siguiente</button>
+  </div>
+
+  <div class="istep stack hide" data-i="4">
+    <h1 class="ihead" data-en="Your watch">Tu reloj</h1>
+    <div class="list">
+      <div class="row" data-watch><div class="t"><b data-en="24-hour clock">Formato 24 h</b></div><input type="checkbox" class="sw" id="ih24" aria-label="Formato 24 h"></div>
+      <div class="row" data-watch><div class="t"><b data-en="Steps goal">Objetivo de pasos</b><small data-en="Every day">Cada día</small></div>
+        <select id="igoal" aria-label="Objetivo de pasos"><option>4000</option><option>6000</option><option>8000</option><option>10000</option><option>12000</option><option>15000</option></select></div>
+      <button class="row" id="ifaces" style="background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;color:inherit"><div class="t"><b data-en="Choose your face">Elige tu esfera</b><small data-en="There are many, and you can make your own">Hay muchas, y puedes crear las tuyas</small></div><span class="go" aria-hidden="true">›</span></button>
+    </div>
+    <div class="panel stack" style="gap:4px">
+      <div class="tt" data-en="On the watch">En el reloj</div>
+      <div class="dim" data-en="Swipe down from the top: quick settings. Up from the bottom: the apps. Sideways: another face. BOOT: back.">Desliza desde arriba: ajustes rápidos. Desde abajo: las apps. A un lado: otra esfera. BOOT: atrás.</div>
+    </div>
+    <button class="btn gold full" id="idone" data-en="Done">Terminar</button>
+  </div>
+</section>
+
 <!-- ============================================================ Ajustes -->
 <section class="view hide" id="v-ajustes" data-parent="inicio">
   <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Settings">Ajustes</h1></div>
@@ -343,6 +426,7 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
     <div class="list">
       <div class="row"><div class="t"><b data-en="Run in the background">Funcionar en segundo plano</b><small id="appbg">--</small></div><button class="btn gold" id="appbgo" data-en="Allow">Permitir</button></div>
       <div class="row"><div class="t"><b data-en="Music and calls">Música y llamadas</b><small id="appph">--</small></div><button class="btn gold" id="appphgo" data-en="Allow">Permitir</button></div>
+      <div class="row hide" id="appnotrow"><div class="t"><b data-en="Notifications">Notificaciones</b><small id="appnot">--</small></div><button class="btn gold" id="appnotgo" data-en="Allow">Permitir</button></div>
       <div class="row hide" id="appmicrow"><div class="t"><b data-en="Microphone (voice commands)">Micrófono (órdenes de voz)</b><small id="appmic">--</small></div><button class="btn gold" id="appmicgo" data-en="Allow">Permitir</button></div>
     </div>
   </div>
@@ -382,6 +466,7 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
 <section class="view hide" id="v-avanzado" data-parent="ajustes">
   <div class="top"><button class="back" aria-label="Atrás"><svg width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M5 1h2v2H5v1H4v2h1v1h2v2H5V8H4V7H3V6H2V4h1V3h1V2h1z"/></svg></button><h1 data-en="Advanced">Avanzado</h1></div>
   <div class="list">
+    <a class="row hide" id="introrow" href="#intro"><div class="t"><b data-en="See the introduction">Ver la introducción</b><small data-en="Pairing, background, extras">Emparejar, segundo plano, extras</small></div><span class="go" aria-hidden="true">›</span></a>
     <div class="row"><div class="t"><b data-en="Sync time now">Sincronizar la hora ahora</b><small data-en="It happens by itself; only if the watch shows a wrong time">Se hace sola; solo si el reloj marca mal la hora</small></div><button class="btn" id="sync" data-en="Sync">Sincronizar</button></div>
     <div class="row hide" id="appsyncrow"><div class="t"><b data-en="Phone sync">Sincronización del móvil</b><small id="appsync">--</small></div><button class="btn" id="appnow" data-en="Now">Ahora</button></div>
     <div class="row hide" id="batrow"><div class="t"><b data-en="Battery">Batería</b><small id="bat">--</small></div></div>
@@ -482,7 +567,7 @@ function route(){if(window.misBusy&&misBusy()){history.replaceState(null,'','#'+
  if(stack.length>1&&stack[stack.length-2]===v)stack.pop();else if(stack[stack.length-1]!==v)stack.push(v);
  view=v;for(const s of document.querySelectorAll('.view'))s.classList.toggle('hide',s.id!=='v-'+v);
  closeModals();window.scrollTo(0,0);
- if(v==='archivos')loadFiles(fpath);if(v==='alarmas')loadAlarms();if(v==='movil'||v==='avanzado')appInfo();
+ if(v==='archivos')loadFiles(fpath);if(v==='alarmas')loadAlarms();if(v==='movil'||v==='avanzado')appInfo();if(v==='intro'&&window.introShow)introShow(0);
  if(window.misView)misView(v)}
 window.addEventListener('hashchange',route);
 for(const b of document.querySelectorAll('.back'))b.onclick=()=>{const p=b.closest('.view').dataset.parent||'inicio';
@@ -757,7 +842,7 @@ function ptoast(t){const b=$('ptoast');b.textContent=t;b.classList.remove('hide'
 document.addEventListener('click',e=>{if(up||!e.target.closest('[data-watch]'))return;e.preventDefault();e.stopPropagation();
  ptoast(L.needsPick?tr('Primero empareja el reloj (en Inicio).','Pair the watch first (on the home screen).'):tr('El reloj no está conectado: esto se cambia cuando vuelva.','The watch is not connected: this can be changed when it is back.'))},true);
 function offline(){const off=!up;document.body.classList.toggle('offline',off);document.body.classList.toggle('nowatch',!!L.needsPick&&!up);
- $('offbar').classList.toggle('hide',!off||view==='inicio');
+ $('offbar').classList.toggle('hide',!off||view==='inicio'||view==='intro');
  $('offbart').textContent=L.needsPick?tr('Sin reloj emparejado · toca para emparejarlo','No watch paired · tap to pair it'):tr('Sin conexión con el reloj · reconectando…','The watch is not connected · reconnecting…');
  $('hfnow').textContent=off?tr('La última vez en el reloj','Last seen on the watch'):tr('Ahora en el reloj','Now on the watch')}
 window.addEventListener('hashchange',offline);
@@ -766,6 +851,7 @@ window.addEventListener('hashchange',offline);
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
  $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
  $('appph').textContent=i.phone?tr('Permitido','Allowed'):tr('Falta el acceso a las notificaciones','Notification access is missing');$('appph').className=i.phone?'ok':'bad';$('appphgo').classList.toggle('hide',!!i.phone);
+ $('appnotrow').classList.toggle('hide',i.notif===undefined||i.sdk<33);$('appnot').textContent=i.notif?tr('Permitidas','Allowed'):tr('Sin ellas no hay aviso de conexión ni de versiones nuevas','Without them there is no connection or new-version notice');$('appnot').className=i.notif?'ok':'bad';$('appnotgo').classList.toggle('hide',!!i.notif);
  $('appbg').textContent=i.background?tr('Permitido','Allowed'):tr('El sistema puede cortar la conexión','The system may cut the connection');$('appbg').className=i.background?'ok':'bad';$('appbgo').classList.toggle('hide',i.background);
  // Android asks for the microphone to recognize speech, even though the audio is the watch's
  const micNeeded=!!status.voice;$('appmicrow').classList.toggle('hide',!micNeeded);
@@ -774,7 +860,7 @@ function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.i
  $('nperm').classList.toggle('hide',!miss.length||L.needsPick);$('npermtxt').textContent=miss.join(' · ');$('permpip').classList.toggle('hide',!miss.length)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forgetrow').classList.toggle('hide',L.needsPick);$('appsyncrow').classList.remove('hide');$('appupd').classList.remove('hide');
  $('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent=tr('Sincronizando…','Syncing…');setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appmicgo').onclick=()=>ClockBridge.allowVoice();
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appnotgo').onclick=()=>ClockBridge.allowNotifications();$('introrow').classList.remove('hide');$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appmicgo').onclick=()=>ClockBridge.allowVoice();
  $('appforget').onclick=()=>{if(ask(tr('¿Olvidar este reloj?','Forget this watch?'),tr('El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','The phone and the watch will no longer be paired, and the app will not be able to control it or set its time. To use it again, tap "Find the watch" and type the code it shows.'),tr('Olvidar','Forget')))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
@@ -901,6 +987,57 @@ function renderFiles(){const parts=fpath.split('/').filter(Boolean);
   el.innerHTML=f.d?`<svg width="26" height="26" viewBox="0 0 13 13" shape-rendering="crispEdges" aria-hidden="true"><path fill="#F9B25A" d="M1 2h4l1 1h6v8H1zM2 5v5h9V5z"/></svg><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="nm j" style="font-size:24px;line-height:1">${esc(f.n)}</span></span><span class="go" aria-hidden="true">›</span>`
    :`<svg width="26" height="26" viewBox="0 0 13 13" shape-rendering="crispEdges" aria-hidden="true"><path fill="#A89CCE" d="M2 1h6l3 3v8H2zM3 2v9h7V5H7V2z"/></svg><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="nm">${esc(f.n)}</span><span class="dim small">${fsize(f.s)}${fdate(f.m)?' · '+fdate(f.m):''}</span></span>`;
   if(f.d)el.onclick=()=>loadFiles((fpath==='/'?'':fpath)+'/'+f.n);box.appendChild(el)}}
+
+// ------------------------------------------------------------ first run (Android app): the guide
+// Five short steps: hello and language, pairing (with help when it fails), what keeps the link up in the
+// background, the optional extras, and a few choices on the watch. Shown once, when the app has no watch
+// yet; Settings → Advanced → See the introduction brings it back. Permissions are asked here, each one
+// when its step explains it, not all at once when the app opens.
+const INTRO_N=5;let istep=0,introT=0;
+function introSeen(){try{return localStorage.getItem('intro')==='1'}catch(e){return true}}
+function introDone(to){try{localStorage.setItem('intro','1')}catch(e){}location.replace('#'+(to||'inicio'))}
+function introShow(i){clearTimeout(introT);istep=Math.max(0,Math.min(INTRO_N-1,i));
+ for(const s of document.querySelectorAll('.istep'))s.classList.toggle('hide',+s.dataset.i!==istep);
+ $('idots').innerHTML=Array.from({length:INTRO_N},(_,k)=>`<i class="${k===istep?'on':''}"></i>`).join('');window.scrollTo(0,0);
+ $('ilanges').classList.toggle('on',!LANG);$('ilangen').classList.toggle('on',!!LANG);
+ if(istep===1)introPair();if(istep===2||istep===3)introPerms();if(istep===4)introMine()}
+function introPair(){const paired=!L.needsPick;$('ipaired').classList.toggle('hide',!paired);$('ipick').classList.toggle('hide',paired);
+ $('ipairedt').textContent=up?tr('✓ Reloj emparejado y conectado','✓ Watch paired and connected'):tr('✓ Reloj emparejado','✓ Watch paired');
+ $('ipairnext').textContent=paired?tr('Siguiente','Next'):tr('Más tarde','Later');$('ipairnext').classList.toggle('gold',paired)}
+function introPerms(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
+ const st=(id,ok,yes,no)=>{$(id).textContent=ok?yes:no;$(id).className=ok?'ok':'bad'};
+ st('ibg',i.background,tr('Permitido','Allowed'),tr('Android puede cerrar la app','Android may close the app'));$('ibggo').classList.toggle('hide',!!i.background);
+ $('ixrow').classList.toggle('hide',!/xiaomi|redmi|poco/.test(i.maker||''));
+ $('inotrow').classList.toggle('hide',!(i.sdk>=33));st('inot',i.notif,tr('Permitidas','Allowed'),tr('Para el aviso de conexión y las versiones nuevas','For the connection notice and new versions'));$('inotgo').classList.toggle('hide',!!i.notif);
+ st('iph',i.phone,tr('Permitido','Allowed'),tr('Controla la música y ve quién llama','Control the music and see who is calling'));$('iph').className=i.phone?'ok':'';$('iphgo').classList.toggle('hide',!!i.phone);
+ $('ivoicerow').classList.toggle('hide',!(i.sdk>=33));$('ivoice').checked=!!status.voice}
+function introMine(){if(status.h24!==undefined)$('ih24').checked=!!status.h24;
+ if(status.goal){const g=$('igoal');if(![...g.options].some(o=>+o.value===status.goal))g.add(new Option(status.goal,status.goal));g.value=status.goal}}
+for(const b of document.querySelectorAll('[data-inext]'))b.onclick=()=>introShow(istep+1);
+for(const b of document.querySelectorAll('[data-iskip]'))b.onclick=()=>introDone();
+$('ilanges').onclick=()=>{setLang(0);send('lang 0');introShow(istep)};
+$('ilangen').onclick=()=>{setLang(1);send('lang 1');introShow(istep)};
+$('ipick').onclick=async()=>{$('ihelp').classList.add('hide');$('ipick').disabled=true;
+ $('ipickst').className='dim';$('ipickst').textContent=tr('Elige el reloj en la lista y escribe la clave que enseña…','Pick the watch in the list and type the code it shows…');
+ try{await L.pick();$('ipickst').className='ok';$('ipickst').textContent=tr('¡Conectado!','Connected!');
+  send('lang '+LANG);  // the watch speaks the language chosen here
+  introT=setTimeout(()=>{if(view==='intro'&&istep===1)introShow(2)},1200)}
+ catch(e){$('ipickst').className='bad';$('ipickst').textContent=e.message||String(e);$('ihelp').classList.remove('hide');
+  let bt=true;try{bt=JSON.parse(ClockBridge.linkInfo()).bt!==false}catch(x){}$('ibton').classList.toggle('hide',bt)}
+ finally{$('ipick').disabled=false}};
+$('ibton').onclick=()=>ClockBridge.enableBluetooth();
+$('ibggo').onclick=()=>ClockBridge.allowBackground();
+$('ixgo').onclick=()=>ClockBridge.openAppPage();
+$('inotgo').onclick=()=>ClockBridge.allowNotifications();
+$('iphgo').onclick=()=>ClockBridge.allowPhone();
+$('ivoice').onchange=()=>{const on=$('ivoice').checked;send('voice '+(on?1:0));status.voice=on?1:0;if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice()};
+$('ih24').onchange=()=>{lastUser=Date.now();send('h24 '+($('ih24').checked?1:0))};
+$('igoal').onchange=()=>{lastUser=Date.now();const v=+$('igoal').value;send('goal '+v);status.goal=v};
+$('ifaces').onclick=()=>introDone('esferas');
+$('idone').onclick=()=>introDone();
+// back from the system screens (battery, notifications…): show what changed
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&view==='intro'&&(istep===2||istep===3))introPerms()});
+if(L.kind==='android'&&L.needsPick&&!introSeen()&&!location.hash)history.replaceState(null,'','#intro');
 
 // ------------------------------------------------------------ start
 applyLang();route();offline();

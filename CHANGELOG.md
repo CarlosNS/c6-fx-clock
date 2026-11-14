@@ -4,6 +4,7 @@
 
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
+- **Introducción la primera vez**, en el reloj y en la app. El reloj: idioma, los gestos practicados, el QR de la app esperando a que el móvil se conecte (y entonces sigue solo) y «¡Listo!»; los relojes ya en uso no la ven. La app: idioma, emparejar con ayuda si falla, el segundo plano (con los pasos de Xiaomi) y las notificaciones, extras opcionales y unas preferencias del reloj. Los permisos se piden en su paso y no todos al abrir. Las dos se saltan y se repiten desde los ajustes.
 - **Ajustes del reloj por secciones:** un menú (Pantalla, Sonido, Hora y esferas, General, Conexiones, Sistema y App del móvil) con lo que guarda cada una; BOOT vuelve al menú. Ahora también están en el reloj el formato de 24 h y la voz.
 - **La app, desde el reloj:** *Ajustes → App del móvil* enseña un QR con el enlace a la última versión de la app para Android, por si se borra (no está en la Play Store).
 - **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que sigue la hora del día, con luciérnagas y fuegos artificiales de noche; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).

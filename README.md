@@ -90,7 +90,7 @@ App Android **Marea** (Android 10 o superior), con la misma página de control q
 - **Música y llamadas:** con el permiso de leer notificaciones, el reloj muestra lo que suena en cualquier app de música (y la controla: reproducir, pausa, pistas y volumen) y avisa de las llamadas entrantes, que se pueden rechazar o silenciar desde la muñeca. No pide permisos de teléfono ni de contactos.
 - **Con el estilo del reloj:** Inicio con los avisos y la esfera que se ve; Esferas con vista previa de cada una (y un ojo para sacarla del cambio automático); Alarmas que se crean, cambian y borran, con etiqueta, interruptor y animación; **órdenes de voz** (mantén BOOT y habla: el móvil lo entiende y el reloj pregunta antes de hacerlo); **buscar el reloj** (suena y parpadea, y la app dice lo cerca que está) y, desde el reloj, **buscar el móvil**; un tablón de **novedades**; Archivos para mirar la microSD; Ajustes con idioma (español o inglés, en el reloj y en la app) y **actualizaciones** del reloj y de la propia app por internet.
 - **Mis esferas:** crea esferas con una foto o un GIF de la galería, encuádralas a la pantalla y elige cómo se ve la hora, con vista previa exacta. Se guardan en la microSD del reloj y con copia en el móvil para restaurarlas.
-- Se empareja una vez, con la clave de 6 cifras que aparece en el reloj.
+- Se empareja una vez, con la clave de 6 cifras que aparece en el reloj. La primera vez, una **introducción** guía en el reloj (idioma, gestos, el QR de la app) y en la app (emparejar, segundo plano, permisos).
 
 ## Instalar y actualizar
 

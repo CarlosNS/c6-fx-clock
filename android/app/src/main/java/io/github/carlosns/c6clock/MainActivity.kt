@@ -79,7 +79,20 @@ class MainActivity : ComponentActivity() {
     private val btEnable = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (Live.bluetoothOn(this)) LinkService.reconnect(this)
     }
-    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { connectIfPaired() }
+    private var pickAfterPermission = false
+    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        connectIfPaired()
+        if (pickAfterPermission) {  // "Find the watch" asked for Nearby devices first
+            pickAfterPermission = false
+            if (Perms.canConnect(this)) pick()
+            else js("clockPickFailed", JSONObject.quote("Sin el permiso de Dispositivos cercanos, la app no puede hablar con el reloj"))
+        }
+    }
+    private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        // Refused twice, Android stops asking: the app's notification settings are the only way left
+        if (!ok && Build.VERSION.SDK_INT >= 33 && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))
+            openNotificationSettings()
+    }
     private val chooser = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
         val address = if (r.resultCode == RESULT_OK) associatedAddress(r.data) else null
         if (address == null) js("clockPickFailed", JSONObject.quote("No elegiste ningún reloj")) else paired(address)
@@ -141,7 +154,9 @@ class MainActivity : ComponentActivity() {
                 if (web.canGoBack()) web.goBack() else { isEnabled = false; onBackPressedDispatcher.onBackPressed(); isEnabled = true }
             }
         })
-        val wanted = buildList {
+        // A paired app asks for what it is missing at once (as before the first-run guide); a new one
+        // asks in context: Bluetooth when it looks for the watch, notifications in the guide
+        val wanted = if (store.address == null) emptyList() else buildList {
             if (Build.VERSION.SDK_INT >= 31) { add(Manifest.permission.BLUETOOTH_CONNECT); add(Manifest.permission.BLUETOOTH_SCAN) }
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
         }.filter { ContextCompat.checkSelfPermission(this, it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
@@ -250,6 +265,11 @@ class MainActivity : ComponentActivity() {
     // ---- pairing: the system's companion chooser, then the Bluetooth bond (code on the clock) ----
 
     private fun pick() {
+        if (!Perms.canConnect(this)) {  // Nearby devices first, then back here
+            pickAfterPermission = true
+            permissions.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN))
+            return
+        }
         val filter = BluetoothLeDeviceFilter.Builder()
             .setScanFilter(ScanFilter.Builder().setServiceUuid(ParcelUuid(Protocol.SERVICE)).build())
             .build()
@@ -339,6 +359,19 @@ class MainActivity : ComponentActivity() {
             }
             web.reload()
         }
+    }
+
+    /** Asks for notifications (Android 13+), or opens their settings once Android stops asking. */
+    private fun allowNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        else openNotificationSettings()
+    }
+
+    private fun openNotificationSettings() {
+        runCatching { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) }
     }
 
     /** Opens the system screen that lets the app run in the background (HyperOS and others are strict). */
@@ -435,6 +468,9 @@ class MainActivity : ComponentActivity() {
             .put("phone", Phone.hasAccess(this@MainActivity))
             .put("mic", Voice.allowed(this@MainActivity))
             .put("background", getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
+            .put("notif", androidx.core.app.NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
+            .put("maker", Build.MANUFACTURER.lowercase())
+            .put("sdk", Build.VERSION.SDK_INT)
             .toString()
         @JavascriptInterface fun syncNow() {
             val l = link ?: return SyncWorker.runNow(this@MainActivity)
@@ -446,6 +482,11 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun forget() = runOnUiThread { this@MainActivity.forget() }
         @JavascriptInterface fun allowBackground() = runOnUiThread { this@MainActivity.allowBackground() }
         @JavascriptInterface fun allowPhone() = runOnUiThread { this@MainActivity.allowPhone() }
+        @JavascriptInterface fun allowNotifications() = runOnUiThread { this@MainActivity.allowNotifications() }
+        /** The app's page in the system settings (Xiaomi keeps autostart and its battery saver there). */
+        @JavascriptInterface fun openAppPage() = runOnUiThread {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }
         // Find the watch / the phone (Find.kt)
         @JavascriptInterface fun findWatch(on: Boolean): Boolean {
             if (on) LinkService.start(this@MainActivity)

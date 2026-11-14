@@ -6,6 +6,10 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 
 ## Lo básico
 
+- **La primera vez** que se enciende, el reloj enseña una **introducción** de cuatro pasos: el idioma, los gestos (se practican: una pantalla en miniatura enseña cada uno y, al hacerlo, dice para qué sirve), el QR para instalar la app del móvil con la espera a que se conecte, y «¡Listo!». Se puede *Saltar* en cualquier paso; BOOT vuelve al paso anterior. Para verla otra vez: *Ajustes → Sistema → Ver la introducción*.
+
+  <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-intro.png" alt="Introducción del reloj: idioma, gestos y ¡Listo!" width="600">
+
 - La **esfera** es la pantalla principal: muestra la hora, cada una a su manera (hay 22, ver [[Esferas]]).
 - **Para ir al menú principal** (el **lanzador**, con todas las apps), desliza el dedo **desde el borde de abajo de la pantalla hacia arriba** estando en la esfera. Empieza el gesto justo en el borde inferior, en su parte recta, no en una esquina.
 - Desde la esfera también se llega a los **ajustes rápidos** (deslizando desde el borde de arriba hacia abajo) y a **otras esferas** (deslizando a los lados).
@@ -282,7 +286,8 @@ Un menú de **secciones**, cada una con lo que contiene debajo de su nombre. Al 
 | | WiFi | Red y dirección IP del reloj |
 | | Olvidar móviles | Borra los emparejamientos (toca dos veces) |
 | **Sistema** | Versión, memoria libre, batería, tiempo encendido | Información |
-| | Restablecer ajustes | Vuelve a los de fábrica, tras confirmar |
+| | Ver la introducción | Idioma, gestos y la app del móvil, como la primera vez |
+| | Restablecer ajustes | Vuelve a los de fábrica, tras confirmar (la introducción no vuelve a salir sola) |
 | **App del móvil** | Un código QR | El enlace a la última versión de la app Marea para Android |
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-settings-qr.png" alt="QR de la app" width="200">
