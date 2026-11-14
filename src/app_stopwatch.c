@@ -72,10 +72,12 @@ static bool draw(uint32_t now, bool force)
         fmt(a, sizeof(a), lap);
         fmt(b, sizeof(b), s_laps[k]);
         int y = 356 + i * 36;
+        // lap number, lap time, total so far: in Jersey, narrow enough that the two times never meet,
+        // even with hours (lap 112..222 px, total from 240)
         snprintf(line, sizeof(line), "%s%d", TR("V", "L"), k + 1);
-        ui_print(&ui_vt, 2, 66, y - 8, line, MS_GRIS);
-        ui_print(&ui_vt, 2, 140, y - 8, a, i ? MS_CREMA : MS_ORO2);
-        ui_print_r(&ui_vt, 1, 348, y, b, MS_GRIS);
+        ui_print(&ui_vt, 2, 60, y - 15, line, MS_GRIS);
+        ui_print(&ui_jersey, 2, 112, y - 12, a, i ? MS_CREMA : MS_ORO2);
+        ui_print_r(&ui_jersey, 2, 350, y - 12, b, MS_GRIS);
     }
     return true;
 }
