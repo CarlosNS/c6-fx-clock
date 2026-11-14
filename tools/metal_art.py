@@ -577,6 +577,215 @@ def scene_coffee(blink=0):
     return S, None
 
 
+# ---------------------------------------------------------------- scene 3: tuning (11-13)
+
+GTR_J = (70.0, 112.0)                 # where the neck meets the body
+GTR_D = (0.912, 0.410)                # along the guitar, from the headstock towards the body
+GTR_N = (-0.410, 0.912)               # across it
+
+
+def G(a, p):
+    """Guitar coordinates (a along the neck, + towards the body; p across) to the canvas."""
+    return GTR_J[0] + a * GTR_D[0] + p * GTR_N[0], GTR_J[1] + a * GTR_D[1] + p * GTR_N[1]
+
+
+def scene_tuning(k=0):
+    S = Scene(light=(0.55, -0.6, 0.6))  # a warm lamp up on the right of the practice room
+    drop = 2 * k                         # frame 1: the sweat drop has slid a little
+
+    foam = S.new('foam', [0x0c0e18, 0x141826, 0x1e2436, 0x2a3248, 0x3a445e])
+    cab = S.new('cab', [0x0a0a0e, 0x15151c, 0x22222c, 0x34343e, 0x4c4c58], 0x050508)
+    grille = S.new('grille', [0x1a1712, 0x2a251c, 0x3c3428, 0x524636])
+    metal = S.new('metal', [0x3a3a44, 0x6a6a76, 0xa4a4b0, 0xdcdce4], 0x101014)
+    floor = S.new('floor', [0x1a1210, 0x2a1c16, 0x3e2a1e, 0x543a28, 0x6c4c32])
+    cable = S.new('cable', [0x08080a, 0x16161a, 0x2a2a30], 0x040406)
+    jeans = S.new('jeans', [0x0e1220, 0x182036, 0x24304e, 0x34446a, 0x4a5c86], 0x080a16)
+    hair = S.new('hair', [0x07050c, 0x110b16, 0x1c1322, 0x2a1e30, 0x3c2c40, 0x564052], 0x0c0a22)
+    shirt = S.new('shirt', [0x0a0a12, 0x141420, 0x20202e, 0x2e2e42, 0x40405a], 0x0a0a22)
+    skin = S.new('skin', [0x4a2a24, 0x763e30, 0xa45e48, 0xcc8460, 0xeaa87a, 0xffcc9c], 0x2c140e)
+    ink = S.new('tattoo', [0x18203a, 0x26324e, 0x384664])
+    gtr = S.new('guitar', [0x3a0810, 0x6a0e18, 0x9e1a22, 0xd03030, 0xf06a50, 0xffb090], 0x1c0408)
+    bind = S.new('binding', [0x8a8a8a, 0xdcdcdc, 0xffffff])
+    neck = S.new('neck', [0x1c120c, 0x2e1e14, 0x46301e, 0x604228], 0x0e0806)
+    hw = S.new('hardware', [0x0c0c10, 0x1e1e26, 0x3a3a46, 0x7a7a86, 0xd0d0da], 0x060608)
+    strings = S.new('strings', [0x8a8a92, 0xc8c8d0, 0xf4f4fa])
+    tuner = S.new('tuner', [0x0e0e14, 0x1e1e2a, 0x34344a, 0x50506a], 0x06060a)
+    screen = S.new('screen', [0x0a1418, 0x12242a, 0x1c3a40])
+    sweat = S.new('sweat', [0x4a8ac8, 0x8cc4f0, 0xd8f0ff, 0xffffff], 0x1a2a50)
+    mouth = S.new('mouth', [0x2a0e10, 0xe8e0d0, 0xfff8ec])
+
+    # -- the practice room: acoustic foam wedges on the wall, alternating direction tile by tile
+    tx, ty = XX % 12, YY % 12
+    odd = ((XX // 12 + YY // 12) % 2) == 1
+    wedge = np.where(odd, np.abs((tx % 4) - 2), np.abs((ty % 4) - 2)) * 0.7
+    S.put(foam, np.ones((H, W), bool), S.shade(np.full((H, W), -9.0, np.float32), 1, 1, bump=wedge, amb=0.25, kd=0.5)
+          + 0.12 * np.clip((XX - 20) / 120, 0, 1) - np.clip((YY - 100) / 70, 0, 1) * 0.12)
+    S.put(foam, (tx < 0.6) | (ty < 0.6), 0.05)
+    # the floor: old boards
+    fl = poly([(-4, 150), (140, 146), (140, 172), (-4, 172)])
+    S.fill(floor, fl, depth=1, roundness=2, tex=0.12 * np.sin(YY * 2.4) + 0.08 * (noise(51, 6) - 0.5))
+    # a cable curling on the floor
+    for i in range(14):
+        t0, t1 = i / 14 * 6.2, (i + 1) / 14 * 6.2
+        S.fill(cable, capsule(18 + 10 * math.cos(t0), 160 + 3 * math.sin(t0), 18 + 10 * math.cos(t1), 160 + 3 * math.sin(t1), 1.2),
+               depth=1, roundness=1.2, amb=0.4)
+    # a speaker cabinet behind him on the right
+    cb = poly([(110, 66), (142, 64), (142, 172), (110, 172)])
+    S.fill(cab, cb, depth=3, roundness=3, tex=0.06 * (grain(52) - 0.5))
+    gp = poly([(114, 72), (142, 70), (142, 150), (114, 150)])
+    weave = 0.1 * ((XX.astype(int) + YY.astype(int)) % 2)
+    S.put(grille, gp < 0, 0.45 + weave - 0.25 * np.clip((XX - 114) / 30, 0, 1) * 0)
+    for cx, cy in ((112, 68), (112, 168)):
+        S.fill(metal, ellipse(cx, cy, 3, 3), depth=2, roundness=2)
+
+    # -- the combo amp he sits on: tolex, piping, a woven grille and corner caps
+    amp = poly([(40, 134), (114, 134), (116, 172), (38, 172)])
+    S.fill(cab, amp, depth=3, roundness=4, tex=0.08 * (grain(53) - 0.5))
+    ag = poly([(46, 144), (108, 144), (109, 172), (45, 172)])
+    S.put(grille, ag < 0, 0.4 + weave)
+    S.put(metal, np.abs(ag) < 0.7, 0.55)                                # piping round the grille
+    S.fill(metal, ellipse(41, 135, 3, 3), depth=2, roundness=2)
+    S.fill(metal, ellipse(113, 135, 3, 3), depth=2, roundness=2)
+
+    # -- legs: thighs forward over the amp, jeans, a torn knee
+    S.fill(jeans, smin(capsule(56, 134, 48, 150, 10), capsule(48, 150, 46, 172, 9, 8), 4), depth=6, roundness=9,
+           bump=0.8 * ridge(52, 140, 44, 158, 1.5))
+    S.fill(jeans, smin(capsule(84, 136, 96, 152, 10), capsule(96, 152, 100, 172, 9, 8), 4), depth=6, roundness=9,
+           bump=0.8 * ridge(90, 142, 100, 160, 1.5))
+    S.put(skin, (ellipse(97, 153, 4, 2, 0.3) < 0), 0.55)                # skin through the torn knee
+    S.px(bind, [(94, 152), (96, 151), (99, 154), (100, 155)], 1)       # loose threads
+
+    # -- the hair behind: long, falling forward as he leans in
+    hcx, hcy = 64, 74
+    back = smin(ellipse(64, 70, 19, 18, 0.1), capsule(48, 78, 42, 120, 9, 6), 6)
+    back = smin(back, capsule(80, 78, 88, 118, 9, 6), 6)
+    back = back + 1.5 * np.sin(XX * 0.9 + 2 * noise(54, 5)) * np.clip((YY - 104) / 12, 0, 1)
+    S.fill(hair, back, depth=4, roundness=7, bump=0.5 * np.sin(XX * 1.25 + 2.5 * noise(55, 6)), kd=0.7, amb=0.12)
+
+    # -- a strong body: thick neck, broad sloping traps, a sleeveless black shirt
+    S.fill(skin, smin(capsule(64, 86, 64, 100, 8), capsule(44, 100, 84, 100, 6), 5), depth=4, roundness=6, amb=0.22)  # neck, traps
+    tor = smin(poly([(40, 100), (90, 100), (92, 138), (40, 138)]), capsule(42, 102, 88, 102, 7), 6)
+    S.fill(shirt, tor, depth=6, roundness=12, bump=0.6 * ridge(64, 104, 64, 136, 2) + 0.5 * ridge(50, 120, 80, 122, 2), amb=0.18)
+    S.put(shirt, (np.abs(ellipse(64, 99, 11, 6)) < 1) & (YY > 99), 0.55)                       # neck line
+    S.put(shirt, (np.abs(capsule(44, 100, 46, 118, 4.5)) < 0.8), 0.6)                           # arm holes
+    S.put(shirt, (np.abs(capsule(84, 100, 82, 118, 4.5)) < 0.8), 0.6)
+
+    # -- his right arm (on the left), behind the neck: huge shoulder, tattooed, reaching up to the pegs
+    up = smin(capsule(44, 104, 28, 118, 8, 7), ellipse(37, 110, 9, 7, -0.7), 3)
+    S.fill(skin, up, depth=6, roundness=7, amb=0.2, bump=0.9 * ridge(42, 106, 32, 114, 2))
+    fa = smin(capsule(28, 118, 21, 88, 7, 5), ellipse(25, 107, 6.2, 7.5, 0.2), 2.5)
+    S.fill(skin, fa, depth=6, roundness=6, amb=0.22)
+    # two tribal bands round the upper arm
+    ax, ay, bx, by = 44, 104, 28, 118
+    L2 = (bx - ax) ** 2 + (by - ay) ** 2
+    t = ((XX - ax) * (bx - ax) + (YY - ay) * (by - ay)) / L2
+    pp = ((XX - ax) * (by - ay) - (YY - ay) * (bx - ax)) / math.sqrt(L2)
+    zig = 0.035 * np.sign(np.sin(pp * 1.6))
+    bandm = ((np.abs(t - 0.42 - zig) < 0.05) | (np.abs(t - 0.62 + zig) < 0.03)) & (up < -0.8)
+    S.put(ink, bandm, 0.5)
+    # -- the guitar: a red V across his thigh, white binding, pickups, the neck at a real length
+    body = poly([G(*q) for q in [(0, -8), (44, -25), (50, -13), (29, 0), (50, 13), (44, 25), (0, 8)]])
+    S.fill(gtr, body + 1.2, depth=3, roundness=6, amb=0.3)
+    S.put(bind, (body > -1.2) & (body < -0.2) & (S.obj == gtr), 0.6)
+    for a0 in (11, 23):
+        pu = capsule(*G(a0, -4.5), *G(a0, 4.5), 2)
+        S.fill(hw, pu, depth=1.5, roundness=2, amb=0.25)
+        S.px(hw, [G(a0, p) for p in (-3, -1.5, 0, 1.5, 3)], 3)
+    S.fill(hw, capsule(*G(33, -3.5), *G(33, 3.5), 1.4), depth=1, roundness=1.5)              # bridge
+    for p in (14, 18):
+        S.fill(hw, ellipse(*G(40, p), 1.8, 1.8), depth=1.5, roundness=1.5)                     # knobs
+    nk = capsule(*G(-48, 0), *G(2, 0), 2.8, 3.2)
+    S.fill(neck, nk, depth=2, roundness=2.5, amb=0.3)
+    for a0 in range(-46, 0, 5):
+        S.px(hw, [G(a0 - (a0 + 46) * 0.15, p) for p in (-1.5, 0, 1.5)], 3)                     # frets, closer up the neck
+    for a0 in (-36, -26, -16):
+        S.px(bind, [G(a0 + 2, 0)], 2)                                                          # dot inlays
+    hs = poly([G(*q) for q in [(-47, -3.2), (-58, -6.5), (-64, -2), (-62, 0), (-64, 2), (-58, 6.5), (-47, 3.2)]])
+    S.fill(gtr, hs + 0.8, depth=2, roundness=3, amb=0.32)
+    for a0 in (-51, -55, -59):
+        for p in (-1, 1):
+            S.fill(metal, ellipse(*G(a0, p * (6.2 + (a0 + 51) * -0.18)), 1.5, 1.5), depth=1, roundness=1.5)  # pegs
+    for p in (-1.2, 1.2):
+        S.fill(strings, capsule(*G(-47, p * 0.8), *G(33, p * 1.3), 0.3), depth=0.3, roundness=0.5, amb=0.1)
+
+    # -- the clip-on tuner at the tip of the headstock: the clamp and a little screen
+    tip = G(-63, 0)
+    S.fill(tuner, capsule(tip[0] + 1, tip[1] - 1, tip[0] + 1, tip[1] - 7, 1.6), depth=1.5, roundness=1.5, amb=0.3)  # clamp
+    tb = smin(poly([(tip[0] - 7, tip[1] - 17), (tip[0] + 9, tip[1] - 17), (tip[0] + 9, tip[1] - 7), (tip[0] - 7, tip[1] - 7)]),
+              ellipse(tip[0] + 1, tip[1] - 12, 8, 5), 2)
+    S.fill(tuner, tb, depth=3, roundness=3, amb=0.3)
+    sc = poly([(tip[0] - 4, tip[1] - 15), (tip[0] + 6, tip[1] - 15), (tip[0] + 6, tip[1] - 9), (tip[0] - 4, tip[1] - 9)])
+    S.put(screen, sc < 0, 0.3)
+    TUNER_SCREEN = (int(tip[0] - 4), int(tip[1] - 15), 11, 7)
+
+    # the hand pinching the top peg
+    peg = G(-55, -6.9)
+    S.fill(skin, smin(ellipse(peg[0] + 1.5, peg[1] + 4.5, 5, 4.5, 0.3), capsule(peg[0] + 2, peg[1] + 2, peg[0] - 1, peg[1] - 1, 1.8), 2),
+           depth=3, roundness=3, amb=0.26)
+    S.fill(skin, capsule(peg[0] - 2, peg[1] + 2 + k * 0.6, peg[0], peg[1] - 1 + k * 0.6, 1.5), depth=1.5, roundness=1.5, amb=0.3)  # thumb
+    S.px(skin, [(peg[0] + 2, peg[1] + 3), (peg[0] + 3, peg[1] + 4)], 1)
+
+    # -- his left arm (on the right): down to the strings, plucking near the bridge
+    S.fill(skin, smin(capsule(88, 104, 102, 124, 8, 7), ellipse(92, 110, 8.5, 7, 0.9), 3), depth=6, roundness=7, amb=0.2,
+           bump=0.9 * ridge(90, 106, 98, 118, 2))
+    S.fill(skin, smin(capsule(102, 124, 88, 128, 6.5, 5), ellipse(97, 126, 6, 4.5, -0.3), 2), depth=5, roundness=6, amb=0.22)
+    S.fill(skin, smin(ellipse(84, 127, 5, 4.5, -0.4), capsule(82, 124, 79, 122, 1.6), 1.5), depth=3, roundness=3, amb=0.24)
+    S.px(skin, [(84, 125), (86, 126)], 1)
+    # -- the head, leaning in, glaring at the tuner: frown, gritted teeth, a drop of sweat
+    face = smin(ellipse(hcx, hcy, 13, 15.5, 0.12), ellipse(hcx - 1, hcy + 9, 10, 7.5, 0.12), 4)
+    S.fill(skin, face, depth=5, roundness=9, amb=0.3)
+    inner = face < -0.5
+    S.put(skin, inner & (ellipse(hcx - 1, hcy + 10.5, 11, 6.5) < 0) & (ellipse(hcx, hcy + 5, 9, 6.5) > 0) & CHECK, 0.4)
+    ey = hcy + 1
+    # the eyes drawn by hand: thick brows in a hard V down onto narrowed lids, a sideways glare at the tuner
+    EYE = ['BB......',   # brow, high at the outside...
+           'bBBB....',
+           '..bBBB..',
+           '....bBBB',   # ...down to the nose
+           '.LLLLLL.',   # the lid, pressed down
+           '.WPPWW..',   # pupils to the left: looking at the tuner
+           '..SSSS..']
+    tone = {'B': (skin, 0), 'b': (skin, 1), 'L': (skin, 0), 'S': (skin, 2), 'W': (mouth, 1), 'P': (mouth, 0)}
+    for ex, mirror in ((57, False), (70, True)):
+        for r, row in enumerate(EYE):
+            for c, ch in enumerate(row):
+                if ch == '.':
+                    continue
+                cc = c
+                if mirror and ch in 'BbLS':
+                    cc = 7 - c
+                if mirror and ch in 'PW':
+                    cc = c + 1
+                o_, tn = tone[ch]
+                S.px(o_, [(ex - 4 + cc, ey - 5 + r)], tn)
+    S.px(skin, [(63, ey - 4), (63, ey - 3), (64, ey - 4), (64, ey - 3)], 1)                    # the furrow
+    S.px(skin, [(63, ey - 2), (64, ey - 2)], 2)
+    S.px(skin, [(63, ey + 3), (63, ey + 4), (63, ey + 5), (62, ey + 6)], 2)                    # nose
+    S.px(skin, [(65, ey + 4), (65, ey + 5)], 5)
+    S.px(skin, [(62, ey + 7), (66, ey + 7)], 1)
+    teeth = [(x, ey + 11) for x in range(59, 68)] + [(x, ey + 12) for x in range(59, 68)]
+    S.px(mouth, teeth, 2)
+    S.px(mouth, [(x, ey + 11) for x in (61, 64, 66)] + [(x, ey + 12) for x in (61, 64, 66)], 1)
+    S.px(skin, [(x, ey + 10) for x in range(59, 68)] + [(58, ey + 11), (68, ey + 11)], 0)       # lips pulled tight
+    S.px(skin, [(x, ey + 13) for x in range(59, 68)], 0)
+    # fringe, damp, sticking to the forehead
+    fr = ellipse(64, 60, 17, 7.5, 0.1)
+    fr = fr + 1.0 * np.sin(np.arctan2(YY - 66, XX - 64) * 10 + 2 * noise(56, 4)) * (YY < 62)
+    fr = smin(fr, capsule(51, 60, 50, 80, 4.5, 2), 3)
+    fr = smin(fr, capsule(77, 62, 79, 82, 4.5, 2), 3)
+    fr = smin(fr, capsule(58, 62, 56, 71, 3.5, 1.2), 2)
+    S.fill(hair, fr, depth=3, roundness=4, bump=0.5 * np.sin(XX * 1.4 + noise(57, 4) * 2), amb=0.14, kd=0.7)
+    S.fill(hair, capsule(50, 92, 44, 118, 4.5, 2.5), depth=3, roundness=4, bump=0.5 * np.sin(XX * 1.5), amb=0.14, kd=0.7)
+    S.fill(hair, capsule(79, 92, 84, 116, 4.5, 2.5), depth=3, roundness=4, bump=0.5 * np.sin(XX * 1.5), amb=0.2, kd=0.7)
+    # the comic sweat drop on his temple
+    dx, dy = 73, 64 + drop
+    S.fill(sweat, smin(ellipse(dx, dy + 2, 2.6, 3), capsule(dx, dy - 3.5, dx, dy + 1, 0.4, 2.2), 1.5), depth=2, roundness=2.5, amb=0.45)
+    S.px(sweat, [(dx - 1, dy + 1)], 3)
+
+    S.outlines(skip={foam, grille, floor, ink, bind, strings, screen, mouth})
+    return S, TUNER_SCREEN
+
+
 # ---------------------------------------------------------------- output
 
 def rle(img):
@@ -610,7 +819,7 @@ def preview(img, pal, path):
 
 
 # name, painter, frames (its argument: 0, 1, ...)
-SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2)]
+SCENES = [('sleep', scene_sleep, 2), ('coffee', scene_coffee, 2), ('tuning', scene_tuning, 2)]
 
 
 def main():
@@ -620,7 +829,9 @@ def main():
     lines = ['// Generated by tools/metal_art.py: the pixel art of "Trueno y peluches" (fx_metal.c). Do not edit.',
              '#pragma once', '#include <stdint.h>', '']
     for name, paint, nf in SCENES:
-        frames = [paint(k)[0].render() for k in range(nf)]
+        painted = [paint(k) for k in range(nf)]
+        frames = [S_.render() for S_, _ in painted]
+        extra = painted[0][1]
         pal = []  # one palette for all the frames of a scene
         for p, _ in frames:
             for c in p:
@@ -639,6 +850,8 @@ def main():
             for i in range(0, len(data), 32):
                 lines.append('    ' + ', '.join(str(v) for v in data[i:i + 32]) + ',')
             lines.append('};')
+        if name == 'tuning':  # where the tuner's little screen is, for the needle and the LED
+            lines += ['#define METAL_TUNER_%s %d' % kv for kv in zip('XYWH', extra)]
         print(name, 'colours', len(pal), 'bytes', [len(rle(i)) for i in imgs])
     open(os.path.join(ROOT, 'src', 'fx_metal_art.h'), 'w', newline=NL).write(NL.join(lines) + NL)
 

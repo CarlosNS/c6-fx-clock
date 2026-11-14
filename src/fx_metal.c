@@ -3,7 +3,7 @@
 // The scene follows the hour, each with a little animation, no titles. The scenes painted by
 // tools/metal_art.py (16-bit style: shading, dithering, coloured outlines) are in fx_metal_art.h:
 //   00-08 asleep hugging Rosita, the pink plush (painted)             08-11 half asleep with a coffee (painted)
-//   11-13 glaring at the tuner of a guitar that will not stay in tune  13-16 crossed guitars and the amp
+//   11-13 glaring at the clip-on tuner of his V (painted)              13-16 crossed guitars and the amp
 //   16-19 the tour bus on the road at sunset                           19-23 the show: spotlights, crowd,
 //   23-24 slumped on the sofa, a lonely slice of pizza on the floor          and the time big in the middle
 #include <math.h>
@@ -128,31 +128,39 @@ static void scene_coffee(uint32_t t)
         }
 }
 
-static void scene_tuning(void)  // 11-13
+// 11-13, painted: on the combo amp, leaning over a red V, glaring sideways at the clip-on tuner while
+// his right hand turns a peg. Here the sweat drop slides and the tuner works (tuner_overlay).
+static void scene_tuning(uint32_t t)
 {
-    static const uint32_t S[] = {0xdfe6ea, 0xd2dae0, 0xc5ced6};
-    sky(S, 3, 120);
-    art_rect(0, 120, ART_W, ART_H - 120, C(0x7a7f8a));
-    halftone(120, ART_H, 0x000000, 3);
-    ink_rect(14, 30, 26, 34, 0xf6d08a);                                   // a poster (abstract lightning)
-    ink_thick(30, 36, 22, 50, 2, 0x1a1a22), ink_thick(22, 50, 30, 48, 2, 0x1a1a22), ink_thick(30, 48, 24, 60, 2, 0x1a1a22);
-    // the stool and the rocker, sitting side-on, frowning
-    ink_rect(36, 128, 30, 5, 0x6a4a30), ink_rect(40, 133, 4, 30, 0x6a4a30), ink_rect(58, 133, 4, 30, 0x6a4a30);
-    ink_poly((const float[]){34, 128, 40, 92, 64, 92, 68, 128}, 4, 0x1a1a22);
-    head(54, 80, 0, false);
-    art_rect(49, 76, 4, 1, INK), art_rect(56, 76, 4, 1, INK);             // frowning brows
-    // the guitar: body on his lap, neck up to the right, the headstock with a clip-on tuner
-    ink_poly((const float[]){44, 112, 70, 104, 80, 118, 60, 132, 42, 126}, 5, 0xb02a2a);
-    ink_thick(72, 110, 112, 58, 4, 0x3a2a1e);
-    ink_rect(108, 48, 10, 12, 0x2a2a2a);
-    ink_thick(64, 100, 74, 108, 3, 0xe8b48a);                             // the hand turning the peg
-    ink_rect(114, 34, 18, 12, 0x101418);                                  // the tuner
-    float needle = sinf(s_ts * 5) * 4 + sinf(s_ts * 13) * 2;
-    art_line(123, 44, 123 + needle, 37, needle > -1.5f && needle < 1.5f ? C(0x6aff8a) : C(0xff5a4a));
-    art_rect(116, 36, 2, 2, needle > -1.5f && needle < 1.5f ? C(0x6aff8a) : C(0xff5a4a));
-    // a drop of sweat
-    float d = fmodf(s_ts * 1.2f, 1.0f);
-    ink_disc(63, 74 + d * 6, 1.2f, 0x9ad8ff);
+    if (t % 3000 >= 2000) art_rle(metal_tuning_pal, metal_tuning_1, sizeof metal_tuning_1);
+    else art_rle(metal_tuning_pal, metal_tuning_0, sizeof metal_tuning_0);
+}
+
+// The tuner's little screen, at full wide resolution over the picture: a needle that will not settle
+// and a red LED, then for a moment centred and green
+static void tuner_overlay(uint16_t *fb, uint32_t t)
+{
+    int x0 = METAL_TUNER_X * 2, y0 = METAL_TUNER_Y * 2, w = METAL_TUNER_W * 2, h = METAL_TUNER_H * 2;
+    bool ok = t % 6000 > 4300;
+    float a = ok ? 0.04f * sinf(s_ts * 9) : 0.45f + 0.5f * sinf(s_ts * 2.3f) + 0.3f * sinf(s_ts * 5.1f);
+    uint16_t lit = ok ? rgb565(90, 255, 120) : rgb565(255, 70, 60), dim = rgb565(70, 110, 120);
+    int px = x0 + w / 2 - 2, py = y0 + h - 2;
+    for (int k = -2; k <= 2; k++) {  // the scale
+        int tx = px + k * 4, ty = y0 + 2 + (k * k) / 2;
+        if (tx >= 0 && tx < WW) fb[ty * WW + tx] = k ? dim : rgb565(200, 230, 230);
+    }
+    for (int r = 0; r < h - 4; r++) {  // the needle
+        int x = px + (int)lroundf(r * sinf(a)), y = py - (int)lroundf(r * cosf(a));
+        if (x >= 0 && x < WW && y >= 0 && y < WH) fb[y * WW + x] = ok ? lit : rgb565(230, 240, 250);
+    }
+    int lx = x0 + w - 4, ly = y0 + 3;  // the LED, with a glow
+    for (int dy = -2; dy <= 2; dy++)
+        for (int dx = -2; dx <= 2; dx++) {
+            int d = dx * dx + dy * dy, x = lx + dx, y = ly + dy;
+            if (x < 0 || x >= WW || y < 0 || y >= WH) continue;
+            if (d <= 1) fb[y * WW + x] = lit;
+            else if (d <= 5) fb[y * WW + x] = gfx_blend(fb[y * WW + x], lit, 7);
+        }
 }
 
 static void scene_rehearsal(void)  // 13-16
@@ -303,13 +311,14 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     switch (sc) {
     case 0: scene_sleep(t); break;
     case 1: scene_coffee(t); break;
-    case 2: scene_tuning(); break;
+    case 2: scene_tuning(t); break;
     case 3: scene_rehearsal(); break;
     case 4: scene_bus(); break;
     case 5: scene_show(); break;
     default: scene_pizza(); break;
     }
     art_blit(fb);
+    if (sc == 2) tuner_overlay(fb, t);
     if (g_metal_bare) return;  // console "metalbare 1": the drawing alone, to review it
 
     // Zzz rising from his head towards the poster, below the time (full resolution letters)
@@ -328,6 +337,6 @@ void metal_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char hhmm[8];
     clock_hhmm(hhmm, !g_now.valid || g_now.ms < 500);
     if (sc == 5) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 6)) / 2, 112, hhmm, 6, red, rgb565(18, 12, 20));
-    else if (sc <= 1) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
+    else if (sc <= 2) pix_digits_draw(fb, (WW - pix_digits_width("00:00", 4)) / 2, 42, hhmm, 4, cream, rgb565(16, 18, 44));
     else pix_digits_draw(fb, (WW - pix_digits_width("00:00", 3)) / 2, 300, hhmm, 3, cream, rgb565(18, 12, 20));
 }
