@@ -1,8 +1,10 @@
 // Mis esferas: custom faces, made here (Android app only) and shown by face 28 on the watch
-// (src/fx_custom.c). The page lists them in Esferas and edits them in #miesfera: name, a picture or GIF
-// from the phone cropped to the screen, and the time (font, size, position, colour, outline or shadow,
-// seconds, date), with a preview drawn by the same rules as the watch from the same font data
-// (fuentes.png / fuentes.json, made by tools/font_atlas.py).
+// (src/fx_custom.c). The page lists them in Esferas and edits them in #miesfera: a name (required, and not
+// the name of any other face), the stretches of the day (each from a time until the next one starts, the
+// first from 00:00, so the whole day is covered), each with its picture or GIF from the phone cropped to
+// the screen, and the clock: digital (font, size, position) or analog (classic hands, or hands that come
+// in from the edge), with colour, outline or shadow, seconds and date. The preview is drawn by the same
+// rules as the watch from the same font data (fuentes.png / fuentes.json, made by tools/font_atlas.py).
 //
 // Everything is kept on the phone too (CustomFaces.kt, files/esferas/<id>/), so a new card can be
 // filled again ("Restaurar en el reloj").
@@ -131,6 +133,64 @@ function drawText(F, px, box) {
     if (a) mix(i, cr, cg, cb, a);
   }
 }
+// ---------------------------------------------------------------- the analog clocks, as fx_custom.c
+function edgePoint(dx, dy, m) {
+  const a = WN / 2 - m, b = HN / 2 - m, r = CORNER - m;
+  const tx = Math.abs(dx) > 1e-6 ? a / Math.abs(dx) : 1e9, ty = Math.abs(dy) > 1e-6 ? b / Math.abs(dy) : 1e9;
+  let t = Math.min(tx, ty), px = dx * t, py = dy * t;
+  if (Math.abs(px) > a - r && Math.abs(py) > b - r) {
+    const cx = Math.sign(px) * (a - r), cy = Math.sign(py) * (b - r);
+    const bb = dx * cx + dy * cy, disc = bb * bb - (cx * cx + cy * cy - r * r);
+    t = bb + Math.sqrt(Math.max(0, disc)); px = dx * t; py = dy * t;
+  }
+  return [WN / 2 + px, HN / 2 + py];
+}
+const radiusOf = F => 100 + 30 * F.size;
+function handSegs(F, d) {
+  const s = [], ah = ((d.getHours() % 12) + d.getMinutes() / 60) * Math.PI / 6, am = (d.getMinutes() + d.getSeconds() / 60) * Math.PI / 30, as = d.getSeconds() * Math.PI / 30;
+  const sin = Math.sin, cos = Math.cos;
+  if (F.clock === 'analog') {
+    const cx = F.ax, cy = F.ay, R = radiusOf(F);
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6, dx = sin(a), dy = -cos(a), inr = i % 3 ? 0.9 : 0.82;
+      s.push([cx + dx * R * inr, cy + dy * R * inr, cx + dx * R, cy + dy * R, i % 3 ? 1.5 : 2.5]);
+    }
+    s.push([cx - sin(ah) * R * 0.12, cy + cos(ah) * R * 0.12, cx + sin(ah) * R * 0.52, cy - cos(ah) * R * 0.52, 4 + F.size]);
+    s.push([cx - sin(am) * R * 0.12, cy + cos(am) * R * 0.12, cx + sin(am) * R * 0.8, cy - cos(am) * R * 0.8, 2.8 + 0.7 * F.size]);
+    if (F.secs) s.push([cx - sin(as) * R * 0.22, cy + cos(as) * R * 0.22, cx + sin(as) * R * 0.9, cy - cos(as) * R * 0.9, 1]);
+    s.push([cx, cy, cx, cy, 6 + F.size]);
+  } else {
+    for (let i = 0; i < 12; i++) { const [ex, ey] = edgePoint(sin(i * Math.PI / 6), -cos(i * Math.PI / 6), 14); s.push([ex, ey, ex, ey, i % 3 ? 2.5 : 4]); }
+    let [ex, ey] = edgePoint(sin(ah), -cos(ah), 24);
+    s.push([ex, ey, ex - sin(ah) * 82, ey + cos(ah) * 82, 5 + 1.5 * F.size]);
+    [ex, ey] = edgePoint(sin(am), -cos(am), 24);
+    s.push([ex, ey, ex - sin(am) * 125, ey + cos(am) * 125, 3.5 + F.size]);
+    if (F.secs) { [ex, ey] = edgePoint(sin(as), -cos(as), 14); s.push([ex, ey, ex, ey, 5]); }
+  }
+  return s;
+}
+function drawHands(ctx, F, d) {
+  const segs = handSegs(F, d), col = parseInt(F.color.slice(1), 16);
+  const dark = (col >> 16) * 3 + ((col >> 8) & 255) * 6 + (col & 255) < 800;
+  const stroke = (s, color, grow, off) => {
+    ctx.strokeStyle = ctx.fillStyle = color; ctx.lineCap = 'round';
+    if (s[0] === s[2] && s[1] === s[3]) { ctx.beginPath(); ctx.arc(s[0] + off, s[1] + off, s[4] + grow, 0, 7); ctx.fill(); return; }
+    ctx.lineWidth = 2 * (s[4] + grow); ctx.beginPath(); ctx.moveTo(s[0] + off, s[1] + off); ctx.lineTo(s[2] + off, s[3] + off); ctx.stroke();
+  };
+  if (F.fx === 1) for (const s of segs) stroke(s, dark ? '#fff' : '#000', 2, 0);
+  if (F.fx === 2) for (const s of segs) stroke(s, 'rgba(0,0,0,.56)', 0, 3);
+  for (const s of segs) stroke(s, F.color, 0, 0);
+}
+// The date alone, for the analog clocks (as build_date_mask)
+function buildDateMask(F, date) {
+  M = new Uint8Array(WN * HN);
+  const [wd, hd] = textRun(-1, 2, 0, 0, date, false);
+  const cx = F.clock === 'analog' ? F.ax : WN / 2, cy = F.clock === 'analog' ? F.ay + Math.trunc(radiusOf(F) * 42 / 100) : HN / 2 - Math.trunc(hd / 2);
+  textRun(-1, 2, cx - Math.trunc(wd / 2), cy, date, true);
+  const m = 8;
+  return [Math.max(0, cx - Math.trunc(wd / 2) - m), Math.max(0, cy - m), Math.min(WN, cx + Math.trunc(wd / 2) + m), Math.min(HN, cy + hd + m)];
+}
+
 function nowStrings() {
   const d = new Date(), p = n => String(n).padStart(2, '0');
   return [p(d.getHours()) + ':' + p(d.getMinutes()), p(d.getSeconds()), `${WD[LANG][d.getDay()]} ${d.getDate()} ${MO[LANG][d.getMonth()]}`];
@@ -176,9 +236,20 @@ function inject() {
     <button class="btn full" id="mepick">${tr('Elegir imagen o GIF', 'Pick a picture or GIF')}</button>
     <div class="dim small" id="meinfo"></div>
   </div>
+  <p class="lbl">${tr('Tramos del día', 'Stretches of the day')}</p>
+  <div class="panel stack" style="gap:10px">
+    <div class="inline" id="meslots" style="gap:6px;flex-wrap:wrap"></div>
+    <div class="inline" style="gap:8px;flex-wrap:wrap">
+      <label class="inline" style="gap:6px"><span class="dim">${tr('Desde', 'From')}</span><input type="time" id="mefrom" style="background:var(--noche);color:var(--crema);border:3px solid var(--linea);min-height:42px;padding:0 6px;font:inherit;color-scheme:dark"></label>
+      <button class="btn" id="meadd">${tr('+ Tramo', '+ Stretch')}</button>
+      <button class="btn" id="medrop" style="color:var(--coral)">${tr('Quitar', 'Remove')}</button>
+    </div>
+    <div class="dim small">${tr('Cada tramo muestra su imagen hasta que empieza el siguiente; el primero empieza a las 00:00, así que todo el día queda cubierto. Elige el tramo y luego su imagen.', 'Each stretch shows its picture until the next one starts; the first starts at 00:00, so the whole day is covered. Pick the stretch, then its picture.')}</div>
+  </div>
   <p class="lbl">${tr('La hora', 'The time')}</p>
   <div class="list">
-    <div class="row"><div class="t"><b>${tr('Fuente', 'Font')}</b></div><select id="mefont">${FONTS.map(f => `<option value="${f.id}">${LANG ? f.en : f.es}</option>`).join('')}</select></div>
+    <div class="row"><div class="t"><b>${tr('Reloj', 'Clock')}</b></div><div class="seg" role="group"><button data-clock="digital">${tr('Digital', 'Digital')}</button><button data-clock="analog">${tr('Clásico', 'Classic')}</button><button data-clock="edge">${tr('Borde', 'Edge')}</button></div></div>
+    <div class="row" id="mefontrow"><div class="t"><b>${tr('Fuente', 'Font')}</b></div><select id="mefont">${FONTS.map(f => `<option value="${f.id}">${LANG ? f.en : f.es}</option>`).join('')}</select></div>
     <div class="row col"><div class="inline" style="justify-content:space-between"><span class="tt">${tr('Tamaño', 'Size')}</span><span class="j" id="mesizev" style="font-size:22px"></span></div><input type="range" id="mesize" min="0" max="3" step="1"></div>
     <div class="row"><div class="t"><b>${tr('Color', 'Colour')}</b></div><input type="color" id="mecolor" style="width:64px;height:40px;border:3px solid var(--linea);background:none;padding:0"></div>
     <div class="row"><div class="t"><b>${tr('Para que se lea', 'To read it')}</b></div><div class="seg" role="group"><button data-fx="0">${tr('Nada', 'None')}</button><button data-fx="1">${tr('Contorno', 'Outline')}</button><button data-fx="2">${tr('Sombra', 'Shadow')}</button></div></div>
@@ -256,14 +327,38 @@ function autoSend() {
 }
 
 // ---------------------------------------------------------------- the editor
-function defaults() { return {name: '', font: 'round', size: 2, x: WN / 2, y: 140, color: '#ffffff', fx: 1, secs: 0, date: 1, anim: 0}; }
+function defaults() { return {name: '', clock: 'digital', font: 'round', size: 2, x: WN / 2, y: 140, ax: WN / 2, ay: HN / 2, color: '#ffffff', fx: 1, secs: 0, date: 1, anim: 0}; }
+// The stretches: {key, from (minutes), SRC, T, dirty, pic, src}; SRC and T below are the chosen one's
+const slotOf = () => ED.slots[ED.cur];
+function keepSlot() { const sl = slotOf(); if (sl) { sl.SRC = SRC; sl.T = T; } }
+function pickSlot(i) {
+  keepSlot(); ED.cur = i;
+  const sl = slotOf(); SRC = sl.SRC; T = sl.T || {s: 1, ox: 0, oy: 0};
+  ED.F.anim = SRC && SRC.frames.length > 1 ? 1 : 0; frame = 0;
+  showInfo(); renderSlots();
+}
+const hhmmOf = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+function renderSlots() {
+  const box = $('meslots'); if (!box || !ED) return;
+  box.innerHTML = ED.slots.map((sl, i) => `<button class="btn${i === ED.cur ? ' gold' : ''}" data-i="${i}" style="min-height:40px;padding:0 10px${sl.SRC || sl.pic ? '' : ';color:var(--coral)'}">${hhmmOf(sl.from)}${sl.SRC || sl.pic ? '' : ' !'}</button>`).join('');
+  for (const b of box.querySelectorAll('button')) b.onclick = () => pickSlot(+b.dataset.i);
+  $('mefrom').value = hhmmOf(slotOf().from); $('mefrom').disabled = ED.cur === 0;
+  $('medrop').disabled = ED.cur === 0;
+}
+function showInfo() {
+  if (!SRC) { $('meinfo').textContent = tr('Este tramo aún no tiene imagen: elige una.', 'This stretch has no picture yet: pick one.'); return; }
+  const fr = SRC.frames, dur = fr.reduce((a, f) => a + f.delay, 0);
+  $('meinfo').textContent = fr.length > 1
+    ? tr(`GIF: ${fr.length} fotogramas, ${(dur / 1000).toFixed(1)} s`, `GIF: ${fr.length} frames, ${(dur / 1000).toFixed(1)} s`) + (SRC.cut ? tr(' (reducido)', ' (reduced)') : '') + tr(' · se repite mientras la pantalla está encendida', ' · it loops while the screen is on')
+    : tr(`Imagen de ${SRC.w}×${SRC.h}`, `Picture ${SRC.w}×${SRC.h}`);
+}
 let SRC = null;  // {frames:[{bmp,delay}], w, h, ext, file|url}
 let T = {s: 1, ox: 0, oy: 0};  // picture -> screen: x' = ox + x*s
 let mode = 'crop', frame = 0, frameT = 0, raf = 0;
 
 async function openEditor(id) {
   const f = id && LOCAL.find(l => l.id === id);
-  ED = {id: id || Math.max(0, ...idsKnown()) + 1, isNew: !id, F: defaults(), dirtyPic: !id, saved: !!id};
+  ED = {id: id || Math.max(0, ...idsKnown()) + 1, isNew: !id, F: defaults(), saved: !!id, slots: [{key: 0, from: 0, SRC: null, T: null, dirty: true}], cur: 0};
   SRC = null;
   location.hash = '#miesfera';
   await loadFonts();
@@ -271,13 +366,22 @@ async function openEditor(id) {
     try {
       const j = await (await fetch(`https://appassets.androidplatform.net/mis/${id}/face.json?v=${Date.now()}`)).json();
       Object.assign(ED.F, j);
-      if (j.crop) T = j.crop;
-      if (j.src) await loadSource(await (await fetch(`https://appassets.androidplatform.net/mis/${id}/${j.src}?v=${Date.now()}`)).blob(), j.src.split('.').pop(), true);
+      const list = j.slots && j.slots.length ? j.slots : [{from: 0, pic: j.anim ? 'anim.bin' : 'bg.jpg', src: j.src, crop: j.crop}];
+      ED.slots = list.map((x, k) => ({key: k, from: x.from || 0, SRC: null, T: x.crop || null, dirty: false, pic: x.pic, src: x.src}));
+      delete ED.F.slots; delete ED.F.crop; delete ED.F.src;
+      for (let k = 0; k < ED.slots.length; k++) {
+        const sl = ED.slots[k];
+        ED.cur = k; SRC = null; T = sl.T || {s: 1, ox: 0, oy: 0};
+        if (sl.src) await loadSource(await (await fetch(`https://appassets.androidplatform.net/mis/${id}/${sl.src}?v=${Date.now()}`)).blob(), sl.src.split('.').pop(), !!sl.T);
+        sl.SRC = SRC; sl.T = T;
+      }
+      ED.cur = 0; SRC = ED.slots[0].SRC; T = ED.slots[0].T || T;
     } catch (e) { $('mest').textContent = tr('No se pudo abrir: ', 'Could not open it: ') + e.message; }
   }
   $('medt').textContent = ED.isNew ? tr('Nueva esfera', 'New face') : tr('Editar esfera', 'Edit face');
   $('medel').classList.toggle('hide', ED.isNew);
   syncControls();
+  pickSlot(0);
   setMode('crop');
   loop();
 }
@@ -313,6 +417,7 @@ async function loadSource(blob, ext, keepCrop) {
     const s = Math.max(WN / SRC.w, HN / SRC.h);
     T = {s, ox: (WN - SRC.w * s) / 2, oy: (HN - SRC.h * s) / 2};
   }
+  showInfo(); frame = 0; frameT = performance.now(); return;
   const dur = fr.reduce((a, f) => a + f.delay, 0);
   $('meinfo').textContent = fr.length > 1
     ? tr(`GIF: ${fr.length} fotogramas, ${(dur / 1000).toFixed(1)} s`, `GIF: ${fr.length} frames, ${(dur / 1000).toFixed(1)} s`) + (SRC.cut ? tr(' (reducido)', ' (reduced)') : '') + tr(' · se repite mientras la pantalla está encendida', ' · it loops while the screen is on')
@@ -324,6 +429,7 @@ function syncControls() {
   const F = ED.F;
   $('mename').value = F.name;
   $('mefont').value = F.font;
+  syncClock();
   setSizeRange();
   $('mecolor').value = F.color;
   for (const b of document.querySelectorAll('#v-miesfera [data-fx]')) b.classList.toggle('on', +b.dataset.fx === F.fx);
@@ -331,7 +437,19 @@ function syncControls() {
   $('mest').textContent = ''; $('mebar').classList.add('hide');
   $('metry').disabled = $('mesel').disabled = !ED.saved;
 }
+function syncClock() {
+  for (const b of document.querySelectorAll('#v-miesfera [data-clock]')) b.classList.toggle('on', b.dataset.clock === ED.F.clock);
+  $('mefontrow').classList.toggle('hide', ED.F.clock !== 'digital');
+  $('memtime').classList.toggle('hide', ED.F.clock === 'edge');
+  if (ED.F.clock === 'edge' && mode === 'time') setMode('crop');
+}
 function setSizeRange() {
+  if (ED.F.clock !== 'digital') {  // analog: four sizes (the radius, or the thickness of the edge hands)
+    ED.F.size = Math.min(ED.F.size, 3);
+    $('mesize').max = 3; $('mesize').value = ED.F.size;
+    $('mesizev').textContent = ED.F.clock === 'analog' ? radiusOf(ED.F) + ' px' : ['S', 'M', 'L', 'XL'][ED.F.size];
+    return;
+  }
   if (!FD) return;
   const fd = FONTS.find(f => f.id === ED.F.font), max = fd.aa ? fd.aa.length - 1 : fd.max;
   ED.F.size = Math.min(ED.F.size, max);
@@ -344,6 +462,7 @@ function setMode(m) {
   mode = m;
   $('memcrop').classList.toggle('on', m === 'crop'); $('memtime').classList.toggle('on', m === 'time');
   $('mehint').textContent = m === 'crop' ? tr('Arrastra para mover y pellizca para acercar. Lo de fuera de las esquinas no se ve.', 'Drag to move, pinch to zoom. Outside the corners does not show.')
+    : ED.F.clock === 'analog' ? tr('Arrastra el reloj; se centra solo cerca del medio.', 'Drag the clock; it snaps to the middle.')
     : tr('Arrastra la hora; se centra sola cerca del medio.', 'Drag the time; it snaps to the middle.');
 }
 
@@ -356,7 +475,7 @@ function bindEditor() {
     try {
       $('meinfo').textContent = tr('Cargando…', 'Loading…');
       await loadSource(file, (file.name.split('.').pop() || 'jpg').toLowerCase(), false);
-      ED.dirtyPic = true; changed(); setMode('crop');
+      slotOf().dirty = true; keepSlot(); renderSlots(); changed(); setMode('crop');
     } catch (e) { console.error(e); $('meinfo').textContent = tr('No se pudo abrir esa imagen', 'That picture could not be opened') + ' (' + e.message + ')'; }
     $('mefile').value = '';
   };
@@ -366,6 +485,20 @@ function bindEditor() {
   $('mecolor').oninput = () => { ED.F.color = $('mecolor').value; changed(); };
   for (const b of document.querySelectorAll('#v-miesfera [data-fx]')) b.onclick = () => { ED.F.fx = +b.dataset.fx; syncFx(); changed(); };
   $('mesecs').onchange = () => { ED.F.secs = $('mesecs').checked ? 1 : 0; changed(); };
+  for (const b of document.querySelectorAll('#v-miesfera [data-clock]')) b.onclick = () => { ED.F.clock = b.dataset.clock; syncClock(); setSizeRange(); setMode(mode); changed(); };
+  // the stretches
+  $('mefrom').onchange = () => {
+    const v = /^(\d\d):(\d\d)/.exec($('mefrom').value); if (!v || ED.cur === 0) return;
+    const sl = slotOf(); sl.from = +v[1] * 60 + +v[2]; keepSlot();
+    ED.slots.sort((a, b) => a.from - b.from); ED.cur = ED.slots.indexOf(sl); renderSlots(); changed();
+  };
+  $('meadd').onclick = () => {
+    if (ED.slots.length >= 8) { $('mest').textContent = tr('Como mucho 8 tramos.', 'At most 8 stretches.'); return; }
+    const last = ED.slots[ED.slots.length - 1].from, from = Math.min(23 * 60, last + 6 * 60 - (last + 6 * 60) % 60);
+    const sl = {key: Math.max(...ED.slots.map(x => x.key)) + 1, from: ED.slots.some(x => x.from === from) ? Math.min(1439, last + 60) : from, SRC: null, T: null, dirty: true};
+    keepSlot(); ED.slots.push(sl); ED.slots.sort((a, b) => a.from - b.from); pickSlot(ED.slots.indexOf(sl)); changed();
+  };
+  $('medrop').onclick = () => { if (ED.cur === 0) return; ED.slots.splice(ED.cur, 1); ED.cur = 0; SRC = ED.slots[0].SRC; T = ED.slots[0].T; pickSlot(Math.max(0, ED.cur)); changed(); };
   $('medate').onchange = () => { ED.F.date = $('medate').checked ? 1 : 0; changed(); };
   $('mesave').onclick = save;
   $('metry').onclick = () => ClockBridge.customCmd('cust try ' + ED.id);
@@ -378,7 +511,7 @@ function bindEditor() {
   const cv = $('mecv'), pts = new Map();
   let start = null;
   const toCanvas = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * WN / r.width, (e.clientY - r.top) * HN / r.height]; };
-  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, toCanvas(e)); start = null; ED.F._x = ED.F.x; };
+  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, toCanvas(e)); start = null; ED.F._x = ED.F.x; ED.F._ax = ED.F.ax; ED.F._ay = ED.F.ay; };
   cv.onpointerup = cv.onpointercancel = e => { pts.delete(e.pointerId); start = null; };
   cv.onpointermove = e => {
     if (!pts.has(e.pointerId)) return;
@@ -386,6 +519,12 @@ function bindEditor() {
     pts.set(e.pointerId, p);
     if (mode === 'time') {
       if (pts.size !== 1) return;
+      if (ED.F.clock === 'analog') {  // the dial's centre, snapping to the middle both ways
+        ED.F._ax = (ED.F._ax ?? ED.F.ax) + p[0] - prev[0]; ED.F._ay = (ED.F._ay ?? ED.F.ay) + p[1] - prev[1];
+        ED.F.ax = Math.abs(ED.F._ax - WN / 2) < 8 ? WN / 2 : Math.max(0, Math.min(WN, Math.round(ED.F._ax)));
+        ED.F.ay = Math.abs(ED.F._ay - HN / 2) < 8 ? HN / 2 : Math.max(0, Math.min(HN, Math.round(ED.F._ay)));
+        changed(); return;
+      }
       let x = Math.round(ED.F.x + p[0] - prev[0]), y = Math.round(ED.F.y + p[1] - prev[1]);
       ED.F._x = (ED.F._x ?? ED.F.x) + p[0] - prev[0];
       x = Math.abs(ED.F._x - WN / 2) < 8 ? WN / 2 : Math.round(ED.F._x);  // snaps to the middle
@@ -400,9 +539,9 @@ function bindEditor() {
       const d0 = Math.hypot(prev[0] - other[0], prev[1] - other[1]), d1 = Math.hypot(a[0] - b[0], a[1] - b[1]);
       if (d0 > 10) zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, d1 / d0);
     }
-    changed(); ED.dirtyPic = true;
+    changed(); slotOf().dirty = true;
   };
-  cv.onwheel = e => { if (mode === 'crop' && SRC) { e.preventDefault(); const p = toCanvas(e); zoomAt(p[0], p[1], e.deltaY < 0 ? 1.08 : 1 / 1.08); changed(); ED.dirtyPic = true; } };
+  cv.onwheel = e => { if (mode === 'crop' && SRC) { e.preventDefault(); const p = toCanvas(e); zoomAt(p[0], p[1], e.deltaY < 0 ? 1.08 : 1 / 1.08); changed(); slotOf().dirty = true; } };
 }
 function syncFx() { for (const b of document.querySelectorAll('#v-miesfera [data-fx]')) b.classList.toggle('on', +b.dataset.fx === ED.F.fx); }
 function zoomAt(cx, cy, k) {
@@ -427,19 +566,21 @@ function compose(k, withGuides) {
     paintBg(t.getContext('2d'), WA, HA, k);
     x.imageSmoothingEnabled = false; x.drawImage(t, 0, 0, WN, HN);
   } else paintBg(x, WN, HN, k);
-  if (FD) {  // the fonts may still be loading
+  if (FD && (ED.F.clock === 'digital' || ED.F.date)) {  // the fonts may still be loading
     const img = x.getImageData(0, 0, WN, HN);
     const [hhmm, ss, date] = nowStrings();
-    const bx = buildMask(ED.F, hhmm, ss, date);
+    const bx = ED.F.clock === 'digital' ? buildMask(ED.F, hhmm, ss, date) : buildDateMask(ED.F, date);
     drawText(ED.F, img.data, bx);
     x.putImageData(img, 0, 0);
   }
+  if (ED.F.clock !== 'digital') drawHands(x, ED.F, new Date());
   const out = $('mecv').getContext('2d');
   out.drawImage(pcv, 0, 0);
   if (withGuides) {  // what the rounded screen hides
     out.save(); out.fillStyle = 'rgba(0,0,0,.6)';
     out.beginPath(); out.rect(0, 0, WN, HN); out.roundRect(2, 2, WN - 4, HN - 4, CORNER); out.fill('evenodd'); out.restore();
-    if (mode === 'time' && ED.F.x === WN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(WN / 2, 0, 1, HN); }
+    if (mode === 'time' && (ED.F.clock === 'analog' ? ED.F.ax : ED.F.x) === WN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(WN / 2, 0, 1, HN); }
+    if (mode === 'time' && ED.F.clock === 'analog' && ED.F.ay === HN / 2) { out.fillStyle = 'rgba(249,178,90,.6)'; out.fillRect(0, HN / 2, WN, 1); }
   }
 }
 function loop() {
@@ -481,25 +622,56 @@ async function buildMain() {
   });
   return b64(out);
 }
+const norm = t => (t || '').trim().toLocaleLowerCase();
+// What would stop it being saved, or ''
+function problem() {
+  const name = norm(ED.F.name);
+  if (!name) return tr('Ponle un nombre a la esfera.', 'Give the face a name.');
+  // (FX: the page's catalogue, a let, so not on window)
+  if ((typeof FX !== 'undefined' ? FX : []).some(f => !f.x && f.g >= 0 && norm(f.label) === name)) return tr('Ya hay una esfera de serie con ese nombre.', 'A built-in face already has that name.');
+  const mine = [...LOCAL, ...(WATCH && WATCH.list ? WATCH.list : [])].filter(f => f.id !== ED.id);
+  if (mine.some(f => norm(f.name) === name)) return tr('Ya tienes otra esfera con ese nombre.', 'You already have another face with that name.');
+  const empty = ED.slots.find(sl => !sl.SRC && !sl.pic);
+  if (empty) return tr(`El tramo de las ${hhmmOf(empty.from)} no tiene imagen.`, `The ${hhmmOf(empty.from)} stretch has no picture.`);
+  if (new Set(ED.slots.map(sl => sl.from)).size !== ED.slots.length) return tr('Dos tramos empiezan a la misma hora.', 'Two stretches start at the same time.');
+  return '';
+}
 async function save() {
   if (busy) return;
-  if (!SRC) { $('mest').textContent = tr('Elige primero una imagen o un GIF.', 'Pick a picture or a GIF first.'); return; }
+  keepSlot();
+  const why = problem();
+  if (why) { $('mest').textContent = why; return; }
   if (WATCH && !WATCH.err && !sdOk()) { $('mest').textContent = tr('El reloj necesita una microSD para guardarla.', 'The watch needs a microSD to keep it.'); return; }
   busy = true; $('mesave').disabled = true;
+  const keepCur = ED.cur;
   try {
     $('mest').textContent = tr('Preparando…', 'Preparing…');
-    const F = {...ED.F}; delete F._x;
-    if (!F.name) F.name = tr('Mi esfera ', 'My face ') + ED.id;
-    F.crop = T; F.src = 'source.' + SRC.ext;
-    const main = ED.dirtyPic ? await buildMain() : null;
-    const src = ED.dirtyPic ? b64(await SRC.blob.arrayBuffer()) : null;
+    const F = {...ED.F}; delete F._x; delete F._ax; delete F._ay; delete F.anim;
+    F.name = F.name.trim();
+    const files = {}, slots = [];
+    for (let k = 0; k < ED.slots.length; k++) {
+      const sl = ED.slots[k];
+      pickSlot(k);
+      if (sl.dirty || !sl.pic) {  // its picture as the watch shows it, and the original to edit it again
+        const anim = SRC.frames.length > 1;
+        sl.pic = `${anim ? 'anim' : 'bg'}_${sl.key}.${anim ? 'bin' : 'jpg'}`;
+        sl.src = `source_${sl.key}.${SRC.ext}`;
+        files[sl.pic] = await buildMain();
+        files[sl.src] = b64(await SRC.blob.arrayBuffer());
+      }
+      slots.push({from: k ? sl.from : 0, pic: sl.pic, src: sl.src, crop: T});
+    }
+    F.slots = slots;
+    pickSlot(0);
     compose(0, false);
     const t = document.createElement('canvas'); t.width = 132; t.height = 162;
     t.getContext('2d').drawImage(pcv, 0, 0, 132, 162);
-    const thumb = b64(await (await blobOf(t, 0.8)).arrayBuffer());
+    files['thumb.jpg'] = b64(await (await blobOf(t, 0.8)).arrayBuffer());
+    pickSlot(keepCur);
     $('mest').textContent = '';
     sending(tr(`Enviando «${F.name}» al reloj`, `Sending «${F.name}» to the watch`), 0, tr('Preparando…', 'Preparing…'));
-    ClockBridge.customSave(ED.id, JSON.stringify(F), main, !!F.anim, src, SRC.ext, thumb);
+    const onWatch = !!(WATCH && WATCH.list && WATCH.list.some(w => w.id === ED.id));
+    ClockBridge.customSave(ED.id, JSON.stringify(F), JSON.stringify(files), !onWatch);
   } catch (e) {
     busy = false; $('mesave').disabled = false; $('mest').textContent = e.message; sending(null);
   }
@@ -513,7 +685,8 @@ window.customReply = s => {
     if (m.pct !== undefined) { sending($('missendt').textContent, m.pct, m.pct + ' %'); return; }
     busy = false; $('mesave').disabled = false; $('mebar').classList.add('hide'); sending(null);
     $('mest').textContent = m.ok ? tr('Guardada en el reloj y en el móvil.', 'Saved on the watch and the phone.') : (m.msg || tr('No se pudo guardar', 'It could not be saved'));
-    if (m.ok) { ED.saved = true; ED.isNew = false; ED.dirtyPic = false; $('metry').disabled = $('mesel').disabled = false; $('medel').classList.remove('hide'); }
+    if (m.ok || /móvil/.test(m.msg || '')) for (const sl of ED.slots) sl.dirty = false;  // kept on the phone at least
+    if (m.ok) { ED.saved = true; ED.isNew = false; $('metry').disabled = $('mesel').disabled = false; $('medel').classList.remove('hide'); }
     refresh(); return;
   }
   if (m.t === 'restore') {

@@ -9,6 +9,7 @@
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.
 - Arreglado: textos que se pisaban en Alarmas, Pasos, Cronómetro, Archivos y el lanzador.
 - **La app sin el reloj:** una barra avisa en todas las secciones; lo que necesita el reloj se ve atenuado y, al tocarlo, explica que no está conectado (antes parecía cambiarse y se perdía); Inicio enseña lo último que se supo, y al reconectar se vuelve a leer todo. Sin reloj emparejado, Inicio es la bienvenida con los pasos.
+- **Mis esferas, más completas:** tramos del día (cada uno con su imagen o GIF; cubren todo el día), reloj analógico clásico o con agujas que salen del borde además del digital, y nombre obligatorio que no puede repetir el de otra esfera.
 - **Mis esferas:** el envío al reloj se ve en una ventana que bloquea la app hasta terminar; al reconectar, las que estaban solo en el móvil se mandan solas.
 - Arreglado: al conectar, el reloj podía rechazar una orden por falta de búferes (mientras mandaba su estado); ahora deja búferes libres para las órdenes y la app reintenta.
 - Arreglado: tras reiniciarse el reloj, la app podía no volver a conectar nunca (esperaba una respuesta del Bluetooth que Android no siempre da).

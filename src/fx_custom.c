@@ -1,10 +1,18 @@
 // "Mis esferas" (full screen, native 410x502): the custom face chosen in the phone app. Each one lives
 // on the microSD in /esferas/<id>/:
-//   face.json  {"name":..,"font":"round|seg|nib|pix|jersey","size":n,"x":cx,"y":top,"color":"#rrggbb",
-//               "fx":0 none|1 outline|2 shadow,"secs":0|1,"date":0|1,"anim":0|1}
-//   bg.jpg     the background, 410 x 502 (a still image), or
-//   anim.bin   "MAN1", u16 frames, u16 0, then per frame u16 delay ms, u16 0, u32 offset, u32 size, then the
-//              JPEG frames, 274 x 336 each (enlarged x1.5 on screen)
+//   face.json  {"name":..,"clock":"digital|analog|edge","font":"round|seg|nib|pix|jersey","size":n,
+//               "x":cx,"y":top (digital),"ax":cx,"ay":cy (analog centre),"color":"#rrggbb",
+//               "fx":0 none|1 outline|2 shadow,"secs":0|1,"date":0|1,
+//               "slots":[{"from":minutes,"pic":"bg_0.jpg"|"anim_1.bin"},...]}
+//              The slots are the stretches of the day, sorted, the first from 0: each one shows its
+//              picture until the next one starts, so the whole day is covered. Faces from before the
+//              slots have none, and one picture: bg.jpg, or anim.bin with "anim":1.
+//   *.jpg      a still background, 410 x 502, or
+//   *.bin      an animation: "MAN1", u16 frames, u16 0, then per frame u16 delay ms, u16 0, u32 offset,
+//              u32 size, then the JPEG frames, 274 x 336 each (enlarged x1.5 on screen)
+// The clock: digital (the fonts below), "analog" (classic hands from a centre that can be moved, the
+// size sets the radius) or "edge" (hands that come in from the rounded edge of the screen towards the
+// middle without reaching it, so the picture shows; the size sets their thickness).
 // The app crops and encodes everything; the watch only decodes (TJpgDec in ROM) and draws the time. An
 // animation loops while the screen is on (with it off nothing is drawn, so it costs nothing then), and
 // starts from its first frame each time the screen comes on.
@@ -40,11 +48,16 @@
 
 static const char *TAG = "custom";
 
+#define SLOTS_MAX 8
 typedef struct {
     int font, size, x, y, fx, secs, date, anim;
+    int clock, ax, ay;                   // 0 digital, 1 classic hands, 2 hands from the edge; analog centre
+    int nslots, from[SLOTS_MAX];         // the stretches of the day (minutes), each until the next
+    char pic[SLOTS_MAX][32];
     uint8_t r, g, b;
     char name[40];
 } face_t;
+static int s_slot = -1;                  // the stretch whose picture is loaded
 
 static face_t s_face;
 static int s_loaded = -1;          // id loaded (-1 none)
@@ -271,7 +284,126 @@ static void draw_text(uint16_t *fb)
         }
 }
 
+// ---------------------------------------------------------------- the analog clocks (as the app's preview)
+
+// Where a ray from the middle of the screen (unit direction dx, dy) meets the rounded screen, m px in
+static void edge_point(float dx, float dy, float m, float *ex, float *ey)
+{
+    float a = W / 2.0f - m, b = H / 2.0f - m, r = BOARD_LCD_CORNER_R - m;
+    float tx = fabsf(dx) > 1e-6f ? a / fabsf(dx) : 1e9f, ty = fabsf(dy) > 1e-6f ? b / fabsf(dy) : 1e9f;
+    float t = tx < ty ? tx : ty, px = dx * t, py = dy * t;
+    if (fabsf(px) > a - r && fabsf(py) > b - r) {  // in a corner: on its circle instead
+        float cx = (px > 0 ? 1 : -1) * (a - r), cy = (py > 0 ? 1 : -1) * (b - r);
+        float bb = dx * cx + dy * cy, disc = bb * bb - (cx * cx + cy * cy - r * r);
+        t = bb + sqrtf(disc > 0 ? disc : 0);
+        px = dx * t, py = dy * t;
+    }
+    *ex = W / 2.0f + px, *ey = H / 2.0f + py;
+}
+
+typedef struct { float x0, y0, x1, y1, r; } seg_t;
+
+// The hands (and the marks) as round-ended segments: outlines or shadows first, then the colour
+static void analog_draw(uint16_t *fb)
+{
+    const face_t *f = &s_face;
+    seg_t s[24];
+    int n = 0;
+    const float PI_ = 3.14159265f;
+    float ah = ((g_now.h % 12) + g_now.m / 60.0f) * PI_ / 6, am = (g_now.m + g_now.s / 60.0f) * PI_ / 30, as = g_now.s * PI_ / 30;
+    if (f->clock == 1) {  // classic: from the centre
+        float cx = f->ax, cy = f->ay, R = 100 + 30 * f->size;
+        for (int i = 0; i < 12; i++) {
+            float a = i * PI_ / 6, dx = sinf(a), dy = -cosf(a), in = i % 3 ? 0.9f : 0.82f;
+            s[n++] = (seg_t){cx + dx * R * in, cy + dy * R * in, cx + dx * R, cy + dy * R, i % 3 ? 1.5f : 2.5f};
+        }
+        s[n++] = (seg_t){cx - sinf(ah) * R * 0.12f, cy + cosf(ah) * R * 0.12f, cx + sinf(ah) * R * 0.52f, cy - cosf(ah) * R * 0.52f, 4.0f + f->size};
+        s[n++] = (seg_t){cx - sinf(am) * R * 0.12f, cy + cosf(am) * R * 0.12f, cx + sinf(am) * R * 0.8f, cy - cosf(am) * R * 0.8f, 2.8f + 0.7f * f->size};
+        if (f->secs) s[n++] = (seg_t){cx - sinf(as) * R * 0.22f, cy + cosf(as) * R * 0.22f, cx + sinf(as) * R * 0.9f, cy - cosf(as) * R * 0.9f, 1.0f};
+        s[n++] = (seg_t){cx, cy, cx, cy, 6.0f + f->size};
+    } else {  // from the edge towards the middle, never reaching it
+        float ex, ey;
+        for (int i = 0; i < 12; i++) {
+            edge_point(sinf(i * PI_ / 6), -cosf(i * PI_ / 6), 14, &ex, &ey);
+            s[n++] = (seg_t){ex, ey, ex, ey, i % 3 ? 2.5f : 4.0f};
+        }
+        edge_point(sinf(ah), -cosf(ah), 24, &ex, &ey);
+        s[n++] = (seg_t){ex, ey, ex - sinf(ah) * 82, ey + cosf(ah) * 82, 5.0f + 1.5f * f->size};
+        edge_point(sinf(am), -cosf(am), 24, &ex, &ey);
+        s[n++] = (seg_t){ex, ey, ex - sinf(am) * 125, ey + cosf(am) * 125, 3.5f + f->size};
+        if (f->secs) {
+            edge_point(sinf(as), -cosf(as), 14, &ex, &ey);
+            s[n++] = (seg_t){ex, ey, ex, ey, 5.0f};
+        }
+    }
+    bool dark = f->r * 3 + f->g * 6 + f->b < 800;  // a dark colour gets a light outline, as the text
+    uint16_t oc = dark ? rgb565(255, 255, 255) : rgb565(0, 0, 0), c = rgb565(f->r, f->g, f->b);
+    for (int pass = f->fx ? 0 : 1; pass < 2; pass++)
+        for (int i = 0; i < n; i++) {
+            int x0 = (int)(s[i].x0 * 16), y0 = (int)(s[i].y0 * 16), x1 = (int)(s[i].x1 * 16), y1 = (int)(s[i].y1 * 16), r = (int)(s[i].r * 16);
+            if (pass == 1) gfx_aa_capsule(fb, x0, y0, x1, y1, r, c, 16);
+            else if (f->fx == 1) gfx_aa_capsule(fb, x0, y0, x1, y1, r + 32, oc, 16);
+            else gfx_aa_capsule(fb, x0 + 48, y0 + 48, x1 + 48, y1 + 48, r, rgb565(0, 0, 0), 9);
+        }
+}
+
+// The date alone, for the analog clocks: under the centre of the classic one, in the middle for the edge one
+static void build_date_mask(const char *date)
+{
+    if (s_bx1 > s_bx0)
+        for (int y = s_by0; y < s_by1; y++) memset(s_mask + y * W + s_bx0, 0, s_bx1 - s_bx0);
+    const face_t *f = &s_face;
+    int hd, wd = text_run(-1, 2, 0, 0, date, false, &hd);
+    int cx = f->clock == 1 ? f->ax : W / 2, cy = f->clock == 1 ? f->ay + (100 + 30 * f->size) * 42 / 100 : H / 2 - hd / 2;
+    text_run(-1, 2, cx - wd / 2, cy, date, true, &hd);
+    int m = 8;
+    s_bx0 = cx - wd / 2 - m < 0 ? 0 : cx - wd / 2 - m;
+    s_bx1 = cx + wd / 2 + m > W ? W : cx + wd / 2 + m;
+    s_by0 = cy - m < 0 ? 0 : cy - m;
+    s_by1 = cy + hd + m > H ? H : cy + hd + m;
+}
+
 // ---------------------------------------------------------------- loading
+
+// The stretch of the day now: the last one that has started (they are sorted, the first from 0)
+static int cur_slot(void)
+{
+    int m = g_now.valid ? g_now.h * 60 + g_now.m : 0, k = 0;
+    for (int i = 0; i < s_face.nslots; i++)
+        if (s_face.from[i] <= m) k = i;
+    return k;
+}
+
+// The picture of stretch k: a still JPEG into s_bg, or an animation kept whole in PSRAM
+static bool load_pic(int id, int k)
+{
+    free(s_anim);
+    s_anim = NULL;
+    s_nframes = 0;
+    s_face.anim = 0;
+    const char *pic = s_face.pic[k];
+    char path[64];
+    size_t len, pl = strlen(pic);
+    snprintf(path, sizeof(path), "/esferas/%d/%.31s", id, pic);
+    if (pl > 4 && !strcmp(pic + pl - 4, ".bin")) {
+        s_anim = sd_read_file(path, 3 * 1024 * 1024, &s_anim_len);
+        if (!s_anim || s_anim_len < 8 || memcmp(s_anim, "MAN1", 4)) return strlcpy(s_err, TR("animación dañada", "broken animation"), sizeof(s_err)), false;
+        s_nframes = s_anim[4] | s_anim[5] << 8;
+        if (!s_frame) s_frame = heap_caps_malloc(AW * AH * 2, MALLOC_CAP_SPIRAM);
+        s_cur_frame = -1;
+        s_anim_t0 = now_ms();
+        s_face.anim = 1;
+    } else {
+        uint8_t *jpg = sd_read_file(path, 1024 * 1024, &len);
+        bool ok = jpg && jpeg_decode(jpg, len, s_bg, W, H);
+        free(jpg);
+        if (!ok) return strlcpy(s_err, TR("imagen dañada", "broken image"), sizeof(s_err)), false;
+    }
+    s_slot = k;
+    return true;
+}
+
+static bool load(int id);
 
 static bool load(int id)
 {
@@ -307,24 +439,29 @@ static bool load(int id)
     f.r = rgb >> 16, f.g = rgb >> 8, f.b = rgb;
     const char *nm = cJSON_GetStringValue(cJSON_GetObjectItem(j, "name"));
     strlcpy(f.name, nm ? nm : "", sizeof(f.name));
+    const char *ck = cJSON_GetStringValue(cJSON_GetObjectItem(j, "clock"));
+    f.clock = ck && !strcmp(ck, "analog") ? 1 : ck && !strcmp(ck, "edge") ? 2 : 0;
+    f.ax = (v = cJSON_GetObjectItem(j, "ax")) ? v->valueint : W / 2;
+    f.ay = (v = cJSON_GetObjectItem(j, "ay")) ? v->valueint : H / 2;
+    cJSON *sl = cJSON_GetObjectItem(j, "slots");
+    for (int k = 0; cJSON_IsArray(sl) && k < cJSON_GetArraySize(sl) && f.nslots < SLOTS_MAX; k++) {
+        cJSON *e = cJSON_GetArrayItem(sl, k);
+        const char *pic = cJSON_GetStringValue(cJSON_GetObjectItem(e, "pic"));
+        if (!pic || strchr(pic, '/')) continue;  // a file in the face's own folder, nothing else
+        f.from[f.nslots] = (v = cJSON_GetObjectItem(e, "from")) ? v->valueint : 0;
+        strlcpy(f.pic[f.nslots++], pic, sizeof(f.pic[0]));
+    }
+    if (!f.nslots) {  // a face from before the stretches: one picture all day
+        f.nslots = 1;
+        strlcpy(f.pic[0], f.anim ? "anim.bin" : "bg.jpg", sizeof(f.pic[0]));
+    }
+    f.from[0] = 0;  // the day starts with the first one, whatever it says
     cJSON_Delete(j);
     s_face = f;
-    if (f.anim) {
-        snprintf(path, sizeof(path), "/esferas/%d/anim.bin", id);
-        s_anim = sd_read_file(path, 3 * 1024 * 1024, &s_anim_len);
-        if (!s_anim || s_anim_len < 8 || memcmp(s_anim, "MAN1", 4)) return strlcpy(s_err, TR("animación dañada", "broken animation"), sizeof(s_err)), false;
-        s_nframes = s_anim[4] | s_anim[5] << 8;
-        if (!s_frame) s_frame = heap_caps_malloc(AW * AH * 2, MALLOC_CAP_SPIRAM);
-        s_cur_frame = -1;
-    } else {
-        snprintf(path, sizeof(path), "/esferas/%d/bg.jpg", id);
-        uint8_t *jpg = sd_read_file(path, 1024 * 1024, &len);
-        bool ok = jpg && jpeg_decode(jpg, len, s_bg, W, H);
-        free(jpg);
-        if (!ok) return strlcpy(s_err, TR("imagen dañada", "broken image"), sizeof(s_err)), false;
-    }
+    s_slot = -1;
+    if (!load_pic(id, cur_slot())) return false;
     s_loaded = id;
-    ESP_LOGI(TAG, "loaded %d \"%s\"%s", id, f.name, f.anim ? " (animated)" : "");
+    ESP_LOGI(TAG, "loaded %d \"%s\", %d stretch(es), clock %d", id, f.name, f.nslots, f.clock);
     return true;
 }
 
@@ -376,6 +513,11 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
         ui_print_c(&ui_jersey, 6, W / 2, 300, hhmm, MS_CREMA, true);
         return;
     }
+    int k = cur_slot();  // a new stretch of the day: its picture
+    if (k != s_slot && !load_pic(s_loaded, k)) {
+        s_loaded = -1;
+        return;
+    }
     if (s_anim) {
         // The screen was off (no frames for a while): from the first frame again; then round and round
         if (now - s_last_render > 500) s_anim_t0 = now;
@@ -400,6 +542,17 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
     static const char *const MO_EN[12] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
     if (g_app.lang) snprintf(date, sizeof(date), "%s %d %s", WD_EN[g_now.wday % 7], g_now.day, MO_EN[(g_now.mon + 11) % 12]);
     else snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
+    if (s_face.clock) {  // analog: the date (if wanted) under the hands
+        if (s_face.date) {
+            if (strcmp(date, s_text_key)) {
+                strlcpy(s_text_key, date, sizeof(s_text_key));
+                build_date_mask(date);
+            }
+            draw_text(fb);
+        }
+        analog_draw(fb);
+        return;
+    }
     snprintf(key, sizeof(key), "%s%s%s", hhmm, s_face.secs ? ss : "", s_face.date ? date : "");
     if (strcmp(key, s_text_key)) {
         strlcpy(s_text_key, key, sizeof(s_text_key));

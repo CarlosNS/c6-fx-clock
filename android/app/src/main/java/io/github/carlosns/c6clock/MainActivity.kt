@@ -474,14 +474,20 @@ class MainActivity : ComponentActivity() {
             }
         }
         /** Saves a face on the phone and sends it to the watch; replies {"t":"save","pct":..} and {"t":"save","ok":..}. */
-        @JavascriptInterface fun customSave(id: Int, json: String, main: String?, anim: Boolean, source: String?, ext: String?, thumb: String?) {
-            val d = runCatching { CustomFaces.store(this@MainActivity, id, json, main, anim, source, ext, thumb) }
+        /**
+         * Saves a face (its files: name -> base64) on the phone and sends it to the watch: every picture
+         * if [all] (a face the watch does not have), otherwise only the pictures that changed.
+         */
+        @JavascriptInterface fun customSave(id: Int, json: String, files: String, all: Boolean) {
+            val f = runCatching { JSONObject(files) }.getOrElse { JSONObject() }
+            val d = runCatching { CustomFaces.store(this@MainActivity, id, json, f) }
                 .getOrElse { return reply(JSONObject().put("t", "save").put("ok", false).put("msg", it.message)) }
             val l = Live.link?.takeIf { it.ready }
                 ?: return reply(JSONObject().put("t", "save").put("ok", false).put("msg", "guardada en el móvil; el reloj no está conectado"))
             lifecycleScope.launch {
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                val r = runCatching { CustomFaces.send(l, d) { reply(JSONObject().put("t", "save").put("pct", it)) } }
+                val only = if (all) null else f.keys().asSequence().toSet()
+                val r = runCatching { CustomFaces.send(l, d, only) { reply(JSONObject().put("t", "save").put("pct", it)) } }
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 reply(JSONObject().put("t", "save").put("ok", r.isSuccess).put("msg", r.exceptionOrNull()?.message ?: ""))
             }
