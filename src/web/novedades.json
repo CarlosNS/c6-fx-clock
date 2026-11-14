@@ -4,6 +4,7 @@
   "app": "0.8.0",
   "fecha": "2026-11-11",
   "es": [
+   "Ajustes del reloj ordenados por secciones, y un QR en Ajustes → App del móvil para volver a descargar la app si la pierdes",
    "Mis esferas: crea tus propias esferas en la app con una foto o un GIF de la galería y la hora a tu gusto (fuente, tamaño, color, sitio, segundos y fecha); se guardan en la microSD y con copia en el móvil",
    "Mis esferas: varias imágenes por tramos del día y reloj analógico (clásico o con agujas desde el borde)",
    "El selector de esferas del reloj es ahora una rueda que da la vuelta, y en él salen también tus esferas personalizadas",
@@ -21,6 +22,7 @@
    "Arreglos de maquetación en Aventura, Gol, Pasos, Alarmas y los ajustes rápidos"
   ],
   "en": [
+   "Watch settings sorted into sections, and a QR code in Settings → Phone app to download the app again if you lose it",
    "My faces: make your own faces in the app from a photo or a GIF in your gallery, with the time just as you like it (font, size, colour, place, seconds and date); they are kept on the microSD, with a copy on the phone",
    "My faces: several pictures by stretches of the day and an analog clock (classic, or hands from the edge)",
    "The watch’s face picker is now a wheel that goes round, and your custom faces are in it too",

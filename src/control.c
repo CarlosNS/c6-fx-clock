@@ -49,7 +49,7 @@ void app_command(const char *cmd)
     if (find_command(cmd)) return;
     if (custom_command(cmd)) return;  // custom faces (Mis esferas)   // "find 1": the phone is looking for the watch  // "music ..." / "call ..." from the phone app
     if (alarm_command(cmd)) return;  // "alarm <i> label <text>" / "alarm <i> anim <n>"
-    if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"...
+    if (strncmp(cmd, "ui ", 3) == 0) {   // drive the watch's screens: "ui home", "ui app 2", "ui tap 200 300"..., "ui drag x0 y0 x1 y1"
         sys_request(cmd + 3);
         return;
     }

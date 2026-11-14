@@ -4,6 +4,8 @@
 
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
+- **Ajustes del reloj por secciones:** un menú (Pantalla, Sonido, Hora y esferas, General, Conexiones, Sistema y App del móvil) con lo que guarda cada una; BOOT vuelve al menú. Ahora también están en el reloj el formato de 24 h y la voz.
+- **La app, desde el reloj:** *Ajustes → App del móvil* enseña un QR con el enlace a la última versión de la app para Android, por si se borra (no está en la Play Store).
 - **Esferas nuevas:** *Disfruta* (un prado mecido por el viento que sigue la hora del día, con luciérnagas y fuegos artificiales de noche; sin hora, solo «Disfruta» o «Relax») y *El escultor* (la estatua de un corredor que se talla según los pasos de hoy, en once escenas hasta cumplir el objetivo).
 - **Mis esferas:** en la app (*Esferas → Mis esferas*) se crean, cambian y borran esferas propias: un nombre, una foto o un GIF de la galería encuadrado a la pantalla, y la hora digital con fuente, tamaño, sitio, color, contorno o sombra, segundos y fecha, con vista previa exacta y *Probar en el reloj*. Se guardan en la microSD del reloj (hace falta una; la app avisa si no la hay) y el móvil guarda una copia para restaurarlas. Los GIF se repiten mientras la pantalla está encendida (hasta 40 fotogramas, 274×336). El reloj recibe archivos por Bluetooth a su tarjeta.
 - **Editor de alarmas más seguro:** *Cancelar* y *Guardar*; *Borrar alarma* va aparte y pregunta antes. En Archivos, *Formatear* pasa a *Más…*.

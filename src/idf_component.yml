@@ -2,3 +2,5 @@
 dependencies:
   # TinyUSB: the microSD card as a USB drive (usbdisk.c, boot mode "usb")
   espressif/esp_tinyusb: "~1.7.0"
+  # QR codes (app_settings.c: the link to the Android app, to install it again)
+  espressif/qrcode: "~0.1.0"

@@ -12,7 +12,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 - Para **volver**, desliza desde el borde izquierdo hacia la derecha o pulsa **BOOT**.
 - El reloj tiene botones en el lateral: **BOOT**, el de uso diario, y **PWR**, que apaga la pantalla o el reloj entero (más abajo).
 - Al encenderlo desde apagado sale una **animación de bienvenida**: el mar de noche se ilumina, la luna sale tras la isla del faro y caen las letras de «Marea». En los reinicios no sale.
-- Los textos están en español o en inglés (*Ajustes → Idioma*).
+- Los textos están en español o en inglés (*Ajustes → General → Idioma*).
 
 ## Gestos
 
@@ -196,7 +196,7 @@ Una rueda con todas las esferas, por grupos (Efectos, Videojuegos, Arte, Natural
 
 El acelerómetro cuenta los pasos todo el día, con la pantalla encendida o apagada.
 
-- **Hoy:** el anillo se llena hacia el **objetivo diario** (10 000 por defecto; se cambia en *Ajustes → Objetivo de pasos*), con las calorías y la distancia aproximadas (0,04 kcal y 0,75 m por paso).
+- **Hoy:** el anillo se llena hacia el **objetivo diario** (10 000 por defecto; se cambia en *Ajustes → General → Objetivo de pasos*), con las calorías y la distancia aproximadas (0,04 kcal y 0,75 m por paso).
 - **Desliza a la izquierda** para ver los **últimos 30 días** como barras; toca una barra para ver los pasos de ese día. Desliza a la derecha para volver a hoy.
 - La cuenta empieza de cero a medianoche.
 
@@ -260,7 +260,7 @@ Sin tarjeta, el reloj lo avisa y vuelve solo a los 4 segundos. En modo USB no ha
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-settings.png" alt="Ajustes" width="200">
 
-Una lista que se desplaza con el dedo. Los **interruptores** se tocan, las **barras** se arrastran a los lados y las **opciones** cambian con cada toque. Todo se guarda solo y se ve igual desde la app y la página.
+Un menú de **secciones**, cada una con lo que contiene debajo de su nombre. Al tocar una se abre su lista, que se desplaza con el dedo; BOOT o el gesto desde el borde izquierdo vuelven al menú. Los **interruptores** se tocan, las **barras** se arrastran a los lados y las **opciones** cambian con cada toque. Todo se guarda solo y se ve igual desde la app y la página.
 
 | Sección | Ajuste | Opciones |
 |---|---|---|
@@ -272,16 +272,24 @@ Una lista que se desplaza con el dedo. Los **interruptores** se tocan, las **bar
 | | Tocar para encender | Con la pantalla apagada: *un toque* la enciende, *doble* necesita dos toques seguidos (evita encenderla sin querer) o *no* (solo los botones y la muñeca) |
 | **Sonido** | Volumen | Del altavoz (alarmas y llamadas) |
 | | No molestar | Sin sonido de alarmas ni llamadas |
-| **Esferas** | Segundos | Mostrar los segundos en las esferas que los tienen |
+| **Hora y esferas** | Formato 24 h | 24 horas o 12 con a. m. / p. m. |
+| | Segundos | Mostrar los segundos en las esferas que los tienen |
 | | Cambio automático | Pasar de esfera cada 30 s |
 | **General** | Idioma | Español o inglés |
 | | Objetivo de pasos | 4 000 a 15 000 |
+| | Voz (mantén BOOT) | Las [órdenes de voz](#órdenes-de-voz) |
 | **Conexiones** | Bluetooth | Nombre del reloj y si hay móvil conectado |
 | | WiFi | Red y dirección IP del reloj |
 | | Olvidar móviles | Borra los emparejamientos (toca dos veces) |
 | **Sistema** | Versión, memoria libre, batería, tiempo encendido | Información |
+| | Restablecer ajustes | Vuelve a los de fábrica, tras confirmar |
+| **App del móvil** | Un código QR | El enlace a la última versión de la app Marea para Android |
 
-Otros ajustes, como el formato de 24 horas, la velocidad de las animaciones, la ciudad del tiempo o las horas del modo noche, se cambian desde la [[App Android]] o la [[Página de control]].
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-settings-qr.png" alt="QR de la app" width="200">
+
+**Si pierdes la app:** como no está en la Play Store, el reloj guarda el camino. En *Ajustes → App del móvil*, escanea el QR con la cámara del móvil: abre la descarga de la última versión (`https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk`). Android pedirá permiso para instalar apps de fuera de la tienda. Luego empareja de nuevo (ver [[App Android]]).
+
+Otros ajustes, como la velocidad de las animaciones, la ciudad del tiempo o las horas del modo noche, se cambian desde la [[App Android]] o la [[Página de control]].
 
 ## La hora y el tiempo
 

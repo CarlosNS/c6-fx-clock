@@ -7,6 +7,7 @@ La app **Marea** es la forma normal de usar el reloj: se queda conectada por Blu
 
 1. En el móvil, descarga el APK de la app de la última release y ábrelo.
 2. Android avisará de que es una app de fuera de la tienda: permite instalar desde el navegador o el gestor de archivos que estés usando.
+   Si la borraste y no sabes de dónde sacarla, el reloj te la da: *Ajustes → App del móvil* enseña un QR con el enlace a la última versión.
 3. Abre **Marea** y acepta **Dispositivos cercanos** (para hablar con el reloj) y **Notificaciones** (para el aviso de conexión y las versiones nuevas). La app no pide ubicación: el emparejamiento lo hace el propio Android.
 
 ## Emparejar

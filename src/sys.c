@@ -512,7 +512,7 @@ void sys_poll_requests(void)
     char r[48];
     strlcpy(r, s_req, sizeof(r));
     s_req_pending = false;
-    int a, b;
+    int a, b, c2, d2;
     char d[12] = "", ed[12] = "";
     app_wake();
     if (strcmp(r, "home") == 0) sys_home();
@@ -524,6 +524,14 @@ void sys_poll_requests(void)
         synth(EV_DOWN, a, b, a, b, 0, 0);
         synth(EV_TAP, a, b, a, b, 0, 0);
         synth(EV_UP, a, b, a, b, 0, 0);
+    } else if (sscanf(r, "drag %d %d %d %d", &a, &b, &c2, &d2) == 4) {  // a slow drag: scrolls lists
+        synth(EV_DOWN, a, b, a, b, 0, 0);
+        for (int k = 1; k <= 8; k++) {
+            ui_event_t e = {.type = EV_MOVE, .x = a + (c2 - a) * k / 8, .y = b + (d2 - b) * k / 8, .x0 = a, .y0 = b,
+                            .dx = (c2 - a) / 8, .dy = (d2 - b) / 8};
+            sys_event(&e);
+        }
+        synth(EV_UP, c2, d2, a, b, 0, 0);
     } else if (sscanf(r, "long %d %d", &a, &b) == 2) {
         synth(EV_DOWN, a, b, a, b, 0, 0);
         synth(EV_LONG, a, b, a, b, 0, 0);
