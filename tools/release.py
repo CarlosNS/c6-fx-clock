@@ -27,6 +27,9 @@ import shutil
 import subprocess
 import sys
 
+# Windows consoles default to cp1252, which cannot print the notes' arrows and the like
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "CarlosNS/c6-fx-clock"
 PAGES = "https://carlosns.github.io/c6-fx-clock"
