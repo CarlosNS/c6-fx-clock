@@ -1,8 +1,8 @@
 [
  {
-  "reloj": "3.0.0-beta.9",
-  "app": "0.8.0",
-  "fecha": "2026-11-11",
+  "reloj": "3.0.0-beta.10",
+  "app": "0.8.1",
+  "fecha": "2026-11-15",
   "es": [
    "Más batería: con la pantalla apagada el reloj duerme mucho más, y contar pasos se puede apagar",
    "Introducción la primera vez, en el reloj (idioma, gestos para practicar y el QR de la app) y en la app (emparejar, segundo plano y permisos, cada uno en su paso)",
