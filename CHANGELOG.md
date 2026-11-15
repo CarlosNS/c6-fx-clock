@@ -2,7 +2,7 @@
 
 ## Sin publicar: Marea (3.0.0)
 
-### 3.0.0-beta.9 y app 0.8.0 (15/11/2026)
+### 3.0.0-beta.10 y app 0.8.1 (15/11/2026)
 
 - **Batería:** con la pantalla apagada el reloj duerme más del 80 % del tiempo (antes, un 60 %). Solo despierta para lo activado: el acelerómetro solo con pasos o *Levantar la muñeca*, el táctil y BOOT por interrupción, el botón PWR dos veces por segundo, la tarea del Bluetooth una vez por segundo y el estado al móvil cada 5 minutos (los cambios, al momento). Si el móvil acelera la conexión con la pantalla apagada, el reloj vuelve a pedir el ritmo lento.
 - Arreglado: mantener BOOT para hablar reiniciaba el reloj con la pantalla apagada (la interrupción del botón saltaba sin parar mientras seguía pulsado).
