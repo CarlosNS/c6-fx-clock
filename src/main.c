@@ -514,9 +514,16 @@ static void pkey_tap(uint32_t now)
     }
 }
 
+// Set when the PMU reports a cable plugged in: the status block reads the battery on the next pass
+static bool s_status_now;
+
 static void poll_pwrkey(uint32_t now)
 {
     int ev = pmu_pwrkey_poll();
+    // A cable plugged in: read the battery now (not in up to 15 s with the screen off), so the plug
+    // scene lights the screen at once
+    if (ev & PMU_VBUS_IN) s_status_now = true;
+    ev &= ~PMU_VBUS_IN;
     if (ev) ESP_LOGI(TAG, "PWR key: %s%s%s%s", ev & PMU_PKEY_DOWN ? "down " : "", ev & PMU_PKEY_UP ? "up " : "",
                      ev & PMU_PKEY_SHORT ? "short " : "", ev & PMU_PKEY_LONG ? "long" : "");
     if (ev & PMU_PKEY_DOWN) {
@@ -736,7 +743,8 @@ void app_main(void)
             sys_dirty();
         }
         // Every few seconds: battery and phone link for the status bar
-        if (now - status_t > (dark ? 15000u : 3000u)) {
+        if (now - status_t > (dark ? 15000u : 3000u) || s_status_now) {
+            s_status_now = false;
             status_t = now;
             pmu_battery_t b;
             int pct = -1;

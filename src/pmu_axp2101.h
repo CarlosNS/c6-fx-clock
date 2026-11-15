@@ -27,4 +27,5 @@ void pmu_pwrkey_init(void);
 #define PMU_PKEY_DOWN 0x02   // pressed
 #define PMU_PKEY_LONG 0x04
 #define PMU_PKEY_SHORT 0x08
+#define PMU_VBUS_IN 0x80    // a USB cable was plugged in (not a key: wakes the plug scene at once)
 int pmu_pwrkey_poll(void);
