@@ -2,9 +2,10 @@
 
 ## Sin publicar: Marea (3.0.0)
 
-### 3.0.0-beta.9 y app 0.8.0 (en preparación)
+### 3.0.0-beta.9 y app 0.8.0 (15/11/2026)
 
 - **Batería:** con la pantalla apagada el reloj duerme más del 80 % del tiempo (antes, un 60 %). Solo despierta para lo activado: el acelerómetro solo con pasos o *Levantar la muñeca*, el táctil y BOOT por interrupción, el botón PWR dos veces por segundo, la tarea del Bluetooth una vez por segundo y el estado al móvil cada 5 minutos (los cambios, al momento). Si el móvil acelera la conexión con la pantalla apagada, el reloj vuelve a pedir el ritmo lento.
+- Arreglado: mantener BOOT para hablar reiniciaba el reloj con la pantalla apagada (la interrupción del botón saltaba sin parar mientras seguía pulsado).
 - **Contar pasos** se puede apagar (Ajustes → General en el reloj, Ajustes en la app).
 - **Registro de batería en la flash**, cada 15 minutos con la hora (32 horas): sobrevive a quedarse sin batería. Órdenes de diagnóstico `blediag` y `pmudiag` en la consola.
 - Arreglado: en Xiaomi, música y llamadas dejaban de llegar al reloj si el sistema no dejaba arrancar el servicio (falta el *Inicio automático*); la app ahora lo vuelve a pedir y, si sigue bloqueado, lo avisa.

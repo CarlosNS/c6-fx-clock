@@ -348,8 +348,11 @@ static SemaphoreHandle_t s_wake_sem;
 static volatile bool s_touch_irq;
 
 // BOOT pressed while the chip sleeps: wake the loop at once (it then reads the button as usual)
+// The wake-up makes it a low-level interrupt: it would fire nonstop while BOOT is held (the interrupt
+// watchdog then reset the watch), so it switches itself off until button_wake_rearm sees BOOT released
 static void IRAM_ATTR button_isr(void *arg)
 {
+    gpio_intr_disable(BOARD_PIN_BUTTON);
     BaseType_t hp = pdFALSE;
     xSemaphoreGiveFromISR(s_wake_sem, &hp);
     if (hp) portYIELD_FROM_ISR();
@@ -404,6 +407,11 @@ static bool touch_tap_pending(uint32_t now)
 static void touch_wake_rearm(void)
 {
     if (!s_touch_irq && gpio_get_level(BOARD_TOUCH_INT) == 1) gpio_intr_enable(BOARD_TOUCH_INT);
+}
+
+static void button_wake_rearm(void)
+{
+    if (gpio_get_level(BOARD_PIN_BUTTON) == 1) gpio_intr_enable(BOARD_PIN_BUTTON);
 }
 
 static void touch_wake_init(void)
@@ -846,6 +854,7 @@ void app_main(void)
                 }
             }
             if (!screen_awake(now)) touch_wake_rearm();
+            button_wake_rearm();
             batlog_tick(now, false, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
             if (have_imu) poll_raise(now, az);
             if (g_app.dirty) {
