@@ -6,7 +6,7 @@
     <uses-feature android:name="android.software.companion_device_setup" android:required="true" />
 
     <!-- Android 12+: talk to the paired clock. Association goes through the Companion Device Manager,
-         so the app never scans by itself and needs no location permission. -->
+         so the app never scans by itself and needs no location permission for it. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!-- Only to read the clock's advertising (does it have the time?), never for location -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="31" />
@@ -33,6 +33,10 @@
          recognized with the app in the background (Voice.kt) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+    <!-- Optional "Seguir al móvil" (Place.kt): the weather city follows the phone. Coarse location only
+         (Wi-Fi and cells, never GPS), asked when it is switched on; the link service counts as using it -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <!-- The app updates itself (AppUpdate); Android still asks the user to confirm each install -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -71,7 +75,7 @@
         <service
             android:name=".LinkService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|microphone" />
+            android:foregroundServiceType="connectedDevice|microphone|location" />
         <!-- Notification access (PhoneWatch): what is playing and incoming calls, for the clock -->
         <service
             android:name=".PhoneWatch"

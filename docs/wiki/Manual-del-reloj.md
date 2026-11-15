@@ -306,7 +306,7 @@ Otros ajustes, como la velocidad de las animaciones, la ciudad del tiempo o las 
 ## La hora y el tiempo
 
 - **Hora:** la pone el móvil al conectar y cada 30 minutos, o internet por WiFi, con la zona horaria de Madrid y su horario de verano. La guarda el **reloj de hardware** de la placa, que sigue contando con el reloj apagado.
-- **Tiempo:** de [Open-Meteo](https://open-meteo.com/). Lo trae el móvil o el propio reloj por WiFi cada 10 minutos, y gana el dato más reciente. La ciudad se elige en la app (por defecto, Sevilla). Lo usan la esfera Tiempo y otras.
+- **Tiempo:** de [Open-Meteo](https://open-meteo.com/). Lo trae el móvil o el propio reloj por WiFi cada 10 minutos, y gana el dato más reciente. La ciudad se elige en la app (por defecto, Sevilla), o activa ahí *Seguir al móvil* para que sea la de donde esté el móvil: con la ubicación aproximada (WiFi y antenas, sin GPS), al conectar y cada media hora; cambia si el móvil está a más de 5 km. Lo usan la esfera Tiempo y otras.
 
 ## La batería
 

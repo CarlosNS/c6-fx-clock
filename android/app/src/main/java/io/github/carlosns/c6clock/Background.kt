@@ -156,7 +156,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val link = shared ?: ClockBle(applicationContext, address)
         try {
             if (shared == null) link.connect()
-            record(store, SyncSession(link, Net::weatherCommand).run())
+            record(store, SyncSession(link, Net::weatherCommand, here = Place.here(applicationContext)).run())
         } catch (e: Exception) {
             Log.w(TAG, "sync failed: ${e.message}")
             store.lastResult = "falló: ${e.message}"

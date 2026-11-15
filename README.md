@@ -103,7 +103,7 @@ App Android **Marea** (Android 10 o superior), con la misma página de control q
 ## Hora, tiempo y microSD
 
 - **Hora:** la ponen el móvil o internet (NTP), y la guarda el reloj de hardware de la placa, que sigue contando con el reloj apagado.
-- **Tiempo:** [Open-Meteo](https://open-meteo.com), gratis y sin clave. Lo trae el móvil o el propio reloj por WiFi, cada 10 minutos; gana el dato más reciente. La ciudad se elige en *Esferas → Tiempo → Opciones* de la app o la página.
+- **Tiempo:** [Open-Meteo](https://open-meteo.com), gratis y sin clave. Lo trae el móvil o el propio reloj por WiFi, cada 10 minutos; gana el dato más reciente. La ciudad se elige en *Esferas → Tiempo → Opciones* de la app o la página; en la app, *Seguir al móvil* hace que sea la de donde esté el móvil (ubicación aproximada, solo si lo activas).
 - **microSD:** la app Archivos muestra carpetas y archivos, borra y formatea. Su botón **USB** reinicia el reloj como disco USB para el ordenador; se vuelve al reloj con BOOT, expulsando el disco o desconectando el cable.
 
 ## Desarrollo

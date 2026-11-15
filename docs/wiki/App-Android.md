@@ -35,7 +35,7 @@ Mientras el reloj está cerca, la app mantiene el enlace Bluetooth abierto, aunq
 
 | Cuándo | Qué hace |
 |---|---|
-| El reloj aparece cerca o se enciende (Android 12+), o abres la app | Conecta y sincroniza: hora, tiempo de la ciudad del reloj, versión |
+| El reloj aparece cerca o se enciende (Android 12+), o abres la app | Conecta y sincroniza: hora, tiempo de la ciudad del reloj (o de donde esté el móvil, con *Seguir al móvil*), versión |
 | Mientras sigue conectada | Repite la sincronización cada 30 minutos y pasa al reloj la música y las llamadas al momento |
 | Se corta (el reloj se aleja o se reinicia) | Un intento directo (busca el reloj durante 20 s) y, si no lo encuentra, deja a Android **esperándolo**: en cuanto el reloj se anuncia otra vez, conecta solo, sin consultas periódicas y con poco gasto |
 | El reloj se va lejos un rato | Sigue esperándolo de la misma forma y conecta en cuanto vuelve |
@@ -127,7 +127,7 @@ En *Ajustes → Actualizaciones* la app muestra las dos versiones, e Inicio avis
 
 ## Privacidad
 
-La app solo habla con el reloj, con [Open-Meteo](https://open-meteo.com/) (tiempo de la ciudad configurada en el reloj; no usa tu ubicación) y con GitHub Pages (para buscar versiones nuevas y las novedades). El audio de las órdenes de voz solo pasa por el reconocedor de voz del propio móvil. Lo que lee de las notificaciones (música y llamadas) solo va al reloj. No tiene cuentas, anuncios ni analítica.
+La app solo habla con el reloj, con [Open-Meteo](https://open-meteo.com/) (tiempo de la ciudad configurada en el reloj; solo usa tu ubicación aproximada si activas *Seguir al móvil*, y entonces solo manda al reloj las coordenadas y el nombre de la ciudad) y con GitHub Pages (para buscar versiones nuevas y las novedades). El audio de las órdenes de voz solo pasa por el reconocedor de voz del propio móvil. Lo que lee de las notificaciones (música y llamadas) solo va al reloj. No tiene cuentas, anuncios ni analítica.
 
 ## Si algo falla
 

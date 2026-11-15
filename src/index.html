@@ -511,7 +511,8 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
     </div>
     <div class="hide stack" id="ownwx" data-opts="wx">
       <div id="wxst">--</div>
-      <div class="inline"><input type="text" id="wxq" placeholder="Cambiar ciudad (p. ej. Sevilla)" data-en-ph="Change city (e.g. Seville)" autocomplete="off"><button class="btn" id="wxgo" data-en="Search">Buscar</button></div>
+      <div class="row hide" id="wxfollowrow"><div class="t"><b data-en="Follow the phone">Seguir al móvil</b><small data-en="The weather is the one where your phone is (approximate location, checked every half hour)">El tiempo es el de donde esté el móvil (ubicación aproximada, se mira cada media hora)</small></div><input type="checkbox" class="sw" id="wxfollow" aria-label="Seguir al móvil"></div>
+      <div class="inline" id="wxsearch"><input type="text" id="wxq" placeholder="Cambiar ciudad (p. ej. Sevilla)" data-en-ph="Change city (e.g. Seville)" autocomplete="off"><button class="btn" id="wxgo" data-en="Search">Buscar</button></div>
       <div id="wxres"></div>
       <div class="dim small"><span data-en="Weather data:">Datos del tiempo:</span> <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:var(--oro)">Open-Meteo.com</a> (CC BY 4.0)</div>
     </div>
@@ -613,7 +614,7 @@ function setFx(i){cur=i;markCur();const f=FX[i];if(!f)return;
  $('ctouch').classList.toggle('hide',!f.hint);$('copts').classList.toggle('hide',!f.opts);$('cbtns').classList.toggle('hide',!f.hint&&!f.opts);
  $('hint').textContent=f.hint;$('pad').classList.toggle('land',f.o==='h')}
 function faceModal(what){for(const el of $('mface').querySelectorAll('[data-opts],#ownpad'))el.classList.add('hide');
- const f=FX[cur]||{};if(what==='pad')$('ownpad').classList.remove('hide');else{const el=document.querySelector(`[data-opts="${f.opts}"]`);if(el)el.classList.remove('hide')}
+ const f=FX[cur]||{};if(what==='pad')$('ownpad').classList.remove('hide');else{const el=document.querySelector(`[data-opts="${f.opts}"]`);if(el)el.classList.remove('hide');if(f.opts==='wx')wxFollow()}
  $('mface').classList.remove('hide')}
 $('ctouch').onclick=()=>faceModal('pad');$('copts').onclick=()=>faceModal('opts');
 
@@ -627,6 +628,12 @@ bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind
 $('voice').onchange=()=>{lastUser=Date.now();const on=$('voice').checked;send('voice '+(on?1:0));status.voice=on?1:0;
  if(L.kind==='android'){if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice();appInfo()}};
 window.voicePermission=ok=>{appInfo()};
+// "Seguir al móvil" (app only, Place.kt): the phone moves the watch's city; the search is then hidden
+function wxFollow(){if(L.kind!=='android'||!ClockBridge.followPhone)return;$('wxfollowrow').classList.remove('hide');
+ const on=!!JSON.parse(ClockBridge.info()).follow;$('wxfollow').checked=on;$('wxsearch').classList.toggle('hide',on);if(on)$('wxres').textContent=''}
+$('wxfollow').onchange=()=>{const on=$('wxfollow').checked;ClockBridge.followPhone(on);$('wxsearch').classList.toggle('hide',on);
+ $('wxres').textContent=on?tr('Hecho: si el móvil está en otra ciudad, el reloj se cambia a ella en unos segundos','Done: if the phone is in another city, the watch switches to it in a few seconds'):''};
+window.placePermission=ok=>{$('wxres').textContent=ok?tr('Hecho: si el móvil está en otra ciudad, el reloj se cambia a ella en unos segundos','Done: if the phone is in another city, the watch switches to it in a few seconds'):tr('Sin permiso de ubicación, el tiempo sigue con la ciudad elegida','Without location permission, the weather keeps the chosen city');wxFollow();if(!ok){$('wxfollow').checked=false;$('wxsearch').classList.remove('hide')}};
 // Steps goal: rounded to 500 and kept within the watch's range
 $('goal').onchange=()=>{lastUser=Date.now();let v=Math.round((+$('goal').value||10000)/500)*500;v=Math.max(1000,Math.min(50000,v));$('goal').value=v;send('goal '+v);status.goal=v;homeTiles()};
 $('slog').onclick=()=>{const on=status.slog===undefined;send('steplog '+(on?1:0));status.slog=on?0:undefined;slogShow();setTimeout(poll,600)};

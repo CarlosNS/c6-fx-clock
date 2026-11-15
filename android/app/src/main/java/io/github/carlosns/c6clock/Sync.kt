@@ -32,11 +32,23 @@ class SyncSession(
     /** Returns the "wx ..." command for a place, or null without internet. */
     private val weather: suspend (lat: Double, lon: Double) -> String?,
     private val nowMs: () -> Long = System::currentTimeMillis,
+    /** "Seguir al móvil": a "loc ..." command when the phone is elsewhere than the clock's city (Place). */
+    private val here: suspend (lat: Double, lon: Double) -> String? = { _, _ -> null },
 ) {
     suspend fun run(): SyncResult {
         link.send(Protocol.timeCommand(nowMs()))
         val status = link.request("status")
-        val wx = runCatching { weather(status.getDouble("wlat"), status.getDouble("wlon")) }.getOrNull()
+        var lat = status.getDouble("wlat")
+        var lon = status.getDouble("wlon")
+        var place = status.optString("wloc")
+        runCatching { here(lat, lon) }.getOrNull()?.let { cmd ->  // the phone moved: the clock's city follows
+            link.send(cmd)
+            val p = cmd.split(' ', limit = 4)
+            lat = p[1].toDouble()
+            lon = p[2].toDouble()
+            place = p[3]
+        }
+        val wx = runCatching { weather(lat, lon) }.getOrNull()
         if (wx != null) link.send(wx)
         val info = link.request("info")
         link.exchange("sync done", "ack") { it.optString("cmd") == "sync" }
@@ -45,7 +57,7 @@ class SyncSession(
             board = info.optString("board"),
             syncCount = info.optJSONObject("sync")?.optInt("count") ?: 0,
             weatherSent = wx != null,
-            place = status.optString("wloc"),
+            place = place,
             update = info.optJSONObject("upd"),
         )
     }

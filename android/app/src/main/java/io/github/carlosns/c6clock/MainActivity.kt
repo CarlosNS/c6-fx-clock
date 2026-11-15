@@ -71,6 +71,13 @@ class MainActivity : ComponentActivity() {
         if (ok) LinkService.mic(this)
         js("voicePermission", ok.toString())
     }
+    private val locPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (!ok && !shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_COARSE_LOCATION))
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        Place.setEnabled(this, ok)
+        if (ok) { LinkService.mic(this); Bridge().syncNow() }
+        js("placePermission", ok.toString())
+    }
     private var fileCallback: android.webkit.ValueCallback<Array<Uri>>? = null
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         fileCallback?.onReceiveValue(uri?.let { arrayOf(it) })
@@ -469,6 +476,7 @@ class MainActivity : ComponentActivity() {
             .put("phone", Phone.hasAccess(this@MainActivity))
             .put("phoneOn", Phone.watch != null)  // granted and actually running (Xiaomi's autostart can stop it)
             .put("mic", Voice.allowed(this@MainActivity))
+            .put("follow", Place.active(this@MainActivity))
             .put("background", getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
             .put("notif", androidx.core.app.NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
             .put("maker", Build.MANUFACTURER.lowercase())
@@ -477,7 +485,7 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun syncNow() {
             val l = link ?: return SyncWorker.runNow(this@MainActivity)
             lifecycleScope.launch {  // the open link syncs at once; without it, the worker connects
-                runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }
+                runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand, here = Place.here(this@MainActivity)).run()) }
                     .onFailure { store.lastResult = "falló: ${it.message}" }
             }
         }
@@ -589,6 +597,15 @@ class MainActivity : ComponentActivity() {
                 .onFailure { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
         }
         @JavascriptInterface fun stopPhone() = Find.stopPhone(this@MainActivity, tellWatch = true)
+        /** "Seguir al móvil": asks for the coarse location the first time, then syncs to move the city. */
+        @JavascriptInterface fun followPhone(on: Boolean) = runOnUiThread {
+            if (on && !Place.allowed(this@MainActivity)) {
+                locPermission.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                return@runOnUiThread
+            }
+            Place.setEnabled(this@MainActivity, on)
+            if (on) { LinkService.mic(this@MainActivity); syncNow() }
+        }
         @JavascriptInterface fun allowVoice() = runOnUiThread { micPermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         @JavascriptInterface fun appVersion(): String = AppUpdate.installedName(this@MainActivity)
         @JavascriptInterface fun checkApp() = runOnUiThread { this@MainActivity.checkApp() }

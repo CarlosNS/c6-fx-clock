@@ -98,18 +98,19 @@ class LinkService : Service() {
      * Foreground as a connected device, and also as a microphone user when voice commands are allowed:
      * Android only lets the recognizer take the watch's audio while the app counts as in use. The
      * microphone type may be refused when started from the background; then it goes without it, and
-     * the next time the app is opened (ACTION_MIC) adds it.
+     * the next time the app is opened (ACTION_MIC) adds it. The location type ("Seguir al móvil") too.
      */
     private fun foreground(withMic: Boolean): Boolean {
         val link = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
         val mic = if (withMic && Build.VERSION.SDK_INT >= 30 && Voice.allowed(this)) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
-        if (mic != 0) {
-            val r = runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link or mic) }
-            if (r.isSuccess) { Log.i(TAG, "foreground with the microphone"); return true }
-            Log.i(TAG, "microphone refused: ${r.exceptionOrNull()?.message}")
+        // "Seguir al móvil" (Place): the location type, the same way, so the city follows with the app closed
+        val loc = if (withMic && Build.VERSION.SDK_INT >= 30 && Place.active(this)) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0
+        for (types in listOf(link or mic or loc, link or mic, link or loc, link).distinct()) {
+            val r = runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), types) }
+            if (r.isSuccess) { Log.i(TAG, "foreground, types $types"); return true }
+            Log.i(TAG, "types $types refused: ${r.exceptionOrNull()?.message}")
         }
-        return runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(Live.ready), link) }
-            .onFailure { Log.w(TAG, "foreground refused: ${it.message}") }.isSuccess
+        return false
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -179,7 +180,7 @@ class LinkService : Service() {
                     store.lastSeenMs = System.currentTimeMillis()
                     if (System.currentTimeMillis() - last > RESYNC_MS) {
                         last = System.currentTimeMillis()
-                        runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }
+                        runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand, here = Place.here(this@LinkService)).run()) }
                             .onFailure { Log.w(TAG, "sync: ${it.message}"); store.lastResult = "falló: ${it.message}" }
                         Phone.ensureBound(this@LinkService)  // the music and calls listener, if Android dropped it
                         Phone.toClock()  // what is playing and any call ringing right now
@@ -273,9 +274,9 @@ class LinkService : Service() {
             }.isSuccess
         }
 
-        /** The app is on screen (or the microphone was just allowed): let the service use the microphone. */
+        /** The app is on screen (or the microphone or location was just allowed): let the service use them. */
         fun mic(c: Context) {
-            if (!running || !Voice.allowed(c)) return
+            if (!running || !(Voice.allowed(c) || Place.active(c))) return
             runCatching { c.startService(Intent(c, LinkService::class.java).setAction(ACTION_MIC)) }
         }
 

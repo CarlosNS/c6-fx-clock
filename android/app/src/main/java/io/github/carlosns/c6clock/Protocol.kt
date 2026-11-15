@@ -45,6 +45,10 @@ object Protocol {
             "${t10(d.getJSONArray("temperature_2m_min").getDouble(0))} ${c.getInt("is_day")}"
     }
 
+    /** The watch's weather city (src/control.c), the name already in ASCII. */
+    fun locCommand(lat: Double, lon: Double, name: String) =
+        String.format(java.util.Locale.ROOT, "loc %.4f %.4f %s", lat, lon, name)
+
     fun weatherUrl(lat: Double, lon: Double) =
         "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon" +
             "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day" +
