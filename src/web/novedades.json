@@ -1,5 +1,22 @@
 [
  {
+  "reloj": "3.0.0-beta.11",
+  "app": "0.9.0",
+  "fecha": "2026-11-15",
+  "es": [
+   "El tiempo puede seguir al móvil: activa «Seguir al móvil» en Esferas → Tiempo → Opciones y el reloj usa la ciudad donde estés (ubicación aproximada, solo si lo activas)",
+   "Al enchufar el USB, una animación sin textos: la clavija entra por el lado del conector real y la batería se llena como el mar; con el ordenador baja un monitor y corren datos. Sale al momento aunque la pantalla esté apagada",
+   "Icono nuevo de la app en pixel art: el reloj con su correa metálica y una noche junto al mar; también en las notificaciones y en la pestaña del navegador",
+   "Arreglado: deslizar en la esfera y BOOT siguen ya el mismo orden que el selector y pasan por todas tus esferas"
+  ],
+  "en": [
+   "The weather can follow your phone: switch on “Follow the phone” in Faces → Weather → Options and the watch uses the city you are in (approximate location, only if you switch it on)",
+   "Plugging in USB shows an animation with no words: the plug comes in on the side of the real port and the battery fills like the sea; with a computer a monitor drops in and data flows. It shows at once even with the screen off",
+   "New pixel-art app icon: the watch with its metal bracelet and a night by the sea; also in notifications and the browser tab",
+   "Fixed: swiping on the face and BOOT now follow the same order as the picker and go through all your own faces"
+  ]
+ },
+ {
   "reloj": "3.0.0-beta.10",
   "app": "0.8.1",
   "fecha": "2026-11-15",

@@ -19,8 +19,8 @@ android {
         applicationId = "io.github.carlosns.c6clock"
         minSdk = 29
         targetSdk = 35
-        versionCode = 20
-        versionName = "0.8.1"
+        versionCode = 21
+        versionName = "0.9.0"
     }
 
     signingConfigs {

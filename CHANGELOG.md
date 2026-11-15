@@ -2,7 +2,7 @@
 
 ## Sin publicar: Marea (3.0.0)
 
-### Próxima versión (sin publicar)
+### 3.0.0-beta.11 y app 0.9.0 (15/11/2026)
 
 - **Al enchufar el USB, una escena animada sin textos** (solo la cifra de la batería): la clavija entra por el borde derecho, a la altura del conector real, y encaja en una batería tumbada que se llena como el mar. Sale al momento también con la pantalla apagada (antes el reloj podía tardar hasta 15 s en notar el cable). Con cargador, rayos dorados recorren el cable; con un ordenador baja además un monitor y corren datos en los dos sentidos; con la batería llena, mar en calma y estrellas.
 - **El tiempo sigue al móvil** (opcional): en la app, *Esferas → Tiempo → Opciones → Seguir al móvil*. Con la ubicación aproximada del móvil (WiFi y antenas, sin GPS), al conectar y cada media hora, la ciudad del reloj pasa a ser la de donde esté el móvil si se ha movido más de 5 km. Pide el permiso de ubicación aproximada solo al activarlo y funciona con la app cerrada.
