@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "apps.h"
 #include "board.h"
+#include "fx.h"
 #include "bootmode.h"
 #include "driver/sdmmc_host.h"
 #include "esp_attr.h"
@@ -250,6 +251,7 @@ bool sd_write_file(const char *path, const void *data, size_t len)
             mkdir(full, 0775);
             *p = '/';
         }
+        if (strncmp(path, "/esferas", 8) == 0) custom_list_dirty();  // a custom face arriving or changing
         FILE *f = fopen(full, "wb");
         if (f) {
             ok = io_write(f, data, len);
@@ -647,6 +649,7 @@ static void modal_event(const ui_event_t *e)
         } else if (m == M_DELETE) {
             char full[sizeof(s_path) + sizeof(s_ent[0].name) + 2];
             snprintf(full, sizeof(full), "%s/%s", s_path, s_ent[s_sel].name);
+            custom_list_dirty();
             strcpy(s_msg, (s_ent[s_sel].dir ? rmdir(full) : unlink(full)) == 0 ? TR("borrado", "deleted")
                           : s_ent[s_sel].dir ? TR("la carpeta no está vacía", "the folder is not empty")
                                              : TR("no se pudo borrar", "could not delete"));

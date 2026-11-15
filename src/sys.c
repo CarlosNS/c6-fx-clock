@@ -426,10 +426,11 @@ static void face_event(const ui_event_t *e)
         else if (e->dir == DIR_UP && (e->edge & EDGE_BOTTOM)) trans_start(T_COVER_FROM_BOTTOM), sys_open_launcher();
         else if ((e->dir == DIR_LEFT || e->dir == DIR_RIGHT) && abs(e->x - e->x0) >= 100) {
             // a deliberate stroke (a brush of the finger does not change the face), and its name shown
-            g_app.fx = e->dir == DIR_LEFT ? fx_next(g_app.fx) : fx_prev(g_app.fx);
+            // in the picker's order, with every custom face
+            const char *name = fx_step(e->dir == DIR_LEFT ? 1 : -1);
             g_app.auto_cycle = 0;
             g_app.dirty = true;
-            sys_toast(fx_list[g_app.fx].name);
+            sys_toast(name);
         }
         break;
     case EV_LONG:
@@ -462,10 +463,10 @@ void sys_button_short(void)
 {
     switch (s_view) {
     case VIEW_FACE:
-        g_app.fx = fx_next(g_app.fx);
+        const char *name = fx_step(1);
         g_app.auto_cycle = 0;
         g_app.dirty = true;
-        sys_toast(fx_list[g_app.fx].name);
+        sys_toast(name);
         break;
     default: sys_back(); break;
     }

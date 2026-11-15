@@ -6,6 +6,7 @@
 #include "esp_random.h"
 #include "fx.h"
 #include "gfx.h"
+#include "settings.h"
 
 const fx_t fx_list[FX_COUNT] = {
     {.name = "PLASMA", .res = FX_NATIVE, .enter = plasma_enter, .render = plasma_render,
@@ -188,6 +189,45 @@ int fx_prev(int from)
         if (!fx_list[n].retired && (n != FX_CUSTOM || g_app.cust > 0)) return n;  // Mis esferas: only with one chosen
     }
     return 0;
+}
+
+int fx_order(face_ref_t *out, bool fresh)
+{
+    int n = 0;
+    for (int g = 0; g < FX_G_COUNT; g++)
+        for (int i = 0; i < FX_COUNT; i++)
+            if (!fx_list[i].retired && fx_list[i].group == g) out[n++] = (face_ref_t){i, 0, fx_list[i].label};
+    const int *ids;
+    const char(*names)[32];
+    int nc = 0;
+    if (fresh) {
+        static int fids[24];
+        static char fnames[24][32];
+        nc = custom_list(fids, fnames, 24);  // also refreshes the remembered list
+        ids = fids, names = (const char(*)[32])fnames;
+    } else {
+        nc = custom_list_cached(&ids, &names);
+    }
+    for (int k = 0; k < nc && n < FX_ORDER_MAX; k++) out[n++] = (face_ref_t){FX_CUSTOM, ids[k], names[k]};
+    return n;
+}
+
+const char *fx_step(int dir)
+{
+    static face_ref_t list[FX_ORDER_MAX];
+    int n = fx_order(list, false);
+    if (!n) return "";
+    int cur = -1;
+    for (int k = 0; k < n; k++)
+        if (list[k].fx == g_app.fx && (g_app.fx != FX_CUSTOM || list[k].cust == g_app.cust)) cur = k;
+    int k = cur < 0 ? (dir > 0 ? 0 : n - 1) : ((cur + (dir > 0 ? 1 : -1)) % n + n) % n;
+    if (list[k].fx == FX_CUSTOM) {
+        if (g_app.cust != list[k].cust) settings_set("cust", list[k].cust);
+        g_app.fx = FX_CUSTOM;
+        return list[k].name;
+    }
+    g_app.fx = list[k].fx;
+    return fx_list[list[k].fx].name;
 }
 
 uint32_t fx_rand(void)

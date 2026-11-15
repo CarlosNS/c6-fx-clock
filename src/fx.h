@@ -48,6 +48,10 @@ bool custom_command(const char *cmd);
 size_t custom_list_json(char *buf, size_t size);
 // The custom faces on the card: their numbers and names (sorted by number); 0 without a card
 int custom_list(int *ids, char (*names)[32], int max);
+// The same, remembered from the last read (read again only if the faces on the card changed)
+int custom_list_cached(const int **ids, const char (**names)[32]);
+// A file under /esferas was written or removed: the remembered list must be read again
+void custom_list_dirty(void);
 extern const fx_t fx_list[FX_COUNT];
 _Static_assert(FX_COUNT <= 31, "g_app.fx_off is a 31-bit mask: widen it before adding more faces");
 
@@ -61,6 +65,18 @@ uint32_t fx_rand(void);
 int fx_next(int from);
 // Previous face before `from` that is not retired (wraps around)
 int fx_prev(int from);
+
+// The faces in the order the watch shows them, the same in the picker wheel, a swipe on the face and
+// BOOT: the built-in ones by group, then every custom face (Mis esferas) by its number
+typedef struct {
+    int fx;            // fx_list index
+    int cust;          // custom face number (fx == FX_CUSTOM), else 0
+    const char *name;  // label (built-in) or the custom face's name
+} face_ref_t;
+#define FX_ORDER_MAX (FX_COUNT + 24)
+int fx_order(face_ref_t *out, bool fresh);  // fresh: read the custom faces from the card again
+// Show the next (dir > 0) or previous face in that order; returns its name for the toast
+const char *fx_step(int dir);
 
 // Shared clock layouts (centered horizontally on the current orientation)
 // Hours above minutes starting at y; returns the y just below the minutes

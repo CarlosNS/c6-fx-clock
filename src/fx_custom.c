@@ -600,6 +600,7 @@ bool custom_command(const char *cmd)
         char path[32];
         snprintf(path, sizeof(path), "/esferas/%d", id);
         sd_remove_dir(path);
+        custom_list_dirty();
         if (g_app.cust == id) settings_set("cust", 0);
         again();
         return true;
@@ -611,7 +612,32 @@ bool custom_command(const char *cmd)
     return false;
 }
 
+// The list as last read, for a swipe on the face (reading every face.json each time would be slow)
+static int custom_read(int *ids, char (*names)[32], int max);
+static int s_c_n = -1, s_c_sd, s_c_ids[24];
+static char s_c_names[24][32];
+
+void custom_list_dirty(void) { s_c_n = -1; }
+
+int custom_list_cached(const int **ids, const char (**names)[32])
+{
+    if (s_c_n < 0 || s_c_sd != g_app.sd_state) custom_list(NULL, NULL, 0);
+    *ids = s_c_ids;
+    *names = (const char(*)[32])s_c_names;
+    return s_c_n;
+}
+
 int custom_list(int *ids, char (*names)[32], int max)
+{
+    int n = custom_read(s_c_ids, s_c_names, 24);
+    s_c_n = n, s_c_sd = g_app.sd_state;
+    if (n > max) n = max;
+    if (ids) memcpy(ids, s_c_ids, n * sizeof(int));
+    if (names) memcpy(names, s_c_names, n * 32);
+    return n;
+}
+
+static int custom_read(int *ids, char (*names)[32], int max)
 {
     if (g_app.sd_state != SD_OK) sd_check();
     if (g_app.sd_state != SD_OK) return 0;

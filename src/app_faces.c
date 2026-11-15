@@ -43,21 +43,14 @@ static bool is_current(const item_t *it)
 
 static void open(void)
 {
-    s_n = 0;
-    for (int g = 0; g < FX_G_COUNT; g++)
-        for (int i = 0; i < FX_COUNT; i++)
-            if (!fx_list[i].retired && fx_list[i].group == g) {
-                item_t *it = &s_items[s_n++];
-                it->fx = i, it->cust = 0, it->group = g;
-                snprintf(it->name, sizeof(it->name), "%s", fx_list[i].label);
-            }
-    int ids[CUSTOM_MAX];
-    char names[CUSTOM_MAX][32];
-    int nc = custom_list(ids, names, CUSTOM_MAX);
-    for (int k = 0; k < nc; k++) {
-        item_t *it = &s_items[s_n++];
-        it->fx = FX_CUSTOM, it->cust = ids[k], it->group = -1;
-        memcpy(it->name, names[k], sizeof(it->name));
+    // the same order as a swipe on the face (fx_order), read fresh from the card
+    static face_ref_t list[FX_ORDER_MAX];
+    s_n = fx_order(list, true);
+    for (int k = 0; k < s_n; k++) {
+        item_t *it = &s_items[k];
+        it->fx = list[k].fx, it->cust = list[k].cust;
+        it->group = list[k].fx == FX_CUSTOM ? -1 : fx_list[list[k].fx].group;
+        snprintf(it->name, sizeof(it->name), "%s", list[k].name);
     }
     s_pos = 0;
     for (int k = 0; k < s_n; k++)

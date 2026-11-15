@@ -24,7 +24,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 |---|---|---|
 | Deslizar desde el **borde de arriba** hacia abajo | Abre los **ajustes rápidos** | |
 | Deslizar desde el **borde de abajo** hacia arriba | Abre el **lanzador** | |
-| Deslizar a **izquierda o derecha** | Esfera siguiente o anterior (un deslizamiento decidido: un roce no la cambia); abajo sale su nombre un momento | Cambiar de página (por ejemplo, en Pasos) |
+| Deslizar a **izquierda o derecha** | Esfera siguiente o anterior, en el orden del selector y con todas las de *Mis esferas* (un deslizamiento decidido: un roce no la cambia); abajo sale su nombre un momento | Cambiar de página (por ejemplo, en Pasos) |
 | **Mantener** el dedo | Abre el selector de **Esferas** | Acciones extra (borrar en Archivos, saltos rápidos en Alarmas) |
 | Deslizar desde el **borde izquierdo** hacia la derecha | | **Volver** un paso (ver abajo) |
 | Arrastrar arriba o abajo | | Desplazar listas largas |

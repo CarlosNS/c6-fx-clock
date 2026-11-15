@@ -1,6 +1,6 @@
 El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
-- Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT**, en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
+- Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden de la rueda del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
 - Las capturas son de la pantalla real (410×502, con sus esquinas), sacadas con `GET /screenshot`.
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.
