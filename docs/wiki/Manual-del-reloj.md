@@ -93,7 +93,13 @@ Con las órdenes de voz activas, mantener BOOT ya no cambia el cambio automátic
 
 ## Al enchufar el USB
 
-La pantalla se enciende y dice unos segundos qué trae el cable: **Cargando** (con el cargador), **Cargando y con el ordenador**, **Ordenador** con la batería llena, o **Cargada**. Se quita sola o tocándola.
+La pantalla se enciende y enseña unos segundos, sin palabras, qué trae el cable. Una clavija entra por el borde derecho (donde está el conector de verdad) y encaja en una batería que se llena como el mar hasta la carga que tiene, con la cifra debajo:
+
+- **Cargador:** rayos dorados corren por el cable y la batería burbujea.
+- **Ordenador:** un segundo después baja un monitor con una microSD en pantalla y corren cuadraditos cian en los dos sentidos (datos); si además carga, también pasan los rayos.
+- **Batería llena:** el mar se calma y brillan unas estrellas.
+
+Se quita sola o tocándola. Por la consola serie, `plugtest 1` a `plugtest 4` la enseñan (cargador cargando o lleno, ordenador cargando o lleno).
 
 ## Restablecer los ajustes
 

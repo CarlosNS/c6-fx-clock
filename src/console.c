@@ -123,6 +123,10 @@ static void run_line(char *line)
         plug_notice();
         return;
     }
+    if (strncmp(line, "plugtest ", 9) == 0) {  // ...as if on a charger (1 charging, 2 full) or a computer (3 charging, 4 full)
+        plug_test(atoi(line + 9));
+        return;
+    }
     if (strcmp(line, "mictest") == 0) {  // microphone levels for 3 s
         voice_mictest();
         return;
