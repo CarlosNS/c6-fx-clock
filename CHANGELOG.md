@@ -5,6 +5,7 @@
 ### Próxima versión (sin publicar)
 
 - **Al enchufar el USB, una escena animada sin textos** (solo la cifra de la batería): la clavija entra por el borde derecho, a la altura del conector real, y encaja en una batería tumbada que se llena como el mar. Con cargador, rayos dorados recorren el cable; con un ordenador baja además un monitor y corren datos en los dos sentidos; con la batería llena, mar en calma y estrellas.
+- **Icono nuevo de la app**, en pixel art: el reloj Marea de frente, con su correa metálica y los dos botones del lado derecho, enseñando una noche junto al mar (la luna en el horizonte, su estela dorada y dos olas). Se adapta a la forma de cada lanzador y tiene versión de un color para los iconos temáticos de Android 13. Las notificaciones de la app llevan su silueta (antes salía un cuadrado blanco). La página de control y el instalador web estrenan el mismo icono en la pestaña del navegador.
 - Arreglado: deslizar en la esfera y BOOT seguían otro orden que la rueda del selector y solo pasaban por una de *Mis esferas*; ahora los tres usan el mismo orden (por grupos y al final todas las tuyas).
 
 ### 3.0.0-beta.10 y app 0.8.1 (15/11/2026)

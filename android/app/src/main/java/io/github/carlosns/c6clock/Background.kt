@@ -242,7 +242,7 @@ object Notify {
         nm.createNotificationChannel(NotificationChannel(CHANNEL, c.getString(R.string.channel_updates), NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(c, CHANNEL)
-            .setSmallIcon(R.drawable.ic_clock)
+            .setSmallIcon(R.drawable.ic_stat_marea)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(open)

@@ -38,6 +38,7 @@
 | `src/art.c` | Lienzo de pixel art de 137×168 (cada píxel, 2×2 del lienzo ancho) para las esferas dibujadas así: Coloso, Engranajes, Disfruta y El escultor |
 | `tools/metal_art.py`, `src/fx_metal_art.h` | Las escenas de Trueno y peluches (esfera 27) pintadas en pixel art: formas suaves con volumen, rampas de tonos, tramado y contornos; el generador escribe imágenes con paleta (RLE) y `fx_metal.c` anima encima. Vuelve a lanzarlo si cambias una escena |
 | `src/fx_custom.c`, `src/webapp/`, `android/.../CustomFaces.kt` | Mis esferas (esfera 28): fondo de la microSD y hora configurable; el editor de la app (`miesferas.js`, solo en la app) y la copia en el móvil. `tools/font_atlas.py` genera `src/webapp/fuentes.png/json` con las fuentes del firmware: regenéralo si cambias una fuente |
+| `tools/app_icon.py` | Pinta el icono de la app en pixel art y escribe sus vectores (`ic_launcher_*`, `ic_stat_marea` en `android/.../res/drawable/`) y el favicon de `src/index.html` y `webflasher/index.html`. Vuelve a lanzarlo si cambias el dibujo |
 | `src/web/novedades.json` | Tablón de novedades de Inicio, de la versión más nueva a la más vieja; `release.py` lo copia a GitHub Pages. Añade una entrada en cada versión |
 
 ## Compilar, flashear y probar (Windows)

@@ -230,7 +230,7 @@ class LinkService : Service() {
         nm.createNotificationChannel(NotificationChannel(CHANNEL, getString(R.string.channel_link), NotificationManager.IMPORTANCE_MIN))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.drawable.ic_clock)
+            .setSmallIcon(R.drawable.ic_stat_marea)
             .setContentTitle(if (up) getString(R.string.link_up) else getString(R.string.link_searching))
             .setContentText(getString(R.string.link_text))
             .setContentIntent(open)

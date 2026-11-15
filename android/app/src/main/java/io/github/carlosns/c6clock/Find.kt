@@ -147,7 +147,7 @@ object Find {
         val stop = PendingIntent.getBroadcast(c, 0, Intent(c, FindStop::class.java), PendingIntent.FLAG_IMMUTABLE)
         val open = PendingIntent.getActivity(c, 1, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(c, CHANNEL)
-            .setSmallIcon(R.drawable.ic_clock)
+            .setSmallIcon(R.drawable.ic_stat_marea)
             .setContentTitle(c.getString(R.string.find_phone_title))
             .setContentText(c.getString(R.string.find_phone_text))
             .setCategory(Notification.CATEGORY_ALARM)
