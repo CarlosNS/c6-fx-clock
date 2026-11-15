@@ -109,6 +109,7 @@ static const row_t ROWS[] = {
     S("General", "General", "Idioma, pasos, voz", "Language, steps, voice"),
     {R_CHOICE, "Idioma", "Language", "lang", &g_app.lang, 0, 0, LANGS},
     {R_CHOICE, "Objetivo de pasos", "Steps goal", "goal", &g_app.step_goal, 0, 0, GOALS},
+    {R_SWITCH, "Contar pasos", "Count steps", "steps", &g_app.steps_on},  // off: the accelerometer rests (battery)
     {R_SWITCH, "Voz (mantén BOOT)", "Voice (hold BOOT)", "voice", &g_app.voice},
     S("Conexiones", "Connections", "Bluetooth, móviles, WiFi", "Bluetooth, phones, Wi-Fi"),
     {R_INFO, "Bluetooth", "Bluetooth", NULL, NULL, 0, 0, NULL, info_bt},

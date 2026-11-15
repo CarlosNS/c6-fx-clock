@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include "app.h"
 #include "batlog.h"
+#include "esp_heap_caps.h"
+#include "ble.h"
+#include "pmu_axp2101.h"
 #include "intro.h"
 #include "voice.h"
 #include "steps.h"
@@ -55,10 +58,21 @@ static void run_line(char *line)
         esp_pm_dump_locks(stdout);
         return;
     }
+    if (strcmp(line, "blediag") == 0) {  // the Bluetooth link's real interval
+        ble_diag();
+        return;
+    }
+    if (strcmp(line, "pmudiag") == 0) {  // the charger's settings
+        pmu_diag();
+        return;
+    }
     if (strcmp(line, "batlog") == 0) {  // the battery log (batlog.c) without Wi-Fi
-        static char buf[192 * 32 + 64];
-        batlog_csv(buf, sizeof(buf));
+        size_t cap = 192 * 32 + 128 * 40 + 128;
+        char *buf = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);  // internal RAM is the scarce one
+        if (!buf) return;
+        batlog_csv(buf, cap);
         printf("%s\nbatlog end\n", buf);
+        free(buf);
         return;
     }
     if (strncmp(line, "introshot ", 10) == 0) {  // one frame of the animation, held 3 s for /screenshot (the watchdog bites at 8)

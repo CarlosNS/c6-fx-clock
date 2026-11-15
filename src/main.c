@@ -89,6 +89,7 @@ app_state_t g_app = {
     .volume = 70,
     .bri_override = -1,
     .step_goal = 10000,
+    .steps_on = 1,
     .dbg_h = -1,
     .pairing_code = -1,
 };
@@ -346,6 +347,14 @@ static int log_nowhere(const char *fmt, va_list ap) { return 0; }
 static SemaphoreHandle_t s_wake_sem;
 static volatile bool s_touch_irq;
 
+// BOOT pressed while the chip sleeps: wake the loop at once (it then reads the button as usual)
+static void IRAM_ATTR button_isr(void *arg)
+{
+    BaseType_t hp = pdFALSE;
+    xSemaphoreGiveFromISR(s_wake_sem, &hp);
+    if (hp) portYIELD_FROM_ISR();
+}
+
 static void IRAM_ATTR touch_isr(void *arg)
 {
     gpio_intr_disable(BOARD_TOUCH_INT);
@@ -406,6 +415,11 @@ static void touch_wake_init(void)
     esp_sleep_enable_gpio_wakeup();
     if (gpio_install_isr_service(0) != ESP_OK) ESP_LOGW(TAG, "GPIO ISR service already there");
     gpio_isr_handler_add(BOARD_TOUCH_INT, touch_isr, NULL);
+    // BOOT (low while pressed) also wakes the chip and the loop, so the loop needs not poll it often
+    gpio_set_intr_type(BOARD_PIN_BUTTON, GPIO_INTR_NEGEDGE);
+    gpio_isr_handler_add(BOARD_PIN_BUTTON, button_isr, NULL);
+    gpio_wakeup_enable(BOARD_PIN_BUTTON, GPIO_INTR_LOW_LEVEL);
+    gpio_intr_enable(BOARD_PIN_BUTTON);
 }
 
 static void light_sleep_allow(bool on)
@@ -670,8 +684,9 @@ void app_main(void)
         poll_button(now);
         STAGE_MAIN(3);
         // Touch gestures; a touch on a fading screen only wakes it (once dark, the touch interrupt and
-        // the "tap" setting decide)
-        input_poll(now);
+        // the "tap" setting decide, and the touch chip is not read at all)
+        bool dark = panel_asleep;
+        if (!dark) input_poll(now);
         ui_event_t ev;
         while (input_next(&ev)) {
             if (!screen_awake(now)) {
@@ -685,18 +700,26 @@ void app_main(void)
         sys_poll_requests();
         STAGE_MAIN(4);
         console_poll();
-        // Accelerometer: steps always, raise-to-wake while the screen is off
-        int ax, ay, az;
-        bool have_imu = imu_read(&ax, &ay, &az);
+        // Accelerometer: for the steps (if counted), raise-to-wake (if on) and the faces that tilt. With
+        // the screen off and neither on, it is not read at all: every read wakes the chip and the bus.
+        int ax = 0, ay = 0, az = 0;
+        bool want_imu = !dark || g_app.steps_on || g_app.raise_wake || steps_log_samples() >= 0;
+        bool have_imu = want_imu && imu_read(&ax, &ay, &az);
         if (have_imu) {
-            steps_feed(ax, ay, az, now);
+            if (g_app.steps_on || steps_log_samples() >= 0) steps_feed(ax, ay, az, now);
             steps_log_tick(now);
             // The board's axes are x right, y up (board.h); the reading is the reaction to gravity, so
             // gravity along the screen is (-x, +y) with y pointing down the screen
             g_app.grav_x += (-ax - g_app.grav_x) / 6;
             g_app.grav_y += (ay - g_app.grav_y) / 6;
         }
-        poll_pwrkey(now);  // after the touch read: an AXP2101 read right before it made the touch fail
+        // after the touch read: an AXP2101 read right before it made the touch fail. In the dark, twice a
+        // second is enough: the AXP2101 latches the press until it is read
+        static uint32_t pkey_t;
+        if (!dark || now - pkey_t >= 500) {
+            pkey_t = now;
+            poll_pwrkey(now);
+        }
         // Once a minute: alarms, the steps day, the time in the status bar
         if (g_now.valid && g_now.m != last_min) {
             last_min = g_now.m;
@@ -705,7 +728,7 @@ void app_main(void)
             sys_dirty();
         }
         // Every few seconds: battery and phone link for the status bar
-        if (now - status_t > 3000) {
+        if (now - status_t > (dark ? 15000u : 3000u)) {
             status_t = now;
             pmu_battery_t b;
             int pct = -1;
@@ -833,7 +856,10 @@ void app_main(void)
             light_sleep_allow(!s_usb || (int32_t)(g_sleep_test_until - now) > 0);
             // 10 passes a second, or at once on a touch; quicker while a double tap may be under way
             // ...and every 20 ms while the step counter's calibration log runs (all of the 21 Hz samples)
-            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(touch_tap_pending(now) ? 10 : steps_log_samples() >= 0 ? 20 : 100));
+            // ...and only when the accelerometer is needed (steps, raise to wake): otherwise twice a second
+            // (BOOT and the touch wake the loop through their interrupts; the PWR key is latched)
+            int nap = touch_tap_pending(now) ? 10 : steps_log_samples() >= 0 ? 20 : (g_app.steps_on || g_app.raise_wake) ? 100 : 500;
+            xSemaphoreTake(s_wake_sem, pdMS_TO_TICKS(nap));
             last = now_ms();
             next_frame = esp_timer_get_time();
             continue;

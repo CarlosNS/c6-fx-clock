@@ -59,6 +59,7 @@ static const setting_t SETTINGS[] = {
     {"wifi", &g_app.wifi_on, 0, 1, true, on_wifi},    // the watch's own Wi-Fi radio
     {"vol", &g_app.volume, 0, 100, true, NULL},       // speaker volume
     {"goal", &g_app.step_goal, 1000, 50000, true, NULL},  // daily steps goal
+    {"steps", &g_app.steps_on, 0, 1, true, NULL},         // count steps (off: the accelerometer rests)
     {"ovl", &g_app.overlay, 0, 1, false, NULL},  // debug only
 };
 #define NSET (sizeof(SETTINGS) / sizeof(SETTINGS[0]))

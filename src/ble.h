@@ -22,5 +22,7 @@ void ble_forget_all(void);
 bool ble_advertise_fast(void);
 // That fast spell is running
 bool ble_calling(void);
+// Prints the link's real parameters (console "blediag"): interval, latency, timeout
+void ble_diag(void);
 // Advertised name ("Marea XXXX"); empty until the stack is up
 const char *ble_name(void);

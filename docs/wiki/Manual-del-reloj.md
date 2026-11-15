@@ -281,6 +281,7 @@ Un menú de **secciones**, cada una con lo que contiene debajo de su nombre. Al 
 | | Cambio automático | Pasar de esfera cada 30 s |
 | **General** | Idioma | Español o inglés |
 | | Objetivo de pasos | 4 000 a 15 000 |
+| | Contar pasos | Apagado, el acelerómetro descansa y el reloj gasta algo menos (Pasos lo avisa) |
 | | Voz (mantén BOOT) | Las [órdenes de voz](#órdenes-de-voz) |
 | **Conexiones** | Bluetooth | Nombre del reloj y si hay móvil conectado |
 | | WiFi | Red y dirección IP del reloj |
@@ -307,7 +308,8 @@ Otros ajustes, como la velocidad de las animaciones, la ciudad del tiempo o las 
 - Con el cable USB conectado aparece un **rayo** sobre el icono: *cargando* mientras sube y *cargada* al llegar al máximo.
 - Al 15 % o menos, el icono se pone en rojo coral. Al 10 % el reloj enciende la pantalla y avisa: **BATERÍA BAJA**.
 - **Apagado seguro:** si la batería baja de 3,30 V durante 9 segundos seguidos (sin cable), el reloj muestra *Batería agotada*, guarda los ajustes y se apaga del todo, antes de que un apagón a mitad de una escritura pueda estropear algo. Para volver a usarlo, cárgalo y pulsa el botón **PWR**. La hora la conserva el reloj de hardware.
-- Con la pantalla apagada y sin cable, el procesador **duerme** entre comprobación y comprobación (botón, toque y muñeca, 20 veces por segundo) y el Bluetooth sigue conectado en modo de bajo consumo.
+- Con la pantalla apagada y sin cable, el procesador **duerme** casi todo el tiempo (más del 80 %). Solo se despierta para lo que esté activado: el acelerómetro si cuenta pasos o tiene *Levantar la muñeca*; BOOT y el táctil lo despiertan al momento por su cuenta, y el botón PWR se mira dos veces por segundo. El Bluetooth sigue conectado a su ritmo lento (cada medio segundo) y, si el móvil lo acelera, el reloj vuelve a pedir el lento. Con el cable puesto no duerme (la consola USB sigue activa), así que un puerto USB de ordenador puede no cargarlo: usa un cargador de móvil.
+- **Registro de batería:** cada 15 minutos guarda la carga, el voltaje y cuánto estuvo encendida la pantalla, con la fecha y la hora, en la memoria flash (32 horas). Sobrevive a quedarse sin batería. Se lee con la orden `batlog` por la consola serie o en `http://<IP del reloj>/batlog`.
 - Para que dure más: WiFi apagado (como viene), brillo bajo, pantalla que se apaga pronto, sin *Siempre encendida* y esferas oscuras.
 
 ## Conexiones

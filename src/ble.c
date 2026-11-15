@@ -43,7 +43,8 @@ static const char *TAG = "ble";
 #define FAST_ADV_MS 30000       // after boot / disconnect: advertise fast so the phone finds it quickly
 #define QUIET_BOOT_MS 60000     // paired clock booting without the time: stay silent this long first
 #define QUIET_STEP_MS 500       // ...checking this often whether the time came some other way
-#define HEARTBEAT_MS 30000      // status sent unasked this often while connected
+#define HEARTBEAT_MS 30000      // status sent unasked this often while connected (screen on)
+#define HEARTBEAT_DARK_MS 300000  // ...and with the screen off (a change is still sent at once)
 #define STATUS_GAP_MS 300       // at most one change notification this often
 #define QUEUE_LEN 16
 #define NOTIFY_RESERVE 4  // buffers notifications leave free for the ATT answers to the phone's writes
@@ -159,6 +160,37 @@ void ble_fast_link(void)
     struct ble_gap_upd_params p = {.itvl_min = 6, .itvl_max = 12, .latency = 0, .supervision_timeout = 400};
     int rc = ble_gap_update_params(conn, &p);
     ESP_LOGI(TAG, "Asked for a fast link (%d)", rc);
+}
+
+void ble_diag(void)
+{
+    struct ble_gap_conn_desc d;
+    if (s_conn == BLE_HS_CONN_HANDLE_NONE || ble_gap_conn_find(s_conn, &d) != 0) {
+        printf("blediag not connected\n");
+        return;
+    }
+    // units: interval 1.25 ms, supervision timeout 10 ms
+    printf("blediag interval=%u.%02u ms latency=%u timeout=%u ms\n", d.conn_itvl * 125 / 100, d.conn_itvl * 125 % 100,
+           d.conn_latency, d.supervision_timeout * 10);
+}
+
+// The phone may change the interval after the clock asked for the slow one (its app asks for its
+// own when it opens or closes, and Android raises it for traffic); with the screen off the clock asks
+// again a few seconds after, unless commands are coming (a file going to the card wants it quick).
+static esp_timer_handle_t s_pace_timer;
+static volatile uint32_t s_last_rx_ms;
+static void pace_check(void *arg)
+{
+    struct ble_gap_conn_desc d;
+    if (!g_app.screen_off || s_conn == BLE_HS_CONN_HANDLE_NONE || ble_gap_conn_find(s_conn, &d) != 0) return;
+    if (d.conn_itvl >= 320) return;  // slow already
+    uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+    if (now - s_last_rx_ms < 10000 || bleota_busy()) {  // busy: look again later
+        esp_timer_start_once(s_pace_timer, 10000 * 1000LL);
+        return;
+    }
+    ESP_LOGI(TAG, "Interval %u ms with the screen off: asking for the slow one again", d.conn_itvl * 5 / 4);
+    ble_link_pace(false);
 }
 
 void ble_link_pace(bool screen_on)
@@ -317,7 +349,9 @@ static void worker(void *arg)
             ESP_LOGW(TAG, "Command queue full: %d commands dropped", s_dropped);
             s_dropped = 0;
         }
-        if (xQueueReceive(s_queue, &cmd, pdMS_TO_TICKS(100)) == pdTRUE) {
+        // With the screen off and nothing waiting, look once a second: every look wakes the chip
+        if (xQueueReceive(s_queue, &cmd, pdMS_TO_TICKS(g_app.screen_off && !pending ? 1000 : 100)) == pdTRUE) {
+            s_last_rx_ms = (uint32_t)(esp_timer_get_time() / 1000);
             const char *c = cmd.text;
             if (strcmp(c, "get info") == 0) send_info();
             else if (strcmp(c, "get status") == 0) send_status(), last_status = esp_timer_get_time();
@@ -385,7 +419,7 @@ static void worker(void *arg)
         }
         int64_t now = esp_timer_get_time();
         bool due = pending && now - last_status > STATUS_GAP_MS * 1000LL && !uxQueueMessagesWaiting(s_queue);
-        if (due || now - last_status > HEARTBEAT_MS * 1000LL) {
+        if (due || now - last_status > (g_app.screen_off ? HEARTBEAT_DARK_MS : HEARTBEAT_MS) * 1000LL) {
             pending = false;
             last_status = now;
             send_status();
@@ -564,6 +598,12 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
             xQueueSend(s_queue, &c, 0);
         }
         break;
+    case BLE_GAP_EVENT_CONN_UPDATE:
+        if (s_pace_timer) {
+            esp_timer_stop(s_pace_timer);
+            esp_timer_start_once(s_pace_timer, 5000 * 1000LL);
+        }
+        break;
     case BLE_GAP_EVENT_SUBSCRIBE:
         if (ev->subscribe.attr_handle == s_evt_handle) s_subscribed = ev->subscribe.cur_notify;
         break;
@@ -629,6 +669,8 @@ void ble_start(void)
     esp_timer_create(&t, &s_adv_timer);
     const esp_timer_create_args_t q = {.callback = quiet_tick, .name = "ble_quiet"};
     esp_timer_create(&q, &s_quiet_timer);
+    const esp_timer_create_args_t pc = {.callback = pace_check, .name = "ble_pace"};
+    esp_timer_create(&pc, &s_pace_timer);
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "NimBLE init failed: %s", esp_err_to_name(err));

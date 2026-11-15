@@ -143,10 +143,14 @@ static esp_err_t files_get(httpd_req_t *req)
 // Battery log (batlog.c) as CSV
 static esp_err_t batlog_get(httpd_req_t *req)
 {
-    static char buf[192 * 32 + 64];
-    size_t n = batlog_csv(buf, sizeof(buf));
+    size_t cap = 192 * 32 + 128 * 40 + 128;
+    char *buf = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);  // internal RAM is the scarce one
+    if (!buf) return httpd_resp_send_500(req);
+    size_t n = batlog_csv(buf, cap);
     httpd_resp_set_type(req, "text/csv");
-    return httpd_resp_send(req, buf, n);
+    esp_err_t r = httpd_resp_send(req, buf, n);
+    free(buf);
+    return r;
 }
 
 static esp_err_t faces_get(httpd_req_t *req)

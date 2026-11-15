@@ -12,7 +12,7 @@ La app **Marea** es la forma normal de usar el reloj: se queda conectada por Blu
    1. **Hola:** qué hace la app y el idioma (el del reloj se cambia a la vez).
    2. **Empareja el reloj:** *Buscar el reloj* pide **Dispositivos cercanos** (para hablar con el reloj) y abre la lista de Android. Si falla, explica por qué puede ser: Bluetooth apagado (con un botón para encenderlo), el reloj emparejado con otro móvil o la app reinstalada (en el reloj, *Ajustes → Conexiones → Olvidar móviles*), o la clave caducada.
    3. **Que no se corte:** permitir el segundo plano, en Xiaomi, Redmi y POCO también el inicio automático y el ahorro de batería sin restricciones, y las **Notificaciones** (aviso de conexión y versiones nuevas).
-   4. **Extras** opcionales: música y llamadas, órdenes de voz.
+   4. **Extras** opcionales: música y llamadas, órdenes de voz. En Xiaomi, Redmi y POCO, música y llamadas también necesitan el **Inicio automático** de Marea: sin él, el sistema no deja funcionar el servicio aunque el permiso esté concedido, y la app lo avisa con un botón *Abrir*. Si Android lo desengancha, la app lo vuelve a pedir sola.
    5. **Tu reloj:** formato 24 h, objetivo de pasos y un atajo para elegir esfera.
 
    Cada permiso se pide en su paso, con su explicación, y no todos al abrir. Se puede saltar desde el primer paso y repetir en *Ajustes → Avanzado → Ver la introducción*. La app no pide ubicación: el emparejamiento lo hace el propio Android.

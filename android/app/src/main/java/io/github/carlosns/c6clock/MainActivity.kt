@@ -214,6 +214,7 @@ class MainActivity : ComponentActivity() {
         Live.link?.priority(true)
         connectIfPaired()
         LinkService.mic(this)  // on screen: the one moment Android lets it add the microphone
+        Phone.ensureBound(this)  // music and calls: Android may have dropped the listener
     }
 
     override fun onStop() {
@@ -466,6 +467,7 @@ class MainActivity : ComponentActivity() {
             .put("every", SyncWorker.PERIOD_MIN)
             .put("permanent", LinkService.running)
             .put("phone", Phone.hasAccess(this@MainActivity))
+            .put("phoneOn", Phone.watch != null)  // granted and actually running (Xiaomi's autostart can stop it)
             .put("mic", Voice.allowed(this@MainActivity))
             .put("background", getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
             .put("notif", androidx.core.app.NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())

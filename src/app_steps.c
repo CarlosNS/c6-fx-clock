@@ -115,6 +115,8 @@ static bool draw(uint32_t now, bool force)
     app_frame(TR("Pasos", "Steps"), false);
     if (s_page == 0) page_today();
     else page_history();
+    if (!g_app.steps_on)  // switched off in the settings (to save battery): say why nothing moves
+        ui_print_c(&ui_vt, 1, UI_W / 2, 100, TR("Contar pasos está apagado (Ajustes)", "Step counting is off (Settings)"), MS_CORAL, false);
     ui_dots(UI_W / 2, UI_H - 46, 2, s_page);
     return true;
 }

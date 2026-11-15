@@ -1,5 +1,6 @@
 #include "pmu_axp2101.h"
 #include <stdint.h>
+#include <stdio.h>
 #include "esp_log.h"
 #include "i2c_bus.h"
 
@@ -96,6 +97,24 @@ int pmu_pwrkey_poll(void)
     st &= 0x0F;
     if (st) i2c_reg_write(AXP_ADDR, REG_IRQ_ST2, (uint8_t)st);
     return st;
+}
+
+void pmu_diag(void)
+{
+    // AXP2101 datasheet: 0x15 input voltage limit (3.88 V + 80 mV/step), 0x16 input current limit
+    // (100/500/900/1000/1500/2000 mA), 0x24 system power-off voltage (2.6 V + 100 mV/step),
+    // 0x61 pre-charge current (25 mA/step), 0x62 constant charge current (25 mA/step up to 200 mA,
+    // then 100 mA/step from 300 mA), 0x63 termination (25 mA/step), 0x64 charge voltage
+    static const int IIN[] = {100, 500, 900, 1000, 1500, 2000, -1, -1};
+    static const char *const CV[] = {"?", "4.0 V", "4.1 V", "4.2 V", "4.35 V", "4.4 V", "?", "?"};
+    int r15 = reg(0x15), r16 = reg(0x16), r24 = reg(0x24), r61 = reg(0x61), r62 = reg(0x62), r63 = reg(0x63),
+        r64 = reg(0x64), s1 = reg(REG_STATUS1), s2 = reg(REG_STATUS2), r18 = reg(0x18);
+    int icc = r62 & 0x1F;
+    int icc_ma = icc <= 8 ? icc * 25 : icc <= 16 ? 200 + (icc - 8) * 100 : -1;
+    printf("pmudiag in_v_limit=%d mV in_i_limit=%d mA poweroff=%d mV precharge=%d mA charge=%d mA (0x%02X) term=%d mA cv=%s "
+           "charger_en=%d status1=0x%02X status2=0x%02X\n",
+           3880 + (r15 & 0x0F) * 80, IIN[r16 & 7], 2600 + (r24 & 7) * 100, (r61 & 0x0F) * 25, icc_ma, r62, (r63 & 0x0F) * 25,
+           CV[r64 & 7], (r18 >> 1) & 1, s1, s2);
 }
 
 bool pmu_battery(pmu_battery_t *b)

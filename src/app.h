@@ -34,6 +34,7 @@ typedef struct {
     volatile bool usb_data;    // the USB cable goes to a computer (data), not just a charger
     volatile bool screen_off;  // the panel is asleep (main.c): Bluetooth slows its link then
     volatile int volume;       // speaker volume 0..100 (alarms, sounds)
+    volatile int steps_on;     // count steps (the accelerometer is read all the time for it)
     volatile int step_goal;    // daily steps goal
 
     // ---- Live state ----

@@ -181,6 +181,7 @@ class LinkService : Service() {
                         last = System.currentTimeMillis()
                         runCatching { SyncWorker.record(store, SyncSession(l, Net::weatherCommand).run()) }
                             .onFailure { Log.w(TAG, "sync: ${it.message}"); store.lastResult = "falló: ${it.message}" }
+                        Phone.ensureBound(this@LinkService)  // the music and calls listener, if Android dropped it
                         Phone.toClock()  // what is playing and any call ringing right now
                         l.priority(Live.visible)
                     }

@@ -4,6 +4,10 @@
 
 ### 3.0.0-beta.9 y app 0.8.0 (en preparación)
 
+- **Batería:** con la pantalla apagada el reloj duerme más del 80 % del tiempo (antes, un 60 %). Solo despierta para lo activado: el acelerómetro solo con pasos o *Levantar la muñeca*, el táctil y BOOT por interrupción, el botón PWR dos veces por segundo, la tarea del Bluetooth una vez por segundo y el estado al móvil cada 5 minutos (los cambios, al momento). Si el móvil acelera la conexión con la pantalla apagada, el reloj vuelve a pedir el ritmo lento.
+- **Contar pasos** se puede apagar (Ajustes → General en el reloj, Ajustes en la app).
+- **Registro de batería en la flash**, cada 15 minutos con la hora (32 horas): sobrevive a quedarse sin batería. Órdenes de diagnóstico `blediag` y `pmudiag` en la consola.
+- Arreglado: en Xiaomi, música y llamadas dejaban de llegar al reloj si el sistema no dejaba arrancar el servicio (falta el *Inicio automático*); la app ahora lo vuelve a pedir y, si sigue bloqueado, lo avisa.
 - **Introducción la primera vez**, en el reloj y en la app. El reloj: idioma, los gestos practicados, el QR de la app esperando a que el móvil se conecte (y entonces sigue solo) y «¡Listo!»; los relojes ya en uso no la ven. La app: idioma, emparejar con ayuda si falla, el segundo plano (con los pasos de Xiaomi) y las notificaciones, extras opcionales y unas preferencias del reloj. Los permisos se piden en su paso y no todos al abrir. Las dos se saltan y se repiten desde los ajustes.
 - **Ajustes del reloj por secciones:** un menú (Pantalla, Sonido, Hora y esferas, General, Conexiones, Sistema y App del móvil) con lo que guarda cada una; BOOT vuelve al menú. Ahora también están en el reloj el formato de 24 h y la voz.
 - **La app, desde el reloj:** *Ajustes → App del móvil* enseña un QR con el enlace a la última versión de la app para Android, por si se borra (no está en la Play Store).

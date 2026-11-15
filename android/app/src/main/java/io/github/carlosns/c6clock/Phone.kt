@@ -40,6 +40,20 @@ object Phone {
     /** Characters the clock's fonts have (tools/make_fonts.py); others lose their accents or become "?". */
     private const val CLOCK_CHARS = "¡¿ÁÉÍÓÚÜÑáéíóúüñ°·ºª«»€…–—×"
 
+    // Android can unbind a notification listener on its own (a killed process, HyperOS's battery
+    // manager) and leave it so, with the access still granted: then no music and no calls reach the
+    // clock until it is asked to bind again. At most once a minute.
+    @Volatile private var rebindAt = 0L
+    fun ensureBound(c: Context) {
+        if (watch != null || !hasAccess(c)) return
+        val now = System.currentTimeMillis()
+        if (now - rebindAt < 60_000) return
+        rebindAt = now
+        Log.i("Phone", "notification listener not bound: asking Android to bind it again")
+        runCatching { NotificationListenerService.requestRebind(ComponentName(c, PhoneWatch::class.java)) }
+            .onFailure { Log.w("Phone", "rebind: ${it.message}") }
+    }
+
     fun hasAccess(c: Context): Boolean {
         val flat = Settings.Secure.getString(c.contentResolver, "enabled_notification_listeners") ?: return false
         return flat.split(':').any { ComponentName.unflattenFromString(it)?.packageName == c.packageName }
@@ -145,6 +159,8 @@ class PhoneWatch : NotificationListenerService() {
 
     override fun onListenerDisconnected() {
         if (Phone.watch === this) Phone.watch = null
+        // Unbound by the system: ask for it back (it comes back with onListenerConnected)
+        runCatching { requestRebind(ComponentName(this, PhoneWatch::class.java)) }
         runCatching { msm?.removeOnActiveSessionsChangedListener(sessions) }
         controllers.forEach { it.unregisterCallback(callback) }
         controllers.clear()

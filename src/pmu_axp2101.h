@@ -15,6 +15,8 @@ typedef struct {
 
 // Battery state; false if the chip does not answer
 bool pmu_battery(pmu_battery_t *b);
+// Prints the charger's settings and state (console "pmudiag"): read only
+void pmu_diag(void);
 // Cuts the power (software power off); does not return if it works
 void pmu_power_off(void);
 

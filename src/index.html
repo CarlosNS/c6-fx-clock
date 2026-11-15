@@ -366,6 +366,7 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
   <div class="list">
     <a class="row" href="#pantalla"><div class="t"><b data-en="Display">Pantalla</b><small data-en="Brightness, sleep, night mode">Brillo, apagado, modo noche</small></div><span class="go" aria-hidden="true">›</span></a>
     <a class="row" href="#hora"><div class="t"><b data-en="Time">Hora</b><small data-en="24-hour clock, seconds">Formato 24 h, segundos</small></div><span class="go" aria-hidden="true">›</span></a>
+    <div class="row"><div class="t"><b data-en="Count steps">Contar pasos</b><small data-en="Off, the watch saves battery: the accelerometer rests">Apagado, el reloj ahorra batería: el acelerómetro descansa</small></div><input type="checkbox" class="sw" id="steps" aria-label="Contar pasos"></div>
     <div class="row hide" id="goalrow"><div class="t"><b data-en="Daily steps goal">Objetivo de pasos diario</b><small data-en="From 1,000 to 50,000">De 1.000 a 50.000</small></div><input type="number" id="goal" min="1000" max="50000" step="500" inputmode="numeric" style="width:120px;background:var(--noche);color:var(--crema);border:3px solid var(--linea);min-height:46px;padding:0 8px;font:inherit"></div>
   </div>
   <div class="hide stack" id="voicebox" style="gap:12px">
@@ -620,7 +621,7 @@ for(let h=0;h<24;h++)for(const s of['nst','nen'])$(s).add(new Option(String(h).p
 // The slider's filled part, flat (no gradient look): a hard stop between gold and the empty track
 function fill(e){if(e.classList.contains('hue'))return;const p=(e.value-e.min)/(e.max-e.min)*100;e.style.background=`linear-gradient(90deg,var(--oro) ${p}%,var(--off) ${p}%)`}
 function bind(id,cmd,fmt){const e=$(id);e.oninput=()=>{lastUser=Date.now();if(fmt)$(id+'v').textContent=fmt(e.value);if(e.type==='range')fill(e);send(cmd+' '+(e.type==='checkbox'?(e.checked?1:0):e.value));vis()}}
-bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('tap','tap');
+bind('spd','spd',v=>v+' %');bind('bri','bri',v=>v+' %');bind('auto','auto');bind('ovl','ovl');bind('h24','h24');bind('steps','steps');bind('aon','aon');bind('raise','raise');bind('wifi','wifi');bind('wks','wks');bind('tap','tap');
 // Voice commands: the setting lives on the watch; in the app, switching it on also asks for the microphone
 $('voice').onchange=()=>{lastUser=Date.now();const on=$('voice').checked;send('voice '+(on?1:0));status.voice=on?1:0;
  if(L.kind==='android'){if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice();appInfo()}};
@@ -695,7 +696,7 @@ function show(s,relang){status=s;
  if(Date.now()-lastUser>1500){if(s.fx!==cur||(s.fx===28&&s.cust!==lastCust))setFx(s.fx);lastCust=s.cust;
   if(s.fxoff!==undefined&&s.fxoff!==offMask){offMask=s.fxoff;if(FX.length)renderOff()}
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
-  for(const k of['auto','ovl','h24','secs','non','aon'])$(k).checked=!!s[k];
+  for(const k of['auto','ovl','h24','secs','non','aon','steps'])if(s[k]!==undefined)$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
   slogShow();
   if(s.goal!==undefined){$('goalrow').classList.remove('hide');if(document.activeElement!==$('goal'))$('goal').value=s.goal}
@@ -834,7 +835,7 @@ L.start({onState:u=>{up=u;offline();renderFind();homeStatus(u&&status.bat!==unde
 // ------------------------------------------------------------ without the watch
 // What needs it (and only that) is greyed out while it is not connected; a tap on it says why instead of
 // seeming to work and being lost. A bar on top of every section says so too, and leads home.
-const NEEDS_WATCH=['#v-esferas>.panel.gold','#v-esferas>.list','#groups','#alarms','#aladd','#v-archivos .list','#crumbs','#v-pantalla .list','#v-hora .list',
+const NEEDS_WATCH=['#steps','#v-esferas>.panel.gold','#v-esferas>.list','#groups','#alarms','#aladd','#v-archivos .list','#crumbs','#v-pantalla .list','#v-hora .list',
  '#goalrow','#voicebox .list','#wifirow','#wedit','#wform','#updgo','#nupdgo','#sync','#ovl','#reset','#slog','#tomode','#otago','#langes','#langen'];
 for(const q of NEEDS_WATCH)for(const el of document.querySelectorAll(q)){const t=el.matches('input,select')||(el.matches('button')&&el.closest('.row'))?el.closest('.row')||el:el;t.dataset.watch=''}
 let toastT=0;
@@ -850,17 +851,20 @@ window.addEventListener('hashchange',offline);
 // Android app: sync, permissions and forgetting the clock live in Kotlin
 function appInfo(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridge.info());
  $('appsync').textContent=(i.lastSync?tr(`Última hace ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min: ${i.lastResult}`,`Last one ${Math.max(0,Math.round((Date.now()-i.lastSync)/60000))} min ago: ${i.lastResult}`):tr('Todavía ninguna','None yet'))+(i.permanent?tr(' · conexión permanente',' · always connected'):tr(` · cada ${i.every} min`,` · every ${i.every} min`));
- $('appph').textContent=i.phone?tr('Permitido','Allowed'):tr('Falta el acceso a las notificaciones','Notification access is missing');$('appph').className=i.phone?'ok':'bad';$('appphgo').classList.toggle('hide',!!i.phone);
+ // granted but not running: the system will not start it (Xiaomi's autostart): say so, and open the app's page
+ const phStuck=i.phone&&i.phoneOn===false;
+ $('appph').textContent=phStuck?tr('Android no lo deja funcionar: activa «Inicio automático» en la página de Marea','Android will not let it run: switch «Autostart» on in Marea’s page'):i.phone?tr('Permitido','Allowed'):tr('Falta el acceso a las notificaciones','Notification access is missing');
+ $('appph').className=i.phone&&!phStuck?'ok':'bad';$('appphgo').classList.toggle('hide',!!i.phone&&!phStuck);$('appphgo').textContent=phStuck?tr('Abrir','Open'):tr('Permitir','Allow');window.phStuck=phStuck;
  $('appnotrow').classList.toggle('hide',i.notif===undefined||i.sdk<33);$('appnot').textContent=i.notif?tr('Permitidas','Allowed'):tr('Sin ellas no hay aviso de conexión ni de versiones nuevas','Without them there is no connection or new-version notice');$('appnot').className=i.notif?'ok':'bad';$('appnotgo').classList.toggle('hide',!!i.notif);
  $('appbg').textContent=i.background?tr('Permitido','Allowed'):tr('El sistema puede cortar la conexión','The system may cut the connection');$('appbg').className=i.background?'ok':'bad';$('appbgo').classList.toggle('hide',i.background);
  // Android asks for the microphone to recognize speech, even though the audio is the watch's
  const micNeeded=!!status.voice;$('appmicrow').classList.toggle('hide',!micNeeded);
  $('appmic').textContent=i.mic?tr('Permitido','Allowed'):tr('Android lo pide para reconocer la voz del reloj (no usa el micrófono del móvil)','Android asks for it to recognize the watch’s voice (the phone’s microphone is not used)');$('appmic').className=i.mic?'ok':'bad';$('appmicgo').classList.toggle('hide',!!i.mic);
- const miss=[!i.phone&&tr('Música y llamadas','Music and calls'),!i.background&&tr('Segundo plano','Background'),micNeeded&&!i.mic&&tr('Micrófono','Microphone')].filter(Boolean);
+ const miss=[(!i.phone||phStuck)&&tr('Música y llamadas','Music and calls'),!i.background&&tr('Segundo plano','Background'),micNeeded&&!i.mic&&tr('Micrófono','Microphone')].filter(Boolean);
  $('nperm').classList.toggle('hide',!miss.length||L.needsPick);$('npermtxt').textContent=miss.join(' · ');$('permpip').classList.toggle('hide',!miss.length)}
 if(L.kind==='android'){$('appcard').classList.toggle('hide',L.needsPick);$('forgetrow').classList.toggle('hide',L.needsPick);$('appsyncrow').classList.remove('hide');$('appupd').classList.remove('hide');
  $('appnow').onclick=()=>{ClockBridge.syncNow();$('appsync').textContent=tr('Sincronizando…','Syncing…');setTimeout(appInfo,6000)};
- $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appnotgo').onclick=()=>ClockBridge.allowNotifications();$('introrow').classList.remove('hide');$('appphgo').onclick=()=>ClockBridge.allowPhone();$('appmicgo').onclick=()=>ClockBridge.allowVoice();
+ $('appbgo').onclick=()=>ClockBridge.allowBackground();$('appnotgo').onclick=()=>ClockBridge.allowNotifications();$('introrow').classList.remove('hide');$('appphgo').onclick=()=>window.phStuck?ClockBridge.openAppPage():ClockBridge.allowPhone();$('appmicgo').onclick=()=>ClockBridge.allowVoice();
  $('appforget').onclick=()=>{if(ask(tr('¿Olvidar este reloj?','Forget this watch?'),tr('El móvil y el reloj dejarán de estar emparejados, y la app ya no podrá controlarlo ni ponerle la hora. Para volver a usarlo, pulsa «Buscar el reloj» y escribe la clave que aparecerá en su pantalla.','The phone and the watch will no longer be paired, and the app will not be able to control it or set its time. To use it again, tap "Find the watch" and type the code it shows.'),tr('Olvidar','Forget')))ClockBridge.forget()};
  appInfo();setInterval(appInfo,30000);document.addEventListener('visibilitychange',appInfo);
  // The app's own updates: Kotlin reads the manifest and installs (it answers through these two)
@@ -1009,7 +1013,7 @@ function introPerms(){if(L.kind!=='android')return;const i=JSON.parse(ClockBridg
  st('ibg',i.background,tr('Permitido','Allowed'),tr('Android puede cerrar la app','Android may close the app'));$('ibggo').classList.toggle('hide',!!i.background);
  $('ixrow').classList.toggle('hide',!/xiaomi|redmi|poco/.test(i.maker||''));
  $('inotrow').classList.toggle('hide',!(i.sdk>=33));st('inot',i.notif,tr('Permitidas','Allowed'),tr('Para el aviso de conexión y las versiones nuevas','For the connection notice and new versions'));$('inotgo').classList.toggle('hide',!!i.notif);
- st('iph',i.phone,tr('Permitido','Allowed'),tr('Controla la música y ve quién llama','Control the music and see who is calling'));$('iph').className=i.phone?'ok':'';$('iphgo').classList.toggle('hide',!!i.phone);
+ const ph=i.phone&&i.phoneOn!==false;st('iph',ph,tr('Permitido','Allowed'),i.phone?tr('Activa «Inicio automático» en la página de Marea','Switch «Autostart» on in Marea’s page'):tr('Controla la música y ve quién llama','Control the music and see who is calling'));$('iph').className=ph?'ok':i.phone?'bad':'';$('iphgo').classList.toggle('hide',ph);$('iphgo').textContent=i.phone?tr('Abrir','Open'):tr('Permitir','Allow');window.iphStuck=i.phone&&!ph;
  $('ivoicerow').classList.toggle('hide',!(i.sdk>=33));$('ivoice').checked=!!status.voice}
 function introMine(){if(status.h24!==undefined)$('ih24').checked=!!status.h24;
  if(status.goal){const g=$('igoal');if(![...g.options].some(o=>+o.value===status.goal))g.add(new Option(status.goal,status.goal));g.value=status.goal}}
@@ -1029,7 +1033,7 @@ $('ibton').onclick=()=>ClockBridge.enableBluetooth();
 $('ibggo').onclick=()=>ClockBridge.allowBackground();
 $('ixgo').onclick=()=>ClockBridge.openAppPage();
 $('inotgo').onclick=()=>ClockBridge.allowNotifications();
-$('iphgo').onclick=()=>ClockBridge.allowPhone();
+$('iphgo').onclick=()=>window.iphStuck?ClockBridge.openAppPage():ClockBridge.allowPhone();
 $('ivoice').onchange=()=>{const on=$('ivoice').checked;send('voice '+(on?1:0));status.voice=on?1:0;if(on&&!JSON.parse(ClockBridge.info()).mic)ClockBridge.allowVoice()};
 $('ih24').onchange=()=>{lastUser=Date.now();send('h24 '+($('ih24').checked?1:0))};
 $('igoal').onchange=()=>{lastUser=Date.now();const v=+$('igoal').value;send('goal '+v);status.goal=v};
