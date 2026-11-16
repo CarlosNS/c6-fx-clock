@@ -36,6 +36,9 @@
 #include "fx.h"
 #include "gfx.h"
 #include "rom/tjpgd.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "ui.h"
 #include "ui_fonts.h"
 #include "ble.h"
@@ -75,8 +78,7 @@ static uint32_t s_anim_t0, s_last_render;
 static char s_text_key[48];        // what the mask holds
 static int s_bx0, s_by0, s_bx1, s_by1;  // its bounding box
 static int s_try_id, s_try_prev = -1;
-static int s_tried;                // last id a load was attempted for (so a failure is not retried every frame)
-static void again(void) { s_tried = -3; s_loaded = -2; }
+static void again(void);
 static uint32_t s_try_until;
 
 static uint32_t now_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
@@ -109,12 +111,11 @@ static UINT jout(JDEC *jd, void *bitmap, JRECT *r)
     return 1;
 }
 
-static bool jpeg_decode(const uint8_t *src, size_t len, uint16_t *dst, int dw, int dh)
+static bool jpeg_decode(const uint8_t *src, size_t len, uint16_t *dst, int dw, int dh, uint8_t pool[4096])
 {
-    static uint8_t pool[4096];
     JDEC jd;
     jctx_t c = {src, len, 0, dst, dw, dh};
-    if (jd_prepare(&jd, jin, pool, sizeof(pool), &c) != JDR_OK) return false;
+    if (jd_prepare(&jd, jin, pool, 4096, &c) != JDR_OK) return false;
     return jd_decomp(&jd, jout, 0) == JDR_OK;
 }
 
@@ -372,64 +373,81 @@ static void build_date_mask(const char *date)
 // ---------------------------------------------------------------- loading
 
 // The stretch of the day now: the last one that has started (they are sorted, the first from 0)
-static int cur_slot(void)
+static int cur_slot(const face_t *f)
 {
     int m = g_now.valid ? g_now.h * 60 + g_now.m : 0, k = 0;
-    for (int i = 0; i < s_face.nslots; i++)
-        if (s_face.from[i] <= m) k = i;
+    for (int i = 0; i < f->nslots; i++)
+        if (f->from[i] <= m) k = i;
     return k;
 }
 
-// The picture of stretch k: a still JPEG into s_bg, or an animation kept whole in PSRAM
-static bool load_pic(int id, int k)
+// ---------------------------------------------------------------- loading, in the background
+// A swipe between custom faces must not wait for the card (about half a second each: mounting it,
+// reading, decoding). A low-priority task loads them into a small cache in PSRAM: first the face asked
+// for, then its neighbours in the swipe order, so the next swipe finds its face ready. Meanwhile the
+// main loop keeps drawing what it has (and the face's name shows at once). Only the main loop draws;
+// the task never frees the entry being drawn.
+
+typedef struct {
+    int id;           // 0: a free place
+    int slot;         // the stretch of the day its picture is for
+    face_t face;
+    uint16_t *still;  // a still picture, decoded (W x H), or
+    uint8_t *anim;    // a whole animation file
+    size_t anim_len, bytes;
+    uint32_t used;
+} entry_t;
+
+#define CACHE_N 4
+#define CACHE_BYTES (3 * 1024 * 1024)
+#define PREFETCH_MAX (1536 * 1024)  // a bigger animation is only read when it is shown
+#define ANIM_MAX (3 * 1024 * 1024)
+
+static entry_t s_cache[CACHE_N];
+static entry_t *s_cur;               // the one being drawn
+static SemaphoreHandle_t s_lock;
+static TaskHandle_t s_task;
+static int s_want, s_near[2];        // what to load: the face to show, then its neighbours (under s_lock)
+static uint32_t s_gen;               // bumped when files change: loads begun before are dropped
+static int s_fail_id;                // the last face asked for that could not be loaded, and why
+static char s_fail_err[48];
+static volatile bool s_flush;
+
+static void again(void)
 {
-    free(s_anim);
-    s_anim = NULL;
-    s_nframes = 0;
-    s_face.anim = 0;
-    const char *pic = s_face.pic[k];
-    char path[64];
-    size_t len, pl = strlen(pic);
-    snprintf(path, sizeof(path), "/esferas/%d/%.31s", id, pic);
-    if (pl > 4 && !strcmp(pic + pl - 4, ".bin")) {
-        s_anim = sd_read_file(path, 3 * 1024 * 1024, &s_anim_len);
-        if (!s_anim || s_anim_len < 8 || memcmp(s_anim, "MAN1", 4)) return strlcpy(s_err, TR("animación dañada", "broken animation"), sizeof(s_err)), false;
-        s_nframes = s_anim[4] | s_anim[5] << 8;
-        if (!s_frame) s_frame = heap_caps_malloc(AW * AH * 2, MALLOC_CAP_SPIRAM);
-        s_cur_frame = -1;
-        s_anim_t0 = now_ms();
-        s_face.anim = 1;
-    } else {
-        uint8_t *jpg = sd_read_file(path, 1024 * 1024, &len);
-        bool ok = jpg && jpeg_decode(jpg, len, s_bg, W, H);
-        free(jpg);
-        if (!ok) return strlcpy(s_err, TR("imagen dañada", "broken image"), sizeof(s_err)), false;
-    }
-    s_slot = k;
-    return true;
+    s_flush = true;
 }
 
-static bool load(int id);
-
-static bool load(int id)
+static void entry_free(entry_t *e)
 {
-    s_loaded = -1;
-    s_err[0] = 0;
-    s_text_key[0] = 0;
-    free(s_anim);
-    s_anim = NULL;
-    s_nframes = 0;
-    if (id <= 0) return strlcpy(s_err, TR("elige una en la app", "pick one in the app"), sizeof(s_err)), false;
+    free(e->still);
+    free(e->anim);
+    memset(e, 0, sizeof(*e));
+}
+
+// Reads face.json and the picture for the stretch of the day it is in (the loader task)
+static bool load_entry(int id, entry_t *e, char *err, size_t errn, size_t max_anim, uint8_t *pool)
+{
+    if (id <= 0) return strlcpy(err, TR("elige una en la app", "pick one in the app"), errn), false;
     if (g_app.sd_state != SD_OK) sd_check();
-    char path[48];
+    if (!sd_hold(true)) return strlcpy(err, TR("falta la microSD", "no microSD"), errn), false;  // mounted once for both files
+    bool ok = false;
+    char path[64];
     size_t len;
     snprintf(path, sizeof(path), "/esferas/%d/face.json", id);
     char *js = (char *)sd_read_file(path, 8192, &len);
-    if (!js) return strlcpy(s_err, g_app.sd_state == SD_OK ? TR("no está en la microSD", "not on the microSD") : TR("falta la microSD", "no microSD"), sizeof(s_err)), false;
+    cJSON *j = NULL;
+    if (!js) {
+        strlcpy(err, TR("no está en la microSD", "not on the microSD"), errn);
+        goto out;
+    }
     js[len] = 0;
-    cJSON *j = cJSON_Parse(js);
+    j = cJSON_Parse(js);
     free(js);
-    if (!j) return strlcpy(s_err, TR("ajustes dañados", "broken settings"), sizeof(s_err)), false;
+    if (!j) {
+        strlcpy(err, TR("ajustes dañados", "broken settings"), errn);
+        goto out;
+    }
     face_t f = {0};
     cJSON *v;
     f.font = font_from(cJSON_GetStringValue(cJSON_GetObjectItem(j, "font")));
@@ -453,10 +471,10 @@ static bool load(int id)
     f.dy = (v = cJSON_GetObjectItem(j, "dy")) && cJSON_IsNumber(v) ? v->valueint : -1;
     cJSON *sl = cJSON_GetObjectItem(j, "slots");
     for (int k = 0; cJSON_IsArray(sl) && k < cJSON_GetArraySize(sl) && f.nslots < SLOTS_MAX; k++) {
-        cJSON *e = cJSON_GetArrayItem(sl, k);
-        const char *pic = cJSON_GetStringValue(cJSON_GetObjectItem(e, "pic"));
+        cJSON *el = cJSON_GetArrayItem(sl, k);
+        const char *pic = cJSON_GetStringValue(cJSON_GetObjectItem(el, "pic"));
         if (!pic || strchr(pic, '/')) continue;  // a file in the face's own folder, nothing else
-        f.from[f.nslots] = (v = cJSON_GetObjectItem(e, "from")) ? v->valueint : 0;
+        f.from[f.nslots] = (v = cJSON_GetObjectItem(el, "from")) ? v->valueint : 0;
         strlcpy(f.pic[f.nslots++], pic, sizeof(f.pic[0]));
     }
     if (!f.nslots) {  // a face from before the stretches: one picture all day
@@ -464,22 +482,158 @@ static bool load(int id)
         strlcpy(f.pic[0], f.anim ? "anim.bin" : "bg.jpg", sizeof(f.pic[0]));
     }
     f.from[0] = 0;  // the day starts with the first one, whatever it says
+    int k = cur_slot(&f);
+    const char *pic = f.pic[k];
+    size_t pl = strlen(pic);
+    snprintf(path, sizeof(path), "/esferas/%d/%.31s", id, pic);
+    if (pl > 4 && !strcmp(pic + pl - 4, ".bin")) {
+        e->anim = sd_read_file(path, max_anim, &e->anim_len);
+        if (!e->anim || e->anim_len < 8 || memcmp(e->anim, "MAN1", 4)) {
+            strlcpy(err, TR("animación dañada", "broken animation"), errn);
+            goto out;
+        }
+        e->bytes = e->anim_len;
+        f.anim = 1;
+    } else {
+        uint8_t *jpg = sd_read_file(path, 1024 * 1024, &len);
+        e->still = heap_caps_malloc(W * H * 2, MALLOC_CAP_SPIRAM);
+        bool good = jpg && e->still && jpeg_decode(jpg, len, e->still, W, H, pool);
+        free(jpg);
+        if (!good) {
+            strlcpy(err, TR("imagen dañada", "broken image"), errn);
+            goto out;
+        }
+        e->bytes = W * H * 2;
+        f.anim = 0;
+    }
+    e->id = id;
+    e->slot = k;
+    e->face = f;
+    ok = true;
+out:
     cJSON_Delete(j);
-    s_face = f;
-    s_slot = -1;
-    if (!load_pic(id, cur_slot())) return false;
-    s_loaded = id;
-    ESP_LOGI(TAG, "loaded %d \"%s\", %d stretch(es), clock %d", id, f.name, f.nslots, f.clock);
-    return true;
+    sd_hold(false);
+    if (!ok) entry_free(e);
+    return ok;
+}
+
+// The cached entry of face id for the stretch it is in now (under s_lock)
+static entry_t *find(int id)
+{
+    entry_t *best = NULL;
+    for (int i = 0; i < CACHE_N; i++)
+        if (s_cache[i].id == id && s_cache[i].slot == cur_slot(&s_cache[i].face) && (!best || s_cache[i].used > best->used))
+            best = &s_cache[i];
+    return best;
+}
+
+// Into the cache, making room by dropping the least recently used ones (never the one drawn) (under s_lock)
+static void insert(entry_t *n)
+{
+    size_t total = n->bytes;
+    for (int i = 0; i < CACHE_N; i++) total += s_cache[i].bytes;
+    for (;;) {
+        int fr = -1, lru = -1;
+        for (int i = 0; i < CACHE_N; i++) {
+            if (!s_cache[i].id) fr = i;
+            else if (&s_cache[i] != s_cur && (lru < 0 || s_cache[i].used < s_cache[lru].used)) lru = i;
+        }
+        if (fr >= 0 && (total <= CACHE_BYTES || lru < 0)) {
+            s_cache[fr] = *n;
+            return;
+        }
+        if (lru < 0) {  // nothing but the one drawn, and no free place (cannot happen with CACHE_N > 1)
+            entry_free(n);
+            return;
+        }
+        total -= s_cache[lru].bytes;
+        entry_free(&s_cache[lru]);
+    }
+}
+
+static void loader(void *arg)
+{
+    static uint8_t pool[4096];  // TJpgDec's work area, this task's own
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        for (;;) {
+            int id = 0, which = -1;
+            xSemaphoreTake(s_lock, portMAX_DELAY);
+            int c[3] = {s_want, s_near[0], s_near[1]};
+            for (int k = 0; k < 3 && !id; k++)
+                if (c[k] > 0 && !(k == 0 && c[k] == s_fail_id) && !find(c[k])) id = c[k], which = k;
+            uint32_t gen = s_gen;
+            xSemaphoreGive(s_lock);
+            if (!id) break;
+            entry_t e = {0};
+            char err[48] = "";
+            uint32_t t0 = now_ms();
+            bool ok = load_entry(id, &e, err, sizeof(err), which == 0 ? ANIM_MAX : PREFETCH_MAX, pool);
+            ESP_LOGI(TAG, "%s %d \"%s\" in %u ms%s", which == 0 ? "loaded" : "preloaded", id, ok ? e.face.name : "",
+                     (unsigned)(now_ms() - t0), ok ? "" : " (failed)");
+            xSemaphoreTake(s_lock, portMAX_DELAY);
+            if (ok && gen == s_gen) {
+                e.used = now_ms();
+                insert(&e);
+            } else {
+                entry_free(&e);
+                if (!ok && which == 0 && gen == s_gen) s_fail_id = id, strlcpy(s_fail_err, err, sizeof(s_fail_err));
+                if (!ok && which > 0 && s_near[which - 1] == id) s_near[which - 1] = 0;  // not again until asked again
+            }
+            xSemaphoreGive(s_lock);
+        }
+    }
+}
+
+static void loader_init(void)
+{
+    if (s_task) return;
+    if (!s_lock) s_lock = xSemaphoreCreateMutex();
+    // its stack in PSRAM: internal RAM is short while Bluetooth runs, and the task never writes the flash
+    const size_t stack = 8192;
+    static StaticTask_t tcb;
+    static StackType_t *st;
+    if (!st) st = heap_caps_malloc(stack, MALLOC_CAP_SPIRAM);
+    if (st && s_lock) s_task = xTaskCreateStaticPinnedToCore(loader, "custload", stack, NULL, 1, st, &tcb, tskNO_AFFINITY);
+}
+
+// What to load: the face to show (0: none) and the custom faces next to the current one in the swipe order
+static void request(int want)
+{
+    loader_init();
+    if (!s_task) return;
+    int near[2] = {0, 0};
+    if (!s_try_id) {
+        static face_ref_t list[FX_ORDER_MAX];
+        int n = fx_order(list, false), cur = -1;
+        for (int k = 0; k < n; k++)
+            if (list[k].fx == g_app.fx && (g_app.fx != FX_CUSTOM || list[k].cust == g_app.cust)) cur = k;
+        if (cur >= 0 && n > 1) {
+            const face_ref_t *a = &list[(cur + 1) % n], *b = &list[(cur + n - 1) % n];
+            if (a->fx == FX_CUSTOM) near[0] = a->cust;
+            if (b->fx == FX_CUSTOM) near[1] = b->cust;
+        }
+    }
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bool changed = s_want != want || s_near[0] != near[0] || s_near[1] != near[1];
+    s_want = want, s_near[0] = near[0], s_near[1] = near[1];
+    xSemaphoreGive(s_lock);
+    if (changed) xTaskNotifyGive(s_task);
+}
+
+void custom_prefetch_around(void)
+{
+    request(g_app.fx == FX_CUSTOM ? (s_try_id ? s_try_id : g_app.cust) : 0);
 }
 
 // The frame k of the animation into s_bg, enlarged x1.5
 static void show_frame(int k)
 {
+    static uint8_t pool[4096];
     if (k == s_cur_frame || k >= s_nframes) return;
     const uint8_t *e = s_anim + 8 + k * 12;
     uint32_t off = e[4] | e[5] << 8 | e[6] << 16 | (uint32_t)e[7] << 24, sz = e[8] | e[9] << 8 | e[10] << 16 | (uint32_t)e[11] << 24;
-    if (off + sz > s_anim_len || !jpeg_decode(s_anim + off, sz, s_frame, AW, AH)) return;
+    if (off + sz > s_anim_len || !jpeg_decode(s_anim + off, sz, s_frame, AW, AH, pool)) return;
     for (int y = 0; y < H; y++) {
         const uint16_t *src = s_frame + (y * 2 / 3) * AW;
         uint16_t *dst = s_bg + y * W;
@@ -488,14 +642,71 @@ static void show_frame(int k)
     s_cur_frame = k;
 }
 
+static void flush(void);
+
 void custom_enter(void)
 {
     if (!s_bg) s_bg = heap_caps_malloc(W * H * 2, MALLOC_CAP_SPIRAM);
+    if (!s_frame) s_frame = heap_caps_malloc(AW * AH * 2, MALLOC_CAP_SPIRAM);
     if (!s_mask) s_mask = heap_caps_calloc(W * H, 1, MALLOC_CAP_SPIRAM);
-    int id = s_try_id ? s_try_id : g_app.cust;
-    if (id != s_loaded) s_tried = id, load(id);
+    loader_init();
+    if (s_lock) {  // coming from another face: not the custom face shown last time, while this one loads
+        xSemaphoreTake(s_lock, portMAX_DELAY);
+        flush();
+        if (s_cur && s_cur->id != (s_try_id ? s_try_id : g_app.cust)) s_cur = NULL, s_loaded = -1;
+        xSemaphoreGive(s_lock);
+    }
+    custom_prefetch_around();
     s_anim_t0 = now_ms();
     s_last_render = 0;
+}
+
+// Files rewritten (again()): everything from the card again. The main loop only, under s_lock.
+static void flush(void)
+{
+    if (!s_flush) return;
+    s_flush = false;
+    for (int i = 0; i < CACHE_N; i++) entry_free(&s_cache[i]);
+    s_cur = NULL;
+    s_loaded = -1;
+    s_gen++;
+    s_fail_id = 0;
+    s_want = 0;  // so the next request wakes the loader
+}
+
+// Picks what to draw this frame: the face wanted if it is ready, else the one drawn so far. false:
+// nothing to draw (s_err says why, or is empty while it loads).
+static bool pick(int want, uint32_t now)
+{
+    loader_init();
+    if (!s_task) return strlcpy(s_err, TR("sin memoria", "out of memory"), sizeof(s_err)), false;
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    flush();
+    entry_t *e = find(want);
+    if (e && e != s_cur) {
+        s_cur = e;
+        s_face = e->face;
+        s_loaded = want;
+        s_slot = e->slot;
+        s_anim = e->anim, s_anim_len = e->anim_len;
+        s_nframes = e->anim ? (s_anim[4] | s_anim[5] << 8) : 0;
+        s_cur_frame = -1;
+        s_anim_t0 = now;
+        s_text_key[0] = 0;
+    }
+    if (e) e->used = now;
+    bool failed = !e && want == s_fail_id;
+    if (failed) {
+        strlcpy(s_err, s_fail_err, sizeof(s_err));
+        s_cur = NULL;
+        s_loaded = -1;
+    }
+    xSemaphoreGive(s_lock);
+    if (!e && !failed) request(want);  // (its neighbours too)
+    if (failed) return false;
+    if (s_cur) return true;  // the one before, until this one is ready
+    s_err[0] = 0;
+    return false;
 }
 
 void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
@@ -509,21 +720,15 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
         s_try_prev = -1;
     }
     int want = s_try_id ? s_try_id : g_app.cust;
-    if (want != s_loaded && want != s_tried) s_tried = want, load(want);
-    if (s_loaded < 0) {  // nothing to show: say why, in the system's style
+    if (!pick(want, now)) {  // nothing to show yet: say why (or only the time while it loads)
         ui_begin(fb);
         ui_background(false);
         ui_veil(60, H, 2);
         ui_print_c(&ui_jersey, 4, W / 2, 150, TR("Mis esferas", "My faces"), MS_ORO, true);
-        ui_print_c(&ui_vt, 2, W / 2, 240, s_err[0] ? s_err : TR("elige una en la app", "pick one in the app"), MS_CREMA, false);
+        if (s_err[0]) ui_print_c(&ui_vt, 2, W / 2, 240, s_err, MS_CREMA, false);
         char hhmm[8];
         clock_hhmm(hhmm, true);
         ui_print_c(&ui_jersey, 6, W / 2, 300, hhmm, MS_CREMA, true);
-        return;
-    }
-    int k = cur_slot();  // a new stretch of the day: its picture
-    if (k != s_slot && !load_pic(s_loaded, k)) {
-        s_loaded = -1;
         return;
     }
     if (s_anim) {
@@ -541,7 +746,7 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
         show_frame(k);
     }
     s_last_render = now;
-    memcpy(fb, s_bg, W * H * 2);
+    memcpy(fb, s_anim ? s_bg : s_cur->still, W * H * 2);
     // The text, rebuilt only when it changes
     char hhmm[8], ss[4], date[24], key[48];
     clock_hhmm(hhmm, true);

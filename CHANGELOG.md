@@ -5,6 +5,7 @@
 ### Próxima beta
 
 - **Apagado con animación, sin textos** («Bajamar»): al mantener PWR sale una noche junto al mar con el símbolo de apagado, cuyo anillo dorado se llena mientras la luna se pone y el borde junto al botón brilla; si lo sueltas antes, la luna vuelve a subir. A los 3 s la luna se hunde, las estrellas se apagan de fuera hacia dentro y el horizonte se cierra en un punto de luz antes de apagarse. Los ajustes se guardan antes de la animación.
+- **Cambiar entre tus esferas es instantáneo:** el reloj carga en segundo plano las esferas de *Mis esferas* vecinas en el orden de deslizar y guarda en memoria las últimas, así que deslizar entre ellas ya no espera a la microSD (antes, casi un segundo con la pantalla quieta). La tarjeta se monta una sola vez por esfera.
 
 ### 3.0.0-beta.11 y app 0.9.0 (15/11/2026)
 

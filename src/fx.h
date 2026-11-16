@@ -49,6 +49,8 @@ size_t custom_list_json(char *buf, size_t size);
 // The custom faces on the card: their numbers and names (sorted by number); 0 without a card
 int custom_list(int *ids, char (*names)[32], int max);
 // The same, remembered from the last read (read again only if the faces on the card changed)
+// Starts loading, in the background, the custom faces next to the current face in the swipe order
+void custom_prefetch_around(void);
 int custom_list_cached(const int **ids, const char (**names)[32]);
 // A file under /esferas was written or removed: the remembered list must be read again
 void custom_list_dirty(void);

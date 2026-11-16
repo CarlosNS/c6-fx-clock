@@ -224,9 +224,11 @@ const char *fx_step(int dir)
     if (list[k].fx == FX_CUSTOM) {
         if (g_app.cust != list[k].cust) settings_set("cust", list[k].cust);
         g_app.fx = FX_CUSTOM;
+        custom_prefetch_around();
         return list[k].name;
     }
     g_app.fx = list[k].fx;
+    custom_prefetch_around();  // the custom faces next to this one, so the next swipe finds them ready
     return fx_list[list[k].fx].name;
 }
 
