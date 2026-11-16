@@ -2,6 +2,12 @@
 
 ## Sin publicar: Marea (3.0.0)
 
+### 3.0.0-beta.13 y app 0.9.1 (16/11/2026)
+
+- **Arreglado: la actualización desde el móvil fallaba con «sin memoria»** en la beta.12. El reloj creaba una tarea nueva con 8 KB de pila en la RAM interna, y al arrancar el trozo libre más grande es de unos 7,5 KB. Ahora la recepción la hace la tarea de Bluetooth que ya existe; lo mismo para las esferas propias que manda la app. Quien tenga la beta.12 debe instalar la beta.13 por USB con el [instalador web](https://carlosns.github.io/c6-fx-clock/flasher/) (o por WiFi desde la página del reloj): la beta.12 no puede recibir ninguna actualización por Bluetooth.
+- **Arreglado: después de actualizar, el móvil tardaba un minuto o más en volver a conectar.** El reloj avisaba al móvil de que sus servicios Bluetooth habían cambiado («Service Changed»), y ese aviso, al llegar mientras Android negociaba la conexión, desordenaba su pila Bluetooth. El reloj ya no lo manda nunca; la app comprueba en cada conexión que estén todos los servicios que usa y, si falta alguno, vuelve a leerlos.
+- **App 0.9.1:** al terminar una actualización, la página dice «El reloj se reinicia con la X» y que no hace falta hacer nada; al volver comprueba la versión y pone «Actualizado a la X» (o avisa si arrancó con otra). Si a los 90 s no ha vuelto, explica qué hacer. Preparar la conexión tiene un límite de 20 s (antes podía quedarse atascada y «Reconectar» no hacía nada), el botón responde al momento, y abrir la app ya no corta una conexión que se está preparando.
+
 ### 3.0.0-beta.12 (16/11/2026)
 
 - **Apagado con animación, sin textos** («Bajamar»): al mantener PWR sale una noche junto al mar con el símbolo de apagado, cuyo anillo dorado se llena mientras la luna se pone y el borde junto al botón brilla; si lo sueltas antes, la luna vuelve a subir. A los 3 s la luna se hunde, las estrellas se apagan de fuera hacia dentro y el horizonte se cierra en un punto de luz antes de apagarse. Los ajustes se guardan antes de la animación.

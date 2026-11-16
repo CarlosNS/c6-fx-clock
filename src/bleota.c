@@ -1,6 +1,9 @@
 // Firmware update over Bluetooth (see bleota.h). The host task only checks the offset and copies each
-// packet into a stream buffer in PSRAM; a writer task hashes the bytes and writes them to flash in 4 KB
-// pieces (ota.c), acknowledging as it goes so the phone never sends more than the buffer holds.
+// packet into a stream buffer in PSRAM; the Bluetooth worker task (ble.c), which received the "begin",
+// then hashes the bytes and writes them to flash in 4 KB pieces (ota.c), acknowledging as it goes so the
+// phone never sends more than the buffer holds. No task of its own: its 8 KB internal stack seldom fits in
+// the fragmented internal RAM ("sin memoria" in 3.0.0-beta.12), and flash writes need an internal stack.
+// While a transfer runs the worker reads no commands: ble.c hands "ota abort"/"file abort" straight here.
 #include "bleota.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +28,7 @@
 
 static const char *TAG = "bleota";
 
-#define BUF_BYTES (64 * 1024)   // stream buffer between the host task and the writer
+#define BUF_BYTES (64 * 1024)   // stream buffer between the host task and the transfer loop
 #define WINDOW (48 * 1024)      // what the phone may send past the last ack
 #define ACK_EVERY (16 * 1024)
 #define STAGE 4096              // flash write size
@@ -45,7 +48,7 @@ static bool s_file;
 static char s_path[96];
 static uint8_t *s_fbuf;
 
-// The stream buffer between the host task and the writer: made once and reused (emptied at each start).
+// The stream buffer between the host task and the transfer loop: made once and reused (emptied at each start).
 // It is never deleted: ESP-IDF 5.5.0's vStreamBufferDeleteWithCaps() deletes it as a semaphore and then
 // frees its memory a second time (the heap assert after the first finished file transfer).
 static StreamBufferHandle_t sb_get(void)
@@ -192,7 +195,7 @@ static bool ota_keep_on(void) { return true; }
 
 static const app_t app_ota = {"Actualizar", "Update", icon_settings, ota_open, ota_draw, ota_event, NULL, ota_keep_on, NULL};
 
-// ---------------------------------------------------------------- writer
+// ---------------------------------------------------------------- transfer
 
 static void fail(const char *state, const char *why)
 {
@@ -213,10 +216,17 @@ static void fail(const char *state, const char *why)
     sys_alert_done();
 }
 
-static void writer(void *arg)
+// Runs in the Bluetooth worker until the transfer ends (deep enough: esp_ota_end() verifies the whole
+// image, 4 KB of stack overflowed there)
+static void transfer(void)
 {
-    // a file is gathered straight into its PSRAM buffer; firmware goes to flash through an internal stage
-    uint8_t *stage = s_file ? NULL : heap_caps_malloc(STAGE, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    // a file is gathered straight into its PSRAM buffer; firmware goes to flash through a stage, internal
+    // when there is a block for it (from PSRAM esp_flash writes 32 bytes at a time: slower, still works)
+    uint8_t *stage = NULL;
+    if (!s_file) {
+        stage = heap_caps_malloc(STAGE, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        if (!stage) stage = heap_caps_malloc(STAGE, MALLOC_CAP_SPIRAM);
+    }
     bool file_done = false;
     sha256_t sha;
     sha_init(&sha);
@@ -294,8 +304,7 @@ static void writer(void *arg)
     s_fbuf = NULL;
     s_file = false;
     s_state = ST_IDLE;
-    if (file_done) ble_send_json("{\"t\":\"file\",\"st\":\"done\"}");  // touches no shared state: the next file may already be starting
-    vTaskDelete(NULL);
+    if (file_done) ble_send_json("{\"t\":\"file\",\"st\":\"done\"}");
 }
 
 // ---------------------------------------------------------------- entry points
@@ -323,20 +332,14 @@ static void begin(const char *args)
     strlcpy(s_from, esp_app_get_description()->version, sizeof(s_from));
     update_record("running", s_from, s_version, true);
     s_state = ST_RECV;
-    // 8 KB: esp_ota_end() verifies the whole image and needs a deep stack (4 KB overflowed at the end)
-    if (xTaskCreate(writer, "bleota", 8192, NULL, 5, NULL) != pdPASS) {
-        ota_abort();
-        s_sb = NULL;
-        s_state = ST_IDLE;
-        update_record("bad_image", NULL, NULL, false);
-        return send_err("sin memoria");
-    }
-    ESP_LOGI(TAG, "Receiving %s (%u bytes)", ver, size);
+    ESP_LOGI(TAG, "Receiving %s (%u bytes), internal RAM %u (largest block %u)", ver, size,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
     ble_fast_link();
     sys_alert(&app_ota);
     char extra[32];
     snprintf(extra, sizeof(extra), ",\"win\":%d", WINDOW);
     send_state("ready", extra);
+    transfer();
 }
 
 // "file begin <size> <sha256 hex> <path>": a file for the microSD (custom faces), only under /esferas/
@@ -377,20 +380,11 @@ static void begin_file(const char *args)
     strlcpy(s_sha, sha, sizeof(s_sha));
     strlcpy(s_path, path, sizeof(s_path));
     s_state = ST_RECV;
-    if (xTaskCreate(writer, "blefile", 6144, NULL, 5, NULL) != pdPASS) {
-        s_sb = NULL;
-        free(s_fbuf);
-        s_fbuf = NULL;
-        sd_hold(false);
-        s_state = ST_IDLE;
-        send_err("sin memoria");
-        s_file = false;
-        return;
-    }
     ble_fast_link();
     char extra[32];
     snprintf(extra, sizeof(extra), ",\"win\":%d", WINDOW);
     send_state("ready", extra);
+    transfer();
 }
 
 bool bleota_command(const char *cmd)

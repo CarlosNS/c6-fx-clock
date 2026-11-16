@@ -721,6 +721,10 @@ function show(s,relang){status=s;
 // the link is doing and offers to try again now. It shows after a few seconds without a link, so a
 // quick reconnection on opening the app does not flash it.
 var relinkTimer=0,relinkSince=0,btAsked=false;  // var: the link may report before this line runs
+// After a firmware update through the phone the watch restarts: for up to 90 s that is said plainly
+// (no "not connected" error), and the version it comes back with is checked (updStatus)
+var rebootTo=null,rebootAt=0,relinkTry=0;const REBOOT_MS=90000;
+window.clockRebooting=v=>{rebootTo=v;rebootAt=Date.now();relinkSince=0;relinkShow()};
 function relinkShow(){clearTimeout(relinkTimer);const box=$('relink');
  if(up||L.kind!=='android'||L.needsPick||!window.ClockBridge||!ClockBridge.linkInfo){box.classList.add('hide');relinkSince=0;return}
  if(!relinkSince)relinkSince=Date.now();
@@ -732,13 +736,22 @@ function relinkShow(){clearTimeout(relinkTimer);const box=$('relink');
   $('relinkgo').textContent=tr('Activar Bluetooth','Turn Bluetooth on');$('relinkgo').disabled=false;
   if(!btAsked){btAsked=true;ClockBridge.enableBluetooth()}
  }else{
+  const rb=rebootTo&&Date.now()-rebootAt<REBOOT_MS,late=rebootTo&&!rb;
+  if(rebootTo){box.classList.remove('hide');
+   $('relinkt').textContent=rb?tr(`El reloj se reinicia con la ${rebootTo}`,`The watch is restarting with ${rebootTo}`):tr('El reloj tarda en volver','The watch is taking a while');
+   $('relinkst').textContent=rb?tr('Volviendo a conectar: tarda unos segundos, no hace falta hacer nada.','Reconnecting: it takes a few seconds, nothing to do.')
+    :tr('Ya debería haber vuelto: acércalo al móvil, mira que tenga la pantalla encendida y pulsa Reconectar.','It should be back by now: bring it near the phone, check its screen is on and tap Reconnect.');
+   const busy=rb||i.phase==='searching'||Date.now()-relinkTry<6000;
+   $('relinkgo').textContent=busy?tr('Reconectando…','Reconnecting…'):tr('Reconectar','Reconnect');$('relinkgo').disabled=!!busy;
+   relinkTimer=setTimeout(relinkShow,1500);return}
   box.classList.toggle('hide',Date.now()-relinkSince<4000&&!i.notFound);
   $('relinkt').textContent=tr('El reloj no está conectado','The watch is not connected');
   $('relinkst').textContent=i.phase==='searching'?tr('Buscando el reloj…','Looking for the watch…'):i.notFound?tr('No aparece: ¿está cerca y encendido? Si está apagado, pulsa PWR.','Not found: is it near and on? If it is off, press PWR.'):tr('Esperando a que aparezca: se conectará solo en cuanto esté cerca.','Waiting for it: it will connect by itself as soon as it is near.');
-  $('relinkgo').textContent=i.phase==='searching'?tr('Buscando…','Searching…'):tr('Reconectar','Reconnect');$('relinkgo').disabled=i.phase==='searching';
+  const busy=i.phase==='searching'||Date.now()-relinkTry<6000;  // a press shows at once, even if the link is mid-setup
+  $('relinkgo').textContent=busy?tr('Buscando…','Searching…'):tr('Reconectar','Reconnect');$('relinkgo').disabled=busy;
  }
  relinkTimer=setTimeout(relinkShow,1500)}
-$('relinkgo').onclick=()=>{const i=JSON.parse(ClockBridge.linkInfo());if(i.bt===false)ClockBridge.enableBluetooth();else ClockBridge.reconnect();setTimeout(relinkShow,200)};
+$('relinkgo').onclick=()=>{const i=JSON.parse(ClockBridge.linkInfo());if(i.bt===false)ClockBridge.enableBluetooth();else{relinkTry=Date.now();ClockBridge.reconnect()}relinkShow()};
 function homeStatus(bat){relinkShow();$('dot').style.background=up?'var(--verde)':'var(--coral)';$('dot').classList.toggle('on',up);
  $('hstat').textContent=(up?tr('Conectado','Connected'):tr('Sin conexión','Not connected'))+(bat?' · '+tr('batería ','battery ')+bat:'');
  $('btpip').style.background=up?'var(--verde)':'var(--coral)';$('btst').textContent=up?tr('Conectado','Connected'):tr('Sin conexión','Not connected');
@@ -761,6 +774,11 @@ function updStatus(s){const u=s.upd;
  if(!u)return;
  if(u.state!=='none')$('updlast').textContent=tr('Último intento: ','Last attempt: ')+updTxt(u.state)+(u.state==='updated'?` (${u.from} → ${u.to})`:'');
  if(updAt===null)updAt=u.at;else if(u.at!==updAt){updAt=u.at;updWaiting=false;setUpd(`<b>${updTxt(u.state)}</b>`);showOffer(null)}
+ // back from an update through the phone: the version it came back with
+ if(rebootTo&&s.ver){const ok=s.ver===rebootTo;
+  setUpd(ok?tr(`<b>Actualizado a la ${esc(s.ver)}</b>`,`<b>Updated to ${esc(s.ver)}</b>`)
+   :tr(`El reloj volvió con la <b>${esc(s.ver)}</b>, no con la ${esc(rebootTo)}: la nueva no arrancó bien y sigue con la anterior.`,`The watch came back with <b>${esc(s.ver)}</b>, not ${esc(rebootTo)}: the new one did not start properly and it keeps the previous one.`));
+  rebootTo=null;showOffer(null)}
  if(!updWaiting&&!offer&&!updMsg)setUpd(tr('Versión ','Version ')+s.ver);
  if(L.kind==='android'&&!autoUpd&&s.ver){autoUpd=true;updCheck()}}  // the app looks by itself on opening
 // Semantic versions: 3.0.0-beta.6 < 3.0.0-beta.10 < 3.0.0 < 3.0.1; "+build" does not count (as Firmware.compare in the app)

@@ -15,7 +15,8 @@
 //   watch -> {"t":"ota","st":"done"} (verified and set to boot; it reboots 2 s later) or "err"
 //   phone -> "ota abort" cancels; a dropped link cancels too. The old firmware stays on any failure.
 
-// "ota begin ..." / "ota abort" (from the Bluetooth worker); false if it is not an ota command
+// "ota begin ..." / "ota abort" (from the Bluetooth worker); false if it is not an ota command. A
+// "begin" returns only when the transfer ends: the worker itself receives and writes it
 bool bleota_command(const char *cmd);
 // One data packet, from the Bluetooth host task (never blocks); returns 0 or an ATT error
 int bleota_data(const uint8_t *p, size_t n);

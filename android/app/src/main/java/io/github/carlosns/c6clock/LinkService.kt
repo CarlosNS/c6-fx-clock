@@ -139,6 +139,8 @@ class LinkService : Service() {
     }
 
     private var mine: ClockBle? = null
+    // The attempt under way: once its link is up and being set up, a restart must not cut it
+    @Volatile private var trying: ClockBle? = null
 
     /**
      * The link's life: a direct attempt first (it searches actively for 20 s), and when that fails
@@ -161,6 +163,7 @@ class LinkService : Service() {
                 }
             }
             l.onState = { up -> Live.state(up); show(up) }
+            trying = l
             val started = System.currentTimeMillis()
             try {
                 Live.phase = if (direct) "searching" else "waiting"
@@ -212,6 +215,13 @@ class LinkService : Service() {
 
     /** Starts over with a direct attempt (the page's "Reconnect", or the app coming on screen). */
     private fun restart() {
+        // The watch appearing (ClockPresence) or the app opening often lands just as the background
+        // attempt has connected and is setting up: starting over then cut it, again and again. (A setup
+        // never lasts more than 20 s: ClockBle gives up on it, and the loop tries again.)
+        if (trying?.linking == true) {
+            Log.i(TAG, "restart skipped: a link is being set up")
+            return
+        }
         Live.notFound = false
         val old = loop
         loop = scope.launch {

@@ -98,6 +98,10 @@ El móvil descarga la imagen (`marea-ota.bin`, del manifiesto) y se la pasa al r
 
 `ota abort` cancela. También cancelan que se corte el enlace, un trozo fuera de orden o 20 s sin datos. En todos esos casos el reloj sigue con su versión. La app lo hace en `ClockUpdate.kt`, y `tools/ble_ota.py` lo hace desde el PC.
 
+Mientras dura la transferencia, el reloj no atiende otras órdenes (salvo `ota abort` y `file abort`): las que lleguen pueden perderse.
+
+El reloj nunca manda «Service Changed», ni cuando una versión nueva cambia sus servicios: ese aviso desordenaba la pila Bluetooth de Android durante la conexión. Si a la copia de los servicios que guarda el móvil le falta alguna característica, la app la descarta y los vuelve a leer.
+
 ## Archivos a la microSD (Mis esferas)
 
 Las esferas propias de la app llegan igual que el firmware, por la característica **Firmware**, en «modo archivo» (`bleota.c`):

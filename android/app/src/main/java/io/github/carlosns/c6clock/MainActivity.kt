@@ -443,6 +443,9 @@ class MainActivity : ComponentActivity() {
                 say("Pasando al reloj…")
                 ClockUpdate.send(l, file, entry) { say("Pasando al reloj… $it %") }
                 say("Listo: el reloj se reinicia con la ${entry.getString("version")}")
+                // The page tells the user it is restarting and reconnecting (not an error), then checks
+                // the version it comes back with
+                js("clockRebooting", JSONObject.quote(entry.getString("version")))
             } catch (e: Exception) {
                 say("No se pudo actualizar: ${e.message}. El reloj sigue con su versión.")
             } finally {

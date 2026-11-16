@@ -49,6 +49,14 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
     @Volatile var mtu = 23
         private set
     private var refreshed = false  // service cache already thrown away on this connection
+    // A service discovery in flight, another one asked for meanwhile ("Service Changed"), and how many
+    // times this connection looked again after finding nothing
+    @Volatile private var inFlight = false
+    @Volatile private var again = false
+    private var retries = 0
+    /** The GATT link is up and being set up (services, notifications): not to be cut by a new attempt. */
+    @Volatile var linking = false
+        private set
     // The MTU answer may never come: Android answers only one of the apps asking on the same link (after
     // the watch restarts, several reconnect at once), and the setup must not wait on it for ever
     @Volatile private var discovering = false
@@ -69,17 +77,31 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             if (state == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
                 refreshed = false
                 discovering = false
+                inFlight = false
+                again = false
+                retries = 0
+                linking = true
+                // The setup must end in a while, or the attempt fails and the link is closed: a stuck
+                // one (Android's GATT queue out of step) would otherwise wait for ever and, being
+                // "linking", keep any new attempt (and the Reconnect button) away
+                main.postDelayed({
+                    if (gatt === g && !ready && linking) {
+                        Log.w(TAG, "setup did not finish in ${SETUP_MS / 1000} s")
+                        setup.trySend(-4)
+                    }
+                }, SETUP_MS)
                 g.requestMtu(Protocol.MTU)
                 main.postDelayed({
                     if (!discovering && gatt === g) {
                         Log.i(TAG, "no MTU answer: going on without it")
                         discovering = true
-                        g.discoverServices()
+                        discover(g)
                     }
                 }, 2_500)
             } else {
                 val was = ready
                 ready = false
+                linking = false
                 cmd = null
                 ota = null
                 pending?.complete(-1)
@@ -95,33 +117,53 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             mtuWait?.complete(Unit)
             if (!discovering) {
                 discovering = true
-                g.discoverServices()
+                discover(g)
             }
         }
 
         override fun onServiceChanged(g: BluetoothGatt) {
-            // The watch got a new firmware and says its services changed (Android 12+)
+            // The watch's services table changed (a new firmware, Android 12+). It may arrive while a
+            // discovery is running: Android then throws its copy away halfway and that discovery finds
+            // nothing, so look again once it ends instead of starting a second one on top
             Log.i(TAG, "services changed, discovering again")
-            g.discoverServices()
+            if (inFlight) again = true else discover(g)
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
+            inFlight = false
+            if (again) {
+                again = false
+                discover(g)
+                return
+            }
             val svc = g.getService(Protocol.SERVICE)
             val evt = svc?.getCharacteristic(Protocol.EVT)
-            // Android keeps a cached copy of a paired device's services: after a firmware update it may
-            // miss new characteristics. Once per connection, throw the cache away and look again.
-            if (svc != null && svc.getCharacteristic(Protocol.OTA) == null && !refreshed) {
+            // Nothing found (or a failed discovery): usually Android's cache emptied by a "Service
+            // Changed" just after a firmware update, not another device. Throw the cache away and look
+            // again a moment later, three times, before giving up
+            if ((status != BluetoothGatt.GATT_SUCCESS || svc == null) && retries < 3 && gatt === g) {
+                retries++
+                val ok = runCatching { g.javaClass.getMethod("refresh").invoke(g) as Boolean }.getOrDefault(false)
+                Log.i(TAG, "no clock service (status $status): looking again ($retries, cache refreshed $ok)")
+                main.postDelayed({ if (gatt === g) discover(g) }, 600L * retries)
+                return
+            }
+            // Android keeps a cached copy of a paired device's services, and the watch never says they
+            // changed ("Service Changed" upset Android's GATT queue): when one the app uses is missing,
+            // once per connection, throw the cache away and look again
+            val missing = svc != null && (evt == null || svc.getCharacteristic(Protocol.CMD) == null || svc.getCharacteristic(Protocol.OTA) == null)
+            if (missing && !refreshed) {
                 refreshed = true
                 val ok = runCatching { g.javaClass.getMethod("refresh").invoke(g) as Boolean }.getOrDefault(false)
-                Log.i(TAG, "no firmware characteristic: refreshing the service cache ($ok)")
-                if (ok && g.discoverServices()) return
+                Log.i(TAG, "a characteristic is missing: refreshing the service cache ($ok)")
+                if (ok) { discover(g); if (inFlight) return }
             }
             cmd = svc?.getCharacteristic(Protocol.CMD)
             ota = svc?.getCharacteristic(Protocol.OTA)
             if (ready) return  // a second discovery on a working link: only the references change
             val cccd = evt?.getDescriptor(Protocol.CCCD)
             if (evt == null || cccd == null || cmd == null) {
-                Log.w(TAG, "not a Marea clock")
+                Log.w(TAG, "not a Marea clock (status $status)")
                 setup.trySend(-2)
                 return
             }
@@ -154,6 +196,10 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
         }
     }
 
+    private fun discover(g: BluetoothGatt) {
+        inFlight = g.discoverServices()
+    }
+
     private fun received(value: ByteArray) {
         val whole = reassembler.feed(value) ?: return
         val text = whole.toString(Charsets.UTF_8)
@@ -180,6 +226,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
                 when (status) {
                     -2 -> "Ese dispositivo no es un reloj Marea"
                     -3 -> "El reloj no responde"
+                    -4 -> "La conexión no terminó de prepararse"
                     else -> "No se pudo conectar ($status)"
                 },
             )
@@ -194,6 +241,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
             Log.i(TAG, "MTU $mtu")
         }
         ready = true
+        linking = false
         onState(true)
     }
 
@@ -298,6 +346,7 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
 
     fun close() {
         ready = false
+        linking = false
         gatt?.let {
             it.disconnect()
             it.close()
@@ -307,5 +356,6 @@ class ClockBle(context: Context, val address: String) : ClockChannel {
 
     companion object {
         private const val TAG = "ClockBle"
+        private const val SETUP_MS = 20_000L
     }
 }
