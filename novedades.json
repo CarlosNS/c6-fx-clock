@@ -1,5 +1,20 @@
 [
  {
+  "reloj": "3.0.0-beta.13",
+  "app": "0.9.1",
+  "fecha": "2026-11-16",
+  "es": [
+   "Arreglado: actualizar desde el móvil fallaba con «sin memoria» en la beta.12. Si la tienes, instala esta por USB con el instalador web",
+   "Arreglado: después de actualizar, el móvil tardaba un minuto o más en volver a conectar; ahora reconecta en unos segundos",
+   "App: mientras el reloj se reinicia con la versión nueva, la app lo dice y al volver confirma la versión; el botón Reconectar responde al momento"
+  ],
+  "en": [
+   "Fixed: updating from the phone failed with «out of memory» on beta.12. If you have it, install this one over USB with the web installer",
+   "Fixed: after an update the phone took a minute or more to reconnect; now it reconnects in a few seconds",
+   "App: while the watch restarts with the new version the app says so and confirms the version when it is back; the Reconnect button answers at once"
+  ]
+ },
+ {
   "reloj": "3.0.0-beta.12",
   "app": "0.9.0",
   "fecha": "2026-11-16",
