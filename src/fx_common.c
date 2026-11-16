@@ -148,7 +148,7 @@ void clock_row_grad(uint16_t *fb, const font_t *f, int cx, int y, int spacing, u
 void clock_date_str(char *buf)
 {
     if (!g_now.valid) {
-        sprintf(buf, "SIN HORA");
+        sprintf(buf, "%s", g_app.lang ? "NO TIME" : "SIN HORA");
         return;
     }
     sprintf(buf, "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));

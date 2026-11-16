@@ -1,5 +1,7 @@
 # Marea
 
+![Marea: el escaparate de esferas, el menú principal y una alarma sonando, en relojes sobre una noche junto al mar en pixel art](docs/img/social.png)
+
 Reloj de pulsera con **25 esferas a pantalla completa**, más las que hagas tú con una foto o un GIF, y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)

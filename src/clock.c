@@ -88,14 +88,17 @@ void clock_hhmm(char *buf, bool colon)
     sprintf(buf, "%02d%c%02d", clock_display_hour(), colon ? ':' : ' ', g_now.m);
 }
 
+// In the watch's language (the faces' dates were always in Spanish)
 const char *clock_wday_name(int wday)
 {
-    static const char *n[] = {"DOM", "LUN", "MAR", "MIE", "JUE", "VIE", "SAB"};
-    return n[wday % 7];
+    static const char *es[] = {"DOM", "LUN", "MAR", "MIE", "JUE", "VIE", "SAB"};
+    static const char *en[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+    return (g_app.lang ? en : es)[wday % 7];
 }
 
 const char *clock_month_name(int mon)
 {
-    static const char *n[] = {"ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"};
-    return n[(mon + 11) % 12];
+    static const char *es[] = {"ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"};
+    static const char *en[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+    return (g_app.lang ? en : es)[(mon + 11) % 12];
 }

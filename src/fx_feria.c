@@ -221,7 +221,7 @@ void feria_render(uint16_t *fb, uint32_t t, uint32_t dt)
     char buf[32];
     uint16_t white = rgb565(255, 255, 255), dark = rgb565(30, 8, 20);
     if (!g_now.valid) {
-        gfx_text_ol(fb, (W - gfx_text_width("SIN HORA", 2)) / 2, Y(180), "SIN HORA", white, dark, 2, 1);
+        gfx_text_ol(fb, (W - gfx_text_width(g_app.lang ? "NO TIME" : "SIN HORA", 2)) / 2, Y(180), g_app.lang ? "NO TIME" : "SIN HORA", white, dark, 2, 1);
     } else if (f.fair) {
         const char *l1 = "ES FERIA!";
         gfx_text_ol(fb, (W - gfx_text_width(l1, 3)) / 2, Y(160), l1, gold, ink, 3, 1);

@@ -448,7 +448,7 @@ void rpg_render(uint16_t *fb, uint32_t t, uint32_t dt)
                    rgb565(165, 195, 255), rgb565(10, 14, 50), 2);
     char date[32];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
-    else strcpy(date, "SIN HORA");
+    else strcpy(date, g_app.lang ? "NO TIME" : "SIN HORA");
     ui_text(fb, &ui_s, (W - ui_width(&ui_s, date)) / 2, 76, date, dim, ink, FONT_FILL | FONT_OUTLINE);
 
     if (s_casting && cp < 0.75f) {  // spell banner

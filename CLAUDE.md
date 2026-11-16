@@ -32,7 +32,7 @@
 | `src/thumbs/` | Miniaturas del selector de esferas (`fxN.jpg`, 200×245), hechas desde las vistas previas con `tools/face_thumbs.py` (`web_previews.py` lo lanza); van en `web.pack` como `thumb/fxN.jpg` |
 | `android/` | App Kotlin «Marea» (paquete `io.github.carlosns.c6clock`, que no cambia para que se actualice sobre la instalada) |
 | `tests/` | pytest por fases (`tests/README.md`), con `clocklib/` como código compartido |
-| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py`, `web_pack.py` (lo lanza PlatformIO), `web_previews.py`, `face_thumbs.py` |
+| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py`, `web_pack.py` (lo lanza PlatformIO), `web_previews.py`, `face_thumbs.py`, `social_preview.py` (la imagen al compartir el repositorio y cabecera del README, `docs/img/social.png`, desde las capturas en inglés de `docs/img/social/`; se sube a mano en *Settings → Social preview*) |
 | `src/sys.c`, `src/ui.c`, `src/app_*.c` | Sistema (vistas, gestos, lanzador), estilo Marea Solsticial y apps |
 | `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
 | `src/voice.c`, `android/.../Voice.kt`, `VoiceCommands.kt` | Órdenes de voz: el reloj graba (ES7210, `audio.c`) y manda IMA ADPCM; la app usa el reconocedor de Android con `EXTRA_AUDIO_SOURCE` e interpreta la frase |

@@ -2,6 +2,10 @@
 
 ## Sin publicar: Marea (3.0.0)
 
+### Próxima versión
+
+- Arreglado: con el reloj en inglés, la fecha de las esferas seguía en español («LUN 16 NOV»); ahora sale en el idioma del reloj («MON 16 NOV»), y también «NO TIME» cuando aún no tiene hora.
+
 ### 3.0.0-beta.13 y app 0.9.1 (16/11/2026)
 
 - **Arreglado: la actualización desde el móvil fallaba con «sin memoria»** en la beta.12. El reloj creaba una tarea nueva con 8 KB de pila en la RAM interna, y al arrancar el trozo libre más grande es de unos 7,5 KB. Ahora la recepción la hace la tarea de Bluetooth que ya existe; lo mismo para las esferas propias que manda la app. Quien tenga la beta.12 debe instalar la beta.13 por USB con el [instalador web](https://carlosns.github.io/c6-fx-clock/flasher/) (o por WiFi desde la página del reloj): la beta.12 no puede recibir ninguna actualización por Bluetooth.

@@ -379,7 +379,7 @@ void quest_render(uint16_t *fb, uint32_t t, uint32_t dt)
     pix_digits_draw(fb, (W - pix_digits_width("00:00", 5)) / 2, 26, hhmm, 5, gold, rgb565(52, 26, 40));
     char date[32];
     if (g_now.valid) snprintf(date, sizeof(date), "%s %d %s", clock_wday_name(g_now.wday), g_now.day, clock_month_name(g_now.mon));
-    else strcpy(date, "SIN HORA");
+    else strcpy(date, g_app.lang ? "NO TIME" : "SIN HORA");
     ui_text(fb, &ui_m, (W - ui_width(&ui_m, date)) / 2, 86, date, gold[0], rgb565(52, 26, 40), FONT_FILL | FONT_OUTLINE);
     if (g_app.show_secs && g_now.valid) {
         int bw = 120, bx = (W - bw) / 2;
