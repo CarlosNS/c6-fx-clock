@@ -2,7 +2,7 @@
 
 ## Sin publicar: Marea (3.0.0)
 
-### Próxima beta
+### 3.0.0-beta.12 (16/11/2026)
 
 - **Apagado con animación, sin textos** («Bajamar»): al mantener PWR sale una noche junto al mar con el símbolo de apagado, cuyo anillo dorado se llena mientras la luna se pone y el borde junto al botón brilla; si lo sueltas antes, la luna vuelve a subir. A los 3 s la luna se hunde, las estrellas se apagan de fuera hacia dentro y el horizonte se cierra en un punto de luz antes de apagarse. Los ajustes se guardan antes de la animación.
 - **Cambiar entre tus esferas es instantáneo:** el reloj carga en segundo plano las esferas de *Mis esferas* vecinas en el orden de deslizar y guarda en memoria las últimas, así que deslizar entre ellas ya no espera a la microSD (antes, casi un segundo con la pantalla quieta). Al acercarte a la sección de tus esferas se precargan todas, de la más cercana a la más lejana; si una aún no está lista sale su nombre con la hora (antes se quedaba la anterior y parecía que el gesto no había funcionado). Al alejarte se libera la memoria.
