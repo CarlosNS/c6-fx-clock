@@ -13,7 +13,7 @@
 #define HY 176         // the horizon
 #define ICY 70         // the power symbol's centre
 #define RING 27        // its ring's radius
-#define GLOW_Y 170     // the PWR button's height on the right edge (the USB port is at 125)
+#define GLOW_Y 189    // the PWR button's height on the right edge (the USB port is at 125)
 #define MOON_R 15
 #define MOON_TOP 118   // the moon's centre at the start of the hold
 #define MOON_SET (HY - 16)
