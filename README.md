@@ -1,13 +1,13 @@
 # Marea
 
-Reloj de pulsera con **22 esferas a pantalla completa** y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
+Reloj de pulsera con **25 esferas a pantalla completa**, más las que hagas tú con una foto o un GIF, y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
+- **Instálalo en un clic** desde el navegador (Chrome o Edge, por USB): <https://carlosns.github.io/c6-fx-clock/flasher/>
 - **Guía completa:** [wiki](https://github.com/CarlosNS/c6-fx-clock/wiki) (instalación, uso, app, esferas, solución de problemas, desarrollo)
 - **Crea tu propia esfera:** [guía paso a paso](https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera)
 - **Descargas** (firmware y app): [releases](https://github.com/CarlosNS/c6-fx-clock/releases)
-- **Instalación por USB** desde el navegador: <https://carlosns.github.io/c6-fx-clock/flasher/>
 - **Licencia:** software libre, [GPL-3.0-or-later](LICENSE): úsalo, modifícalo y compártelo; quien distribuya versiones debe publicar también su código ([más](#licencia))
 
 El proyecto empezó como un reloj de sobremesa con un ESP32-C6 (de ahí el nombre del repositorio). Esa placa ya no se mantiene: su última versión es la 2.1.0.
