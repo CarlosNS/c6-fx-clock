@@ -383,10 +383,11 @@ static int cur_slot(const face_t *f)
 
 // ---------------------------------------------------------------- loading, in the background
 // A swipe between custom faces must not wait for the card (about half a second each: mounting it,
-// reading, decoding). A low-priority task loads them into a small cache in PSRAM: first the face asked
-// for, then its neighbours in the swipe order, so the next swipe finds its face ready. Meanwhile the
-// main loop keeps drawing what it has (and the face's name shows at once). Only the main loop draws;
-// the task never frees the entry being drawn.
+// reading, decoding). A low-priority task loads them into a cache in PSRAM: first the face asked for,
+// then, once the current face is within NEAR_FACES of a custom one in the swipe order, all of them,
+// nearest first, while they fit, so fast swipes through the list find them ready. Far from them the
+// cache is let go (the other faces need the memory). A face not ready yet shows its name and the time
+// until it is. Only the main loop draws; the task never frees the entry being drawn.
 
 typedef struct {
     int id;           // 0: a free place
@@ -398,16 +399,18 @@ typedef struct {
     uint32_t used;
 } entry_t;
 
-#define CACHE_N 4
-#define CACHE_BYTES (3 * 1024 * 1024)
+#define CACHE_N 8
+#define CACHE_BYTES (4 * 1024 * 1024)
 #define PREFETCH_MAX (1536 * 1024)  // a bigger animation is only read when it is shown
+#define NEAR_FACES 3                // this close to a custom face, they are all loaded ahead
 #define ANIM_MAX (3 * 1024 * 1024)
 
 static entry_t s_cache[CACHE_N];
 static entry_t *s_cur;               // the one being drawn
 static SemaphoreHandle_t s_lock;
 static TaskHandle_t s_task;
-static int s_want, s_near[2];        // what to load: the face to show, then its neighbours (under s_lock)
+#define QUEUE_N CACHE_N
+static int s_queue[QUEUE_N];         // what to load, in order: the face to show (or 0), then the rest (under s_lock)
 static uint32_t s_gen;               // bumped when files change: loads begun before are dropped
 static int s_fail_id;                // the last face asked for that could not be loaded, and why
 static char s_fail_err[48];
@@ -527,8 +530,10 @@ static entry_t *find(int id)
     return best;
 }
 
-// Into the cache, making room by dropping the least recently used ones (never the one drawn) (under s_lock)
-static void insert(entry_t *n)
+// Into the cache, making room by dropping the least recently used ones (never the one drawn). A
+// preload only takes a free place within the budget and drops nothing: false if it did not fit.
+// (under s_lock)
+static bool insert(entry_t *n, bool may_evict)
 {
     size_t total = n->bytes;
     for (int i = 0; i < CACHE_N; i++) total += s_cache[i].bytes;
@@ -538,13 +543,13 @@ static void insert(entry_t *n)
             if (!s_cache[i].id) fr = i;
             else if (&s_cache[i] != s_cur && (lru < 0 || s_cache[i].used < s_cache[lru].used)) lru = i;
         }
-        if (fr >= 0 && (total <= CACHE_BYTES || lru < 0)) {
+        if (fr >= 0 && (total <= CACHE_BYTES || (may_evict && lru < 0))) {
             s_cache[fr] = *n;
-            return;
+            return true;
         }
-        if (lru < 0) {  // nothing but the one drawn, and no free place (cannot happen with CACHE_N > 1)
+        if (!may_evict || lru < 0) {
             entry_free(n);
-            return;
+            return false;
         }
         total -= s_cache[lru].bytes;
         entry_free(&s_cache[lru]);
@@ -556,32 +561,44 @@ static void loader(void *arg)
     static uint8_t pool[4096];  // TJpgDec's work area, this task's own
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        bool held = false;  // the card stays mounted for the whole batch (mounting each time churns internal RAM)
         for (;;) {
             int id = 0, which = -1;
             xSemaphoreTake(s_lock, portMAX_DELAY);
-            int c[3] = {s_want, s_near[0], s_near[1]};
-            for (int k = 0; k < 3 && !id; k++)
-                if (c[k] > 0 && !(k == 0 && c[k] == s_fail_id) && !find(c[k])) id = c[k], which = k;
+            for (int k = 0; k < QUEUE_N && !id; k++)
+                if (s_queue[k] > 0 && !(k == 0 && s_queue[k] == s_fail_id) && !find(s_queue[k])) id = s_queue[k], which = k;
             uint32_t gen = s_gen;
             xSemaphoreGive(s_lock);
             if (!id) break;
+            if (!held) held = sd_hold(true);
             entry_t e = {0};
             char err[48] = "";
             uint32_t t0 = now_ms();
-            bool ok = load_entry(id, &e, err, sizeof(err), which == 0 ? ANIM_MAX : PREFETCH_MAX, pool);
+            bool ok = false;
+            // A read can fail for a moment when internal RAM runs short (the card driver needs a little of
+            // it for each read, and the faces and Bluetooth use it too): try again before giving up
+            for (int tries = 0; tries < 4 && !ok; tries++) {
+                if (tries) vTaskDelay(pdMS_TO_TICKS(150));
+                ok = load_entry(id, &e, err, sizeof(err), which == 0 ? ANIM_MAX : PREFETCH_MAX, pool);
+                if (!ok && g_app.sd_state != SD_OK) break;  // no card: no use
+            }
             ESP_LOGI(TAG, "%s %d \"%s\" in %u ms%s", which == 0 ? "loaded" : "preloaded", id, ok ? e.face.name : "",
                      (unsigned)(now_ms() - t0), ok ? "" : " (failed)");
             xSemaphoreTake(s_lock, portMAX_DELAY);
+            bool stop = false;
             if (ok && gen == s_gen) {
-                e.used = now_ms();
-                insert(&e);
+                e.used = which == 0 ? now_ms() : 0;  // a preload is the first to go when room is needed
+                if (!insert(&e, which == 0)) stop = true;  // full: no more preloads until asked again
             } else {
                 entry_free(&e);
                 if (!ok && which == 0 && gen == s_gen) s_fail_id = id, strlcpy(s_fail_err, err, sizeof(s_fail_err));
-                if (!ok && which > 0 && s_near[which - 1] == id) s_near[which - 1] = 0;  // not again until asked again
             }
+            if (!ok && which > 0 && s_queue[which] == id) s_queue[which] = 0;  // not again until asked again
+            if (stop)
+                for (int k = 1; k < QUEUE_N; k++) s_queue[k] = 0;
             xSemaphoreGive(s_lock);
         }
+        if (held) sd_hold(false);
     }
 }
 
@@ -597,26 +614,44 @@ static void loader_init(void)
     if (st && s_lock) s_task = xTaskCreateStaticPinnedToCore(loader, "custload", stack, NULL, 1, st, &tcb, tskNO_AFFINITY);
 }
 
-// What to load: the face to show (0: none) and the custom faces next to the current one in the swipe order
+// What to load: the face to show (0: none) and, near the custom faces in the swipe order, all of them
+// nearest first. Far from them, the cache is let go.
 static void request(int want)
 {
     loader_init();
     if (!s_task) return;
-    int near[2] = {0, 0};
+    int q[QUEUE_N] = {want}, nq = 1;
+    bool near = false;
     if (!s_try_id) {
         static face_ref_t list[FX_ORDER_MAX];
         int n = fx_order(list, false), cur = -1;
         for (int k = 0; k < n; k++)
             if (list[k].fx == g_app.fx && (g_app.fx != FX_CUSTOM || list[k].cust == g_app.cust)) cur = k;
-        if (cur >= 0 && n > 1) {
-            const face_ref_t *a = &list[(cur + 1) % n], *b = &list[(cur + n - 1) % n];
-            if (a->fx == FX_CUSTOM) near[0] = a->cust;
-            if (b->fx == FX_CUSTOM) near[1] = b->cust;
-        }
+        for (int d = 0; cur >= 0 && d <= n / 2 && nq < QUEUE_N; d++)
+            for (int sg = 0; sg < 2 && nq < QUEUE_N; sg++) {
+                const face_ref_t *r = &list[((cur + (sg ? -d : d)) % n + n) % n];
+                if (r->fx != FX_CUSTOM) continue;
+                if (d <= NEAR_FACES) near = true;
+                bool dup = false;
+                for (int k = 0; k < nq; k++) dup |= q[k] == r->cust;
+                if (!dup && near) q[nq++] = r->cust;
+            }
+    } else {
+        near = true;
     }
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    bool changed = s_want != want || s_near[0] != near[0] || s_near[1] != near[1];
-    s_want = want, s_near[0] = near[0], s_near[1] = near[1];
+    if (!near && !want) {  // far from the custom faces: give the memory back
+        for (int i = 0; i < CACHE_N; i++) entry_free(&s_cache[i]);
+        s_cur = NULL;
+        s_loaded = -1;
+        s_gen++;  // (and drop what is loading now)
+    }
+    bool changed = false;
+    for (int k = 0; k < QUEUE_N; k++) {
+        int v = k < nq ? q[k] : 0;
+        changed |= s_queue[k] != v;
+        s_queue[k] = v;
+    }
     xSemaphoreGive(s_lock);
     if (changed) xTaskNotifyGive(s_task);
 }
@@ -671,7 +706,7 @@ static void flush(void)
     s_loaded = -1;
     s_gen++;
     s_fail_id = 0;
-    s_want = 0;  // so the next request wakes the loader
+    s_queue[0] = -1;  // so the next request wakes the loader
 }
 
 // Picks what to draw this frame: the face wanted if it is ready, else the one drawn so far. false:
@@ -683,6 +718,7 @@ static bool pick(int want, uint32_t now)
     xSemaphoreTake(s_lock, portMAX_DELAY);
     flush();
     entry_t *e = find(want);
+    if (!e && s_cur && s_cur->id != want) s_cur = NULL;  // not the face before while this one loads
     if (e && e != s_cur) {
         s_cur = e;
         s_face = e->face;
@@ -704,8 +740,8 @@ static bool pick(int want, uint32_t now)
     xSemaphoreGive(s_lock);
     if (!e && !failed) request(want);  // (its neighbours too)
     if (failed) return false;
-    if (s_cur) return true;  // the one before, until this one is ready
-    s_err[0] = 0;
+    if (s_cur && s_cur->id == want) return true;  // its picture for the stretch before, until the new one is ready
+    s_err[0] = 0;  // still loading: its name and the time meanwhile
     return false;
 }
 
@@ -724,7 +760,13 @@ void custom_render(uint16_t *fb, uint32_t t, uint32_t dt)
         ui_begin(fb);
         ui_background(false);
         ui_veil(60, H, 2);
-        ui_print_c(&ui_jersey, 4, W / 2, 150, TR("Mis esferas", "My faces"), MS_ORO, true);
+        const char *title = TR("Mis esferas", "My faces");
+        const int *ids;
+        const char(*names)[32];
+        int nc = s_err[0] ? 0 : custom_list_cached(&ids, &names);
+        for (int k = 0; k < nc; k++)
+            if (ids[k] == want) title = names[k];
+        ui_print_c(&ui_jersey, ui_fit(&ui_jersey, 4, 2, W - 60, title), W / 2, 150, title, MS_ORO, true);
         if (s_err[0]) ui_print_c(&ui_vt, 2, W / 2, 240, s_err, MS_CREMA, false);
         char hhmm[8];
         clock_hhmm(hhmm, true);
