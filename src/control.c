@@ -153,9 +153,23 @@ void app_drag(int x, int y, int dx, int dy)
     taskEXIT_CRITICAL(&s_mux);
 }
 
+static uint32_t s_tap_until;
+
 void app_drag_end(void)
 {
+    s_tap_until = 0;
     g_app.touch = false;
+}
+
+void app_drag_tap(int x, int y)
+{
+    app_drag(x, y, 0, 0);
+    s_tap_until = (uint32_t)(esp_timer_get_time() / 1000) + 120;
+}
+
+void app_drag_tick(uint32_t now)
+{
+    if (s_tap_until && (int32_t)(now - s_tap_until) >= 0) app_drag_end();
 }
 
 void app_take_drag(int *dx, int *dy)

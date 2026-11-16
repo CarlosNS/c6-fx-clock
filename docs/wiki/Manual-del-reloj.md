@@ -6,7 +6,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 
 ## Lo básico
 
-- **La primera vez** que se enciende, el reloj enseña una **introducción** de cuatro pasos: el idioma, los gestos (se practican: una pantalla en miniatura enseña cada uno y, al hacerlo, dice para qué sirve), el QR para instalar la app del móvil con la espera a que se conecte, y «¡Listo!». Se puede *Saltar* en cualquier paso; BOOT vuelve al paso anterior. Para verla otra vez: *Ajustes → Sistema → Ver la introducción*.
+- **La primera vez** que se enciende, el reloj enseña una **introducción** de cuatro pasos: el idioma, los gestos (bajar desde arriba, subir desde abajo, deslizar a un lado, mantener el dedo quieto y volver; se practican: una pantalla en miniatura enseña cada uno y, al hacerlo, dice para qué sirve), el QR para instalar la app del móvil con la espera a que se conecte, y «¡Listo!». Se puede *Saltar* en cualquier paso; BOOT vuelve al paso anterior. Para verla otra vez: *Ajustes → Sistema → Ver la introducción*.
 
   <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-intro.png" alt="Introducción del reloj: idioma, gestos y ¡Listo!" width="600">
 
@@ -35,7 +35,7 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 - Cada panel se cierra con el gesto contrario al que lo abrió: los ajustes rápidos, deslizando hacia arriba; el lanzador, deslizando hacia abajo (estando arriba del todo). Volver también los cierra.
 - Las primeras veces que se enciende la pantalla, dos asas parpadean arriba y abajo de la esfera: recuerdan que desde ahí se abren los ajustes rápidos y el lanzador.
 - Los gestos de borde empiezan en la parte recta del borde, no en la esquina redondeada.
-- En las **esferas interactivas** (Plasma, Cubo 3D, Túnel, Lava y Vida) el dedo mueve la esfera; deslizar desde un borde sigue abriendo los menús.
+- En las **esferas interactivas** (Plasma, Cubo 3D, Túnel, Lava y Vida) el dedo mueve la esfera en cuanto se mueve, y un toque también le llega; deslizar desde un borde sigue abriendo los menús. **Mantener el dedo quieto** no hace nada en la esfera: abre el selector de esferas, como en todas las demás.
 
 ## El botón BOOT
 
@@ -176,12 +176,18 @@ Es el **menú principal**. Para abrirlo, desliza desde el borde de abajo hacia a
 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/sys-faces.png" alt="App Esferas" width="200">
 
-Una rueda con todas las esferas, por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, Relojes y útiles) y, al final, las tuyas de **Mis esferas** (las que hay en la microSD), en lila y con un icono de foto para distinguirlas. La rueda da la vuelta: arrástrala arriba o abajo, sigue un poco con el impulso y se para en una esfera; la del centro sale grande, con su grupo bajo el título, y la que está puesta va en dorado. Toca cualquiera para ponerla y volver a la esfera. Un cuadrito verde marca las interactivas.
+Un escaparate con todas las esferas, cada una en miniatura y con la forma de la pantalla, por grupos (Efectos, Videojuegos, Arte, Naturaleza y espacio, Relojes y útiles) y, al final, las tuyas de **Mis esferas** (las que hay en la microSD), con borde lila. Al mantener el dedo en la esfera, esta se encoge hasta quedar en el centro del escaparate, con las de al lado asomando.
+
+- **Desliza a los lados** para pasar de esfera, igual que en la esfera; un desliz rápido avanza varias. Entre un grupo y otro hay un pequeño hueco. La lista da la vuelta.
+- **Desliza arriba o abajo** para saltar al principio del grupo siguiente o del anterior.
+- **Toca la del centro:** crece hasta llenar la pantalla y se queda puesta. Toca una de los lados para traerla al centro.
+- Arriba, el nombre del grupo y una marca por grupo; abajo, el nombre de la esfera, con un ✓ dorado si es la que está puesta y un dedo verde si responde al dedo, y unos cuadritos que dicen en qué lugar del grupo está.
+- Una esfera cuya miniatura aún no está lista enseña su nombre. Las de *Mis esferas* sacan la miniatura de su imagen (de la primera, si cambia con la hora, la que toca ahora; si es animada, su primer fotograma).
 
 - También se llega manteniendo el dedo sobre la esfera.
 - Para cambiar de esfera sin abrir la app: desliza a los lados en la esfera, o pulsa BOOT.
 - Qué esferas salen en el **cambio automático**, el color de Clásico y Ónix y la ciudad de Tiempo se eligen en la app del móvil.
-- **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj y salen al final de la rueda; también se ponen desde la app (ver [[Esferas]]).
+- **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj y salen al final del escaparate; también se ponen desde la app (ver [[Esferas]]).
 
 ## Alarmas
 

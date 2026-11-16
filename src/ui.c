@@ -1,4 +1,5 @@
 #include "ui.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
@@ -77,6 +78,47 @@ void ui_shade(int x, int y, int w, int h, int level)
     for (int j = 0; j < h; j++) {
         uint16_t *p = s_fb + (y + j) * UI_W + x;
         for (int i = 0; i < w; i++) p[i] = darken(p[i], level);
+    }
+}
+
+// How far in a row of a rounded rectangle starts, dy rows from its top or bottom edge
+static int round_inset(int r, int dy)
+{
+    if (dy >= r) return 0;
+    float t = r - dy - 0.5f;
+    return r - (int)(sqrtf((float)r * r - t * t) + 0.5f);
+}
+
+void ui_round_rect(int x, int y, int w, int h, int r, uint16_t c)
+{
+    if (r * 2 > w) r = w / 2;
+    if (r * 2 > h) r = h / 2;
+    for (int j = 0; j < h; j++) {
+        int in = round_inset(r, j < h / 2 ? j : h - 1 - j);
+        ui_rect(x + in, y + j, w - 2 * in, 1, c);
+    }
+}
+
+void ui_blit_round(const uint16_t *src, int sw, int sh, int x, int y, int w, int h, int r, int dim_256)
+{
+    if (w <= 0 || h <= 0) return;
+    if (r * 2 > w) r = w / 2;
+    if (r * 2 > h) r = h / 2;
+    int j0 = y < 0 ? -y : 0, j1 = y + h > UI_H ? UI_H - y : h;
+    uint32_t fx = ((uint32_t)sw << 16) / w;
+    for (int j = j0; j < j1; j++) {
+        int in = round_inset(r, j < h / 2 ? j : h - 1 - j);
+        int i0 = in, i1 = w - in;
+        if (x + i0 < 0) i0 = -x;
+        if (x + i1 > UI_W) i1 = UI_W - x;
+        if (i0 >= i1) continue;
+        const uint16_t *s = src + (j * sh / h) * sw;
+        uint16_t *d = s_fb + (y + j) * UI_W + x;
+        uint32_t u = i0 * fx;
+        if (dim_256 <= 0)
+            for (int i = i0; i < i1; i++, u += fx) d[i] = s[u >> 16];
+        else
+            for (int i = i0; i < i1; i++, u += fx) d[i] = ui_mix(MS_NOCHE, s[u >> 16], dim_256);
     }
 }
 

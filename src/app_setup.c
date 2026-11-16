@@ -2,8 +2,9 @@
 // "setup" setting; Settings → System → See the introduction brings it back). Four short steps on the
 // dusk background:
 //   0  language (Spanish / English)
-//   1  the gestures, practised: swipe down from the top, up from the bottom, sideways, and back
-//      (BOOT or the left edge); a little screen shows each one, and doing it shows what it opens
+//   1  the gestures, practised: swipe down from the top, up from the bottom, sideways, hold the finger
+//      still (the face picker, on any face) and back (BOOT or the left edge); a little screen shows
+//      each one, and doing it shows what it opens
 //   2  the phone app: the QR code of the latest Android app (it is not in the Play Store), the name
 //      the watch has in Bluetooth, and "waiting for the phone" until it connects (then it moves on)
 //   3  all set, with the time if the phone already sent it
@@ -30,7 +31,7 @@
 #define BW 200
 #define BH 170
 
-enum { G_TOP, G_BOTTOM, G_SIDE, G_BACK, NGEST };
+enum { G_TOP, G_BOTTOM, G_SIDE, G_HOLD, G_BACK, NGEST };
 enum { HIT_NONE, HIT_SKIP, HIT_NEXT, HIT_ES, HIT_EN, HIT_START };
 
 static int s_step, s_gest, s_pressed;
@@ -60,7 +61,10 @@ static const gesture_t GEST[NGEST] = {
      "Todas las apps: alarmas, pasos,", "All the apps: alarms, steps,", "música, cronómetro, ajustes", "music, stopwatch, settings"},
     {"Desliza a un lado", "Swipe sideways",
      "Un trazo decidido, en medio", "One firm stroke across", "de la pantalla", "the middle of the screen",
-     "Cambia de esfera. Mantén", "Changes the face. Hold it", "pulsado para verlas en rueda", "down to see them all"},
+     "Cambia a la esfera siguiente", "Changes to the next face", "o a la anterior", "or the one before"},
+    {"Mantén el dedo quieto", "Hold your finger still",
+     "En medio, sin moverlo; vale", "In the middle, not moving;", "en todas las esferas", "it works on every face",
+     "Todas las esferas: desliza y", "Every face: swipe, then tap", "toca la del centro para ponerla", "the middle one to wear it"},
     {"Vuelve atrás", "Go back",
      "Pulsa el botón BOOT o desliza", "Press BOOT, or swipe in", "desde el borde izquierdo", "from the left edge",
      "Así sales de cualquier", "That leaves any screen,", "pantalla, paso a paso", "one step at a time"},
@@ -151,6 +155,23 @@ static void demo(int g, int f, bool show_finger)
         if (show_finger) finger(BX + BW - 30 - f * (BW - 60) / 1000, cy + 30);
         return;
     }
+    if (g == G_HOLD) {  // the finger stays put, then the face shrinks into a card between its neighbours
+        if (f > 0) {
+            int w = BW - f * (BW - 70) / 1000, h = BH - f * (BH - 86) / 1000;
+            if (f > 500) {
+                ui_rect(cx - 35 - 62, cy - 30, 50, 60, MS_PANEL);
+                ui_rect(cx + 35 + 12, cy - 30, 50, 60, MS_PANEL);
+            }
+            ui_rect(cx - w / 2 - 3, cy - h / 2 - 3, w + 6, h + 6, MS_ORO);
+            ui_rect(cx - w / 2, cy - h / 2, w, h, MS_PANEL2);
+            int sc = f < 600 ? 3 : 2;
+            ui_print_c(&ui_jersey, sc, cx, cy - sc * 10, "10:08", MS_CREMA, false);
+        } else {
+            ui_print_c(&ui_jersey, 3, cx, cy - 30, "10:08", MS_GRIS, false);
+        }
+        if (show_finger && f == 0) finger(cx, cy + 30);
+        return;
+    }
     ui_print_c(&ui_jersey, 3, cx, cy - 30, "10:08", MS_GRIS, false);
     if (g == G_TOP) {  // quick settings come down
         int h = f * 118 / 1000;
@@ -219,11 +240,16 @@ static void draw_gestures(uint32_t now)
         line_c(368, TR(g->o2es, g->o2en), MS_CREMA);
     } else {
         title(TR(g->es, g->en));  // what to do is the title
-        demo(s_gest, demo_f(now), demo_finger(now));
+        if (s_gest == G_HOLD) {  // the finger stays put most of the loop, then the face shrinks
+            int p = since(now, s_anim0) % 2400;
+            demo(s_gest, p < 1300 ? 0 : p > 1800 ? 1000 : (p - 1300) * 2, p >= 200 && p < 1300);
+        } else {
+            demo(s_gest, demo_f(now), demo_finger(now));
+        }
         line_c(346, TR(g->h1es, g->h1en), MS_GRIS);
         line_c(368, TR(g->h2es, g->h2en), MS_GRIS);
     }
-    ui_print_r(&ui_vt, 1, BX - 14, BY + 2, n, MS_GRIS);  // which gesture of the four
+    ui_print_r(&ui_vt, 1, BX - 14, BY + 2, n, MS_GRIS);  // which gesture of them all
     footer(TR("Siguiente", "Next"));
 }
 
@@ -333,6 +359,9 @@ static void event(const ui_event_t *e)
         else if (s_gest == G_BOTTOM && e->dir == DIR_UP && (e->edge & EDGE_BOTTOM)) gesture_done();
         else if (s_gest == G_SIDE && (e->dir == DIR_LEFT || e->dir == DIR_RIGHT) && abs(e->x - e->x0) >= 100)
             gesture_done();
+        break;
+    case EV_LONG:
+        if (s_step == 1 && !s_ok && s_gest == G_HOLD && e->y < BTN_Y) gesture_done();
         break;
     default: break;
     }

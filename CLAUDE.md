@@ -29,9 +29,10 @@
 | `src/control.c` | Órdenes de texto, iguales por WiFi, Bluetooth y consola serie (`control.h` las lista) |
 | `src/index.html`, `src/transport.js` | Página de control, embebida en el firmware y también dentro de la app. Secciones con `#` (Inicio, Esferas, Alarmas, Archivos, Ajustes), estilo Marea Solsticial, español/inglés con `data-en` y `tr()` |
 | `src/web/` | Vistas previas (`fxN.webp`, `alarmN.webp`, con `tools/web_previews.py`) y fuentes de la página; `web.pack` se genera al compilar y el reloj las sirve en `/a/` |
+| `src/thumbs/` | Miniaturas del selector de esferas (`fxN.jpg`, 200×245), hechas desde las vistas previas con `tools/face_thumbs.py` (`web_previews.py` lo lanza); van en `web.pack` como `thumb/fxN.jpg` |
 | `android/` | App Kotlin «Marea» (paquete `io.github.carlosns.c6clock`, que no cambia para que se actualice sobre la instalada) |
 | `tests/` | pytest por fases (`tests/README.md`), con `clocklib/` como código compartido |
-| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py`, `web_pack.py` (lo lanza PlatformIO), `web_previews.py` |
+| `tools/` | `new_face.py`, `ble_shot.py`, `ble_console.py`, `bootlog.py`, `release.py`, `publish_wiki.py`, `build_webflasher.py`, `gen_fonts.py`, `make_fonts.py`, `web_pack.py` (lo lanza PlatformIO), `web_previews.py`, `face_thumbs.py` |
 | `src/sys.c`, `src/ui.c`, `src/app_*.c` | Sistema (vistas, gestos, lanzador), estilo Marea Solsticial y apps |
 | `src/usbdisk.c` | Modo USB: la microSD como disco (TinyUSB, `src/idf_component.yml`) |
 | `src/voice.c`, `android/.../Voice.kt`, `VoiceCommands.kt` | Órdenes de voz: el reloj graba (ES7210, `audio.c`) y manda IMA ADPCM; la app usa el reconocedor de Android con `EXTRA_AUDIO_SOURCE` e interpreta la frase |
@@ -57,7 +58,7 @@ cd tests && python -m pytest -m now --ignore=wifi   # unitarios
 - **Si cambias `sdkconfig.defaults`, borra `sdkconfig.s3amoled`** para que se regenere.
 - **Consola serie:** acepta cualquier orden de `control.h` (`status`, `fx 3`, `mode update`, `time <epoch> <ms>`, `dbgtime h m`). Úsala desde `tests/clocklib/board.py` con `SerialSession`.
 - **Las órdenes guardan los ajustes del reloj:** restaura lo que cambies (esfera, `fxoff`, `auto`, `aon`…).
-- **Capturas:** `GET /screenshot` por WiFi o `python tools/ble_shot.py` por Bluetooth (dan el lienzo de la esfera).
+- **Capturas:** `GET /screenshot` por WiFi, `python tools/ble_shot.py` por Bluetooth (dan el lienzo de la esfera) o, sin ninguno de los dos, la orden `sershot` por la consola serie: el último fotograma en filas hexadecimales (RGB565 en el orden del panel).
 - **Herramientas:** JDK 21 en `%LOCALAPPDATA%\DevTools\jdk-21.0.13+9` (pon `JAVA_HOME` antes de `android\gradlew.bat`), Android SDK en `%LOCALAPPDATA%\Android\Sdk` y `gh` en `%LOCALAPPDATA%\Programs\gh\bin\gh.exe`. `build_webflasher.py` se ejecuta con el `python` del sistema, que trae esptool.
 - **App:** cada versión publicada necesita un `versionCode` mayor. La clave de firma está en `%USERPROFILE%\.c6clock\`; si se pierde, habrá que desinstalar la app para actualizar. Para `adb install`, el móvil (POCO F7, HyperOS) necesita «Instalar vía USB» y que alguien toque «Instalar».
 

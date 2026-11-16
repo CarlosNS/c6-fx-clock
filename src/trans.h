@@ -14,9 +14,12 @@ typedef enum {
     T_UNCOVER_UP,          // quick settings going back up
     T_UNCOVER_DOWN,        // the launcher going back down
     T_UNCOVER_RIGHT,       // leaving an app
+    T_ZOOM_OUT,            // the old screen shrinks into a card of the new one (trans_zoom_target)
 } trans_t;
 
 void trans_start(trans_t kind);
+// Where T_ZOOM_OUT ends: the card's place and corner radius on the new screen (set before trans_start)
+void trans_zoom_target(int x, int y, int w, int h, int r);
 // A slide is under way: the main loop draws the new screen whole and calls trans_compose()
 bool trans_active(uint32_t now);
 // Puts the leaving picture over the new screen drawn in nfb (native, panel size), for this moment

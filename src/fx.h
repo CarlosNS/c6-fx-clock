@@ -51,6 +51,12 @@ int custom_list(int *ids, char (*names)[32], int max);
 // The same, remembered from the last read (read again only if the faces on the card changed)
 // Starts loading, in the background, the custom faces next to the current face in the swipe order
 void custom_prefetch_around(void);
+// The face picker: load every custom face in the background (for their thumbnails), and a thumbnail of
+// custom face id (dw x dh) once it is loaded; false while it is not. pool: TJpgDec's 4 KB work area.
+void custom_warm(void);
+bool custom_thumb(int id, uint16_t *dst, int dw, int dh, uint8_t pool[4096]);
+// A baseline JPEG into an RGB565 picture (panel order) of dw x dh, cropped; pool: TJpgDec's work area
+bool jpeg_decode(const uint8_t *src, size_t len, uint16_t *dst, int dw, int dh, uint8_t pool[4096]);
 int custom_list_cached(const int **ids, const char (**names)[32]);
 // A file under /esferas was written or removed: the remembered list must be read again
 void custom_list_dirty(void);

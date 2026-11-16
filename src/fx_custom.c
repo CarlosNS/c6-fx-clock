@@ -111,7 +111,7 @@ static UINT jout(JDEC *jd, void *bitmap, JRECT *r)
     return 1;
 }
 
-static bool jpeg_decode(const uint8_t *src, size_t len, uint16_t *dst, int dw, int dh, uint8_t pool[4096])
+bool jpeg_decode(const uint8_t *src, size_t len, uint16_t *dst, int dw, int dh, uint8_t pool[4096])
 {
     JDEC jd;
     jctx_t c = {src, len, 0, dst, dw, dh};
@@ -558,7 +558,9 @@ static bool insert(entry_t *n, bool may_evict)
 
 static void loader(void *arg)
 {
-    static uint8_t pool[4096];  // TJpgDec's work area, this task's own
+    // TJpgDec's work area, this task's own; in PSRAM, since internal RAM is what the card driver runs short of
+    uint8_t *pool = heap_caps_malloc(4096, MALLOC_CAP_SPIRAM);
+    if (!pool) vTaskDelete(NULL);
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         bool held = false;  // the card stays mounted for the whole batch (mounting each time churns internal RAM)
@@ -582,8 +584,9 @@ static void loader(void *arg)
                 ok = load_entry(id, &e, err, sizeof(err), which == 0 ? ANIM_MAX : PREFETCH_MAX, pool);
                 if (!ok && g_app.sd_state != SD_OK) break;  // no card: no use
             }
-            ESP_LOGI(TAG, "%s %d \"%s\" in %u ms%s", which == 0 ? "loaded" : "preloaded", id, ok ? e.face.name : "",
-                     (unsigned)(now_ms() - t0), ok ? "" : " (failed)");
+            ESP_LOGI(TAG, "%s %d \"%s\" in %u ms%s (internal RAM %u, largest %u)", which == 0 ? "loaded" : "preloaded", id,
+                     ok ? e.face.name : "", (unsigned)(now_ms() - t0), ok ? "" : " (failed)",
+                     (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
             xSemaphoreTake(s_lock, portMAX_DELAY);
             bool stop = false;
             if (ok && gen == s_gen) {
@@ -659,6 +662,52 @@ static void request(int want)
 void custom_prefetch_around(void)
 {
     request(g_app.fx == FX_CUSTOM ? (s_try_id ? s_try_id : g_app.cust) : 0);
+}
+
+void custom_warm(void)
+{
+    loader_init();
+    if (!s_task) return;
+    const int *ids;
+    const char(*names)[32];
+    int n = custom_list_cached(&ids, &names);
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    int nq = 1;
+    for (int k = 0; k < n && nq < QUEUE_N; k++)
+        if (ids[k] != s_queue[0]) s_queue[nq++] = ids[k];
+    for (int k = nq; k < QUEUE_N; k++) s_queue[k] = 0;
+    xSemaphoreGive(s_lock);
+    xTaskNotifyGive(s_task);
+}
+
+bool custom_thumb(int id, uint16_t *dst, int dw, int dh, uint8_t pool[4096])
+{
+    if (!s_lock) return false;
+    bool ok = false;
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    entry_t *e = find(id);
+    const uint16_t *src = NULL;
+    uint16_t *frame = NULL;
+    int sw = W, sh = H;
+    if (e && e->still) {
+        src = e->still;
+    } else if (e && e->anim && e->anim_len > 20) {  // the first frame of the animation
+        const uint8_t *p = e->anim + 8;
+        uint32_t off = p[4] | p[5] << 8 | p[6] << 16 | (uint32_t)p[7] << 24, sz = p[8] | p[9] << 8 | p[10] << 16 | (uint32_t)p[11] << 24;
+        frame = heap_caps_malloc(AW * AH * 2, MALLOC_CAP_SPIRAM);
+        if (frame && off + sz <= e->anim_len && jpeg_decode(e->anim + off, sz, frame, AW, AH, pool)) src = frame, sw = AW, sh = AH;
+    }
+    if (src) {
+        // the face's picture (its text is drawn over it when shown, not here)
+        for (int y = 0; y < dh; y++) {
+            const uint16_t *s = src + (y * sh / dh) * sw;
+            for (int x = 0; x < dw; x++) dst[y * dw + x] = s[x * sw / dw];
+        }
+        ok = true;
+    }
+    xSemaphoreGive(s_lock);
+    free(frame);
+    return ok;
 }
 
 // The frame k of the animation into s_bg, enlarged x1.5

@@ -10,6 +10,7 @@
 #include "ble.h"
 #include "pmu_axp2101.h"
 #include "intro.h"
+#include "lcd.h"
 #include "voice.h"
 #include "steps.h"
 #include "app_plug.h"
@@ -82,6 +83,26 @@ static void run_line(char *line)
         printf("introshot: drawn\n");
         vTaskDelay(pdMS_TO_TICKS(3000));
         g_app.freeze_req = false;
+        return;
+    }
+    if (strcmp(line, "sershot") == 0) {  // screenshot over the console (no Wi-Fi, no Bluetooth): "sershot W H" then hex rows, RGB565 panel order
+        int w, h;
+        g_app.freeze_req = true;
+        for (int i = 0; i < 100 && !g_app.frozen; i++) vTaskDelay(pdMS_TO_TICKS(5));
+        const uint16_t *fb = lcd_last_frame(&w, &h);
+        uint16_t *copy = fb ? heap_caps_malloc(w * h * 2, MALLOC_CAP_SPIRAM) : NULL;
+        if (copy) memcpy(copy, fb, w * h * 2);
+        g_app.freeze_req = false;
+        if (!copy) return;
+        printf("sershot %d %d\n", w, h);
+        char *row = heap_caps_malloc(w * 4 + 2, MALLOC_CAP_SPIRAM);  // (internal RAM is the scarce one)
+        for (int y = 0; row && y < h; y++) {
+            for (int x = 0; x < w; x++) sprintf(row + x * 4, "%04x", copy[y * w + x]);
+            printf("%s\n", row);
+        }
+        printf("sershot end\n");
+        free(row);
+        free(copy);
         return;
     }
     if (strcmp(line, "intro") == 0) {  // see the power-on animation without cutting the power

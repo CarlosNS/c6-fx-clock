@@ -1,6 +1,6 @@
 El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
-- Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden de la rueda del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
+- Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
 - Las capturas son de la pantalla real (410×502, con sus esquinas), sacadas con `GET /screenshot`.
 - ¿Echas alguna en falta? [[Crear una esfera]] explica cómo hacer la tuya.
@@ -183,7 +183,7 @@ El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 *Número 28* — La esfera que haces tú en la app del móvil (ver [[App Android]]): de fondo, una **foto** o un **GIF** de la galería encuadrado a la pantalla, o varios que cambian a lo largo del día por **tramos**; encima, la hora **digital** (con la fuente, el tamaño, el sitio, el color, el contorno o la sombra, los segundos y la fecha que elijas) o **analógica**, con agujas clásicas o con agujas que salen del borde para dejar ver el fondo. El GIF se repite mientras la pantalla está encendida y vuelve a empezar al encenderla; con la pantalla apagada no gasta nada.
 
 - Necesita una **microSD** en el reloj: cada esfera se guarda en `/esferas/<número>/`. Sin tarjeta, la app no deja guardarla y la esfera lo avisa.
-- Puedes tener varias; se ponen desde la app o desde la rueda de la app **Esferas** del reloj, donde salen al final. Mientras no pongas ninguna, el número 28 no sale al deslizar. No entra en el cambio automático: se pone a propósito.
+- Puedes tener varias; se ponen desde la app o desde el escaparate de la app **Esferas** del reloj, donde salen al final, con la miniatura de su imagen. Mientras no pongas ninguna, el número 28 no sale al deslizar. No entra en el cambio automático: se pone a propósito.
 - El móvil guarda una **copia** de cada una, así que si la tarjeta se pierde o se formatea, *Restaurar en el reloj* las vuelve a mandar.
 
 ## ¿Una esfera nueva?

@@ -1,4 +1,5 @@
-"""Packs the control page's pictures and fonts (src/web/*) into src/web.pack, which the firmware embeds
+"""Packs the control page's pictures and fonts (src/web/*) and the face picker's thumbnails
+(src/thumbs/*, as thumb/<name>) into src/web.pack, which the firmware embeds
 and serves at /a/<name> (src/web.c). PlatformIO runs it before every build (extra_scripts in
 platformio.ini); it only rewrites the pack when something changed. The Android app copies src/web/
 as it is (android/app/build.gradle.kts), so the pack is only for the watch.
@@ -13,9 +14,16 @@ import struct
 
 
 def build(root):
-    src = os.path.join(root, "src", "web")
-    names = sorted(n for n in os.listdir(src) if os.path.isfile(os.path.join(src, n)) and not n.startswith("."))
-    blobs = [open(os.path.join(src, n), "rb").read() for n in names]
+    names, blobs = [], []
+    # the page's files as they are, and the face picker's thumbnails (tools/face_thumbs.py) as thumb/<name>
+    for folder, prefix in (("web", ""), ("thumbs", "thumb/")):
+        src = os.path.join(root, "src", folder)
+        if not os.path.isdir(src):
+            continue
+        for n in sorted(os.listdir(src)):
+            if os.path.isfile(os.path.join(src, n)) and not n.startswith("."):
+                names.append(prefix + n)
+                blobs.append(open(os.path.join(src, n), "rb").read())
     head = b"MPK1" + struct.pack("<I", len(names))
     size = len(head) + sum(1 + len(n.encode()) + 8 for n in names)
     table, off = b"", size

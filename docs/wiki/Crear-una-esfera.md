@@ -265,7 +265,7 @@ Cada entrada de `fx_list` (`src/fx_common.c`) describe la esfera para el firmwar
    - que se lee bien a distintas horas (`dbgtime`), en 12 y 24 h, con y sin segundos, y sin hora (`--:--` justo al encender);
    - que sigue bien al quitarla y volver a ponerla (`enter()` reinicia lo que debe);
    - si es interactiva, el panel táctil de la app.
-6. **Vista previa para la app:** con el reloj por USB y en tu WiFi, `python tools/web_previews.py --faces N` guarda `src/web/fxN.webp`, la imagen de la esfera en la app. Compila otra vez para que entre en el firmware y en la app.
+6. **Vista previa para la app:** con el reloj por USB y en tu WiFi, `python tools/web_previews.py --faces N` guarda `src/web/fxN.webp`, la imagen de la esfera en la app, y a partir de ella `src/thumbs/fxN.jpg`, su miniatura en el selector del reloj (`tools/face_thumbs.py`, 200×245; si cambias la vista previa a mano, lánzalo tú). Compila otra vez para que entren en el firmware y en la app.
 7. **Tests:** `pytest -m now` (rápidos); con el reloj conectado, los de su modo (ver [[Compilar y contribuir]]). Cuentan las esferas a partir de `FX_COUNT`, así que una esfera nueva no los rompe.
 
 ## Normas
@@ -282,7 +282,7 @@ Una pull request con:
 
 - [ ] `src/fx_<id>.c` y los cambios de `fx.h`, `fx_common.c` y `CMakeLists.txt` (y de `app.h`, `settings.c`, `main.c` e `index.html` si tiene ajustes);
 - [ ] una fila en la tabla de esferas del `README.md`, en su grupo;
-- [ ] su vista previa para la app, `src/web/fxNN.webp`, hecha con `tools/web_previews.py`;
+- [ ] su vista previa para la app, `src/web/fxNN.webp`, y su miniatura del selector, `src/thumbs/fxNN.jpg`, hechas con `tools/web_previews.py`;
 - [ ] su captura, `fxNN.png`, hecha con `tools/ble_shot.py`, adjunta a la pull request (el autor la añade a la página [[Esferas]] de la wiki);
 - [ ] los fps y el `rus` medio que has medido, en la descripción;
 - [ ] una línea en `CHANGELOG.md`, en la versión en preparación.

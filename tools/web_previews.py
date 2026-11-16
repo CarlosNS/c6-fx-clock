@@ -1,5 +1,6 @@
 """Takes the previews the app shows (src/web/fxN.webp for each face, alarmN.webp for each alarm
 animation) from a real watch: USB on COM7 for the console, the watch's Wi-Fi for the screenshots.
+It also makes the face picker's thumbnails (tools/face_thumbs.py, src/thumbs/).
 Run it after adding a face or an alarm animation, then rebuild (the firmware packs src/web/ through
 tools/web_pack.py; the app copies it).
 
@@ -23,6 +24,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 from clocklib.board import SerialSession  # noqa: E402
 from PIL import Image  # noqa: E402
+
+import face_thumbs  # noqa: E402
 
 OUT = os.path.join(ROOT, "src", "web")
 SIZE = (274, 336)  # the wide canvas: what most faces draw; native 410x502 frames are scaled to it
@@ -50,6 +53,7 @@ def main():
     st = json.loads(get("/status"))
     shot = lambda q="": Image.open(io.BytesIO(get("/screenshot" + q, 30))).convert("RGB").resize(SIZE, Image.LANCZOS)
     save = lambda im, name: (im.save(os.path.join(OUT, name), "WEBP", quality=78, method=6), print("  ", name))
+    done = set()
     try:
         if not a.alarms:
             cmd("auto 0")
@@ -58,6 +62,7 @@ def main():
                 if f.get("x") or (a.faces and i not in a.faces):
                     continue
                 save(shot(f"?fx={i}&wait=2500"), f"fx{i}.webp")
+                done.add(i)
         if a.alarms or not a.faces:
             al = json.loads(get("/alarms"))
             if not al["list"]:
@@ -72,6 +77,8 @@ def main():
                     cmd("ui tap 320 390", 3.5)  # Stop
                 cmd(f"alarm 0 anim {a0['a']}")
                 cmd("alarm 0 label " + a0["l"])
+        if done:
+            face_thumbs.build(done)  # and the face picker's thumbnails from them
     finally:
         cmd(f"fx {st['fx']}")
         cmd(f"auto {st.get('auto', 0)}")

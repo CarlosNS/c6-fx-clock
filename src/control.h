@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include <stdint.h>
 
 // Transport-independent control layer. The web page (WebSocket) and, later, a Bluetooth link
 // both just pass text commands in and read the status JSON back.
@@ -28,6 +29,9 @@ void app_faces_json(void (*emit)(const char *piece, void *ctx), void *ctx);
 // command (the pad in the apps) and by the touch screen.
 void app_drag(int x, int y, int dx, int dy);
 void app_drag_end(void);
+// A tap at (x, y): the finger stays down a few frames so the face sees it (app_drag_tick lifts it)
+void app_drag_tap(int x, int y);
+void app_drag_tick(uint32_t now);
 // Returns and clears the drag delta accumulated since the last call
 void app_take_drag(int *dx, int *dy);
 

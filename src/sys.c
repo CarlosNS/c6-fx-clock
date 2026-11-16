@@ -374,8 +374,12 @@ static void quick_event(const ui_event_t *e)
 // ---------------------------------------------------------------- the face
 
 // Interactive faces (those with a hint) get the finger like the pad in the apps, unless the touch
-// starts at an edge or outside the face: those still navigate.
-static bool s_to_face;
+// starts at an edge or outside the face: those still navigate. The face only gets it once the finger
+// moves (or lifts: a tap): a finger held still is the long press that opens the face picker, as on any
+// other face, and the face never sees it.
+#define FACE_MOVE_PX 15  // just over input.c's TAP_SLOP: a touch that moved this far is never a long press
+static bool s_to_face;   // this touch is for the face...
+static bool s_face_live; // ...and it has started (the finger moved)
 static int s_lcx, s_lcy;
 
 // Where a touch lands on the face: native faces use panel pixels, old ones their enlarged canvas
@@ -403,22 +407,28 @@ static void face_event(const ui_event_t *e)
     case EV_DOWN: {
         bool inside = face_point(e->x, e->y, &cx, &cy);
         s_to_face = fx_list[g_app.fx].hint && inside && !e->edge;
+        s_face_live = false;
         s_lcx = cx;
         s_lcy = cy;
-        if (s_to_face) app_drag(cx * 1000 / face_w(), cy * 1000 / face_h(), 0, 0);
         break;
     }
     case EV_MOVE:
-        if (s_to_face) {
-            face_point(e->x, e->y, &cx, &cy);
-            app_drag(cx * 1000 / face_w(), cy * 1000 / face_h(), cx - s_lcx, cy - s_lcy);
-            s_lcx = cx;
-            s_lcy = cy;
+        if (!s_to_face) break;
+        if (!s_face_live) {  // still or nearly: not for the face yet
+            int mx = e->x - e->x0, my = e->y - e->y0;
+            if (mx * mx + my * my < FACE_MOVE_PX * FACE_MOVE_PX) break;
+            s_face_live = true;  // it moves: from where it went down (the face catches up at once)
+            app_drag(s_lcx * 1000 / face_w(), s_lcy * 1000 / face_h(), 0, 0);
         }
+        face_point(e->x, e->y, &cx, &cy);
+        app_drag(cx * 1000 / face_w(), cy * 1000 / face_h(), cx - s_lcx, cy - s_lcy);
+        s_lcx = cx;
+        s_lcy = cy;
         break;
     case EV_UP:
-        if (s_to_face) app_drag_end();
-        s_to_face = false;
+        if (s_to_face && !s_face_live) app_drag_tap(s_lcx * 1000 / face_w(), s_lcy * 1000 / face_h());  // lifted soon after
+        else if (s_to_face) app_drag_end();
+        s_to_face = s_face_live = false;
         break;
     case EV_SWIPE:
         if (s_to_face) break;
@@ -433,8 +443,10 @@ static void face_event(const ui_event_t *e)
             sys_toast(name);
         }
         break;
-    case EV_LONG:
-        if (!s_to_face) trans_start(T_COVER_FROM_RIGHT), sys_open_app(0);  // face picker
+    case EV_LONG:  // held still, on any face (an interactive one has not had the touch yet)
+        if (s_face_live) break;
+        s_to_face = false;
+        faces_zoom_target(), trans_start(T_ZOOM_OUT), sys_open_app(0);  // face picker: the face shrinks into its card
         break;
     default:
         break;

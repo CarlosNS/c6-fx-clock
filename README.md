@@ -33,7 +33,7 @@ La pantalla se enciende con BOOT, con un toque o al levantar la muñeca, y se ap
 
 **Manual:** [Manual del reloj](https://github.com/CarlosNS/c6-fx-clock/wiki/Manual-del-reloj) en la wiki.
 
-**Apps:** Esferas (una rueda que da la vuelta, con tus esferas personalizadas al final), Alarmas (suenan por el altavoz y se posponen al agitar la muñeca), Pasos (podómetro con objetivo diario), Cronómetro, Música (lo que suena en el móvil, con sus controles), Linterna, Archivos (la microSD, con modo USB) y Ajustes. Llamadas: cuando el móvil suena, el reloj muestra quién llama y permite rechazarla o silenciarla. Textos en español o inglés.
+**Apps:** Esferas (un escaparate con la miniatura de cada esfera, por grupos y con tus esferas personalizadas al final), Alarmas (suenan por el altavoz y se posponen al agitar la muñeca), Pasos (podómetro con objetivo diario), Cronómetro, Música (lo que suena en el móvil, con sus controles), Linterna, Archivos (la microSD, con modo USB) y Ajustes. Llamadas: cuando el móvil suena, el reloj muestra quién llama y permite rechazarla o silenciarla. Textos en español o inglés.
 
 ## Esferas
 

@@ -35,6 +35,9 @@ extern const app_t app_alarm_ring, app_call;
 // First-run guide: language, gestures, the phone app (an alert: back never leaves it by mistake)
 extern const app_t app_setup;
 
+// The face picker opened from the face: where the face shrinks to (trans_zoom_target), before T_ZOOM_OUT
+void faces_zoom_target(void);
+
 // Shared look of an app screen: background, status bar and a title in gold
 void app_frame(const char *title, bool dusk);
 // Vertical scrolling list helper: the offset follows the finger and stays within the content

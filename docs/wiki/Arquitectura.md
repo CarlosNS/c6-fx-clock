@@ -122,7 +122,7 @@ En los dos de una sola vez, al entrar, el modo guardado ya es el de vuelta, así
 
 `src/index.html` es una página de una sola pieza con secciones (`#inicio`, `#esferas`, `#alarmas`, `#archivos`, `#ajustes`…): el `#` de la dirección dice cuál se ve, así que el botón atrás del navegador o del móvil recorre las secciones. Los textos están en español en el HTML y en inglés en `data-en`; `tr(es, en)` hace lo mismo en el script, y el idioma es el ajuste `lang` del reloj.
 
-Sus imágenes y fuentes están en `src/web/`: vistas previas de las esferas (`fxN.webp`, N = número de la esfera) y de las animaciones de alarma (`alarmN.webp`), sacadas del reloj con `tools/web_previews.py`, y Jersey 10 y VT323 recortadas a los caracteres latinos. `tools/web_pack.py` las junta en `src/web.pack` antes de cada compilación (PlatformIO lo lanza solo) y el reloj las sirve en `/a/<nombre>`. La app copia la carpeta tal cual.
+Sus imágenes y fuentes están en `src/web/`: vistas previas de las esferas (`fxN.webp`, N = número de la esfera) y de las animaciones de alarma (`alarmN.webp`), sacadas del reloj con `tools/web_previews.py`, y Jersey 10 y VT323 recortadas a los caracteres latinos. `tools/web_pack.py` las junta en `src/web.pack` antes de cada compilación (PlatformIO lo lanza solo) y el reloj las sirve en `/a/<nombre>`. La app copia la carpeta tal cual. En el mismo paquete van, como `thumb/fxN.jpg`, las miniaturas del selector de esferas (`src/thumbs/`, 200×245, hechas desde las vistas previas con `tools/face_thumbs.py`); `app_faces.c` las descodifica con TJpgDec en una tarea de fondo, solo las siete más cercanas al centro.
 
 ## La app Android
 

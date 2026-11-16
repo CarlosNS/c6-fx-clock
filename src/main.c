@@ -782,6 +782,7 @@ void app_main(void)
         // the "tap" setting decide, and the touch chip is not read at all)
         bool dark = panel_asleep;
         if (!dark) input_poll(now);
+        app_drag_tick(now);
         ui_event_t ev;
         while (input_next(&ev)) {
             if (!screen_awake(now)) {

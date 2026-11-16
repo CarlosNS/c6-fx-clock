@@ -50,6 +50,11 @@ void ui_panel(int x, int y, int w, int h, uint16_t fill, uint16_t border, int g,
 void ui_veil(int y0, int y1, int max_level);
 // Is (x, y) inside the visible screen (rounded corners, 2 px edge)?
 bool ui_visible(int x, int y);
+// Rounded rectangle (corner radius r), filled
+void ui_round_rect(int x, int y, int w, int h, int r, uint16_t c);
+// A picture (sw x sh) scaled to w x h at (x, y), nearest pixel, with corners rounded to radius r and
+// dimmed towards the night by dim_256 (0: as it is, 256: all night). Clipped to the screen.
+void ui_blit_round(const uint16_t *src, int sw, int sh, int x, int y, int w, int h, int r, int dim_256);
 
 // ---- Text (UTF-8; y is the top of the line) ----
 int ui_line_h(const ui_font_t *f, int scale);
