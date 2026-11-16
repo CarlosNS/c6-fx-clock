@@ -93,5 +93,6 @@ int sd_list_names(const char *path, char names[][16], int max);
 bool sd_remove_dir(const char *path);
 // Battery empty (main.c): warning screen, settings saved, power cut. really = false: screen only
 void power_off_now(bool really);
+void pwr_off_test(void);  // the power-off scene (hold and switch-off), without switching off
 // Console "sleeptest": light sleep allowed on USB until this time (ms), to measure it
 extern volatile uint32_t g_sleep_test_until;

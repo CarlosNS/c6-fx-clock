@@ -43,6 +43,7 @@
 #include "input.h"
 #include "pmu_axp2101.h"
 #include "intro.h"
+#include "bye.h"
 #include "voice.h"
 #include "find.h"
 #include "app_plug.h"
@@ -489,12 +490,62 @@ void power_off_now(bool really)
 
 // ---------------------------------------------------------------- PWR key (AXP2101, polled)
 
-// A short press turns the screen off (or on). Held, a screen asks to keep holding and fills a bar;
-// at PKEY_OFF_MS the watch saves everything and switches off. The PMU's own forced cut is at 10 s.
+// A short press turns the screen off (or on). Held, the power-off scene (bye.c) fills the power
+// symbol's ring while the moon sets; let go and it goes back; at PKEY_OFF_MS the watch saves
+// everything, plays the switch-off and switches off. The PMU's own forced cut is at 10 s.
 #define PKEY_SHOW_MS 800
 #define PKEY_OFF_MS 3000
 static bool s_pkey_down, s_pkey_show;
 static uint32_t s_pkey_since;
+static uint32_t s_bye_cancel_at;  // let go before the end: the scene goes back (0: not now)
+static int s_bye_from;            // ...from this permille
+
+static int pkey_permille(uint32_t now)
+{
+    int p = (int)((now - s_pkey_since - PKEY_SHOW_MS) * 1000 / (PKEY_OFF_MS - PKEY_SHOW_MS));
+    return p < 0 ? 0 : p > 1000 ? 1000 : p;
+}
+
+// The switch-off scene, then (really) the power cut. Everything is saved first, so cutting the
+// animation short loses nothing.
+static void pwr_shut_down(bool really)
+{
+    settings_save();
+    lcd_sleep(false);
+    lcd_set_brightness(g_app.brightness);
+    uint32_t t0 = (uint32_t)(esp_timer_get_time() / 1000), t2 = 0;
+    while (t2 <= BYE_OFF_MS) {
+        esp_task_wdt_reset();
+        ui_begin(lcd_native_fb());
+        bye_off(t0 + t2, t2);
+        lcd_flush_native();
+        vTaskDelay(1);
+        t2 = (uint32_t)(esp_timer_get_time() / 1000) - t0;
+    }
+    if (!really) {
+        sys_dirty();
+        return;
+    }
+    lcd_set_brightness(0);
+    lcd_sleep(true);
+    pmu_power_off();
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_deep_sleep_start();  // the PMU did not cut the power: at least stop everything
+}
+
+void pwr_off_test(void)
+{
+    uint32_t t0 = (uint32_t)(esp_timer_get_time() / 1000), t = 0;
+    while (t < PKEY_OFF_MS - PKEY_SHOW_MS) {  // the hold, as if PWR were held
+        esp_task_wdt_reset();
+        ui_begin(lcd_native_fb());
+        bye_hold(t0 + t, (int)(t * 1000 / (PKEY_OFF_MS - PKEY_SHOW_MS)));
+        lcd_flush_native();
+        vTaskDelay(1);
+        t = (uint32_t)(esp_timer_get_time() / 1000) - t0;
+    }
+    pwr_shut_down(false);
+}
 
 static void pkey_tap(uint32_t now)
 {
@@ -534,10 +585,11 @@ static void poll_pwrkey(uint32_t now)
         if (s_pkey_down) {
             uint32_t held = now - s_pkey_since;
             s_pkey_down = false;
-            if (s_pkey_show) {  // let go before the end: nothing happens
+            if (s_pkey_show) {  // let go before the end: the scene goes back, then nothing happens
+                s_bye_from = pkey_permille(now);
+                s_bye_cancel_at = now | 1;
                 s_pkey_show = false;
                 app_wake();
-                sys_dirty();
             } else if (held < PKEY_SHOW_MS) {
                 pkey_tap(now);
             }
@@ -550,27 +602,13 @@ static void poll_pwrkey(uint32_t now)
     if (held >= PKEY_SHOW_MS) {
         if (!s_pkey_show) ESP_LOGI(TAG, "PWR held: power-off screen");
         s_pkey_show = true;
+        s_bye_cancel_at = 0;
         app_wake();
     }
     if (held >= PKEY_OFF_MS) {
         ESP_LOGW(TAG, "PWR held %u ms: powering off", (unsigned)held);
-        shut_down(TR("Apagando", "Switching off"), TR("hasta luego", "see you soon"),
-                  TR("para encenderlo, pulsa", "to switch it on, press"), TR("el botón PWR", "the PWR button"), 1500, true);
+        pwr_shut_down(true);
     }
-}
-
-static void draw_pkey_hold(uint32_t now)
-{
-    int p = (int)((now - s_pkey_since - PKEY_SHOW_MS) * 1000 / (PKEY_OFF_MS - PKEY_SHOW_MS));
-    ui_background(false);
-    ui_veil(90, UI_H, 2);
-    ui_print_c(&ui_jersey, 5, UI_W / 2, 100, TR("¿Apagar?", "Switch off?"), MS_ORO, true);
-    ui_panel(48, 200, UI_W - 96, 168, MS_PANEL, MS_LINEA, 3, true);
-    // Two short lines: one of VT323 at 2x did not fit inside the box
-    ui_print_c(&ui_vt, 2, UI_W / 2, 216, TR("mantén pulsado", "keep holding"), MS_CREMA, false);
-    ui_print_c(&ui_vt, 2, UI_W / 2, 246, TR("el botón PWR", "the PWR button"), MS_CREMA, false);
-    ui_bar(76, 290, UI_W - 152, 18, p < 0 ? 0 : p > 1000 ? 1000 : p, MS_ORO);
-    ui_print_c(&ui_vt, 1, UI_W / 2, 326, TR("suéltalo para cancelar", "let go to cancel"), MS_GRIS, false);
 }
 
 static void battery_guard(const pmu_battery_t *b)
@@ -903,12 +941,23 @@ void app_main(void)
             sys_dirty();
         }
         batlog_tick(now, true, g_app.sta_ip[0] != 0, use_wifi && net_ap_on());
-        if (s_pkey_show) {  // PWR held: the power-off screen over everything
+        if (s_pkey_show) {  // PWR held: the power-off scene over everything
             ui_begin(lcd_native_fb());
-            draw_pkey_hold(now);
+            bye_hold(now, pkey_permille(now));
             lcd_flush_native();
             cur = -1;
             goto frame_end;
+        }
+        if (s_bye_cancel_at) {  // let go before the end: the scene goes back
+            if (now - s_bye_cancel_at < BYE_CANCEL_MS) {
+                ui_begin(lcd_native_fb());
+                bye_cancel(now, s_bye_from, now - s_bye_cancel_at);
+                lcd_flush_native();
+                cur = -1;
+                goto frame_end;
+            }
+            s_bye_cancel_at = 0;
+            sys_dirty();
         }
         if (sys_view() != VIEW_FACE) {  // the system screens and apps: native, drawn only when they change
             uint16_t *nfb = lcd_native_fb();

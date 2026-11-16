@@ -136,6 +136,10 @@ static void run_line(char *line)
         sd_info();
         return;
     }
+    if (strcmp(line, "byetest") == 0) {  // the PWR power-off scene, without powering off
+        pwr_off_test();
+        return;
+    }
     if (strcmp(line, "batoff test") == 0) {  // the empty-battery screen, without powering off
         power_off_now(false);
         return;

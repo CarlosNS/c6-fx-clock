@@ -57,8 +57,8 @@ Manual de uso de **Marea**: cómo se maneja el reloj y qué hace cada una de sus
 | Pantalla encendida | Pulsación corta | **Apaga la pantalla** (aunque esté en «siempre encendida», hasta que la despiertes) |
 | Pantalla apagada | Pulsación corta | La enciende |
 | Suena una alarma | Pulsación corta | La para |
-| En cualquier momento | Mantener | Sale **«¿Apagar?»** con una barra que se llena; si lo sueltas antes, no pasa nada |
-| En cualquier momento | Mantener 3 s | **Apaga el reloj** (guarda los ajustes antes) |
+| En cualquier momento | Mantener | Sale una noche junto al mar con el **símbolo de apagado**: su anillo dorado se llena mientras la luna se pone, y el borde junto a PWR brilla. Si lo sueltas antes, la luna vuelve a subir y no pasa nada |
+| En cualquier momento | Mantener 3 s | **Apaga el reloj** (guarda los ajustes antes): la luna se hunde en el mar, las estrellas se apagan y el horizonte se cierra en un punto de luz. Por la consola serie, `byetest` lo enseña sin apagar |
 | Reloj apagado | Pulsación | Lo enciende |
 | Reloj colgado | Mantener 10 s | Corte de corriente forzado, como último recurso |
 
