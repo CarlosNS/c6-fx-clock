@@ -1,80 +1,444 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Marea · instalador</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
+<meta name="description" content="Marea: un reloj de pulsera con esferas animadas en pixel art. Instálalo desde el navegador.">
+<meta name="theme-color" content="#14102C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&family=VT323&display=swap">
 <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
 <style>
-:root{--bg:#0b0d14;--card:#151926;--line:#262c3f;--txt:#e8ebf5;--dim:#8a91a8;--acc:#7c5cff;--acc2:#22d3ee;--warn:#f5a524}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f5f6fb;--card:#fff;--line:#dde1ee;--txt:#161a28;--dim:#5b627a}}
+/* Marea Solsticial, as on the watch and its control page: night by the sea, pixel borders, hard shadows */
+:root{--noche:#14102C;--panel:#221A42;--panel2:#2A2052;--linea:#463A7A;--crema:#F6EEE2;--gris:#A89CCE;
+ --oro:#F9B25A;--oro2:#FFD166;--verde:#78D6A0;--coral:#EC6066;--sombra:#0A0818;--lila:#B48FFB;
+ --disp:'Jersey 10',system-ui,sans-serif;--txt:'VT323',ui-monospace,monospace}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 system-ui,sans-serif;padding:16px}
-main{max-width:680px;margin:0 auto}
-h1{font-size:26px;margin:20px 0 4px}
-h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;color:transparent}
-.sub{color:var(--dim);margin:0 0 24px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
-.install{text-align:center;padding:28px 20px}
-esp-web-install-button button[slot=activate]{background:linear-gradient(135deg,var(--acc),#4f46e5);color:#fff;border:0;border-radius:12px;padding:14px 28px;font:600 17px system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 22px #7c5cff55}
-ol{margin:0;padding-left:22px}
-li{margin:6px 0}
-.note{border-left:3px solid var(--warn);padding-left:12px;color:var(--dim)}
-code{background:var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
-.unsupported{color:var(--warn);font-weight:600}
+html{background:var(--sombra);scroll-behavior:smooth}
+body{margin:0;background:var(--noche);color:var(--crema);font:400 21px/1.25 var(--txt);-webkit-font-smoothing:antialiased}
+a{color:var(--oro2)}
+a:hover{color:var(--oro)}
+img{image-rendering:pixelated}
+:focus-visible{outline:3px solid var(--oro2);outline-offset:3px}
+
+/* ---------- the night by the sea, painted live (canvas, 4 px per art pixel) */
+.hero{position:relative;overflow:hidden;min-height:min(980px,100svh);display:flex;flex-direction:column;align-items:center;
+ padding:18px 16px 56px;isolation:isolate}
+#sea{position:absolute;inset:0;width:100%;height:100%;z-index:-1;image-rendering:pixelated}
+.top{align-self:stretch;display:flex;justify-content:flex-end;gap:10px;max-width:980px;margin:0 auto;width:100%}
+.lang{display:flex;border:3px solid var(--linea);box-shadow:3px 3px 0 var(--sombra);background:var(--panel)}
+.lang button{font:400 20px/1 var(--disp);color:var(--gris);background:none;border:0;padding:6px 12px;cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--oro);color:var(--noche)}
+h1{font:400 clamp(76px,16vw,148px)/.85 var(--disp);color:var(--oro);margin:14px 0 0;letter-spacing:.02em;
+ text-shadow:5px 5px 0 var(--sombra)}
+.tag{font-size:clamp(22px,3.4vw,28px);color:var(--crema);text-align:center;max-width:620px;margin:10px 0 26px;text-wrap:balance;
+ text-shadow:2px 2px 0 var(--sombra)}
+
+/* the watch, going through its faces as a swipe does */
+.watch{position:relative;width:min(300px,72vw)}
+.case{background:linear-gradient(160deg,#5b5a66,#2d2c35 42%,#1b1a21);padding:13px;border-radius:34%/27%;
+ box-shadow:0 18px 40px #000a,inset 0 2px 0 #ffffff2a,inset 0 -2px 0 #0008}
+.screen{position:relative;aspect-ratio:410/502;border-radius:29.3%/23.9%;overflow:hidden;background:#000}
+.screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.3,.7,.2,1)}
+.btn-side{position:absolute;right:-9px;width:9px;height:46px;border-radius:0 4px 4px 0;background:linear-gradient(90deg,#3a3942,#77767f 60%,#3a3942)}
+.strap{position:absolute;left:18%;right:18%;height:58px;z-index:-1;background:repeating-linear-gradient(90deg,#3b3a44 0 14px,#55545e 14px 16px);
+ box-shadow:inset 0 0 0 3px #26252c}
+.strap.up{top:-46px;border-radius:10px 10px 0 0}.strap.dn{bottom:-46px;border-radius:0 0 10px 10px}
+.facename{margin-top:62px;font:400 26px/1 var(--disp);color:var(--crema);background:var(--panel);border:3px solid var(--linea);
+ box-shadow:3px 3px 0 var(--sombra);padding:6px 16px 8px;min-width:180px;text-align:center}
+.cta{margin-top:26px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- buttons and panels: thick border, hard shadow, press down */
+.btn{font:400 26px/1 var(--disp);display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 22px 2px;
+ background:var(--panel2);border:4px solid var(--linea);color:var(--crema);box-shadow:4px 4px 0 var(--sombra);text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--gris);color:var(--crema)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--sombra)}
+.btn.gold{background:var(--oro);border-color:var(--oro2);color:var(--noche)}
+.btn.gold:hover{background:var(--oro2);color:var(--noche)}
+.btn.big{font-size:32px;min-height:68px;padding:0 34px 3px}
+.btn canvas{width:24px;height:24px;image-rendering:pixelated}
+
+main{max-width:980px;margin:0 auto;padding:0 16px 40px}
+section{margin:54px 0 0}
+h2{font:400 44px/1 var(--disp);color:var(--oro);margin:0 0 6px;text-shadow:3px 3px 0 var(--sombra)}
+.lead{color:var(--gris);margin:0 0 22px;max-width:640px}
+.panel{background:var(--panel);border:4px solid var(--linea);box-shadow:5px 5px 0 var(--sombra);padding:22px}
+
+/* install */
+.install{display:grid;gap:24px;grid-template-columns:1fr}
+.go{text-align:center;padding:30px 18px}
+.go p{margin:14px 0 0;color:var(--gris)}
+.warn{color:var(--coral)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.steps li{background:var(--panel2);border:3px solid var(--linea);padding:14px 16px;position:relative}
+.steps b{display:block;font:400 46px/.9 var(--disp);color:var(--oro2);margin-bottom:4px}
+code{font-family:var(--txt);font-size:1em;background:var(--noche);border:2px solid var(--linea);padding:0 6px}
+
+/* what it brings */
+.feats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.feat{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:3px solid var(--linea);box-shadow:4px 4px 0 var(--sombra);padding:16px}
+.feat canvas{width:48px;height:48px;flex:none;image-rendering:pixelated}
+.feat strong{display:block;font:400 28px/1 var(--disp);color:var(--crema);margin-bottom:4px}
+.feat span{color:var(--gris)}
+
+/* the faces */
+.strip{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 18px;margin:0 -4px;scrollbar-color:var(--linea) transparent}
+.face{flex:none;width:150px;scroll-snap-align:start;text-align:center}
+.face .scr{aspect-ratio:410/502;border-radius:29.3%/23.9%;overflow:hidden;background:#000;border:3px solid var(--linea);box-shadow:4px 4px 0 var(--sombra)}
+.face img{width:100%;height:100%;object-fit:cover;display:block}
+.face div:last-child{margin-top:8px;font:400 22px/1 var(--disp)}
+.face.mine .scr{border-color:var(--lila);display:grid;place-items:center;background:linear-gradient(160deg,#3a2a6a,#1b1440)}
+.face.mine canvas{width:56px;height:42px;image-rendering:pixelated}
+
+/* make your own face: the phone app's editor */
+.shots{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 20px;margin:0 -4px}
+.shot{flex:1 0 220px;max-width:300px;scroll-snap-align:start}
+.phone{background:#141319;border-radius:30px;padding:9px;box-shadow:5px 5px 0 var(--sombra),inset 0 0 0 2px #2c2b33}
+.phone img{display:block;width:100%;aspect-ratio:618/1350;object-fit:cover;object-position:top;border-radius:22px;image-rendering:auto}
+.shot p{margin:12px 2px 0;color:var(--gris)}
+.shot strong{display:block;font:400 26px/1 var(--disp);color:var(--crema);margin-bottom:4px}
+
+/* what's new */
+.news h3{font:400 30px/1 var(--disp);color:var(--oro2);margin:0 0 4px}
+.news .when{color:var(--gris);margin:0 0 12px}
+.news ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.news li{position:relative;padding-left:20px}
+.news li::before{content:"";position:absolute;left:2px;top:.45em;width:8px;height:8px;background:var(--oro2)}
+
+/* the phone app */
+.app{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.app img{width:96px;height:96px;image-rendering:pixelated;flex:none}
+.app div{flex:1;min-width:240px}
+.app p{margin:0 0 14px;color:var(--gris)}
+
+/* help */
+details{background:var(--panel);border:3px solid var(--linea);box-shadow:4px 4px 0 var(--sombra);margin-bottom:12px}
+summary{cursor:pointer;list-style:none;padding:14px 18px;font:400 26px/1 var(--disp);display:flex;gap:12px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:0;height:0;border:7px solid transparent;border-left:10px solid var(--oro);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg) translate(3px,-3px)}
+details>div{padding:0 18px 16px 40px;color:var(--gris)}
+details ol{margin:0;padding-left:20px}
+details li{margin:6px 0}
+
+footer{border-top:4px solid var(--linea);margin-top:60px;padding:22px 16px 34px;text-align:center;color:var(--gris)}
+footer nav{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;font:400 24px/1 var(--disp)}
+
+@media (min-width:860px){
+ .install{grid-template-columns:minmax(300px,380px) 1fr;align-items:start}
+}
+@media (prefers-reduced-motion:reduce){.screen img{transition:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<main>
+<header class="hero">
+  <canvas id="sea" aria-hidden="true"></canvas>
+  <div class="top">
+    <div class="lang" role="group" aria-label="Idioma · Language">
+      <button type="button" data-l="es" aria-pressed="true">ES</button>
+      <button type="button" data-l="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
   <h1>Marea</h1>
-  <p class="sub">Instalador web del reloj Marea (Waveshare ESP32-S3-Touch-AMOLED-2.06)</p>
-
-  <div class="card install">
-    <esp-web-install-button manifest="manifest.json">
-      <button slot="activate">Instalar el reloj</button>
-      <span slot="unsupported" class="unsupported">Este navegador no puede acceder al puerto USB. Usa Chrome o Edge en un ordenador.</span>
-      <span slot="not-allowed" class="unsupported">El navegador solo permite el acceso USB desde https:// o desde localhost. Abre esta página con <code>Abrir flasher.bat</code>.</span>
-    </esp-web-install-button>
+  <p class="tag" data-en="A wristwatch with animated pixel-art faces, made to live by the sea at night">Un reloj de pulsera con esferas animadas en pixel art, hecho para vivir junto al mar de noche</p>
+  <div class="watch" aria-hidden="true">
+    <div class="strap up"></div><div class="strap dn"></div>
+    <div class="case"><div class="screen" id="screen"></div></div>
+    <div class="btn-side" style="top:24%"></div><div class="btn-side" style="top:62%"></div>
   </div>
-
-  <div class="card">
-    <strong>Pasos</strong>
-    <ol>
-      <li>Conecta la placa al ordenador por USB.</li>
-      <li>Pulsa <b>Instalar el reloj</b> y elige el puerto de la placa (suele llamarse <i>USB JTAG/serial debug unit</i>).</li>
-      <li>Confirma la instalación y espera ~30 s hasta que termine.</li>
-      <li>La placa se reinicia sola y muestra en pantalla cómo conectarse.</li>
-    </ol>
+  <div class="facename" id="facename">&nbsp;</div>
+  <div class="cta">
+    <a class="btn gold big" href="#instalar" data-en="Install it">Instálalo</a>
+    <a class="btn big" href="#esferas" data-en="See the faces">Ver las esferas</a>
   </div>
+</header>
 
-  <div class="card">
-    <strong>¿Borrar el dispositivo?</strong>
-    <p class="note">Si eliges <b>borrar</b>, se pierde todo lo guardado: la red WiFi y los ajustes del reloj. Es lo recomendable si la placa tenía otro proyecto.
-      Después, conecta el móvil a la WiFi <code>Marea</code> (clave <code>mareamarea</code>), abre <code>http://192.168.4.1</code> y en
-      <b>Conexión</b> escribe tu red para que el reloj se conecte y ponga la hora solo.</p>
-  </div>
+<main>
+  <section id="instalar">
+    <h2 data-en="Install it from the browser">Instálalo desde el navegador</h2>
+    <p class="lead" data-en="For the Waveshare ESP32-S3-Touch-AMOLED-2.06. Nothing to install on the computer: Chrome or Edge talk to the board over USB.">Para la Waveshare ESP32-S3-Touch-AMOLED-2.06. No hay que instalar nada en el ordenador: Chrome o Edge hablan con la placa por USB.</p>
+    <div class="install">
+      <div class="panel go">
+        <esp-web-install-button manifest="manifest.json">
+          <button slot="activate" class="btn gold big" data-en="Install the watch">Instalar el reloj</button>
+          <span slot="unsupported" class="warn" data-en="This browser cannot reach the USB port. Use Chrome or Edge on a computer.">Este navegador no puede acceder al puerto USB. Usa Chrome o Edge en un ordenador.</span>
+          <span slot="not-allowed" class="warn" data-en="The browser only allows USB from https:// or localhost. Open this page with <code>Abrir flasher.bat</code>.">El navegador solo permite el USB desde https:// o desde localhost. Abre esta página con <code>Abrir flasher.bat</code>.</span>
+        </esp-web-install-button>
+        <p data-en="About 30 seconds. The watch restarts by itself and shows its welcome guide.">Unos 30 segundos. El reloj se reinicia solo y enseña su guía de bienvenida.</p>
+      </div>
+      <ol class="steps">
+        <li><b>1</b><span data-en="Plug the board into the computer with a USB cable that carries data.">Conecta la placa al ordenador con un cable USB que lleve datos.</span></li>
+        <li><b>2</b><span data-en="Press <i>Install the watch</i> and pick its port (usually <i>USB JTAG/serial debug unit</i>).">Pulsa <i>Instalar el reloj</i> y elige su puerto (suele llamarse <i>USB JTAG/serial debug unit</i>).</span></li>
+        <li><b>3</b><span data-en="Confirm. If the board had something else, let it erase it.">Confirma. Si la placa tenía otra cosa, deja que la borre.</span></li>
+        <li><b>4</b><span data-en="Install the phone app and pair it with the code the watch shows.">Instala la app del móvil y empareja con la clave que enseña el reloj.</span></li>
+      </ol>
+    </div>
+  </section>
 
-  <div class="card">
-    <strong>Actualizar sin cable</strong>
-    <p class="note">Una vez instalado, el reloj se actualiza solo por internet: en la página de control o en la app, <b>Actualizaciones → Buscar actualización</b>.
-      Necesita tener guardada tu red WiFi (sección <b>Conexión</b>). Si algo fallase, se queda con la versión que tenía.</p>
-  </div>
+  <section>
+    <h2 data-en="What it does">Qué hace</h2>
+    <p class="lead" data-en="A whole little system, in the same night-by-the-sea style from the first screen to the last.">Un sistema entero, con el mismo estilo de noche junto al mar de la primera pantalla a la última.</p>
+    <div class="feats">
+      <div class="feat"><canvas data-icon="faces"></canvas><div><strong data-en="Animated faces">Esferas animadas</strong><span data-en="More than twenty, from a 3D cube to a thunderstorm; some answer your finger.">Más de veinte, del cubo 3D a una tormenta; algunas responden al dedo.</span></div></div>
+      <div class="feat"><canvas data-icon="photo"></canvas><div><strong data-en="Your own faces">Tus esferas</strong><span data-en="A photo or a GIF from your gallery, with the time just as you like it.">Una foto o un GIF de tu galería, con la hora a tu gusto.</span></div></div>
+      <div class="feat"><canvas data-icon="phone"></canvas><div><strong data-en="Always with your phone">Siempre con tu móvil</strong><span data-en="Time and weather, calls, music controls and voice commands over Bluetooth.">Hora y tiempo, llamadas, música y órdenes de voz por Bluetooth.</span></div></div>
+      <div class="feat"><canvas data-icon="bell"></canvas><div><strong data-en="Alarms and steps">Alarmas y pasos</strong><span data-en="Alarms through the speaker (shake to snooze), a step counter and a stopwatch.">Alarmas por el altavoz (agita para posponer), podómetro y cronómetro.</span></div></div>
+      <div class="feat"><canvas data-icon="cloud"></canvas><div><strong data-en="Updates by themselves">Se actualiza solo</strong><span data-en="New versions arrive through the app, with no cable.">Las versiones nuevas llegan por la app, sin cable.</span></div></div>
+      <div class="feat"><canvas data-icon="code"></canvas><div><strong data-en="Free software">Software libre</strong><span data-en="GPL-3.0. Make your own face with the step-by-step guide.">GPL-3.0. Crea tu propia esfera con la guía paso a paso.</span></div></div>
+    </div>
+  </section>
 
-  <div class="card">
-    <strong>Móvil Android</strong>
-    <p class="note">La app <b>Marea</b> (en las <a href="https://github.com/CarlosNS/c6-fx-clock/releases">releases</a>) se queda conectada al reloj por Bluetooth
-      mientras está cerca: le pone la hora y el tiempo, avisa de llamadas y controla la música. Se empareja una vez con la clave que aparece en el reloj.</p>
-  </div>
+  <section id="esferas">
+    <h2 data-en="The faces">Las esferas</h2>
+    <p class="lead" data-en="Swipe sideways on the watch to change them, or hold your finger still to see them all.">En el reloj se cambian deslizando a los lados, o manteniendo el dedo quieto para verlas todas.</p>
+    <div class="strip" id="strip"></div>
+  </section>
 
-  <div class="card">
-    <strong>Si no conecta</strong>
-    <ol>
-      <li>Desenchufa la placa, mantén pulsado <b>BOOT</b>, enchúfala y suelta: entra en modo de descarga.</li>
-      <li>Cierra otros programas que usen el puerto (monitor serie, Arduino, PlatformIO).</li>
-      <li>Prueba otro cable USB: algunos solo cargan y no transmiten datos.</li>
-    </ol>
-  </div>
+  <section id="crea">
+    <h2 data-en="Make your own face">Crea tu esfera</h2>
+    <p class="lead" data-en="In the phone app: a photo or a GIF from your gallery, framed to the screen, and the time just as you like it. The preview is drawn exactly as the watch will show it.">En la app del móvil: una foto o un GIF de tu galería, encuadrado a la pantalla, y la hora a tu gusto. La vista previa se dibuja igual que la enseñará el reloj.</p>
+    <div class="shots">
+      <div class="shot"><div class="phone"><img loading="lazy" alt="" data-shot="photo"></div>
+        <p><strong data-en="Your picture">Tu imagen</strong><span data-en="Drag and pinch to frame it; a GIF moves on the watch too.">Arrástrala y pellízcala para encuadrarla; un GIF también se mueve en el reloj.</span></p></div>
+      <div class="shot"><div class="phone"><img loading="lazy" alt="" data-shot="analog"></div>
+        <p><strong data-en="Digital or with hands">Digital o con agujas</strong><span data-en="Classic hands, or hands that come in from the edge.">Agujas clásicas, o agujas que entran desde el borde.</span></p></div>
+      <div class="shot"><div class="phone"><img loading="lazy" alt="" data-shot="clock"></div>
+        <p><strong data-en="The time, your way">La hora a tu gusto</strong><span data-en="Font, size, colour, outline or shadow, seconds and date; a different picture for each part of the day.">Fuente, tamaño, color, contorno o sombra, segundos y fecha; otra imagen para cada parte del día.</span></p></div>
+    </div>
+  </section>
+
+  <section id="novedades" class="news" hidden>
+    <h2 data-en="What's new">Novedades</h2>
+    <div class="panel"><h3 id="nv-ver"></h3><p class="when" id="nv-when"></p><ul id="nv-list"></ul></div>
+  </section>
+
+  <section>
+    <h2 data-en="The phone app">La app del móvil</h2>
+    <div class="panel app">
+      <img id="appicon" alt="">
+      <div>
+        <p data-en="For Android. It stays linked to the watch while it is near, brings it the time and the weather, warns of calls, runs the music and makes your own faces. It is not on the Play Store: Android will ask to allow installing it.">Para Android. Se queda conectada al reloj mientras está cerca, le lleva la hora y el tiempo, avisa de las llamadas, maneja la música y crea tus esferas. No está en la Play Store: Android pedirá permiso para instalarla.</p>
+        <a class="btn gold" href="https://carlosns.github.io/c6-fx-clock/c6-clock-app.apk" data-en="Download the app (APK)">Descargar la app (APK)</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-en="If something goes wrong">Si algo falla</h2>
+    <details><summary data-en="It does not connect">No conecta</summary><div><ol>
+      <li data-en="Unplug the board, hold <b>BOOT</b>, plug it in and let go: it enters download mode.">Desenchufa la placa, mantén pulsado <b>BOOT</b>, enchúfala y suelta: entra en modo de descarga.</li>
+      <li data-en="Close other programs using the port (serial monitor, Arduino, PlatformIO).">Cierra otros programas que usen el puerto (monitor serie, Arduino, PlatformIO).</li>
+      <li data-en="Try another USB cable: some only charge.">Prueba otro cable USB: algunos solo cargan.</li>
+    </ol></div></details>
+    <details><summary data-en="Erase the board?">¿Borrar la placa?</summary><div>
+      <p data-en="Erasing loses everything saved on it: the Wi-Fi network and the watch settings. It is the right choice if the board had another project. Your own faces live on the microSD and stay.">Borrar quita todo lo guardado: la red WiFi y los ajustes del reloj. Es lo recomendable si la placa tenía otro proyecto. Tus esferas están en la microSD y no se pierden.</p>
+    </div></details>
+    <details><summary data-en="Updating later">Actualizar más adelante</summary><div>
+      <p data-en="Once installed you do not need this page again: in the app, <b>Updates → Check for update</b>. If anything fails, the watch keeps the version it had.">Una vez instalado ya no hace falta esta página: en la app, <b>Actualizaciones → Buscar actualización</b>. Si algo fallase, el reloj se queda con la versión que tenía.</p>
+    </div></details>
+  </section>
 </main>
+
+<footer>
+  <nav>
+    <a href="https://github.com/CarlosNS/c6-fx-clock">GitHub</a>
+    <a href="https://github.com/CarlosNS/c6-fx-clock/wiki" data-en="Guide">Guía</a>
+    <a href="https://github.com/CarlosNS/c6-fx-clock/wiki/Crear-una-esfera" data-en="Make a face">Crea una esfera</a>
+    <a href="https://github.com/CarlosNS/c6-fx-clock/releases" data-en="Versions">Versiones</a>
+  </nav>
+  <div data-en="Free software under GPL-3.0-or-later">Software libre bajo GPL-3.0-or-later</div>
+</footer>
+
+<script>
+"use strict";
+const PAGES = "https://carlosns.github.io/c6-fx-clock/";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- language: Spanish in the markup, English in data-en; the browser's language picks
+let lang = "es";
+try { lang = localStorage.getItem("marea-lang") || ""; } catch (e) {}
+if (lang !== "es" && lang !== "en") lang = "en";  // English first; the button switches (and is remembered)
+const T = [...document.querySelectorAll("[data-en]")];
+T.forEach(el => el.dataset.es = el.innerHTML);
+function setLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  T.forEach(el => el.innerHTML = el.dataset[l]);
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === l));
+  try { localStorage.setItem("marea-lang", l); } catch (e) {}
+  document.querySelectorAll("img[data-shot]").forEach(im => im.src = "img/editor-" + im.dataset.shot + "-" + l + ".webp");
+  showName();
+  news();
+}
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => setLang(b.dataset.l));
+
+// ---------- the faces (the previews the app shows, caras/fxN.webp)
+const FACES = [[0, "Plasma"], [1, "Cubo 3D", "3D Cube"], [2, "Túnel", "Tunnel"], [3, "Lava"], [4, "Vida", "Life"], [13, "Synthwave"],
+  [5, "HUD"], [6, "Aventura", "Quest"], [7, "RPG"], [19, "Gol", "Goal"], [8, "Estrellada", "Starry"], [11, "Earthrise"],
+  [27, "Trueno y peluches", "Thunder and plushies"], [12, "Sakura"], [17, "Lluvia", "Rain"], [18, "Agujero negro", "Black hole"],
+  [25, "Disfruta", "Enjoy"], [9, "WiFi"], [14, "Coloso", "Colossus"], [15, "Engranajes", "Gears"], [21, "Tiempo", "Weather"],
+  [22, "Clásico", "Classic"], [23, "Feria de Sevilla", "Seville Fair"], [24, "Ónix", "Onyx"], [26, "El escultor", "The sculptor"]];
+const fname = f => lang === "en" && f[2] ? f[2] : f[1];
+
+// ---------- tiny pixel pictures: rows of characters, one colour each
+const PAL = { k: "#0A0818", o: "#F9B25A", O: "#FFD166", c: "#F6EEE2", g: "#A89CCE", l: "#463A7A", p: "#2A2052", v: "#78D6A0", m: "#EC6066", b: "#3B6FD0", a: "#6FC3E0", s: "#5b5a66", L: "#B48FFB" };
+function pixels(cv, rows) {
+  const h = rows.length, w = rows[0].length;
+  cv.width = w; cv.height = h;
+  const x = cv.getContext("2d");
+  rows.forEach((r, y) => [...r].forEach((ch, i) => { if (PAL[ch]) { x.fillStyle = PAL[ch]; x.fillRect(i, y, 1, 1); } }));
+}
+const ICONS = {
+  faces: ["....kkkkkk....", "...ksssssk....", "..kkkkkkkkkk..", ".kppppppppppk.", ".kpOppppppOpk.", ".kppocccco.pk.", ".kppcpppcp.pkk", ".kppcppocp.pkk",
+          ".kppcpppcp.pk.", ".kppocccco.pk.", ".kpppppppppok.", ".kppppppppppk.", "..kkkkkkkkkk..", "...ksssssk....", "....kkkkkk...."],
+  photo: ["..............", ".kkkkkkkkkkkk.", ".kccccccccccck", ".kcaaaaaaaaack", ".kcaaaaaaOOack", ".kcaaaaaaOOack", ".kcaaaaaaaaack", ".kcaavaaaaaack",
+          ".kcavvvaavaack", ".kcvvvvvvvvvck", ".kcvvvvvvvvvck", ".kccccccccccck", ".kkkkkkkkkkkkk", ".............."],
+  phone: ["....kkkkkk....", "...kssssssk...", "...kaaaaaak...", "...kaaaaaak...", "...kaOaaaak..O", "...kaaaaaak.O.", "...kaaaaaakO.O", "...kaaaaaak.O.",
+          "...kaaaaaak..O", "...kaaaaaak...", "...kssssssk...", "...kssccssk...", "...kssssssk...", "....kkkkkk...."],
+  bell: ["..............", "......kk......", ".....kOOk.....", "....kOooOk....", "...kOooooOk...", "..kOoooooook..", "..kooooooook..",
+         "..kooooooook..", ".kooooooooook.", "kooooooooooook", "kkkkkkkkkkkkkk", ".....kook.....", "......kk......", ".............."],
+  cloud: ["..............", ".....kkkk.....", "...kkccccKk...", "..kccccccccck.", ".kccccccccccck", "kcccccccccccck", "kcccccOccccck.", ".kkkkkOkkkkk..",
+          "......O.......", "....OOOOO.....", ".....OOO......", "......O.......", "..............", ".............."],
+  code: ["..............", "..............", "...kk....kk...", "..kOk....kOk..", ".kOk..kk..kOk.", "kOk..kOk...kOk", ".kOk.kOk..kOk.", "..kOkOk..kOk..",
+         "...kOk...kk...", "...kk.........", "..............", "..............", "..............", ".............."],
+  mine: ["kkkkkkkkkkkk", "kLLLLLLLLLLk", "kLppppppOOLk", "kLppppppOOLk", "kLppppppppLk", "kLppLpppppLk", "kLpLLLppLpLk", "kLLLLLLLLLLk", "kkkkkkkkkkkk"]
+};
+document.querySelectorAll("canvas[data-icon]").forEach(cv => pixels(cv, ICONS[cv.dataset.icon]));
+document.getElementById("appicon").src = document.querySelector('link[rel="icon"]').href;  // the app's own icon (tools/app_icon.py)
+
+// ---------- the watch: its faces slide in one after another, as a swipe does
+const screen = document.getElementById("screen"), nameEl = document.getElementById("facename");
+let shown = 0, cur = null;
+const order = [11, 13, 27, 23, 0, 21, 8, 24, 12, 15, 1, 25].map(n => FACES.findIndex(f => f[0] === n)).filter(i => i >= 0);
+function img(i) { const im = new Image(); im.alt = ""; im.src = "caras/fx" + FACES[i][0] + ".webp"; return im; }
+function showName() { if (cur !== null) nameEl.textContent = fname(FACES[order[shown]]); }
+function step() {
+  const next = img(order[(shown + (cur ? 1 : 0)) % order.length]);
+  next.style.transform = cur ? "translateX(100%)" : "none";
+  screen.appendChild(next);
+  const go = () => {
+    if (cur) {
+      shown = (shown + 1) % order.length;
+      requestAnimationFrame(() => requestAnimationFrame(() => { cur.style.transform = "translateX(-100%)"; next.style.transform = "none"; }));
+      const old = cur; setTimeout(() => old.remove(), 700);
+    }
+    cur = next; showName();
+  };
+  next.decode ? next.decode().then(go, go) : (next.onload = go);
+}
+step();
+if (!reduce) setInterval(step, 2800);
+
+// ---------- the gallery of faces, and "Mis esferas" at the end
+const strip = document.getElementById("strip");
+function gallery() {
+  strip.innerHTML = "";
+  FACES.forEach(f => {
+    const d = document.createElement("div"); d.className = "face";
+    d.innerHTML = `<div class="scr"><img loading="lazy" alt="" src="caras/fx${f[0]}.webp"></div><div></div>`;
+    d.lastChild.textContent = fname(f);
+    d.querySelector("img").onerror = () => d.remove();
+    strip.appendChild(d);
+  });
+  const m = document.createElement("div"); m.className = "face mine";
+  m.innerHTML = `<div class="scr"><canvas></canvas></div><div></div>`;
+  pixels(m.querySelector("canvas"), ICONS.mine);
+  m.lastChild.textContent = lang === "en" ? "Your own faces" : "Mis esferas";
+  strip.appendChild(m);
+}
+
+// ---------- what's new: the newest entry of the board the app and the watch page read too
+let NV = null;
+fetch(PAGES + "novedades.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).then(j => { NV = j; news(); }).catch(() => {});
+function news() {
+  gallery();
+  if (!Array.isArray(NV) || !NV.length) return;
+  const e = NV[0], sec = document.getElementById("novedades");
+  document.getElementById("nv-ver").textContent = (lang === "en" ? "Watch " : "Reloj ") + e.reloj + (e.app ? (lang === "en" ? " · app " : " · app ") + e.app : "");
+  const d = e.fecha ? new Date(e.fecha + "T12:00:00") : null;
+  document.getElementById("nv-when").textContent = d ? d.toLocaleDateString(lang === "en" ? "en-GB" : "es-ES", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const ul = document.getElementById("nv-list"); ul.innerHTML = "";
+  (e[lang] || e.es || []).forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+  sec.hidden = false;
+}
+
+// ---------- the night by the sea: sky in bands, stars, the moon and its golden path, the lighthouse, waves
+const cv = document.getElementById("sea"), cx = cv.getContext("2d");
+const PX = 4;
+let W = 0, H = 0, stars = [];
+function seed(n) { let s = n; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function resize() {
+  W = Math.ceil(cv.clientWidth / PX); H = Math.ceil(cv.clientHeight / PX);
+  cv.width = W; cv.height = H;
+  const r = seed(7); stars = [];
+  for (let i = 0; i < W * H / 150; i++) stars.push([r() * W | 0, r() * H * .62 | 0, r(), r() < .12]);
+}
+const SKY = ["#0A0818", "#0E0B24", "#14102C", "#1A1438", "#221A42", "#2E1F4E", "#3D2558", "#4E2B5C"];
+function draw(t) {
+  const hy = Math.round(H * .66);                        // the horizon
+  for (let i = 0; i < SKY.length; i++) {                  // sky in bands, warmer near the sea
+    const y0 = Math.round(hy * i / SKY.length), y1 = Math.round(hy * (i + 1) / SKY.length);
+    cx.fillStyle = SKY[i]; cx.fillRect(0, y0, W, y1 - y0);
+  }
+  for (const [x, y, ph, gold] of stars) {                 // stars that twinkle
+    const on = Math.sin(t / 700 + ph * 40) > -0.6;
+    if (!on) continue;
+    cx.fillStyle = gold ? "#FFD166" : (Math.sin(t / 500 + ph * 90) > .7 ? "#F6EEE2" : "#7d72b8");
+    cx.fillRect(x, y, 1, 1);
+  }
+  const narrow = W * PX < 700;                            // on a phone, up in the corner, clear of the words
+  const mr = Math.max(6, Math.round(Math.min(W, H) * (narrow ? .07 : .055)));
+  const mx = Math.round(W * (narrow ? .84 : .76)), my = narrow ? mr * 2 + 12 : Math.round(hy * .3);
+  cx.fillStyle = "#3D2558";                               // a dithered halo, then the moon and its shadows
+  for (let y = -mr * 2; y <= mr * 2; y++) for (let x = -mr * 2; x <= mr * 2; x++) {
+    const d = x * x + y * y;
+    if (d < 4 * mr * mr && d > mr * mr && (x + y) % 2 === 0) cx.fillRect(mx + x, my + y, 1, 1);
+  }
+  for (let y = -mr; y <= mr; y++) for (let x = -mr; x <= mr; x++) {
+    if (x * x + y * y > mr * mr) continue;
+    cx.fillStyle = (x + mr * .35) ** 2 + (y + mr * .2) ** 2 < mr * mr * .06 || (x - mr * .3) ** 2 + (y - mr * .4) ** 2 < mr * mr * .04 ? "#D9CDBF" : "#F6EEE2";
+    cx.fillRect(mx + x, my + y, 1, 1);
+  }
+  const SEA = ["#1B1640", "#161236", "#120F2E", "#0F0C27", "#0C0A20"];  // the sea, darker away from the horizon
+  for (let i = 0; i < SEA.length; i++) {
+    const y0 = hy + Math.round((H - hy) * i / SEA.length), y1 = hy + Math.round((H - hy) * (i + 1) / SEA.length);
+    cx.fillStyle = SEA[i]; cx.fillRect(0, y0, W, y1 - y0);
+  }
+  cx.fillStyle = "#F9B25A"; cx.fillRect(0, hy, W, 1);
+  cx.fillStyle = "#FFD166"; cx.fillRect(mx - mr, hy, mr * 2, 1);
+  for (let y = hy + 2; y < H; y += 2) {                   // the moon's golden path, shimmering
+    const k = (y - hy) / (H - hy), w = Math.round(mr * (0.6 + k * 1.6) * (0.7 + 0.3 * Math.sin(t / 300 + y)));
+    const off = Math.round(Math.sin(t / 450 + y * .7) * (1 + k * 3));
+    cx.fillStyle = (y >> 1) % 3 ? "#F9B25A" : "#FFD166";
+    cx.fillRect(mx - w / 2 + off, y, w, 1);
+  }
+  cx.fillStyle = "#2E2A63";                               // waves drifting
+  for (let y = hy + 4; y < H; y += 6) for (let x = ((t / 90 + y * 13) % 40) - 40; x < W; x += 40) cx.fillRect(Math.round(x), y, 8, 1);
+  const lx = Math.round(W * .16), ih = Math.max(6, Math.round(H * .045));   // the island and its lighthouse
+  cx.fillStyle = "#07061A";
+  for (let x = -ih * 4; x <= ih * 4; x++) { const h = Math.round(ih * Math.cos(x / (ih * 4) * Math.PI / 2)); cx.fillRect(lx + x, hy - h, 1, h + 1); }
+  const th = Math.round(ih * 3.2), tw = Math.max(2, Math.round(ih * .5));
+  for (let y = 0; y < th; y++) { cx.fillStyle = (y / Math.max(2, ih * .6) | 0) % 2 ? "#EC6066" : "#F6EEE2"; cx.fillRect(lx - tw / 2 | 0, hy - ih - y, tw, 1); }
+  const ly = hy - ih - th - 2;
+  cx.fillStyle = "#FFD166"; cx.fillRect(lx - 1, ly - 1, 3, 3);
+  const a = reduce ? 0.4 : t / 1600, s = Math.sin(a);          // the beam sweeping
+  if (Math.cos(a) > -0.2) {
+    cx.fillStyle = "rgba(255,209,102,.16)";
+    cx.beginPath(); cx.moveTo(lx, ly);
+    const len = W * .55 * Math.abs(s) + 6, dir = s > 0 ? 1 : -1;
+    cx.lineTo(lx + dir * len, ly - len * .12); cx.lineTo(lx + dir * len, ly + len * .12); cx.closePath(); cx.fill();
+  }
+}
+let last = 0;
+function loop(t) { if (t - last > 80) { draw(t); last = t; } requestAnimationFrame(loop); }
+new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(cv);
+resize();
+if (reduce) draw(0); else requestAnimationFrame(loop);
+
+setLang(lang);
+</script>
 </body>
 </html>

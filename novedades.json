@@ -1,5 +1,26 @@
 [
  {
+  "reloj": "3.0.0-beta.12",
+  "app": "0.9.0",
+  "fecha": "2026-11-16",
+  "es": [
+   "Selector de esferas nuevo, el escaparate: cada esfera en miniatura con la forma de la pantalla. Mantén el dedo quieto en la esfera y se encoge hasta su tarjeta; desliza a los lados para pasar de esfera, arriba o abajo para saltar de grupo, y toca la del centro para ponerla",
+   "Mantener el dedo quieto abre el escaparate también en las esferas que responden al dedo (Plasma, Cubo 3D, Túnel, Lava y Vida); la introducción lo enseña con un gesto nuevo",
+   "Apagado con animación y sin textos: al mantener PWR la luna se pone mientras se llena el anillo dorado; si lo sueltas antes, vuelve a salir",
+   "Enchufar el reloj apagado ya no lo enciende: enseña la animación de carga y se vuelve a apagar; PWR lo enciende",
+   "Cambiar entre tus esferas es instantáneo: el reloj las tiene preparadas antes de llegar a ellas",
+   "Instalador web nuevo, con una noche junto al mar en pixel art, la galería de esferas y el creador de esferas"
+  ],
+  "en": [
+   "New face picker, the shop window: every face as a little screen. Hold your finger still on the face and it shrinks into its card; swipe sideways to go through them, up or down to jump between groups, and tap the middle one to wear it",
+   "Holding your finger still opens the shop window on the faces that follow your finger too (Plasma, 3D Cube, Tunnel, Lava and Life); the welcome guide teaches it with a new gesture",
+   "A wordless power-off animation: holding PWR sets the moon while a golden ring fills; let go early and it rises again",
+   "Plugging in a watch that is off no longer turns it on: it shows the charging animation and goes off again; PWR turns it on",
+   "Switching between your own faces is instant: the watch has them ready before you get there",
+   "New web installer, with a pixel-art night by the sea, the gallery of faces and the face maker"
+  ]
+ },
+ {
   "reloj": "3.0.0-beta.11",
   "app": "0.9.0",
   "fecha": "2026-11-15",
