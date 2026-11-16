@@ -4,6 +4,7 @@
                  installer (manifest.json). Use it for a first install or to recover.
 - marea-ota.bin  just the app: what the watches download to update, and what the web page uploads
                  (Avanzado).
+- caras/         the faces' previews (src/web/fxN.webp), which the installer page shows.
 
 Offsets come from partitions.csv, so changing the table needs no edits here.
 
@@ -53,6 +54,12 @@ def main():
     subprocess.run(cmd, check=True)
     ota = os.path.join(out_dir, OTA)
     shutil.copyfile(os.path.join(build, "firmware.bin"), ota)
+    # the faces the page shows (the app's previews, src/web/fxN.webp)
+    caras = os.path.join(out_dir, "caras")
+    os.makedirs(caras, exist_ok=True)
+    for n in os.listdir(os.path.join(root, "src", "web")):
+        if n.startswith("fx") and n.endswith(".webp"):
+            shutil.copyfile(os.path.join(root, "src", "web", n), os.path.join(caras, n))
     print(f"{full}: {os.path.getsize(full)} bytes (app at {app})")
     print(f"{ota}: {os.path.getsize(ota)} bytes")
 

@@ -116,6 +116,12 @@ def update_pages(version, notes, with_app, dry_run, first="reloj"):
         os.makedirs(flasher, exist_ok=True)
         for f in ("index.html", "manifest.json", FULL):
             shutil.copy(os.path.join(WEB, f), flasher)
+        # the installer page's pictures: the faces (tools/build_webflasher.py copies them from src/web/)
+        # and the screenshots of the phone app's face editor (webflasher/img/, in the repository)
+        for d in ("caras", "img"):
+            os.makedirs(os.path.join(flasher, d), exist_ok=True)
+            for f in os.listdir(os.path.join(WEB, d)):
+                shutil.copy(os.path.join(WEB, d, f), os.path.join(flasher, d))
         open(os.path.join(tree, ".nojekyll"), "w").close()
         run("git", "add", "-A", cwd=tree)
         run("git", "commit", "-m", f"Marea {version}", cwd=tree)
