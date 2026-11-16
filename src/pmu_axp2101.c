@@ -62,6 +62,8 @@ bool pmu_log_status(void)
     return true;
 }
 
+int pmu_power_on_source(void) { return reg(0x20); }
+
 void pmu_power_off(void)
 {
     // REG 10h "PMU common configuration", bit 0: software power off. Everything but the RTC loses

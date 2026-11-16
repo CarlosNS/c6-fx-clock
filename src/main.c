@@ -481,6 +481,47 @@ static void shut_down(const char *title, const char *l1, const char *l2, const c
     esp_deep_sleep_start();  // the PMU did not cut the power: at least stop everything
 }
 
+// Plugged in while off, the PMU starts the watch on its own, though nobody asked it to: show the
+// charger scene, then switch off again (the PMU goes on charging while off). PWR meanwhile starts the
+// watch for real. Only from a cold start: a reset of a watch that is on (update, flashing) is not this.
+static void charge_only(void)
+{
+    if (esp_reset_reason() != ESP_RST_POWERON) return;
+    int src = pmu_power_on_source();
+    ESP_LOGI(TAG, "Power-on source 0x%02X", src);
+    pmu_battery_t b;
+    if (src < 0 || !(src & PMU_ON_VBUS) || (src & PMU_ON_KEY) || !pmu_battery(&b) || !b.present || !b.usb) return;
+    g_app.bat_pct = b.percent;
+    g_app.bat_chg = true;
+    g_app.bat_full = !b.charging;
+    ESP_LOGI(TAG, "Started by the USB cable: charge scene, then off (PWR starts it)");
+    pmu_pwrkey_init();
+    pmu_pwrkey_poll();  // (nothing from before)
+    uint32_t t0 = now_ms(), t = 0;
+    bool lit = false;
+    while (t < PLUG_SCENE_MS) {
+        ui_begin(lcd_native_fb());
+        plug_scene(t, !g_app.bat_full);
+        lcd_flush_native();
+        if (!lit) lcd_set_brightness(g_app.brightness), lit = true;
+        if (pmu_pwrkey_poll() & (PMU_PKEY_DOWN | PMU_PKEY_SHORT)) {
+            // PWR: start for real, once it is let go (or its release would turn the screen off later)
+            for (uint32_t w = now_ms(); now_ms() - w < 3000 && !(pmu_pwrkey_poll() & (PMU_PKEY_UP | PMU_PKEY_SHORT));)
+                vTaskDelay(pdMS_TO_TICKS(50));
+            pmu_pwrkey_poll();
+            ESP_LOGI(TAG, "PWR: starting");
+            return;
+        }
+        vTaskDelay(1);
+        t = now_ms() - t0;
+    }
+    lcd_set_brightness(0);
+    lcd_sleep(true);
+    pmu_power_off();
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_deep_sleep_start();  // the PMU did not cut the power: at least stop everything
+}
+
 void power_off_now(bool really)
 {
     ESP_LOGW(TAG, "Battery empty%s", really ? ": powering off" : " (test screen)");
@@ -679,6 +720,7 @@ void app_main(void)
     }
     if (mode == BOOT_USB) usbdisk_run();  // does not return
 
+    charge_only();  // plugged in while off: only the charge scene, unless PWR is pressed
     update_boot_check();
     net_load_saved_ssid();  // known even in Bluetooth mode (it is the network updates use)
     g_app.wake_until = now_ms() + SPLASH_MS + g_app.wake_secs * 1000;  // show the splash and the clock once at boot

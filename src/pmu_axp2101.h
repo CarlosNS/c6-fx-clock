@@ -17,6 +17,10 @@ typedef struct {
 bool pmu_battery(pmu_battery_t *b);
 // Prints the charger's settings and state (console "pmudiag"): read only
 void pmu_diag(void);
+// What started the PMU this time (REG 20h): PMU_ON_* bits, -1 if it does not answer
+#define PMU_ON_KEY 0x01   // the PWR key
+#define PMU_ON_VBUS 0x04  // a USB cable plugged in
+int pmu_power_on_source(void);
 // Cuts the power (software power off); does not return if it works
 void pmu_power_off(void);
 

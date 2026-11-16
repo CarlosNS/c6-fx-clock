@@ -11,7 +11,7 @@
 #include "find.h"
 #include "sys.h"
 
-#define SHOW_MS 5000
+#define SHOW_MS PLUG_SCENE_MS
 
 static uint32_t s_t0;
 static int s_force;  // plug_test: 1 charger charging, 2 charger full, 3 computer charging, 4 computer full
@@ -335,6 +335,8 @@ static void draw_power(uint32_t t, bool charging, int pc_ms)
         ui_print_c(&ui_jersey, 4, (BAT_X + BAT_W / 2) * AP, (BAT_Y + BAT_H) * AP + 30, b, charging ? MS_VERDE : MS_CREMA, true);
     }
 }
+
+void plug_scene(uint32_t t, bool charging) { draw_power(t, charging, -1); }
 
 static bool p_draw(uint32_t now, bool force)
 {

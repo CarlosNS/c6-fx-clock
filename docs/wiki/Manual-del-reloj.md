@@ -101,6 +101,8 @@ La pantalla se enciende y enseña unos segundos, sin palabras, qué trae el cabl
 
 Se quita sola o tocándola. Por la consola serie, `plugtest 1` a `plugtest 4` la enseñan (cargador cargando o lleno, ordenador cargando o lleno).
 
+**Con el reloj apagado,** enchufarlo ya no lo enciende: sale la escena de carga unos segundos y se vuelve a apagar. Para encenderlo, pulsa PWR (también mientras se ve la escena).
+
 ## Restablecer los ajustes
 
 En *Ajustes → Sistema → Restablecer ajustes* del reloj, o en la app (*Ajustes → Avanzado*), tras una ventana de confirmación. Los ajustes vuelven a los de fábrica:
