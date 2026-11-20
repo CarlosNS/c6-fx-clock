@@ -36,6 +36,7 @@ static const setting_t SETTINGS[] = {
     {"fx", &g_app.fx, 0, FX_COUNT - 1, true, on_fx},
     {"auto", &g_app.auto_cycle, 0, 1, true, NULL},
     {"fxoff", &g_app.fx_off, 0, 0x7FFFFFFF, true, NULL},  // faces left out of the auto rotation (bitmask)
+    {"fxoff2", &g_app.fx_off2, 0, 0x7FFFFFFF, true, NULL},  // the same for faces 31..61
     {"spd", &g_app.speed, 10, 300, true, on_spd},  // the face on screen (each face keeps its own)
     {"bri", &g_app.brightness, 5, 100, true, NULL},
     {"h24", &g_app.h24, 0, 1, true, NULL},
@@ -58,6 +59,12 @@ static const setting_t SETTINGS[] = {
     {"ltim", &g_app.lz_time, 0, 2, true, NULL},
     {"lest", &g_app.lz_trail, 6, 40, true, NULL},
     {"lbri", &g_app.lz_bri, 30, 100, true, NULL},
+    {"cest", &g_app.cr_style, 0, 2, true, NULL},    // "Corriente" face (fx_flow.c)
+    {"ccol", &g_app.cr_col, 0, 4, true, NULL},
+    {"ctim", &g_app.cr_time, 0, 2, true, NULL},
+    {"cnum", &g_app.cr_num, 4, 30, true, NULL},
+    {"ctur", &g_app.cr_turb, 5, 25, true, NULL},
+    {"cbri", &g_app.cr_bri, 30, 100, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"voice", &g_app.voice, 0, 1, true, NULL},

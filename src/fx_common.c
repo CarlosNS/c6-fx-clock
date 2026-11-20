@@ -99,6 +99,9 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "MARIPOSA", .res = FX_NATIVE, .opts = "lz", .enter = lorenz_enter, .render = lorenz_render,
      .label = "Mariposa", .group = FX_G_EFFECTS, .hint = "Arrastra para girar la figura; toca para lanzar otra partícula (el efecto mariposa)",
      .desc = "Una partícula de luz sigue las ecuaciones del caos de Lorenz y dibuja en 3D sus dos alas, girando despacio sobre negro. Cada hora empieza de nuevo."},
+    {.name = "CORRIENTE", .res = FX_NATIVE, .opts = "cr", .enter = flow_enter, .render = flow_render,
+     .label = "Corriente", .group = FX_G_EFFECTS, .hint = "Arrastra para crear un remolino; toca para soltar un puñado de partículas",
+     .desc = "Miles de partículas siguen las corrientes de un campo de ruido y dejan trazos finos de luz sobre negro, como seda o humo. La hora aparece tejida en el propio flujo."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

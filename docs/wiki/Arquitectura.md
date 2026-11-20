@@ -83,7 +83,8 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 |---|---|---|
 | `fx` | 0–24 | Esfera (desde la app o la página, el reloj vuelve a la esfera si estaba en un menú) |
 | `auto` | 0/1 | Cambio automático cada 30 s |
-| `fxoff` | 0–2³¹−1 | Esferas que el cambio automático se salta: máscara de bits, el bit *n* es la esfera *n* (máximo 31 esferas) |
+| `fxoff` | 0–2³¹−1 | Esferas que el cambio automático se salta: máscara de bits, el bit *n* es la esfera *n* (esferas 0 a 30) |
+| `fxoff2` | 0–2³¹−1 | Lo mismo para las esferas 31 a 61: el bit *n* es la esfera 31 + *n* |
 | `spd` | 10–300 | Velocidad de las animaciones (%) |
 | `bri` | 5–100 | Brillo (%) |
 | `h24` | 0/1 | Formato 24 h |
@@ -110,6 +111,12 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 | `ltim` | 0–2 | Esfera Mariposa: hora arriba, abajo o solo al tocar |
 | `lest` | 6–40 | Esfera Mariposa: largo de la estela, en cientos de puntos |
 | `lbri` | 30–100 | Esfera Mariposa: brillo (%) |
+| `cest` | 0–2 | Esfera Corriente: estilo (seda, humo, río) |
+| `ccol` | 0–4 | Esfera Corriente: color (Hielo, Aurora, Fuego, Lavanda, Plata) |
+| `ctim` | 0–2 | Esfera Corriente: hora tejida, encima o solo al tocar |
+| `cnum` | 4–30 | Esfera Corriente: partículas, en cientos |
+| `ctur` | 5–25 | Esfera Corriente: turbulencia, en décimas (10 = normal) |
+| `cbri` | 30–100 | Esfera Corriente: brillo (%) |
 | `ovl` | 0/1 | Información de depuración en pantalla |
 
 Añadir un ajuste es **una línea** en la tabla de `settings.c`: se guarda en NVS, se controla por orden y aparece en el JSON de estado sin tocar nada más.

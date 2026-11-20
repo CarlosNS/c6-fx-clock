@@ -1,4 +1,4 @@
-El reloj trae **27 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
+El reloj trae **28 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
@@ -77,6 +77,21 @@ En la app (*Esferas → Mariposa → Opciones*) se elige:
 - **Hora:** *Arriba*, *Abajo* o *Al tocar* (aparece 5 s después de tocar la pantalla).
 - **Estela:** de 600 a 4.000 puntos.
 - **Brillo.**
+
+### Corriente
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx31.png" alt="Esfera Corriente" width="205">
+
+*Número 31* — Miles de partículas siguen las corrientes de un campo de ruido Perlin que cambia despacio y dejan trazos finos de luz sobre el negro de la AMOLED, como seda o humo. Al cruzar los números van más despacio y dejan más luz, y los números tienen un brillo suave propio: la hora aparece **tejida** en el propio flujo, y al cambiar el minuto el flujo borra la vieja y teje la nueva.
+
+Es interactiva: al **arrastrar** se forma un remolino alrededor del dedo; un **toque** suelta un puñado de partículas brillantes. Mantener el dedo quieto sigue abriendo el escaparate.
+
+En la app (*Esferas → Corriente → Opciones*) se elige:
+
+- **Estilo:** *Seda* (hilos largos, el de serie), *Humo* (trazos cortos y suaves) o *Río* (corrientes rápidas).
+- **Color:** Hielo, Aurora, Fuego, Lavanda o Plata.
+- **Hora:** *Tejida*, *Encima* (en el centro, sobre el flujo) o *Al tocar* (aparece 5 s después de tocar la pantalla).
+- **Partículas** (de 400 a 3.000), **turbulencia** y **brillo.**
 
 ## Videojuegos
 

@@ -18,7 +18,8 @@ typedef struct {
     volatile int night_start, night_end, night_bri;  // hours 0..23, percent
     volatile int always_on;    // 0: screen sleeps until the BOOT button (or the web) wakes it
     volatile int wake_secs;    // how long the screen stays on after the button / web (3..600 s)
-    volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (max 31 faces)
+    volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (faces 0..30)
+    volatile int fx_off2;      // the same for faces 31..61 (bit i: face 31 + i)
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
     volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
     // "Dunas" face: palette (0 ice .. 5 silver), animation (0 crests, 1 soft, 2 contour lines), brightness
@@ -28,6 +29,9 @@ typedef struct {
     // "Mariposa" face: attractor (0 Lorenz, 1 Aizawa, 2 Thomas, 3 Halvorsen), palette (0 ice .. 4 silver),
     // time (0 top, 1 bottom, 2 only after a touch), trail (6..40 hundred points), brightness (30..100 %)
     volatile int lz_form, lz_col, lz_time, lz_trail, lz_bri;
+    // "Corriente" face: style (0 silk, 1 smoke, 2 river), palette (0 ice .. 4 silver), time (0 woven into the
+    // flow, 1 on top, 2 only after a touch), particles (4..30 hundred), turbulence (5..25 tenths), brightness
+    volatile int cr_style, cr_col, cr_time, cr_num, cr_turb, cr_bri;
     volatile int raise_wake;   // raising the wrist turns the screen on
     volatile int setup;        // the first-run guide was seen (or skipped)
     volatile int tips;         // how many times the edge hints were shown on the face (they stop at 8)

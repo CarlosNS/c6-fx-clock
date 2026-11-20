@@ -89,6 +89,9 @@ app_state_t g_app = {
     .dune_bri = 85,
     .dune_dots = 1,
     .lz_trail = 30,
+    .cr_num = 16,
+    .cr_turb = 10,
+    .cr_bri = 90,
     .lz_bri = 90,
     .raise_wake = 1,
     .tap_wake = 1,
@@ -898,7 +901,7 @@ void app_main(void)
             // next face not switched off in the app; if there is none, stay where we are
             for (int k = 1; k <= FX_COUNT; k++) {
                 int n = (g_app.fx + k) % FX_COUNT;
-                if (!fx_list[n].retired && !((g_app.fx_off >> n) & 1) && n != FX_CUSTOM) {  // Mis esferas: only on purpose
+                if (!fx_list[n].retired && !(n < 31 ? (g_app.fx_off >> n) & 1 : (g_app.fx_off2 >> (n - 31)) & 1) && n != FX_CUSTOM) {  // Mis esferas: only on purpose
                     g_app.fx = n;
                     break;
                 }

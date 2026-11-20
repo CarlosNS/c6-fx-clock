@@ -126,6 +126,7 @@ En *Ajustes → Sistema → Restablecer ajustes* del reloj, o en la app (*Ajuste
 | Color de Clásico y de Ónix | Verde y ámbar |
 | Dunas | Hielo, crestas, hora grande, puntos normales y brillo 85 % |
 | Mariposa | Lorenz, Hielo, hora arriba, estela de 3.000 puntos y brillo 90 % |
+| Corriente | Seda, Hielo, hora tejida, 1.600 partículas, turbulencia normal y brillo 90 % |
 
 Se conservan el **idioma**, los **móviles emparejados**, la **red WiFi** guardada, las **alarmas**, el **historial de pasos** y la **hora**.
 
@@ -188,7 +189,7 @@ Un escaparate con todas las esferas, cada una en miniatura y con la forma de la 
 
 - También se llega manteniendo el dedo sobre la esfera.
 - Para cambiar de esfera sin abrir la app: desliza a los lados en la esfera, o pulsa BOOT.
-- Qué esferas salen en el **cambio automático**, el color de Clásico y Ónix, las opciones de Dunas y Mariposa y la ciudad de Tiempo se eligen en la app del móvil.
+- Qué esferas salen en el **cambio automático**, el color de Clásico y Ónix, las opciones de Dunas, Mariposa y Corriente y la ciudad de Tiempo se eligen en la app del móvil.
 - **Mis esferas:** las esferas que haces en la app con tu foto o tu GIF se guardan en la microSD del reloj y salen al final del escaparate; también se ponen desde la app (ver [[Esferas]]).
 
 ## Alarmas
