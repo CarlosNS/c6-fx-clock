@@ -1,4 +1,4 @@
-El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
+El reloj trae **27 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
@@ -45,6 +45,38 @@ El reloj trae **25 esferas**, todas dibujadas por código a 30 fps y a pantalla 
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx13.png" alt="Esfera Synthwave" width="205">
 
 *Número 13* — Sol a franjas, rejilla de neón, palmeras, números cromados.
+
+### Dunas
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx29.png" alt="Esfera Dunas" width="205">
+
+*Número 29* — Un desierto hecho de puntos de luz sobre el negro de la AMOLED, visto con una cámara baja: las dunas avanzan despacio hacia ti, los puntos cercanos son grandes y los lejanos diminutos y se apagan con la distancia, las caras que miran a la luz brillan y las crestas tapan lo que hay detrás. El relieve sale del ruido Perlin, el mismo tipo de ruido con el que se generan los terrenos de muchos videojuegos. La hora flota en el cielo, hecha también de puntos, que se recolocan uno a uno al cambiar el minuto.
+
+Es interactiva: al **pasar el dedo**, la arena (y el cielo) se ilumina por donde pasa y se apaga poco a poco; un **toque** lanza una onda sobre la arena. Mantener el dedo quieto sigue abriendo el escaparate.
+
+En la app (*Esferas → Dunas → Opciones*) se elige:
+
+- **Color:** Hielo (azul claro y azul, el de serie), Abismo, Aurora, Lavanda, Ámbar o Plata.
+- **Dunas:** *Crestas* (marcadas), *Suaves* o *Curvas* (curvas de nivel que se mueven sobre la arena).
+- **Hora:** *Grande*, *Pequeña* o *Al tocar* (solo aparece 5 s después de tocar la pantalla).
+- **Puntos:** finos, normales o gruesos.
+- **Brillo.** La velocidad es la de cualquier esfera (*Velocidad de esta esfera*).
+
+### Mariposa
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx30.png" alt="Esfera Mariposa" width="205">
+
+*Número 30* — Una partícula de luz sigue las ecuaciones de Lorenz, el ejemplo más famoso de caos: nunca pasa dos veces por el mismo sitio, pero siempre dibuja las mismas dos alas. Deja una estela que se apaga con el tiempo, en 3D sobre el negro de la AMOLED: lo lejano se ve más tenue y donde la estela se cruza brilla más. La figura gira sola, despacio. Cada hora la partícula vuelve a empezar desde otro punto y la figura se dibuja de nuevo.
+
+Es interactiva: al **arrastrar** giras la figura (al soltar sigue girando un poco); un **toque** lanza otra partícula, de otro color, a una millonésima de la primera. Durante unos segundos van juntas y luego se separan: es el *efecto mariposa*. Dura 45 segundos. Mantener el dedo quieto sigue abriendo el escaparate.
+
+En la app (*Esferas → Mariposa → Opciones*) se elige:
+
+- **Atractor:** *Lorenz* (la mariposa, el de serie), *Aizawa* (una esfera atravesada por un tubo), *Thomas* (un laberinto que se enreda) o *Halvorsen* (tres lazos).
+- **Color:** Hielo, Aurora, Fuego, Lavanda o Plata.
+- **Hora:** *Arriba*, *Abajo* o *Al tocar* (aparece 5 s después de tocar la pantalla).
+- **Estela:** de 600 a 4.000 puntos.
+- **Brillo.**
 
 ## Videojuegos
 

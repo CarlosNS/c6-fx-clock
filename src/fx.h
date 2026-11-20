@@ -41,7 +41,7 @@ enum { FX_COMPAT, FX_WIDE, FX_NATIVE };
 #define WH LCD_WH
 #define WIDE_CORNER_R 80
 
-#define FX_COUNT 29
+#define FX_COUNT 31
 #define FX_CUSTOM 28  // "Mis esferas" (fx_custom.c)
 // Custom faces: "cust list|sel N|try N|del N|reload N" (true if it was one), and the list as JSON
 bool custom_command(const char *cmd);
@@ -154,6 +154,10 @@ void metal_enter(void);
 void metal_render(uint16_t *fb, uint32_t t, uint32_t dt);
 void custom_enter(void);
 void custom_render(uint16_t *fb, uint32_t t, uint32_t dt);
+void dunes_enter(void);
+void dunes_render(uint16_t *fb, uint32_t t, uint32_t dt);
+void lorenz_enter(void);
+void lorenz_render(uint16_t *fb, uint32_t t, uint32_t dt);
 
 // Scratch memory shared by faces that need big lookup tables. Only one face runs at a time:
 // a face claims it in enter() (rebuilding its tables if another face used it in between).

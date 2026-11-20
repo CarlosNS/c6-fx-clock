@@ -2,7 +2,7 @@
 
 ![Marea: el escaparate de esferas, el menú principal y una alarma sonando, en relojes sobre una noche junto al mar en pixel art](docs/img/social.png)
 
-Reloj de pulsera con **25 esferas a pantalla completa**, más las que hagas tú con una foto o un GIF, y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
+Reloj de pulsera con **27 esferas a pantalla completa**, más las que hagas tú con una foto o un GIF, y apps propias, para la **Waveshare ESP32-S3-Touch-AMOLED-2.06** (AMOLED 410×502 táctil, batería, reloj de hardware, acelerómetro, altavoz y microSD). Funciona a 30 fps, se queda conectado al móvil por Bluetooth mientras está cerca, se controla también desde el navegador por WiFi y se actualiza solo por internet.
 
 ![Algunas esferas: Clásico, Tiempo, RPG, Engranajes, Plasma, Aventura, Synthwave y Estrellada](docs/img/esferas.png)
 
@@ -50,6 +50,8 @@ Todas ocupan la pantalla entera, respetan sus esquinas redondeadas y van a 30 fp
 | 4 | Vida | horas encima de minutos, de células inmortales; al cambiar el minuto, los viejos se disuelven en la simulación |
 | 5 | HUD | interfaz sci-fi: hora, temperatura del chip, señal WiFi, tiempo encendido y anillo de segundos; glitch cada minuto |
 | 6 | Aventura | viaje en pixel art con parallax, lago con reflejos y luz según la hora real (amanecer, día, atardecer, noche con faroles y luciérnagas) |
+| 29 | Dunas | un desierto de puntos de luz sobre negro, visto en perspectiva, con dunas que avanzan despacio; la hora flota en el cielo hecha de puntos. El dedo ilumina la arena y un toque lanza una onda. Color, forma de las dunas, tamaño de la hora, puntos y brillo se eligen en la app |
+| 30 | Mariposa | una partícula de luz sigue las ecuaciones del caos de Lorenz y dibuja en 3D sus dos alas, girando despacio sobre negro; cada hora empieza de nuevo. Arrastrar gira la figura y un toque lanza otra partícula casi en el mismo sitio, que acaba separándose (el efecto mariposa). En la app se eligen el atractor (Lorenz, Aizawa, Thomas o Halvorsen), el color, dónde va la hora, el largo de la estela y el brillo |
 | 7 | RPG | batalla 3D estilo JRPG: arena con círculo rúnico, cristal guardián y grupo; las barras de turno marcan los segundos y cada minuto se lanza un hechizo con la hora como daño |
 
 **Basadas en obras famosas** (todas de dominio público; reinterpretaciones animadas, no copias):

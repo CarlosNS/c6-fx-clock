@@ -21,6 +21,13 @@ typedef struct {
     volatile int fx_off;       // bit i set: face i is skipped by the automatic rotation (max 31 faces)
     volatile int classic_hue;  // "Clasico" face: dial colour, hue in degrees (0..359)
     volatile int onix_hue;     // "Onix" face: accent colour, hue in degrees (0..359)
+    // "Dunas" face: palette (0 ice .. 5 silver), animation (0 crests, 1 soft, 2 contour lines), brightness
+    // (30..100 %), dot size (0 fine, 1 normal, 2 coarse), time (0 big, 1 small, 2 only after a touch). Its
+    // speed is the per-face speed every face has.
+    volatile int dune_col, dune_anim, dune_bri, dune_dots, dune_time;
+    // "Mariposa" face: attractor (0 Lorenz, 1 Aizawa, 2 Thomas, 3 Halvorsen), palette (0 ice .. 4 silver),
+    // time (0 top, 1 bottom, 2 only after a touch), trail (6..40 hundred points), brightness (30..100 %)
+    volatile int lz_form, lz_col, lz_time, lz_trail, lz_bri;
     volatile int raise_wake;   // raising the wrist turns the screen on
     volatile int setup;        // the first-run guide was seen (or skipped)
     volatile int tips;         // how many times the edge hints were shown on the face (they stop at 8)

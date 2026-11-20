@@ -4,6 +4,8 @@
 
 ### Próxima versión
 
+- **Esfera nueva, Dunas (número 29):** un desierto de puntos de luz sobre el negro de la AMOLED, visto en perspectiva, con dunas que avanzan despacio hacia ti. El relieve sale del ruido Perlin; los puntos cercanos son grandes, los lejanos se apagan con la distancia y las crestas tapan lo que hay detrás. La hora flota en el cielo hecha de puntos, que se recolocan uno a uno al cambiar el minuto. Pasar el dedo ilumina la arena y un toque lanza una onda. En la app se eligen el color (Hielo, Abismo, Aurora, Lavanda, Ámbar o Plata), la forma de las dunas (crestas, suaves o curvas de nivel), la hora (grande, pequeña o solo al tocar), el tamaño de los puntos y el brillo; la velocidad es la de cualquier esfera.
+- **Esfera nueva, Mariposa (número 30):** una partícula de luz sigue las ecuaciones del caos de Lorenz y dibuja en 3D sus dos alas, con una estela que se apaga con el tiempo, girando sola despacio sobre negro. Cada hora vuelve a empezar desde otro punto. Arrastrar gira la figura; un toque lanza otra partícula a una millonésima de la primera, que acaba separándose (el efecto mariposa). En la app se eligen el atractor (Lorenz, Aizawa, Thomas o Halvorsen), el color (Hielo, Aurora, Fuego, Lavanda o Plata), dónde va la hora (arriba, abajo o solo al tocar), el largo de la estela y el brillo.
 - Arreglado: con el reloj en inglés, la fecha de las esferas seguía en español («LUN 16 NOV»); ahora sale en el idioma del reloj («MON 16 NOV»), y también «NO TIME» cuando aún no tiene hora.
 
 ### 3.0.0-beta.13 y app 0.9.1 (16/11/2026)

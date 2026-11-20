@@ -100,6 +100,16 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 | `goal` | 1000–50000 | Objetivo diario de pasos |
 | `chue` | 0–359 | Color de la esfera Clásico (tono) |
 | `ohue` | 0–359 | Color del acento de la esfera Ónix (tono) |
+| `dcol` | 0–5 | Esfera Dunas: color (Hielo, Abismo, Aurora, Lavanda, Ámbar, Plata) |
+| `dani` | 0–2 | Esfera Dunas: crestas, suaves o curvas de nivel |
+| `dtim` | 0–2 | Esfera Dunas: hora grande, pequeña o solo al tocar |
+| `ddot` | 0–2 | Esfera Dunas: puntos finos, normales o gruesos |
+| `dbri` | 30–100 | Esfera Dunas: brillo de los puntos (%) |
+| `lfor` | 0–3 | Esfera Mariposa: atractor (Lorenz, Aizawa, Thomas, Halvorsen) |
+| `lcol` | 0–4 | Esfera Mariposa: color (Hielo, Aurora, Fuego, Lavanda, Plata) |
+| `ltim` | 0–2 | Esfera Mariposa: hora arriba, abajo o solo al tocar |
+| `lest` | 6–40 | Esfera Mariposa: largo de la estela, en cientos de puntos |
+| `lbri` | 30–100 | Esfera Mariposa: brillo (%) |
 | `ovl` | 0/1 | Información de depuración en pantalla |
 
 Añadir un ajuste es **una línea** en la tabla de `settings.c`: se guarda en NVS, se controla por orden y aparece en el JSON de estado sin tocar nada más.

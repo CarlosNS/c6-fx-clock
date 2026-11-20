@@ -93,6 +93,12 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "MIS ESFERAS", .res = FX_NATIVE, .enter = custom_enter, .render = custom_render,
      .label = "Mis esferas", .group = -1,  // not in the grid: the app lists the custom faces apart
      .desc = "La esfera personalizada que hayas elegido en la app: tu imagen o GIF de fondo y la hora a tu gusto."},
+    {.name = "DUNAS", .res = FX_NATIVE, .opts = "dn", .enter = dunes_enter, .render = dunes_render,
+     .label = "Dunas", .group = FX_G_EFFECTS, .hint = "Pasa el dedo para iluminar la arena; toca para lanzar una onda",
+     .desc = "Un desierto de puntos de luz sobre negro, con dunas que avanzan despacio. La hora flota en el cielo, hecha también de puntos."},
+    {.name = "MARIPOSA", .res = FX_NATIVE, .opts = "lz", .enter = lorenz_enter, .render = lorenz_render,
+     .label = "Mariposa", .group = FX_G_EFFECTS, .hint = "Arrastra para girar la figura; toca para lanzar otra partícula (el efecto mariposa)",
+     .desc = "Una partícula de luz sigue las ecuaciones del caos de Lorenz y dibuja en 3D sus dos alas, girando despacio sobre negro. Cada hora empieza de nuevo."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

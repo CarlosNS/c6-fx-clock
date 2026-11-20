@@ -48,6 +48,16 @@ static const setting_t SETTINGS[] = {
     {"wks", &g_app.wake_secs, 3, 600, true, on_wake},
     {"chue", &g_app.classic_hue, 0, 359, true, NULL},
     {"ohue", &g_app.onix_hue, 0, 359, true, NULL},
+    {"dcol", &g_app.dune_col, 0, 5, true, NULL},    // "Dunas" face (fx_dunes.c)
+    {"dani", &g_app.dune_anim, 0, 2, true, NULL},
+    {"dbri", &g_app.dune_bri, 30, 100, true, NULL},
+    {"ddot", &g_app.dune_dots, 0, 2, true, NULL},
+    {"dtim", &g_app.dune_time, 0, 2, true, NULL},
+    {"lfor", &g_app.lz_form, 0, 3, true, NULL},     // "Mariposa" face (fx_lorenz.c)
+    {"lcol", &g_app.lz_col, 0, 4, true, NULL},
+    {"ltim", &g_app.lz_time, 0, 2, true, NULL},
+    {"lest", &g_app.lz_trail, 6, 40, true, NULL},
+    {"lbri", &g_app.lz_bri, 30, 100, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"voice", &g_app.voice, 0, 1, true, NULL},

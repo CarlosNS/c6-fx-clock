@@ -202,6 +202,8 @@ app_take_drag(&dx, &dy);   // movimiento acumulado desde el fotograma anterior (
 
 También tienes `g_app.touch` (si el dedo está en el panel ahora mismo) y `g_app.tx`, `g_app.ty` (su posición, de 0 a 1000). Ejemplos: `fx_lava.c` (la bola sigue al dedo) y `fx_life.c` (dibujar células).
 
+Un **toque** (dedo que se levanta sin moverse) llega como `g_app.touch` durante unos 120 ms sin ningún movimiento en `app_take_drag`: si al soltar no se ha movido nada, es un toque. Ejemplo: `fx_dunes.c` (arrastrar ilumina la arena, tocar lanza una onda).
+
 **En el propio reloj** pasa lo mismo con la pantalla táctil: en una esfera interactiva, el dedo llega a la esfera como si fuera el panel de la app. Los gestos que empiezan en un borde siguen siendo del sistema (ajustes rápidos, lanzador), así que el dedo no se queda atrapado.
 
 ## Ajustes propios
