@@ -2,13 +2,16 @@
 
 ## Sin publicar: Marea (3.0.0)
 
-### Próxima versión
+### 3.0.0-beta.14 y app 0.9.2 (21/11/2026)
+
+- **App 0.9.2:** las opciones de las esferas nuevas (Dunas, Mariposa, Corriente y Globos) en *Esferas → Opciones*, y el cambio automático con más de 31 esferas.
 
 - **Esfera nueva, Dunas (número 29):** un desierto de puntos de luz sobre el negro de la AMOLED, visto en perspectiva, con dunas que avanzan despacio hacia ti. El relieve sale del ruido Perlin; los puntos cercanos son grandes, los lejanos se apagan con la distancia y las crestas tapan lo que hay detrás. La hora flota en el cielo hecha de puntos, que se recolocan uno a uno al cambiar el minuto. Pasar el dedo ilumina la arena y un toque lanza una onda. En la app se eligen el color (Hielo, Abismo, Aurora, Lavanda, Ámbar o Plata), la forma de las dunas (crestas, suaves o curvas de nivel), la hora (grande, pequeña o solo al tocar), el tamaño de los puntos y el brillo; la velocidad es la de cualquier esfera.
 - **Esfera nueva, Mariposa (número 30):** una partícula de luz sigue las ecuaciones del caos de Lorenz y dibuja en 3D sus dos alas, con una estela que se apaga con el tiempo, girando sola despacio sobre negro. Cada hora vuelve a empezar desde otro punto. Arrastrar gira la figura; un toque lanza otra partícula a una millonésima de la primera, que acaba separándose (el efecto mariposa). En la app se eligen el atractor (Lorenz, Aizawa, Thomas o Halvorsen), el color (Hielo, Aurora, Fuego, Lavanda o Plata), dónde va la hora (arriba, abajo o solo al tocar), el largo de la estela y el brillo.
 - **Esfera nueva, Corriente (número 31):** miles de partículas siguen las corrientes de un campo de ruido Perlin y dejan trazos finos de luz sobre negro, como seda o humo; la hora aparece tejida en el propio flujo. Arrastrar crea un remolino y un toque suelta un puñado de partículas. En la app se eligen el estilo (seda, humo o río), el color, la hora (tejida, encima o solo al tocar), las partículas, la turbulencia y el brillo.
 - **Esfera nueva, Globos (número 32):** un cielo fotográfico (Poly Haven, dominio público) que se mueve despacio y cambia con la hora del día, con amanecer, día, atardecer y noche fundiéndose en media hora; la hora grande en blanco y globos de colores que suben por delante y por detrás, a veces uno muy cerca. Tocar un globo lo explota con un «pop» por el altavoz; arrastrar sopla viento; a la hora en punto, una suelta de globos. En la app se eligen los colores, el cielo, la cantidad y el sonido.
 - El cambio automático admite ya hasta 62 esferas (antes, 31): las esferas 31 en adelante se guardan en un ajuste nuevo, `fxoff2`. Lo que tuvieras elegido se conserva.
+- Arreglado: la microSD podía dejar de leer con «not enough mem»: la esfera Globos dejaba 6 KB de datos en la RAM interna que necesita el controlador de la tarjeta. Ahora van en la PSRAM.
 - Arreglado: con el reloj en inglés, la fecha de las esferas seguía en español («LUN 16 NOV»); ahora sale en el idioma del reloj («MON 16 NOV»), y también «NO TIME» cuando aún no tiene hora.
 
 ### 3.0.0-beta.13 y app 0.9.1 (16/11/2026)
