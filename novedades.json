@@ -1,5 +1,22 @@
 [
  {
+  "reloj": "3.0.0-beta.14",
+  "app": "0.9.2",
+  "fecha": "2026-11-21",
+  "es": [
+   "Cuatro esferas nuevas: Dunas (un desierto de puntos de luz en perspectiva), Mariposa (el atractor de Lorenz en 3D), Corriente (hilos de luz que siguen un campo de flujo y tejen la hora) y Globos (un cielo de verdad que cambia con la hora y globos que puedes explotar)",
+   "Cada una tiene sus opciones en la app: Esferas → Opciones",
+   "Arreglado: con el reloj en inglés, la fecha de las esferas salía en español",
+   "Arreglado: la microSD podía dejar de leer por falta de memoria"
+  ],
+  "en": [
+   "Four new faces: Dunas (a desert of dots of light in perspective), Mariposa (the Lorenz attractor in 3D), Corriente (threads of light following a flow field and weaving the time) and Globos (a real sky that changes with the time of day, and balloons you can pop)",
+   "Each one has its own options in the app: Faces → Options",
+   "Fixed: with the watch in English, the faces' date was in Spanish",
+   "Fixed: the microSD could stop reading for lack of memory"
+  ]
+ },
+ {
   "reloj": "3.0.0-beta.13",
   "app": "0.9.1",
   "fecha": "2026-11-16",

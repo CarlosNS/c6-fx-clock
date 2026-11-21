@@ -276,9 +276,9 @@ function setLang(l) {
 document.querySelectorAll(".lang button").forEach(b => b.onclick = () => setLang(b.dataset.l));
 
 // ---------- the faces (the previews the app shows, caras/fxN.webp)
-const FACES = [[0, "Plasma"], [1, "Cubo 3D", "3D Cube"], [2, "Túnel", "Tunnel"], [3, "Lava"], [4, "Vida", "Life"], [13, "Synthwave"],
+const FACES = [[0, "Plasma"], [1, "Cubo 3D", "3D Cube"], [2, "Túnel", "Tunnel"], [3, "Lava"], [4, "Vida", "Life"], [13, "Synthwave"], [29, "Dunas", "Dunes"], [30, "Mariposa", "Butterfly"], [31, "Corriente", "Current"],
   [5, "HUD"], [6, "Aventura", "Quest"], [7, "RPG"], [19, "Gol", "Goal"], [8, "Estrellada", "Starry"], [11, "Earthrise"],
-  [27, "Trueno y peluches", "Thunder and plushies"], [12, "Sakura"], [17, "Lluvia", "Rain"], [18, "Agujero negro", "Black hole"],
+  [27, "Trueno y peluches", "Thunder and plushies"], [12, "Sakura"], [32, "Globos", "Balloons"], [17, "Lluvia", "Rain"], [18, "Agujero negro", "Black hole"],
   [25, "Disfruta", "Enjoy"], [9, "WiFi"], [14, "Coloso", "Colossus"], [15, "Engranajes", "Gears"], [21, "Tiempo", "Weather"],
   [22, "Clásico", "Classic"], [23, "Feria de Sevilla", "Seville Fair"], [24, "Ónix", "Onyx"], [26, "El escultor", "The sculptor"]];
 const fname = f => lang === "en" && f[2] ? f[2] : f[1];
