@@ -1,4 +1,4 @@
-El reloj trae **28 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
+El reloj trae **29 esferas**, todas dibujadas por código a 30 fps y a pantalla completa, siguiendo las esquinas redondeadas de la pantalla. Además, con la app del móvil puedes hacer **las tuyas** con una foto o un GIF: ver [Mis esferas](#mis-esferas).
 
 - Se cambian **deslizando** a izquierda o derecha, con una **pulsación corta de BOOT** (las dos siguen el orden del selector: por grupos y al final todas las de *Mis esferas*), en la app **Esferas** del reloj (o manteniendo el dedo en la esfera), desde la app del móvil o desde la página; con *cambio automático* pasan solas cada 30 s. En la app, **Esferas del cambio automático → Elegir** deja quitar las que no quieras que salgan solas: siguen disponibles a mano.
 - Las que tienen ajustes propios o son interactivas lo indican con los botones *Tocar* y *Opciones* de la sección Esferas de la app (ver [[Página de control]]).
@@ -174,6 +174,20 @@ En la app (*Esferas → Corriente → Opciones*) se elige:
 <img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx18.png" alt="Esfera Agujero negro" width="205">
 
 *Número 18* — Disco de acreción con efecto Doppler, lente gravitatoria del disco trasero y anillo de fotones, con un halo cálido; las estrellas se curvan alrededor (ecuación de lente puntual).
+
+### Globos
+
+<img src="https://raw.githubusercontent.com/wiki/CarlosNS/c6-fx-clock/images/fx32.png" alt="Esfera Globos" width="205">
+
+*Número 32* — Un cielo de verdad (fotos de [Poly Haven](https://polyhaven.com), de dominio público) que se mueve muy despacio y cambia con la hora del día: noche hasta las 5:30, amanecer de 6:00 a 7:30, día de 8:00 a 18:00, atardecer de 18:30 a 20:00 y noche desde las 20:30, fundiéndose de uno a otro en media hora; de noche titilan algunas estrellas. La hora, grande y en blanco con una sombra suave, en el centro. Globos de colores suben a intervalos irregulares, a veces en grupitos: detrás de la hora, pequeños, lentos y con algo de bruma; delante, más grandes y rápidos; y de vez en cuando uno pasa muy cerca, tapando las cifras. A la hora en punto hay una suelta de globos.
+
+Es interactiva: **tocar un globo** lo explota con un «pop» por el altavoz (sus trozos caen y el hilo cae dando vueltas); **arrastrar** sopla viento y los globos se desvían. Mantener el dedo quieto sigue abriendo el escaparate.
+
+En la app (*Esferas → Globos → Opciones*) se elige:
+
+- **Globos:** variados (de serie), pasteles, rojos o metalizados.
+- **Cielo:** *Según la hora* o *Siempre de día*.
+- **Cantidad** de globos y **sonido al explotar**.
 
 ## Relojes y útiles
 

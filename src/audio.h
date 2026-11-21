@@ -14,6 +14,8 @@ void audio_ring_start(void);
 void audio_find_start(void);
 // Short click for a touch (25 ms) or a confirmation (60 ms)
 void audio_beep(int ms);
+// A balloon popping: a short burst of noise that dies away at once
+void audio_pop(void);
 void audio_stop(void);
 
 // Microphones (ES7210), 16 kHz mono: start, read up to 320 samples (20 ms) at a time, stop.

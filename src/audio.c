@@ -6,6 +6,7 @@
 #include "audio.h"
 #include <math.h>
 #include <string.h>
+#include "esp_attr.h"
 #include "app.h"
 #include "board.h"
 #include "driver/gpio.h"
@@ -29,7 +30,7 @@ static bool s_tx_on, s_codec_on;
 static volatile bool s_mic;
 static bool mic_power(bool on);
 static TaskHandle_t s_task;
-static volatile int s_mode;      // 0 silence, 1 alarm, 2 ring, 3 beep, 4 find (full volume)
+static volatile int s_mode;      // 0 silence, 1 alarm, 2 ring, 3 beep, 4 find (full volume), 5 pop
 static volatile int s_beep_ms;
 static bool s_ok;
 
@@ -108,6 +109,39 @@ static void play_tone(int hz, int ms, int amp)
     }
 }
 
+// A pop: white noise falling off steeply (x^4) over `ms`, roughly high-passed by differencing. It starts
+// after `lead` ms of silence: the amplifier and codec take a moment to wake up, and a sound this short
+// would otherwise be over before they are ready.
+EXT_RAM_BSS_ATTR static int16_t s_popbuf[CHUNK * 2];  // PSRAM: internal RAM is short (i2s copies it anyway)
+static void play_pop(int lead, int ms, int amp)
+{
+    int16_t *buf = s_popbuf;
+    memset(buf, 0, sizeof(s_popbuf));
+    for (int q = RATE * lead / 1000; q > 0 && s_mode; q -= CHUNK) {
+        size_t wr;
+        i2s_channel_write(s_tx, buf, (q < CHUNK ? q : CHUNK) * 4, &wr, portMAX_DELAY);
+    }
+    int total = RATE * ms / 1000, done = 0;
+    uint32_t r = 22222;
+    int prev = 0;
+    while (done < total) {
+        int n = total - done < CHUNK ? total - done : CHUNK;
+        for (int i = 0; i < n; i++) {
+            r = r * 1664525u + 1013904223u;
+            int w = (int)(r >> 17) - 16384, hp = w - prev;  // differencing: less boom, more snap
+            prev = w;
+            int k = total - (done + i);
+            int64_t env = (int64_t)k * k / total * k / total * k / total;  // (k/total)^4 * total
+            int16_t v = (int16_t)(hp * (int64_t)amp / 32768 * env / total);
+            buf[2 * i] = buf[2 * i + 1] = v;
+        }
+        size_t wr;
+        i2s_channel_write(s_tx, buf, n * 4, &wr, portMAX_DELAY);
+        done += n;
+        if (!s_mode) break;
+    }
+}
+
 static void tx_on(bool on)  // with s_lock held
 {
     if (on == s_tx_on) return;
@@ -146,6 +180,11 @@ static void task(void *arg)
         if (mode == 3) {
             play_tone(1600, s_beep_ms, 6000);
             if (s_mode == 3) s_mode = 0;
+            continue;
+        }
+        if (mode == 5) {
+            play_pop(150, 140, 7000);  // soft: a little pop, not a bang
+            if (s_mode == 5) s_mode = 0;
             continue;
         }
         const note_t *m = mode == 1 ? ALARM : mode == 4 ? FIND : RING;
@@ -262,6 +301,12 @@ void audio_alarm_start(void) { start(1); }
 void audio_ring_start(void) { start(2); }
 void audio_find_start(void) { start(4); }
 void audio_stop(void) { s_mode = 0; }
+
+void audio_pop(void)
+{
+    if (!s_ok || s_mode == 1 || s_mode == 2 || s_mode == 4) return;
+    start(5);
+}
 
 void audio_beep(int ms)
 {

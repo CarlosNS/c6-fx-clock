@@ -102,6 +102,9 @@ const fx_t fx_list[FX_COUNT] = {
     {.name = "CORRIENTE", .res = FX_NATIVE, .opts = "cr", .enter = flow_enter, .render = flow_render,
      .label = "Corriente", .group = FX_G_EFFECTS, .hint = "Arrastra para crear un remolino; toca para soltar un puñado de partículas",
      .desc = "Miles de partículas siguen las corrientes de un campo de ruido y dejan trazos finos de luz sobre negro, como seda o humo. La hora aparece tejida en el propio flujo."},
+    {.name = "GLOBOS", .res = FX_NATIVE, .opts = "gl", .enter = balloons_enter, .render = balloons_render,
+     .label = "Globos", .group = FX_G_NATURE, .hint = "Toca un globo para explotarlo; arrastra para soplar viento",
+     .desc = "Un cielo de verdad que cambia con la hora del día y globos de colores que suben por delante y por detrás de la hora. A la hora en punto, una suelta grande."},
 };
 
 const char *const fx_group_names[FX_G_COUNT] = {"Efectos", "Videojuegos", "Arte", "Naturaleza y espacio", "Relojes y útiles"};

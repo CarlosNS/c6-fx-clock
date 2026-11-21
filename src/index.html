@@ -568,6 +568,15 @@ body.nowatch #hfcard,body.nowatch .tiles,body.nowatch #findcard{display:none}
       <div class="inline" style="justify-content:space-between"><span class="tt" data-en="Brightness">Brillo</span><span class="j" style="font-size:24px" id="cbriv"></span></div>
       <input type="range" id="cbri" min="30" max="100" step="5">
     </div>
+    <div class="hide stack" id="owngl" data-opts="gl">
+      <span class="tt" data-en="Balloons">Globos</span>
+      <div class="seg full" id="gcolb" role="group" aria-label="Globos"><button data-v="0" data-en="Mixed">Variados</button><button data-v="1" data-en="Pastel">Pasteles</button><button data-v="2" data-en="Red">Rojos</button><button data-v="3" data-en="Metallic">Metal</button></div>
+      <span class="tt" data-en="Sky">Cielo</span>
+      <div class="seg full" id="gcieb" role="group" aria-label="Cielo"><button data-v="0" data-en="By the time of day">Según la hora</button><button data-v="1" data-en="Always day">Siempre de día</button></div>
+      <div class="inline" style="justify-content:space-between"><span class="tt" data-en="How many">Cantidad</span><span class="j" style="font-size:24px" id="gcanv"></span></div>
+      <input type="range" id="gcan" min="3" max="25">
+      <div class="row"><div class="t"><b data-en="Pop sound">Sonido al explotar</b><small data-en="Tap a balloon to pop it">Toca un globo para explotarlo</small></div><input type="checkbox" class="sw" id="gson" aria-label="Sonido al explotar"></div>
+    </div>
     <div class="hide stack" id="ownwx" data-opts="wx">
       <div id="wxst">--</div>
       <div class="row hide" id="wxfollowrow"><div class="t"><b data-en="Follow the phone">Seguir al móvil</b><small data-en="The weather is the one where your phone is (approximate location, checked every half hour)">El tiempo es el de donde esté el móvil (ubicación aproximada, se mira cada media hora)</small></div><input type="checkbox" class="sw" id="wxfollow" aria-label="Seguir al móvil"></div>
@@ -710,7 +719,7 @@ $('chue').oninput=()=>{lastUser=Date.now();swatch($('chue').value);send('chue '+
 $('ohue').oninput=()=>{lastUser=Date.now();send('ohue '+$('ohue').value)};
 // "Dunas" and "Mariposa": button groups (one value each) and sliders
 function segOn(g,v){for(const b of g.querySelectorAll('button'))b.classList.toggle('on',b.dataset.v===String(v))}
-for(const[id,cmd]of[['dcolb','dcol'],['danib','dani'],['dtimb','dtim'],['ddotb','ddot'],['lforb','lfor'],['lcolb','lcol'],['ltimb','ltim'],['cestb','cest'],['ccolb','ccol'],['ctimb','ctim']])for(const b of $(id).querySelectorAll('button'))b.onclick=()=>{lastUser=Date.now();segOn($(id),b.dataset.v);send(cmd+' '+b.dataset.v)};
+for(const[id,cmd]of[['dcolb','dcol'],['danib','dani'],['dtimb','dtim'],['ddotb','ddot'],['lforb','lfor'],['lcolb','lcol'],['ltimb','ltim'],['cestb','cest'],['ccolb','ccol'],['ctimb','ctim'],['gcolb','gcol'],['gcieb','gcie']])for(const b of $(id).querySelectorAll('button'))b.onclick=()=>{lastUser=Date.now();segOn($(id),b.dataset.v);send(cmd+' '+b.dataset.v)};
 bind('dbri','dbri',v=>v+' %');
 // "Mariposa": the trail in points
 const lestTxt=v=>(v*100).toLocaleString(LANG?'en':'es')+tr(' puntos',' points');
@@ -718,6 +727,9 @@ bind('lest','lest',lestTxt);bind('lbri','lbri',v=>v+' %');
 // "Corriente"
 const cnumTxt=v=>(v*100).toLocaleString(LANG?'en':'es'),cturTxt=v=>(v/10).toFixed(1).replace('.',LANG?'.':',');
 bind('cnum','cnum',cnumTxt);bind('ctur','ctur',cturTxt);bind('cbri','cbri',v=>v+' %');
+// "Globos"
+const gcanTxt=v=>(v/10).toFixed(1).replace('.',LANG?'.':',')+'×';
+bind('gcan','gcan',gcanTxt);bind('gson','gson');
 $('ohuereset').onclick=()=>{lastUser=Date.now();$('ohue').value=28;send('ohue 28')};
 $('chuereset').onclick=()=>{lastUser=Date.now();$('chue').value=146;swatch(146);send('chue 146')};
 function night(){lastUser=Date.now();$('nbrv').textContent=$('nbr').value+' %';fill($('nbr'));send(`night ${$('non').checked?1:0} ${$('nst').value} ${$('nen').value} ${$('nbr').value}`);vis()}
@@ -774,7 +786,7 @@ function show(s,relang){status=s;
  if(Date.now()-lastUser>1500){if(s.fx!==cur||(s.fx===28&&s.cust!==lastCust))setFx(s.fx);lastCust=s.cust;
   if(s.fxoff!==undefined&&(s.fxoff!==offM[0]||(s.fxoff2||0)!==offM[1])){offM=[s.fxoff,s.fxoff2||0];if(FX.length)renderOff()}
   for(const[k,v]of[['spd',s.spd],['bri',s.bri],['nbr',s.nbr]])if(document.activeElement!==$(k)){$(k).value=v;$(k+'v').textContent=v+' %';fill($(k))}
-  for(const k of['auto','ovl','h24','secs','non','aon','steps'])if(s[k]!==undefined)$(k).checked=!!s[k];
+  for(const k of['auto','ovl','h24','secs','non','aon','steps','gson'])if(s[k]!==undefined)$(k).checked=!!s[k];
   if(s.raise!==undefined){$('raiserow').classList.remove('hide');$('raise').checked=!!s.raise}
   slogShow();
   if(s.goal!==undefined){$('goalrow').classList.remove('hide');if(document.activeElement!==$('goal'))$('goal').value=s.goal}
@@ -783,8 +795,8 @@ function show(s,relang){status=s;
   if(s.wifi!==undefined){$('wifirow').classList.remove('hide');$('wifi').checked=!!s.wifi}
   for(const k of['wks','nst','nen','chue','ohue'])if(document.activeElement!==$(k)&&s[k]!==undefined)$(k).value=s[k];
   if(s.chue!==undefined)swatch($('chue').value);
-  for(const[k,id]of[['dcol','dcolb'],['dani','danib'],['dtim','dtimb'],['ddot','ddotb'],['lfor','lforb'],['lcol','lcolb'],['ltim','ltimb'],['cest','cestb'],['ccol','ccolb'],['ctim','ctimb']])if(s[k]!==undefined)segOn($(id),s[k]);
-  for(const[k,f]of[['dbri',v=>v+' %'],['lest',lestTxt],['lbri',v=>v+' %'],['cnum',cnumTxt],['ctur',cturTxt],['cbri',v=>v+' %']])if(s[k]!==undefined&&document.activeElement!==$(k)){$(k).value=s[k];$(k+'v').textContent=f(s[k]);fill($(k))}
+  for(const[k,id]of[['dcol','dcolb'],['dani','danib'],['dtim','dtimb'],['ddot','ddotb'],['lfor','lforb'],['lcol','lcolb'],['ltim','ltimb'],['cest','cestb'],['ccol','ccolb'],['ctim','ctimb'],['gcol','gcolb'],['gcie','gcieb']])if(s[k]!==undefined)segOn($(id),s[k]);
+  for(const[k,f]of[['dbri',v=>v+' %'],['lest',lestTxt],['lbri',v=>v+' %'],['cnum',cnumTxt],['ctur',cturTxt],['cbri',v=>v+' %'],['gcan',gcanTxt]])if(s[k]!==undefined&&document.activeElement!==$(k)){$(k).value=s[k];$(k+'v').textContent=f(s[k]);fill($(k))}
   vis()}
  $('moderow').classList.toggle('hide',BOARD==='s3amoled');$('wifionly').classList.toggle('hide',L.kind!=='wifi');$('tomode').textContent=s.mode==='wifi'?'Pasar a Bluetooth':'Pasar a WiFi';
  $('modetxt').textContent=MODE_TXT[s.mode]||''}

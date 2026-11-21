@@ -32,6 +32,9 @@ typedef struct {
     // "Corriente" face: style (0 silk, 1 smoke, 2 river), palette (0 ice .. 4 silver), time (0 woven into the
     // flow, 1 on top, 2 only after a touch), particles (4..30 hundred), turbulence (5..25 tenths), brightness
     volatile int cr_style, cr_col, cr_time, cr_num, cr_turb, cr_bri;
+    // "Globos" face: balloon colours (0 mixed, 1 pastel, 2 red, 3 metallic), how many (3..25 tenths), sky
+    // (0 by the time of day, 1 always day), pop sound (0/1)
+    volatile int bal_col, bal_num, bal_sky, bal_sound;
     volatile int raise_wake;   // raising the wrist turns the screen on
     volatile int setup;        // the first-run guide was seen (or skipped)
     volatile int tips;         // how many times the edge hints were shown on the face (they stop at 8)

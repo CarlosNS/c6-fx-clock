@@ -65,6 +65,10 @@ static const setting_t SETTINGS[] = {
     {"cnum", &g_app.cr_num, 4, 30, true, NULL},
     {"ctur", &g_app.cr_turb, 5, 25, true, NULL},
     {"cbri", &g_app.cr_bri, 30, 100, true, NULL},
+    {"gcol", &g_app.bal_col, 0, 3, true, NULL},     // "Globos" face (fx_balloons.c)
+    {"gcan", &g_app.bal_num, 3, 25, true, NULL},
+    {"gcie", &g_app.bal_sky, 0, 1, true, NULL},
+    {"gson", &g_app.bal_sound, 0, 1, true, NULL},
     {"raise", &g_app.raise_wake, 0, 1, true, NULL},  // raise the wrist to turn the screen on
     {"tap", &g_app.tap_wake, 0, 2, true, NULL},      // touch the dark screen: 0 nothing, 1 one tap, 2 double tap
     {"voice", &g_app.voice, 0, 1, true, NULL},

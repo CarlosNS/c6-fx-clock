@@ -2,7 +2,7 @@
          "fx_common.c" "fx_plasma.c" "fx_cube.c" "fx_tunnel.c" "fx_lava.c" "fx_life.c"
          "fx_hud.c" "fx_quest.c" "fx_rpg.c"
          "fx_starry.c" "fx_wifimon.c" "fx_earthrise.c" "fx_sakura.c"
-         "fx_synth.c" "fx_sand.c" "fx_gears.c" "fx_rain.c" "fx_blackhole.c" "fx_goal.c" "fx_weather.c" "fx_classic.c" "fx_feria.c" "fx_onix.c" "fx_relax.c" "fx_sculpt.c" "fx_metal.c" "fx_custom.c" "fx_dunes.c" "fx_lorenz.c" "fx_flow.c")
+         "fx_synth.c" "fx_sand.c" "fx_gears.c" "fx_rain.c" "fx_blackhole.c" "fx_goal.c" "fx_weather.c" "fx_classic.c" "fx_feria.c" "fx_onix.c" "fx_relax.c" "fx_sculpt.c" "fx_metal.c" "fx_custom.c" "fx_dunes.c" "fx_lorenz.c" "fx_flow.c" "fx_balloons.c")
 
 # The watch system: Marea Solsticial toolkit, gestures, shell and apps
 list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "alarm.c" "audio.c" "phone.c"
@@ -10,12 +10,13 @@ list(APPEND srcs "ui.c" "ui_fonts.c" "ui_icons.c" "input.c" "sys.c" "steps.c" "a
                  "app_music.c" "app_files.c" "usbdisk.c" "batlog.c" "bleota.c" "intro.c" "voice.c" "find.c" "app_plug.c" "bye.c" "art.c" "trans.c" "app_setup.c")
 list(APPEND srcs "board.c" "lcd_co5300.c" "i2c_bus.c" "pmu_axp2101.c" "rtc_pcf85063.c" "touch_ft3168.c" "imu_qmi8658.c")
 
-# web.pack: the page's pictures and fonts (src/web/), packed by tools/web_pack.py before each build
+# web.pack: the page's pictures and fonts (src/web/), packed by tools/web_pack.py before each build.
+# sky/: the skies of the "Globos" face (photos from Poly Haven, CC0), decoded when the face is shown
 idf_component_register(
     SRCS ${srcs}
     INCLUDE_DIRS "."
     EMBED_TXTFILES "index.html" "transport.js"
-    EMBED_FILES "web.pack")
+    EMBED_FILES "web.pack" "sky/amanecer.jpg" "sky/dia.jpg" "sky/atardecer.jpg" "sky/noche.jpg")
 
 # USB disk mode: notice when the computer ejects the drive (usbdisk.c wraps esp_tinyusb's handler)
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=tud_msc_start_stop_cb")

@@ -117,6 +117,10 @@ Solo por Bluetooth: `get info`, `get status`, `get faces`, `get alarms`, `get fi
 | `cnum` | 4–30 | Esfera Corriente: partículas, en cientos |
 | `ctur` | 5–25 | Esfera Corriente: turbulencia, en décimas (10 = normal) |
 | `cbri` | 30–100 | Esfera Corriente: brillo (%) |
+| `gcol` | 0–3 | Esfera Globos: colores (variados, pasteles, rojos, metalizados) |
+| `gcan` | 3–25 | Esfera Globos: cantidad, en décimas (10 = normal) |
+| `gcie` | 0–1 | Esfera Globos: cielo según la hora o siempre de día |
+| `gson` | 0/1 | Esfera Globos: sonido al explotar un globo |
 | `ovl` | 0/1 | Información de depuración en pantalla |
 
 Añadir un ajuste es **una línea** en la tabla de `settings.c`: se guarda en NVS, se controla por orden y aparece en el JSON de estado sin tocar nada más.
